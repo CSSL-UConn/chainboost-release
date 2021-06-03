@@ -8,8 +8,8 @@ import (
 	gohash "hash"
 	"strconv"
 
-	"github.com/BoostChain/cothority-byzcoin_ng_first/log"
 	"github.com/dedis/crypto/abstract"
+	"go.dedis.ch/onet/v3/log"
 )
 
 // HashFunc exports a hashfunction

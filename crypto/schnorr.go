@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/dedis/crypto/abstract"
-	"github.com/dedis/crypto/random"
+	"go.dedis.ch/kyber/v3/util/random"
 )
 
 // SchnorrSig is a signature created using the Schnorr Signature scheme.

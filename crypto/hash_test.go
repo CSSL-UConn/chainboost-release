@@ -10,9 +10,9 @@ import (
 
 	"encoding"
 
-	"github.com/BoostChain/cothority-byzcoin_ng_first/log"
 	"github.com/dedis/crypto/abstract"
 	"github.com/dedis/crypto/ed25519"
+	"go.dedis.ch/onet/v3/log"
 )
 
 var hashSuite = ed25519.NewAES128SHA256Ed25519(false)

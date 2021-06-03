@@ -4,8 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 
-	"github.com/BoostChain/cothority-byzcoin_ng_first/log"
-	"github.com/BoostChain/cothority-byzcoin_ng_first/protocols/byzcoin/blockchain/blkparser"
+     blkparser
+	"go.dedis.ch/onet/v3/log"
 )
 
 type TransactionList struct {

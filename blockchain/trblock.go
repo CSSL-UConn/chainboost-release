@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/BoostChain/cothority-byzcoin_ng_first/crypto"
-	"github.com/BoostChain/cothority-byzcoin_ng_first/log"
+	 crypto
+	"go.dedis.ch/onet/v3/log"
 )
 
 type Block struct {

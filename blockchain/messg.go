@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 
 	"github.com/BoostChain/cothority-byzcoin_ng_first/crypto"
-	"github.com/BoostChain/cothority-byzcoin_ng_first/log"
-	"github.com/BoostChain/cothority-byzcoin_ng_first/protocols/byzcoin/blockchain/blkparser"
+	"go.dedis.ch/onet/v3/log"
+	 blkparser
 	"github.com/dedis/crypto/abstract"
-	"github.com/dedis/crypto/suites"
+	"go.dedis.ch/kyber/v3/suites"
 )
 
 type MessageType int

@@ -3,7 +3,7 @@ package crypto
 import (
 	"testing"
 
-	"github.com/BoostChain/cothority-byzcoin_ng_first/log"
+	"go.dedis.ch/onet/v3/log"
 )
 
 func TestMain(m *testing.M) {

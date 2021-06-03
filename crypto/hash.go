@@ -10,8 +10,8 @@ import (
 	"encoding"
 	"reflect"
 
-	"github.com/BoostChain/cothority-byzcoin_ng_first/log"
 	"github.com/dedis/crypto/abstract"
+	"go.dedis.ch/onet/v3/log"
 )
 
 // Hash simply returns the Hash of the slice of bytes given
