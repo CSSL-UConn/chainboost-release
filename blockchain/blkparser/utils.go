@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/BoostChain/cothority-byzcoin_ng_first/log"
+	"go.dedis.ch/onet/v3/log"
 )
 
 // Get the Tx count, decode the variable length integer

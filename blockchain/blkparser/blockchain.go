@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/BoostChain/cothority-byzcoin_ng_first/log"
+	"go.dedis.ch/onet/v3/log"
 )
 
 // Blockchain is a struct representing a block chain
