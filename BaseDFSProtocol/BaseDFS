@@ -1,0 +1,161 @@
+package BaseDFSProtocol
+
+import (
+	"math/rand"
+	"sync"
+	"time"
+
+	"go.dedis.ch/onet/v3"
+	"go.dedis.ch/onet/v3/log"
+	"go.dedis.ch/onet/v3/network"
+	"golang.org/x/xerrors"
+
+	//Raha
+	"go.dedis.ch/kyber/v3"
+	"go.dedis.ch/kyber/v3/sign/schnorr"
+	"go.dedis.ch/kyber/v3/util/key"
+)
+
+//Base DFS protocol:
+
+func init() {
+	//network.RegisterMessage(PrepareCount{})
+	//network.RegisterMessage(Count{})
+	//network.RegisterMessage(NodeIsUp{})
+	//onet.GlobalProtocolRegister("Count", NewCount)
+
+	network.RegisterMessage(Opinion{})
+	network.RegisterMessage(Hello{})
+	onet.GlobalProtocolRegister("OpinionGathering", NewOpinionGathering)
+}
+
+type ProtocolOpinionGathering struct {
+	*onet.TreeNodeInstance
+
+	FinalXor  chan string
+	Quit      chan bool
+	timeout   time.Duration
+	timeoutMu sync.Mutex
+	HelloChan chan struct {
+		*onet.TreeNode
+		Hello
+	}
+	OpinionChan chan []OpinionMsg
+}
+
+// ByzCoin is the main struct for running the protocol
+type ByzCoin struct {
+	// the node we are represented-in
+	*sda.TreeNodeInstance
+	// the suite we use
+	suite abstract.Suite
+	// aggregated public key of the peers
+	aggregatedPublic abstract.Point
+	// prepare-round cosi
+	prepare *cosi.Cosi
+	// commit-round cosi
+	commit *cosi.Cosi
+	// channel for announcement
+	announceChan chan announceChan
+	// channel for commitment
+	commitChan chan commitChan
+	// Two channels for the challenge through the 2 rounds: difference is that
+	// during the commit round, we need the previous signature of the "prepare"
+	// round.
+	// channel for challenge during the prepare phase
+	challengePrepareChan chan challengePrepareChan
+	// channel for challenge during the commit phase
+	challengeCommitChan chan challengeCommitChan
+	// channel for response
+	responseChan chan responseChan
+	// channel to notify when we are done
+	done chan bool
+	// channel to notify when the prepare round is finished
+	prepareFinishedChan chan bool
+	// channel used to wait for the verification of the block
+	verifyBlockChan chan bool
+
+	//  block to pass up between the two rounds (prepare + commits)
+	tempBlock *blockchain.TrBlock
+	// exceptions given during the rounds that is used in the signature
+	tempExceptions []cosi.Exception
+
+	// transactions is the slice of transactions that contains transactions
+	// coming from clients
+	transactions []blkparser.Tx
+	// last block computed
+	lastBlock string
+	// last key block computed
+	lastKeyBlock string
+	// temporary buffer of "prepare" commitments
+	tempPrepareCommit []*cosi.Commitment
+	tpcMut            sync.Mutex
+	// temporary buffer of "commit" commitments
+	tempCommitCommit []*cosi.Commitment
+	tccMut           sync.Mutex
+	// temporary buffer of "prepare" responses
+	tempPrepareResponse []*cosi.Response
+	tprMut              sync.Mutex
+	// temporary buffer of "commit" responses
+	tempCommitResponse []*cosi.Response
+	tcrMut             sync.Mutex
+
+	// refusal to sign for the commit phase or not. This flag is set during the
+	// Challenge of the commit phase and will be used during the response of the
+	// commit phase to put an exception or to sign.
+	signRefusal bool
+
+	// onDoneCallback is the callback that will be called at the end of the
+	// protocol when all nodes have finished. Either at the end of the response
+	// phase of the commit round or at the end of a view change.
+	onDoneCallback func()
+
+	// onSignatureDone is the callback that will be called when a signature has
+	// been generated ( at the end of the response phase of the commit round)
+	onSignatureDone func(*BlockSignature)
+
+	// rootTimeout is the timeout given to the root. It will be passed down the
+	// tree so every nodes knows how much time to wait. This root is a very nice
+	// malicious node.
+	rootTimeout uint64
+	timeoutChan chan uint64
+	// onTimeoutCallback is the function that will be called if a timeout
+	// occurs.
+	onTimeoutCallback func()
+	// function to let callers of the protocol (or the server) add functionality
+	// to certain parts of the protocol; mainly used in simulation to do
+	// measurements. Hence functions will not be called in go routines
+
+	// root fails:
+	rootFailMode uint
+	// Call back when we start the announcement of the prepare phase
+	onAnnouncementPrepare func()
+	// callback when we finished the response of the prepare phase
+	onResponsePrepareDone func()
+	// callback when we finished the challenge of the commit phase
+	onChallengeCommit func()
+
+	onResponseCommitDone func()
+	// view change setup and measurement
+	viewchangeChan chan struct {
+		*sda.TreeNode
+		viewChange
+	}
+	vcMeasure *monitor.TimeMeasure
+	// bool set to true when the final signature is produced
+	doneSigning chan bool
+	// lock associated
+	doneLock sync.Mutex
+	// threshold for how much exception
+	threshold int
+	// threshold for how much view change acceptance we need
+	// basically n - threshold
+	viewChangeThreshold int
+	// how many view change request have we received
+	vcCounter int
+	// done processing is used to stop the processing of the channels
+	doneProcessing chan bool
+
+	// finale signature that this ByzCoin round has produced
+	finalSignature *BlockSignature
+}
