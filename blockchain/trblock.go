@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"net"
 
-	 crypto
+	//"crypto"
 	"go.dedis.ch/onet/v3/log"
 )
 
@@ -107,14 +107,15 @@ func NewHeader(transactions TransactionList, parent, parentKey string) *Header {
 	return hdr
 }
 func HashRootTransactions(transactions TransactionList) string {
-	var hashes []crypto.HashID
+	// var hashes []crypto.HashID
 
-	for _, t := range transactions.Txs {
-		temp, _ := hex.DecodeString(t.Hash)
-		hashes = append(hashes, temp)
-	}
-	out, _ := crypto.ProofTree(sha256.New, hashes)
-	return hex.EncodeToString(out)
+	// for _, t := range transactions.Txs {
+	// 	temp, _ := hex.DecodeString(t.Hash)
+	// 	hashes = append(hashes, temp)
+	// }
+	// out, _ := crypto.ProofTree(sha256.New, hashes)
+	// return hex.EncodeToString(out)
+	return "nil"
 }
 
 func (trb *Block) Hash(h *Header) (res string) {

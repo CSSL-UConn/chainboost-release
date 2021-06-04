@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/BoostChain/cothority-byzcoin_ng_first/crypto"
-	"go.dedis.ch/onet/v3/log"
-	 blkparser
+	//  "crypto"
+	"github.com/basedfs/blockchain/blkparser"
 	"github.com/dedis/crypto/abstract"
-	"go.dedis.ch/kyber/v3/suites"
+	"go.dedis.ch/onet/v3/log"
+	//	"go.dedis.ch/kyber/v3/suites"
 )
 
 type MessageType int
@@ -23,13 +23,13 @@ type TransactionAnnouncment struct {
 // somehow. We could just simply add it as a field and not (un)marhsal it
 // We'd just make sure that the suite is setup before unmarshaling.
 type BlockReply struct {
-	SuiteStr      string
-	Timestamp     int64           // The timestamp requested for the block to prove its ordering
-	BlockLen      int             // Length of Block
-	Block         Block           // The Block including a number of transactions
-	MerkleRoot    []byte          // root of the merkle tree
-	PrfLen        int             // Length of proof
-	Prf           crypto.Proof    // Merkle proof of value
+	SuiteStr   string
+	Timestamp  int64  // The timestamp requested for the block to prove its ordering
+	BlockLen   int    // Length of Block
+	Block      Block  // The Block including a number of transactions
+	MerkleRoot []byte // root of the merkle tree
+	PrfLen     int    // Length of proof
+	//	Prf           crypto.Proof    // Merkle proof of value
 	Response      abstract.Scalar // Aggregate response
 	Challenge     abstract.Scalar // Aggregate challenge
 	AggCommit     abstract.Point  // Aggregate commitment key
@@ -48,15 +48,15 @@ type BitCoSiMessage struct {
 func (sr *BlockReply) MarshalJSON() ([]byte, error) {
 	type Alias BlockReply
 	var b bytes.Buffer
-	suite, err := suites.StringToSuite(sr.SuiteStr)
-	if err != nil {
-		return nil, err
-	}
-	//log.Print("Preparing abstracts")
-	if err := suite.Write(&b, sr.Response, sr.Challenge, sr.AggCommit, sr.AggPublic); err != nil {
-		log.Lvl1("encoding stampreply response/challenge/AggCommit:", err)
-		return nil, err
-	}
+	// suite, err := suites.StringToSuite(sr.SuiteStr)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// //log.Print("Preparing abstracts")
+	// if err := suite.Write(&b, sr.Response, sr.Challenge, sr.AggCommit, sr.AggPublic); err != nil {
+	// 	log.Lvl1("encoding stampreply response/challenge/AggCommit:", err)
+	// 	return nil, err
+	// }
 
 	//log.Print("Returning helper-struct")
 	return json.Marshal(&struct {
@@ -71,10 +71,10 @@ func (sr *BlockReply) MarshalJSON() ([]byte, error) {
 func (sr *BlockReply) UnmarshalJSON(dataJSON []byte) error {
 	type Alias BlockReply
 	//log.Print("Starting unmarshal")
-	suite, err := suites.StringToSuite(sr.SuiteStr)
-	if err != nil {
-		return err
-	}
+	// suite, err := suites.StringToSuite(sr.SuiteStr)
+	// if err != nil {
+	// 	return err
+	// }
 	aux := &struct {
 		SignatureInfo []byte
 		Response      abstract.Scalar
@@ -83,20 +83,20 @@ func (sr *BlockReply) UnmarshalJSON(dataJSON []byte) error {
 		AggPublic     abstract.Point
 		*Alias
 	}{
-		Response:  suite.Scalar(),
-		Challenge: suite.Scalar(),
-		AggCommit: suite.Point(),
-		AggPublic: suite.Point(),
-		Alias:     (*Alias)(sr),
+		// Response:  suite.Scalar(),
+		// Challenge: suite.Scalar(),
+		// AggCommit: suite.Point(),
+		// AggPublic: suite.Point(),
+		Alias: (*Alias)(sr),
 	}
 	//log.Print("Doing JSON unmarshal")
 	if err := json.Unmarshal(dataJSON, &aux); err != nil {
 		return err
 	}
-	if err := suite.Read(bytes.NewReader(aux.SignatureInfo), &sr.Response, &sr.Challenge, &sr.AggCommit, &sr.AggPublic); err != nil {
-		log.Fatal("decoding signature Response / Challenge / AggCommit: ", err)
-		return err
-	}
+	// if err := suite.Read(bytes.NewReader(aux.SignatureInfo), &sr.Response, &sr.Challenge, &sr.AggCommit, &sr.AggPublic); err != nil {
+	// 	log.Fatal("decoding signature Response / Challenge / AggCommit: ", err)
+	// 	return err
+	// }
 	return nil
 }
 

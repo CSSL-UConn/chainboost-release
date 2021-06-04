@@ -6,6 +6,7 @@ require (
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/daviddengcn/go-colortext v0.0.0-20180409174941-186a3d44e920
+	github.com/dedis/crypto v0.0.0-20170619063245-0b3308b414f7 // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/golangplus/bytes v0.0.0-20160111154220-45c989fe5450 // indirect
 	github.com/golangplus/fmt v0.0.0-20150411045040-2a5d6d7d2995 // indirect
