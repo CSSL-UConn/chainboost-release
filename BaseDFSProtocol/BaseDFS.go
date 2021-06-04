@@ -25,27 +25,25 @@ import (
 	"sync"
 	"time"
 
-	"go.dedis.ch/onet/v3" //same as sda in byzcoin
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/network"
-
 	//Raha
 	// "go.dedis.ch/kyber/v3"
 	// "go.dedis.ch/kyber/v3/sign/schnorr"
 	// "go.dedis.ch/kyber/v3/util/key"
 	//------
-	//from byzcoin
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"math"
 
-	"blockchain"
-	"blockchain/blkparser"
+	"github.com/BaseDFS/blockchain"
+	"github.com/BaseDFS/blockchain/blkparser"
 
 	"github.com/dedis/cothority/protocols/byzcoin/cosi"
 	"github.com/dedis/cothority/sda"
 	"github.com/dedis/crypto/abstract"
+	"go.dedis.ch/onet/v3" //same as sda in byzcoin
+	"go.dedis.ch/onet/v3/log"
+	"go.dedis.ch/onet/v3/network"
 	"go.dedis.ch/onet/v3/simul/monitor"
 )
 
