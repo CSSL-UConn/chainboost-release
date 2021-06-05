@@ -19,7 +19,8 @@ import (
 
 	//"github.com/dedis/cothority/onet"
 	onet "github.com/basedfs"
-	"github.com/dedis/crypto/abstract"
+	//"github.com/dedis/crypto/abstract"
+	"go.dedis.ch/kyber/v3"
 )
 
 // ByzCoin is the main struct for running the protocol
@@ -29,11 +30,11 @@ type ByzCoin struct {
 	// the suite we use
 	suite network.Suite
 	// aggregated public key of the peers
-	aggregatedPublic abstract.Point
+	aggregatedPublic kyber.Point
 	// prepare-round cosi
-	prepare *cosi.Cosi
+	prepare *cosi.CoSi
 	// commit-round cosi
-	commit *cosi.Cosi
+	commit *cosi.CoSi
 	// channel for announcement
 	announceChan chan announceChan
 	// channel for commitment
@@ -57,7 +58,7 @@ type ByzCoin struct {
 	//  block to pass up between the two rounds (prepare + commits)
 	tempBlock *blockchain.TrBlock
 	// exceptions given during the rounds that is used in the signature
-	tempExceptions []cosi.Exception
+	//tempExceptions []cosi.Exception
 
 	// transactions is the slice of transactions that contains transactions
 	// coming from clients
@@ -145,8 +146,8 @@ func NewByzCoinProtocol(n *onet.TreeNodeInstance) (*ByzCoin, error) {
 	bz := new(ByzCoin)
 	bz.TreeNodeInstance = n
 	bz.suite = n.Suite()
-	bz.prepare = cosi.NewCosi(n.Suite(), n.Private())
-	bz.commit = cosi.NewCosi(n.Suite(), n.Private())
+	bz.prepare = cosi.NewCosi(n.Suite(), n.Private(), n.Publics())
+	bz.commit = cosi.NewCosi(n.Suite(), n.Private(), n.Publics())
 	bz.verifyBlockChan = make(chan bool)
 	bz.doneProcessing = make(chan bool, 2)
 	bz.doneSigning = make(chan bool, 1)
@@ -815,4 +816,109 @@ func (bz *ByzCoin) nodeDone() bool {
 		bz.onDoneCallback()
 	}
 	return true
+}
+
+// -- from packet under byzcoin ng
+
+// RoundType is a type to know if we are in the "prepare" round or the "commit"
+// round
+type RoundType int32
+
+const (
+	// RoundPrepare is the first round (prepare)
+	RoundPrepare RoundType = iota
+	// RoundCommit is the final round (Commit)
+	RoundCommit
+)
+
+// BlockSignature is what a byzcoin protocol outputs. It contains the signature,
+// the block and some possible exceptions.
+type BlockSignature struct {
+	// cosi signature of the commit round.
+	Sig *cosi.Signature
+	// the block signed.
+	Block *blockchain.TrBlock
+	// List of peers that did not want to sign.
+	//Exceptions []cosi.Exception
+}
+
+// Announce is the struct used during the announcement phase (of both
+// rounds)
+type Announce struct {
+	*cosi.Announcement
+	TYPE    RoundType
+	Timeout uint64
+}
+
+// announceChan is the type of the channel that will be used to catch
+// announcement messges.
+type announceChan struct {
+	*onet.TreeNode
+	Announce
+}
+
+// Commitment is the commitment packets that is sent for both rounds
+type Commitment struct {
+	TYPE RoundType
+	*cosi.Commitment
+}
+
+// commitChan is the type of the channel that will be used to catch commitment
+// messages.
+type commitChan struct {
+	*onet.TreeNode
+	Commitment
+}
+
+// ChallengePrepare is the challenge used by ByzCoin during the "prepare" phase. It contains the basic
+// challenge plus the transactions from where the challenge has been generated.
+type ChallengePrepare struct {
+	TYPE RoundType
+	*cosi.Challenge
+	*blockchain.TrBlock
+}
+
+// ChallengeCommit  is the challenge used by ByzCoin during the "commit"
+// phase. It contains the basic challenge (out of the block we want to sign) +
+// the signature of the "prepare" round. It also contains the exception list
+// coming from the "prepare" phase. This exception list has been collected by
+// the root during the response of the "prepare" phase and broadcast it through
+// the challenge of the "commit". These are needed in order to verify the
+// signature and to see how many peers did not sign. It's not spoofable because
+// otherwise the signature verification will be wrong.
+type ChallengeCommit struct {
+	TYPE RoundType
+	*cosi.Challenge
+	// Signature is the basic signature Challenge / response
+	Signature *cosi.Signature
+	// Exception is the list of peers that did not want to sign. It's needed for
+	// verifying the signature. It can not be spoofed otherwise the signature
+	// would be wrong.
+	//Exceptions []cosi.Exception
+}
+
+// challengeChan is the type of the channel that will be used to dcatch the
+// challenge messages.
+type challengePrepareChan struct {
+	*onet.TreeNode
+	ChallengePrepare
+}
+
+type challengeCommitChan struct {
+	*onet.TreeNode
+	ChallengeCommit
+}
+
+// Response is the struct used by ByzCoin during the response. It
+// contains the response + the basic exception list.
+type Response struct {
+	*cosi.Response
+	//Exceptions []cosi.Exception
+	TYPE RoundType
+}
+
+// responseChan is the type of the channel used to catch the response messages.
+type responseChan struct {
+	*onet.TreeNode
+	Response
 }
