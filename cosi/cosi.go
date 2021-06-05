@@ -121,10 +121,10 @@ func NewCosi(suite kyber.Group, private kyber.Scalar, publics []kyber.Point) *Co
 // CreateCommitment creates the commitment of a random secret generated from the
 // given s stream. It returns the message to pass up in the tree. This is
 // typically called by the leaves.
-func (c *CoSi) CreateCommitment(s cipher.Stream) kyber.Point {
-	c.genCommit(s)
-	return c.commitment
-}
+// func (c *CoSi) CreateCommitment(s cipher.Stream) kyber.Point {
+// 	c.genCommit(s)
+// 	return c.commitment
+// }
 
 // Commit creates the commitment / secret as in CreateCommitment and it also
 // aggregate children commitments from the children's messages.
@@ -575,14 +575,13 @@ func (c *CoSi) Announce(in *Announcement) *Announcement {
 	return in
 }
 
-// CreateCommitment creates the commitment out of the random secret and returns
-// the message to pass up in the tree. This is typically called by the leaves.
-// func (c *CoSi) CreateCommitment() *Commitment {
-// 	c.genCommit()
-// 	return &Commitment{
-// 		Commitment: c.commitment,
-// 	}
-// }
+// CreateCommitment creates the commitment out of the random secret and returns the message to pass up in the tree. This is typically called by the leaves.
+func (c *CoSi) CreateCommitment() *Commitment {
+	c.genCommit()
+	return &Commitment{
+		Commitment: c.commitment,
+	}
+}
 
 // Commit creates the commitment / secret + aggregate children commitments from
 // the children's messages.
