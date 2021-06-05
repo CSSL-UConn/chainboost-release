@@ -22,29 +22,40 @@ package BaseDFSProtocol
 import (
 	//from opinion gathering
 
-	"sync"
-	"time"
+	//"sync"
+	//"time"
 
 	//Raha
 	// "go.dedis.ch/kyber/v3"
 	// "go.dedis.ch/kyber/v3/sign/schnorr"
 	// "go.dedis.ch/kyber/v3/util/key"
 	//------
+	//"crypto/sha256"
+	//"encoding/json"
+	//"errors"
+	//"math"
+
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"math"
+	"sync"
+	"time"
 
-	"github.com/BaseDFS/blockchain"
-	"github.com/BaseDFS/blockchain/blkparser"
-
+	"github.com/basedfs/blockchain"
+	"github.com/basedfs/blockchain/blkparser"
+	"github.com/dedis/cothority/monitor"
 	"github.com/dedis/cothority/protocols/byzcoin/cosi"
 	"github.com/dedis/cothority/sda"
 	"github.com/dedis/crypto/abstract"
-	"go.dedis.ch/onet/v3" //same as sda in byzcoin
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/network"
-	"go.dedis.ch/onet/v3/simul/monitor"
+
+	//"github.com/dedis/cothority/protocols/byzcoin/cosi"
+	//"github.com/dedis/cothority/sda"
+	//"github.com/dedis/crypto/abstract"
+	onet "github.com/basedfs" //same as sda in byzcoin
+	"github.com/basedfs/log"
+	"github.com/basedfs/network"
+	//"go.dedis.ch/onet/v3/simul/monitor"
 )
 
 func init() {
@@ -54,19 +65,19 @@ func init() {
 	onet.GlobalProtocolRegister("BaseDFS", NewBaseDFS)
 }
 
-// type ProtocolOpinionGathering struct {
-// 	*onet.TreeNodeInstance
+type ProtocolOpinionGathering struct {
+	*onet.TreeNodeInstance
 
-// 	FinalXor  chan string
-// 	Quit      chan bool
-// 	timeout   time.Duration
-// 	timeoutMu sync.Mutex
-// 	HelloChan chan struct {
-// 		*onet.TreeNode
-// 		Hello
-// 	}
-// 	OpinionChan chan []OpinionMsg
-// }
+	FinalXor  chan string
+	Quit      chan bool
+	timeout   time.Duration
+	timeoutMu sync.Mutex
+	HelloChan chan struct {
+		*onet.TreeNode
+		Hello
+	}
+	OpinionChan chan []OpinionMsg
+}
 
 // packet from Ng----------------------------------------------------------
 

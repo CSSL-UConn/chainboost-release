@@ -1,4 +1,5 @@
-module go.dedis.ch/onet/v3
+//module go.dedis.ch/onet/v3
+module github.com/basedfs
 
 require (
 	github.com/BurntSushi/toml v0.3.1

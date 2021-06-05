@@ -1,7 +1,7 @@
-package byzcoin
+package BaseDFSProtocol
 
 import (
-	"github.com/dedis/cothority/protocols/byzcoin/blockchain"
+	"github.com/basedfs/blockchain"
 	"github.com/dedis/cothority/protocols/byzcoin/cosi"
 	"github.com/dedis/cothority/sda"
 )

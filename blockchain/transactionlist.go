@@ -4,8 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 
-     blkparser
-	"go.dedis.ch/onet/v3/log"
+	"github.com/basedfs/blockchain/blkparser"
+	"github.com/basedfs/log"
 )
 
 type TransactionList struct {

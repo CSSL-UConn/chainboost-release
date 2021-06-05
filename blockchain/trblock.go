@@ -10,7 +10,7 @@ import (
 	"net"
 
 	//"crypto"
-	"go.dedis.ch/onet/v3/log"
+	"github.com/basedfs/log"
 )
 
 type Block struct {
