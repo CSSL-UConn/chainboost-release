@@ -4,6 +4,7 @@ module github.com/basedfs
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
+	github.com/bford/golang-x-crypto v0.0.0-20160518072526-27db609c9d03
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/daviddengcn/go-colortext v0.0.0-20180409174941-186a3d44e920
