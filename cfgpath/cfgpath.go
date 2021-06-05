@@ -6,7 +6,7 @@ import (
 	"path"
 	"runtime"
 
-	"go.dedis.ch/onet/v3/log"
+	"github.com/basedfs/log"
 )
 
 // GetConfigPath returns the location for which the configuration files are stored.

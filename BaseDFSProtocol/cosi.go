@@ -7,7 +7,7 @@ import (
 	crypto
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/onet/v3"
-	"go.dedis.ch/onet/v3/log"
+	"github.com/basedfs/log"
 )
 
 // Name can be used to reference the registered protocol.

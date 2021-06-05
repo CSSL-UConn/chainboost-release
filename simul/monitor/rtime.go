@@ -5,7 +5,7 @@ package monitor
 import (
 	"syscall"
 
-	"go.dedis.ch/onet/v3/log"
+	"github.com/basedfs/log"
 )
 
 // Converts microseconds to seconds.

@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	"go.dedis.ch/onet/v3/simul/platform"
+	"github.com/basedfs/simul/platform"
 )
 
 func TestDepth(t *testing.T) {

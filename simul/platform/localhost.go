@@ -12,10 +12,10 @@ import (
 
 	"time"
 
+	"github.com/basedfs/app"
+	"github.com/basedfs/log"
+	"github.com/basedfs/simul/monitor"
 	"go.dedis.ch/onet/v3"
-	"go.dedis.ch/onet/v3/app"
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/simul/monitor"
 	"golang.org/x/xerrors"
 )
 

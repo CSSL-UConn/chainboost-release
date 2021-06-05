@@ -11,9 +11,9 @@ import (
 	"math"
 	"time"
 
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/simul/monitor"
-	"go.dedis.ch/onet/v3/simul/platform"
+	"github.com/basedfs/log"
+	"github.com/basedfs/simul/monitor"
+	"github.com/basedfs/simul/platform"
 	"golang.org/x/xerrors"
 )
 

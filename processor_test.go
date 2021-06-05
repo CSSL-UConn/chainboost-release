@@ -13,6 +13,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/basedfs/log"
+	"github.com/basedfs/network"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
@@ -20,8 +22,6 @@ import (
 	"go.dedis.ch/kyber/v3/sign/bls"
 	"go.dedis.ch/kyber/v3/util/key"
 	"go.dedis.ch/kyber/v3/util/random"
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/network"
 	"go.dedis.ch/protobuf"
 	"golang.org/x/xerrors"
 )

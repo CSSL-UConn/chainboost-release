@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/simul"
+	"github.com/basedfs/log"
+	"github.com/basedfs/simul"
 )
 
 func TestSimulation(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"go.dedis.ch/onet/v3/log"
+	"github.com/basedfs/log"
 )
 
 // Get the Tx count, decode the variable length integer

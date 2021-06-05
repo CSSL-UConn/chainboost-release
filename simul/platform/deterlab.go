@@ -31,9 +31,9 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/basedfs/app"
+	"github.com/basedfs/log"
 	"go.dedis.ch/onet/v3"
-	"go.dedis.ch/onet/v3/app"
-	"go.dedis.ch/onet/v3/log"
 	"golang.org/x/xerrors"
 )
 

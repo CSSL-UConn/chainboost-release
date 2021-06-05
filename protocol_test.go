@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/basedfs/log"
+	"github.com/basedfs/network"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/network"
 	"golang.org/x/xerrors"
 )
 

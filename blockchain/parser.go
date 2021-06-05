@@ -7,7 +7,7 @@ import (
 	"regexp"
 
 	 blkparser
-	"go.dedis.ch/onet/v3/log"
+	"github.com/basedfs/log"
 )
 
 type Parser struct {

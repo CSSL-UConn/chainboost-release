@@ -3,7 +3,7 @@ package network
 import (
 	"sync"
 
-	"go.dedis.ch/onet/v3/log"
+	"github.com/basedfs/log"
 	"golang.org/x/xerrors"
 )
 

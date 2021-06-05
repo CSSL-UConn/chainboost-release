@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/basedfs/log"
+	"github.com/basedfs/network"
 	"github.com/stretchr/testify/require"
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/network"
 	"go.dedis.ch/protobuf"
 	"golang.org/x/xerrors"
 )

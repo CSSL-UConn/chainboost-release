@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"go.dedis.ch/onet/v3/log"
+	"github.com/basedfs/log"
 )
 
 func TestMain(m *testing.M) {

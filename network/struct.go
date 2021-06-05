@@ -7,12 +7,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/basedfs/log"
 	"github.com/google/uuid"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/suites"
 	"go.dedis.ch/kyber/v3/util/encoding"
 	"go.dedis.ch/kyber/v3/util/key"
-	"go.dedis.ch/onet/v3/log"
 	"go.dedis.ch/protobuf"
 	"golang.org/x/xerrors"
 )

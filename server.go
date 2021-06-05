@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/basedfs/cfgpath"
+	"github.com/basedfs/log"
+	"github.com/basedfs/network"
 	"go.dedis.ch/kyber/v3"
-	"go.dedis.ch/onet/v3/cfgpath"
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/network"
 	"golang.org/x/xerrors"
 	"rsc.io/goversion/version"
 )

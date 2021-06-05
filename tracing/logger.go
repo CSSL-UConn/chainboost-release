@@ -15,12 +15,11 @@ import (
 	"github.com/shirou/gopsutil/load"
 	"github.com/shirou/gopsutil/net"
 
+	"github.com/basedfs/log"
+	"github.com/basedfs/network"
 	"github.com/shirou/gopsutil/cpu"
-	"go.dedis.ch/onet/v3/network"
 
-	"go.dedis.ch/onet/v3"
-
-	"go.dedis.ch/onet/v3/log"
+	onet "github.com/basedfs"
 )
 
 // The TraceLogger implements the interface Logger to be registered in onet/log.
@@ -93,8 +92,8 @@ func (logger *TraceLogger) GetLoggerInfo() *log.LoggerInfo {
 func (logger *TraceLogger) AddOnetDefaults(si *network.ServerIdentity) {
 	logger.AddEntryPoints(
 		"go.dedis.ch/onet/v3.wsHandler.ServeHTTP",
-		"go.dedis.ch/onet/v3/network.(*BlockingDispatcher).Dispatch",
-		"go.dedis.ch/onet/v3/network.(*RoutineDispatcher).Dispatch",
+		"github.com/basedfs/network.(*BlockingDispatcher).Dispatch",
+		"github.com/basedfs/network.(*RoutineDispatcher).Dispatch",
 		"go.dedis.ch/cothority/v3/blscosi/protocol.(*SubBlsCosi).dispatchLeaf",
 		"go.dedis.ch/onet/v3.(*TreeNodeInstance).dispatchMsgToProtocol",
 		"go.dedis.ch/onet/v3.(*Overlay).TransmitMsg",
@@ -137,7 +136,7 @@ func (logger *TraceLogger) AddStats(c *onet.Context, repeat time.Duration) {
 				// Create a new trace that points to a dummy stackEntry,
 				//so the status can be sent to the service.
 				t, s := logger.newTrace(context.TODO(), "",
-					stackEntry{pkgPath: "go.dedis.ch/onet/v3/honeycomb",
+					stackEntry{pkgPath: "github.com/basedfs/honeycomb",
 						method: "stats"})
 				logger.addDefaultFields(t, s)
 				t.add("status", c.ReportStatus())

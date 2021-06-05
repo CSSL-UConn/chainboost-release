@@ -49,13 +49,10 @@ import (
 	"github.com/dedis/cothority/sda"
 	"github.com/dedis/crypto/abstract"
 
-	//"github.com/dedis/cothority/protocols/byzcoin/cosi"
-	//"github.com/dedis/cothority/sda"
-	//"github.com/dedis/crypto/abstract"
 	onet "github.com/basedfs" //same as sda in byzcoin
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
-	//"go.dedis.ch/onet/v3/simul/monitor"
+	//"github.com/basedfs/simul/monitor"
 )
 
 func init() {

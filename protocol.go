@@ -3,9 +3,9 @@ package onet
 import (
 	"sync"
 
+	"github.com/basedfs/log"
+	"github.com/basedfs/network"
 	"github.com/google/uuid"
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/network"
 	"golang.org/x/xerrors"
 )
 

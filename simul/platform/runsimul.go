@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/basedfs/log"
+	"github.com/basedfs/network"
+	"github.com/basedfs/simul/manage"
+	"github.com/basedfs/simul/monitor"
 	"go.dedis.ch/onet/v3"
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/network"
-	"go.dedis.ch/onet/v3/simul/manage"
-	"go.dedis.ch/onet/v3/simul/monitor"
 	"golang.org/x/xerrors"
 )
 

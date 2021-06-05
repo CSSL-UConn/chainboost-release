@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"go.dedis.ch/onet/v3"
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/tracing"
+	onet "github.com/basedfs"
+	"github.com/basedfs/log"
+	"github.com/basedfs/tracing"
 )
 
 // Import this service for most automatic use of the tracing system.

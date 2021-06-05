@@ -15,8 +15,8 @@ import (
 	"flag"
 	"os"
 
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/simul/platform"
+	"github.com/basedfs/log"
+	"github.com/basedfs/simul/platform"
 )
 
 // The address of this server - if there is only one server in the config

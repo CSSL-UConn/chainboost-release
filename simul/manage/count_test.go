@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/basedfs/log"
+	"github.com/basedfs/network"
 	"go.dedis.ch/onet/v3"
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/network"
 )
 
 // Tests a 2-node system

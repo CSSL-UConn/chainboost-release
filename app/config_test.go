@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/basedfs/log"
+	"github.com/basedfs/network"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/suites"
 	"go.dedis.ch/onet/v3"
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/network"
 )
 
 var o bytes.Buffer

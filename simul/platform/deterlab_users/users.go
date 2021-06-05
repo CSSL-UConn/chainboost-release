@@ -12,10 +12,10 @@ import (
 	"runtime"
 	"strconv"
 
+	"github.com/basedfs/log"
+	"github.com/basedfs/simul/monitor"
+	"github.com/basedfs/simul/platform"
 	"go.dedis.ch/onet/v3"
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/simul/monitor"
-	"go.dedis.ch/onet/v3/simul/platform"
 )
 
 var kill = false

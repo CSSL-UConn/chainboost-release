@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"go.dedis.ch/onet/v3/log"
+	"github.com/basedfs/log"
 )
 
 // Blockchain is a struct representing a block chain

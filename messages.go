@@ -1,8 +1,8 @@
 package onet
 
 import (
+	"github.com/basedfs/network"
 	"github.com/google/uuid"
-	"go.dedis.ch/onet/v3/network"
 )
 
 // ProtocolMsgID is to be embedded in every message that is made for a

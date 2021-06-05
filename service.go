@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/basedfs/log"
+	"github.com/basedfs/network"
 	"github.com/google/uuid"
 	"go.dedis.ch/kyber/v3/suites"
 	"go.dedis.ch/kyber/v3/util/key"
-	"go.dedis.ch/onet/v3/log"
-	"go.dedis.ch/onet/v3/network"
 	bbolt "go.etcd.io/bbolt"
 	"golang.org/x/xerrors"
 )

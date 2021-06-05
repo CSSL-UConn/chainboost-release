@@ -11,9 +11,9 @@ import (
 	"go.dedis.ch/kyber/v3/suites"
 	"golang.org/x/xerrors"
 
+	"github.com/basedfs/log"
 	"github.com/google/uuid"
 	"go.dedis.ch/kyber/v3"
-	"go.dedis.ch/onet/v3/log"
 	"go.dedis.ch/protobuf"
 )
 

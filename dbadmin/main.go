@@ -6,8 +6,8 @@ import (
 
 	"go.etcd.io/bbolt"
 
+	"github.com/basedfs/log"
 	"github.com/urfave/cli"
-	"go.dedis.ch/onet/v3/log"
 	"golang.org/x/xerrors"
 )
 
