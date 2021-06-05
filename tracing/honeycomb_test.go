@@ -6,8 +6,8 @@ import (
 
 	"github.com/basedfs/log"
 
+	onet "github.com/basedfs"
 	"github.com/stretchr/testify/require"
-	"go.dedis.ch/onet/v3"
 )
 
 func TestLoggingRealHC(t *testing.T) {

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/honeycombio/beeline-go"
-
 	"github.com/honeycombio/beeline-go/trace"
 )
 
