@@ -20,21 +20,6 @@
 package BaseDFSProtocol
 
 import (
-	//from opinion gathering
-
-	//"sync"
-	//"time"
-
-	//Raha
-	// "go.dedis.ch/kyber/v3"
-	// "go.dedis.ch/kyber/v3/sign/schnorr"
-	// "go.dedis.ch/kyber/v3/util/key"
-	//------
-	//"crypto/sha256"
-	//"encoding/json"
-	//"errors"
-	//"math"
-
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
@@ -44,15 +29,17 @@ import (
 
 	"github.com/basedfs/blockchain"
 	"github.com/basedfs/blockchain/blkparser"
-	"github.com/dedis/cothority/monitor"
-	"github.com/dedis/cothority/protocols/byzcoin/cosi"
-	"github.com/dedis/cothority/sda"
-	"github.com/dedis/crypto/abstract"
+	"github.com/basedfs/cosi"
+	"github.com/basedfs/simul/monitor"
 
-	onet "github.com/basedfs" //same as sda in byzcoin
+	onet "github.com/basedfs" //same as sda in byzcoin - replaced all sda objects with onet/network
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
-	//"github.com/basedfs/simul/monitor"
+
+	//"github.com/dedis/cothority/monitor"
+	//"github.com/dedis/cothority/sda"
+
+	"github.com/dedis/crypto/abstract"
 )
 
 func init() {
@@ -111,7 +98,7 @@ type Announce struct {
 // announceChan is the type of the channel that will be used to catch
 // announcement messges.
 type announceChan struct {
-	*sda.TreeNode
+	*onet.TreeNode
 	Announce
 }
 
@@ -124,7 +111,7 @@ type Commitment struct {
 // commitChan is the type of the channel that will be used to catch commitment
 // messages.
 type commitChan struct {
-	*sda.TreeNode
+	*onet.TreeNode
 	Commitment
 }
 
@@ -158,12 +145,12 @@ type ChallengeCommit struct {
 // challengeChan is the type of the channel that will be used to dcatch the
 // challenge messages.
 type challengePrepareChan struct {
-	*sda.TreeNode
+	*onet.TreeNode
 	ChallengePrepare
 }
 
 type challengeCommitChan struct {
-	*sda.TreeNode
+	*onet.TreeNode
 	ChallengeCommit
 }
 
@@ -177,7 +164,7 @@ type Response struct {
 
 // responseChan is the type of the channel used to catch the response messages.
 type responseChan struct {
-	*sda.TreeNode
+	*onet.TreeNode
 	Response
 }
 
@@ -278,7 +265,7 @@ type ByzCoin struct {
 	onResponseCommitDone func()
 	// view change setup and measurement
 	viewchangeChan chan struct {
-		*sda.TreeNode
+		*onet.TreeNode
 		viewChange
 	}
 	vcMeasure *monitor.TimeMeasure
@@ -301,7 +288,7 @@ type ByzCoin struct {
 }
 
 // NewByzCoinProtocol returns a new byzcoin struct
-func NewByzCoinProtocol(n *sda.TreeNodeInstance) (*ByzCoin, error) {
+func NewByzCoinProtocol(n *onet.TreeNodeInstance) (*ByzCoin, error) {
 	// create the byzcoin
 	bz := new(ByzCoin)
 	bz.TreeNodeInstance = n
@@ -346,7 +333,7 @@ func NewByzCoinProtocol(n *sda.TreeNodeInstance) (*ByzCoin, error) {
 
 // NewByzCoinRootProtocol returns a new byzcoin struct with the block to sign
 // that will be sent to all others nodes
-func NewByzCoinRootProtocol(n *sda.TreeNodeInstance, transactions []blkparser.Tx, timeOutMs uint64, failMode uint) (*ByzCoin, error) {
+func NewByzCoinRootProtocol(n *onet.TreeNodeInstance, transactions []blkparser.Tx, timeOutMs uint64, failMode uint) (*ByzCoin, error) {
 	bz, err := NewByzCoinProtocol(n)
 	if err != nil {
 		return nil, err
@@ -949,7 +936,7 @@ func newViewChange() *viewChange {
 
 // handleViewChange receives a view change request and if received more than
 // 2/3, accept the view change.
-func (bz *ByzCoin) handleViewChange(tn *sda.TreeNode, vc *viewChange) error {
+func (bz *ByzCoin) handleViewChange(tn *onet.TreeNode, vc *viewChange) error {
 	bz.vcCounter++
 	// only do it once
 	if bz.vcCounter == bz.viewChangeThreshold {

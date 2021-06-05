@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 
-	//  "crypto"
 	"github.com/basedfs/blockchain/blkparser"
 	"github.com/basedfs/log"
 	"github.com/dedis/crypto/abstract"
-	//	"go.dedis.ch/kyber/v3/suites"
+	// "go.dedis.ch/kyber/v3/suites" commented to later clear bug
 )
 
 type MessageType int
@@ -52,7 +51,7 @@ func (sr *BlockReply) MarshalJSON() ([]byte, error) {
 	// if err != nil {
 	// 	return nil, err
 	// }
-	// //log.Print("Preparing abstracts")
+	//log.Print("Preparing abstracts")
 	// if err := suite.Write(&b, sr.Response, sr.Challenge, sr.AggCommit, sr.AggPublic); err != nil {
 	// 	log.Lvl1("encoding stampreply response/challenge/AggCommit:", err)
 	// 	return nil, err
@@ -70,7 +69,7 @@ func (sr *BlockReply) MarshalJSON() ([]byte, error) {
 
 func (sr *BlockReply) UnmarshalJSON(dataJSON []byte) error {
 	type Alias BlockReply
-	//log.Print("Starting unmarshal")
+	log.Print("Starting unmarshal")
 	// suite, err := suites.StringToSuite(sr.SuiteStr)
 	// if err != nil {
 	// 	return err
