@@ -6,8 +6,8 @@ import (
 
 	//  "crypto"
 	"github.com/basedfs/blockchain/blkparser"
+	"github.com/basedfs/log"
 	"github.com/dedis/crypto/abstract"
-	"go.dedis.ch/onet/v3/log"
 	//	"go.dedis.ch/kyber/v3/suites"
 )
 
