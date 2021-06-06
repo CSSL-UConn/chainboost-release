@@ -10,16 +10,13 @@ import (
 	"sync"
 	"time"
 
+	onet "github.com/basedfs"
 	"github.com/basedfs/blockchain"
 	"github.com/basedfs/blockchain/blkparser"
 	"github.com/basedfs/cosi"
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"github.com/basedfs/simul/monitor"
-
-	//"github.com/dedis/cothority/onet"
-	onet "github.com/basedfs"
-	//"github.com/dedis/crypto/abstract"
 	"go.dedis.ch/kyber/v3"
 )
 
@@ -818,7 +815,9 @@ func (bz *ByzCoin) nodeDone() bool {
 	return true
 }
 
-// -- from packet under byzcoin ng
+//---------------------------------------------------------------------
+// ----------- from packet under byzcoin ng
+//---------------------------------------------------------------------
 
 // RoundType is a type to know if we are in the "prepare" round or the "commit"
 // round
