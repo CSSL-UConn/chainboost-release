@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
+	onet "github.com/basedfs"
 	"github.com/basedfs/cfgpath"
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"go.dedis.ch/kyber/v3/util/encoding"
 	"go.dedis.ch/kyber/v3/util/key"
-	"go.dedis.ch/onet/v3"
 	"golang.org/x/xerrors"
 )
 

@@ -17,8 +17,8 @@ import (
 
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 
+	onet "github.com/basedfs"
 	"github.com/basedfs/log"
-	"go.dedis.ch/onet/v3"
 	"go.etcd.io/bbolt"
 	"golang.org/x/xerrors"
 )

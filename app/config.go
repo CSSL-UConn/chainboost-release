@@ -11,12 +11,12 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	onet "github.com/basedfs"
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/suites"
 	"go.dedis.ch/kyber/v3/util/encoding"
-	"go.dedis.ch/onet/v3"
 	"golang.org/x/xerrors"
 )
 

@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
+	onet "github.com/basedfs"
 	"github.com/basedfs/log"
 	"go.dedis.ch/kyber/v3/suites"
-	"go.dedis.ch/onet/v3"
 )
 
 var tSuite = suites.MustFind("Ed25519")

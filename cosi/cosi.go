@@ -1,3 +1,7 @@
+// --------------------------------------------------------------------------
+//  cosi from:  https://github.com/dedis/cothority/tree/main/cosi/crypto
+// --------------------------------------------------------------------------
+
 /*
 Package crypto is a temporary copy of gopkg.in/dedis/crypto.v0/cosi.
 
@@ -36,16 +40,20 @@ up to its parent, unless i is the root.
 package cosi
 
 import (
-	"crypto/cipher"
+	//"crypto/cipher"
+
 	"crypto/sha512"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/basedfs/network"
-	"github.com/dedis/crypto/abstract"
+	//"github.com/dedis/crypto/config"
+	"go.dedis.ch/kyber/v3/util/key"
+	//"github.com/dedis/crypto/abstract"
 	"go.dedis.ch/kyber/v3"
 	//"github.com/basedfs/BaseDFSProtocol"
+	onet "github.com/basedfs"
 )
 
 // CoSi is the struct that implements one round of a CoSi protocol.
@@ -128,90 +136,90 @@ func NewCosi(suite kyber.Group, private kyber.Scalar, publics []kyber.Point) *Co
 
 // Commit creates the commitment / secret as in CreateCommitment and it also
 // aggregate children commitments from the children's messages.
-func (c *CoSi) Commit(s cipher.Stream, subComms []kyber.Point) kyber.Point {
-	// generate our own commit
-	c.genCommit(s)
+// func (c *CoSi) Commit(s cipher.Stream, subComms []kyber.Point) kyber.Point {
+// 	// generate our own commit
+// 	c.genCommit(s)
 
-	// add our own commitment to the aggregate commitment
-	c.aggregateCommitment = c.suite.Point().Add(c.suite.Point().Null(), c.commitment)
-	// take the children commitments
-	for _, com := range subComms {
-		c.aggregateCommitment.Add(c.aggregateCommitment, com)
-	}
-	return c.aggregateCommitment
+// 	// add our own commitment to the aggregate commitment
+// 	c.aggregateCommitment = c.suite.Point().Add(c.suite.Point().Null(), c.commitment)
+// 	// take the children commitments
+// 	for _, com := range subComms {
+// 		c.aggregateCommitment.Add(c.aggregateCommitment, com)
+// 	}
+// 	return c.aggregateCommitment
 
-}
+// }
 
 // CreateChallenge creates the challenge out of the message it has been given.
 // This is typically called by Root.
-func (c *CoSi) CreateChallenge(msg []byte) (kyber.Scalar, error) {
-	// H( Commit || AggPublic || M)
-	hash := sha512.New()
-	if _, err := c.aggregateCommitment.MarshalTo(hash); err != nil {
-		return nil, err
-	}
-	if _, err := c.mask.Aggregate().MarshalTo(hash); err != nil {
-		return nil, err
-	}
-	hash.Write(msg)
-	chalBuff := hash.Sum(nil)
-	// reducing the challenge
-	c.challenge = c.suite.Scalar().SetBytes(chalBuff)
-	c.message = msg
-	return c.challenge, nil
-}
+// func (c *CoSi) CreateChallenge(msg []byte) (kyber.Scalar, error) {
+// 	// H( Commit || AggPublic || M)
+// 	hash := sha512.New()
+// 	if _, err := c.aggregateCommitment.MarshalTo(hash); err != nil {
+// 		return nil, err
+// 	}
+// 	if _, err := c.mask.Aggregate().MarshalTo(hash); err != nil {
+// 		return nil, err
+// 	}
+// 	hash.Write(msg)
+// 	chalBuff := hash.Sum(nil)
+// 	// reducing the challenge
+// 	c.challenge = c.suite.Scalar().SetBytes(chalBuff)
+// 	c.message = msg
+// 	return c.challenge, nil
+// }
 
 // Challenge keeps in memory the Challenge from the message.
-func (c *CoSi) Challenge(challenge kyber.Scalar) {
-	c.challenge = challenge
-}
+// func (c *CoSi) Challenge(challenge kyber.Scalar) {
+// 	c.challenge = challenge
+// }
 
 // CreateResponse is called by a leaf to create its own response from the
 // challenge + commitment + private key. It returns the response to send up to
 // the tree.
-func (c *CoSi) CreateResponse() (kyber.Scalar, error) {
-	err := c.genResponse()
-	return c.response, err
-}
+// func (c *CoSi) CreateResponse() (kyber.Scalar, error) {
+// 	err := c.genResponse()
+// 	return c.response, err
+// }
 
 // Response generates the response from the commitment, challenge and the
 // responses of its children.
-func (c *CoSi) Response(responses []kyber.Scalar) (kyber.Scalar, error) {
-	//create your own response
-	if err := c.genResponse(); err != nil {
-		return nil, err
-	}
-	// Add our own
-	c.aggregateResponse = c.suite.Scalar().Set(c.response)
-	for _, resp := range responses {
-		// add responses of child
-		c.aggregateResponse.Add(c.aggregateResponse, resp)
-	}
-	return c.aggregateResponse, nil
-}
+// func (c *CoSi) Response(responses []kyber.Scalar) (kyber.Scalar, error) {
+// 	//create your own response
+// 	if err := c.genResponse(); err != nil {
+// 		return nil, err
+// 	}
+// 	// Add our own
+// 	c.aggregateResponse = c.suite.Scalar().Set(c.response)
+// 	for _, resp := range responses {
+// 		// add responses of child
+// 		c.aggregateResponse.Add(c.aggregateResponse, resp)
+// 	}
+// 	return c.aggregateResponse, nil
+// }
 
 // Signature returns a signature using the same format as EdDSA signature
 // AggregateCommit || AggregateResponse || Mask
 // *NOTE*: Signature() is only intended to be called by the root since only the
 // root knows the aggregate response.
-func (c *CoSi) Signature() []byte {
-	// Sig = C || R || bitmask
-	lenC := c.suite.PointLen()
-	lenSig := lenC + c.suite.ScalarLen()
-	sigC, err := c.aggregateCommitment.MarshalBinary()
-	if err != nil {
-		panic("Can't marshal Commitment")
-	}
-	sigR, err := c.aggregateResponse.MarshalBinary()
-	if err != nil {
-		panic("Can't generate signature !")
-	}
-	final := make([]byte, lenSig+c.mask.MaskLen())
-	copy(final[:], sigC)
-	copy(final[lenC:lenSig], sigR)
-	copy(final[lenSig:], c.mask.mask)
-	return final
-}
+// func (c *CoSi) Signature() []byte {
+// 	// Sig = C || R || bitmask
+// 	lenC := c.suite.PointLen()
+// 	lenSig := lenC + c.suite.ScalarLen()
+// 	sigC, err := c.aggregateCommitment.MarshalBinary()
+// 	if err != nil {
+// 		panic("Can't marshal Commitment")
+// 	}
+// 	sigR, err := c.aggregateResponse.MarshalBinary()
+// 	if err != nil {
+// 		panic("Can't generate signature !")
+// 	}
+// 	final := make([]byte, lenSig+c.mask.MaskLen())
+// 	copy(final[:], sigC)
+// 	copy(final[lenC:lenSig], sigR)
+// 	copy(final[lenSig:], c.mask.mask)
+// 	return final
+// }
 
 // VerifyResponses verifies the response this CoSi has against the aggregated
 // public key the tree is using. This is callable by any nodes in the tree,
@@ -303,14 +311,14 @@ func (c *CoSi) GetResponse() kyber.Scalar {
 
 // genCommit generates a random scalar vi and computes its individual commit
 // Vi = G^vi
-func (c *CoSi) genCommit(s cipher.Stream) {
-	if s == nil {
-		panic("s is required")
-	}
-	c.random = c.suite.Scalar().Pick(s)
-	c.commitment = c.suite.Point().Mul(c.random, nil)
-	c.aggregateCommitment = c.commitment
-}
+// func (c *CoSi) genCommit(s cipher.Stream) {
+// 	if s == nil {
+// 		panic("s is required")
+// 	}
+// 	c.random = c.suite.Scalar().Pick(s)
+// 	c.commitment = c.suite.Point().Mul(c.random, nil)
+// 	c.aggregateCommitment = c.commitment
+// }
 
 // genResponse creates the response
 func (c *CoSi) genResponse() error {
@@ -456,7 +464,9 @@ func (cm *mask) Aggregate() kyber.Point {
 	return cm.aggPublic
 }
 
-//------------------------------------- cosi from ng first
+// --------------------------------------------------------------------------
+// cosi from: https://github.com/dedis/cothority/tree/byzcoin_ng_first/protocols/byzcoin/cosi -
+// --------------------------------------------------------------------------
 
 /*
 Package cosi is the Collective Signing implementation according to the paper of
@@ -529,21 +539,21 @@ type Announcement struct {
 
 //Commitment sends it's own commit Vi and the aggregate children's commit V^i
 type Commitment struct {
-	Commitment     abstract.Point
-	ChildrenCommit abstract.Point
+	Commitment     kyber.Point
+	ChildrenCommit kyber.Point
 }
 
 // Challenge is the Hash of V^0 || S, where S is the Timestamp
 // and the message
 type Challenge struct {
-	Challenge abstract.Scalar
+	Challenge kyber.Scalar
 }
 
 // Response holds the actual node's response ri and the
 // aggregate response r^i
 type Response struct {
-	Response     abstract.Scalar
-	ChildrenResp abstract.Scalar
+	Response     kyber.Scalar
+	ChildrenResp kyber.Scalar
 }
 
 // Signature is the final message out of the Cosi-protocol. It can
@@ -585,84 +595,105 @@ func (c *CoSi) CreateCommitment() *Commitment {
 
 // Commit creates the commitment / secret + aggregate children commitments from
 // the children's messages.
-// func (c *CoSi) Commit(comms []*Commitment) *Commitment {
-// 	// generate our own commit
-// 	c.genCommit()
+func (c *CoSi) Commit(comms []*Commitment) *Commitment {
+	// generate our own commit
+	c.genCommit()
 
-// 	// take the children commitment
-// 	childVHat := c.suite.Point().Null()
-// 	for _, com := range comms {
-// 		// Add commitment of one child
-// 		childVHat = childVHat.Add(childVHat, com.Commitment)
-// 		// add commitment of it's children if there is one (i.e. if it is not a
-// 		// leaf)
-// 		if com.ChildrenCommit != nil {
-// 			childVHat = childVHat.Add(childVHat, com.ChildrenCommit)
-// 		}
-// 	}
-// 	// add our own commitment to the global V_hat
-// 	c.aggregateCommitment = c.suite.Point().Add(childVHat, c.commitment)
-// 	return &Commitment{
-// 		ChildrenCommit: childVHat,
-// 		Commitment:     c.commitment,
-// 	}
+	// take the children commitment
+	childVHat := c.suite.Point().Null()
+	for _, com := range comms {
+		// Add commitment of one child
+		childVHat = childVHat.Add(childVHat, com.Commitment)
+		// add commitment of it's children if there is one (i.e. if it is not a
+		// leaf)
+		if com.ChildrenCommit != nil {
+			childVHat = childVHat.Add(childVHat, com.ChildrenCommit)
+		}
+	}
+	// add our own commitment to the global V_hat
+	c.aggregateCommitment = c.suite.Point().Add(childVHat, c.commitment)
+	return &Commitment{
+		ChildrenCommit: childVHat,
+		Commitment:     c.commitment,
+	}
 
-// }
+}
 
 // CreateChallenge creates the challenge out of the message it has been given.
 // This is typically called by Root.
-// func (c *CoSi) CreateChallenge(msg []byte) (*Challenge, error) {
-// 	if c.aggregateCommitment == nil {
-// 		return nil, errors.New("Empty aggregate-commitment")
-// 	}
-// 	pb, err := c.aggregateCommitment.MarshalBinary()
-// 	cipher := c.suite.Cipher(pb)
-// 	cipher.Message(nil, nil, msg)
-// 	c.challenge = c.suite.Scalar().Pick(cipher)
-// 	return &Challenge{
-// 		Challenge: c.challenge,
-// 	}, err
-// }
+func (c *CoSi) CreateChallenge(msg []byte) (*Challenge, error) {
+	// H( Commit || AggPublic || M)
+	hash := sha512.New()
+	_, err := c.aggregateCommitment.MarshalTo(hash)
+	if err != nil {
+		return nil, err
+	}
+	//raha err2 is added!
+	_, err2 := c.mask.Aggregate().MarshalTo(hash)
+	if err2 != nil {
+		return nil, err
+	}
+	hash.Write(msg)
+	chalBuff := hash.Sum(nil)
+	// reducing the challenge
+	c.challenge = c.suite.Scalar().SetBytes(chalBuff)
+	c.message = msg
+	//return c.challenge, nil
+	return &Challenge{
+		Challenge: c.challenge,
+	}, err
+
+	// if c.aggregateCommitment == nil {
+	// 	return nil, errors.New("Empty aggregate-commitment")
+	// }
+	// pb, err := c.aggregateCommitment.MarshalBinary()
+	// cipher := c.Suite.cipher(pb)
+	// cipher.Message(nil, nil, msg)
+	// c.challenge = c.suite.Scalar().Pick(cipher)
+	// return &Challenge{
+	// 	Challenge: c.challenge,
+	// }, err
+}
 
 // Challenge keeps in memory the Challenge from the message.
-// func (c *CoSi) Challenge(ch *Challenge) *Challenge {
-// 	c.challenge = ch.Challenge
-// 	return ch
-// }
+func (c *CoSi) Challenge(ch *Challenge) *Challenge {
+	c.challenge = ch.Challenge
+	return ch
+}
 
 // CreateResponse is called by a leaf to create its own response from the
 // challenge + commitment + private key. It returns the response to send up to
 // the tree.
-// func (c *CoSi) CreateResponse() (*Response, error) {
-// 	err := c.genResponse()
-// 	return &Response{Response: c.response}, err
-// }
+func (c *CoSi) CreateResponse() (*Response, error) {
+	err := c.genResponse()
+	return &Response{Response: c.response}, err
+}
 
 // Response generates the response from the commitment, challenge and the
 // responses of its children.
-// func (c *CoSi) Response(responses []*Response) (*Response, error) {
-// 	// create your own response
-// 	if err := c.genResponse(); err != nil {
-// 		return nil, err
-// 	}
-// 	aggregateResponse := c.suite.Scalar().Zero()
-// 	for _, resp := range responses {
-// 		// add responses of child
-// 		aggregateResponse = aggregateResponse.Add(aggregateResponse, resp.Response)
-// 		// add responses of it's children if there is one (i.e. if it is not a
-// 		// leaf)
-// 		if resp.ChildrenResp != nil {
-// 			aggregateResponse = aggregateResponse.Add(aggregateResponse, resp.ChildrenResp)
-// 		}
-// 	}
-// 	// Add our own
-// 	c.aggregateResponse = c.suite.Scalar().Add(aggregateResponse, c.response)
-// 	return &Response{
-// 		Response:     c.response,
-// 		ChildrenResp: aggregateResponse,
-// 	}, nil
+func (c *CoSi) Response(responses []*Response) (*Response, error) {
+	// create your own response
+	if err := c.genResponse(); err != nil {
+		return nil, err
+	}
+	aggregateResponse := c.suite.Scalar().Zero()
+	for _, resp := range responses {
+		// add responses of child
+		aggregateResponse = aggregateResponse.Add(aggregateResponse, resp.Response)
+		// add responses of it's children if there is one (i.e. if it is not a
+		// leaf)
+		if resp.ChildrenResp != nil {
+			aggregateResponse = aggregateResponse.Add(aggregateResponse, resp.ChildrenResp)
+		}
+	}
+	// Add our own
+	c.aggregateResponse = c.suite.Scalar().Add(aggregateResponse, c.response)
+	return &Response{
+		Response:     c.response,
+		ChildrenResp: aggregateResponse,
+	}, nil
 
-// }
+}
 
 // GetAggregateResponse returns the aggregated response that this cosi has
 // accumulated.
@@ -683,12 +714,12 @@ func (c *CoSi) GetAggregateResponse() kyber.Scalar {
 // Signature returns a cosi Signature <=> a Schnorr signature. CAREFUL: you must
 // call that when you are sure you have all the aggregated respones (i.e. the
 // root of the tree if you use a tree).
-// func (c *CoSi) Signature() *Signature {
-// 	return &Signature{
-// 		c.challenge,
-// 		c.aggregateResponse,
-// 	}
-// }
+func (c *CoSi) Signature() *Signature {
+	return &Signature{
+		c.challenge,
+		c.aggregateResponse,
+	}
+}
 
 // VerifyResponses verifies the response this CoSi has against the aggregated
 // public key the tree is using.
@@ -710,11 +741,12 @@ func (c *CoSi) GetAggregateResponse() kyber.Scalar {
 
 // genCommit generates a random secret vi and computes it's individual commit
 // Vi = G^vi
-// func (c *CoSi) genCommit() {
-// 	kp := config.NewKeyPair(c.suite)
-// 	c.random = kp.Secret
-// 	c.commitment = kp.Public
-// }
+func (c *CoSi) genCommit() {
+	kp := key.NewKeyPair(onet.Suite)
+	//raha: random is replaced by private .. fix later!
+	c.random = kp.Private
+	c.commitment = kp.Public
+}
 
 // genResponse creates the response
 // func (c *CoSi) genResponse() error {

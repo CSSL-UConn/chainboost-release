@@ -58,7 +58,7 @@ type ByzCoin struct {
 	//  block to pass up between the two rounds (prepare + commits)
 	tempBlock *blockchain.TrBlock
 	// exceptions given during the rounds that is used in the signature
-	//tempExceptions []cosi.Exception
+	tempExceptions []cosi.Exception
 
 	// transactions is the slice of transactions that contains transactions
 	// coming from clients
@@ -839,7 +839,7 @@ type BlockSignature struct {
 	// the block signed.
 	Block *blockchain.TrBlock
 	// List of peers that did not want to sign.
-	//Exceptions []cosi.Exception
+	Exceptions []cosi.Exception
 }
 
 // Announce is the struct used during the announcement phase (of both
@@ -894,7 +894,7 @@ type ChallengeCommit struct {
 	// Exception is the list of peers that did not want to sign. It's needed for
 	// verifying the signature. It can not be spoofed otherwise the signature
 	// would be wrong.
-	//Exceptions []cosi.Exception
+	Exceptions []cosi.Exception
 }
 
 // challengeChan is the type of the channel that will be used to dcatch the
@@ -913,8 +913,8 @@ type challengeCommitChan struct {
 // contains the response + the basic exception list.
 type Response struct {
 	*cosi.Response
-	//Exceptions []cosi.Exception
-	TYPE RoundType
+	Exceptions []cosi.Exception
+	TYPE       RoundType
 }
 
 // responseChan is the type of the channel used to catch the response messages.
