@@ -26,7 +26,6 @@
 package BaseDFSProtocol
 
 import (
-	"encoding/json"
 	"math"
 	"sync"
 	"time"
@@ -34,7 +33,6 @@ import (
 	onet "github.com/basedfs"
 	"github.com/basedfs/blockchain"
 	"github.com/basedfs/blockchain/blkparser"
-	"github.com/basedfs/cosi"
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"github.com/basedfs/simul/monitor"
@@ -43,9 +41,9 @@ import (
 
 func init() {
 
-	network.RegisterMessage(ProofOfRetTx{})
-	network.RegisterMessage(PreparedBlcock{})
-	onet.GlobalProtocolRegister("BaseDFS", NewBaseDFS)
+	network.RegisterMessage(ProofOfRetTxChan{})
+	network.RegisterMessage(PreparedBlockChan{})
+	onet.GlobalProtocolRegister("BaseDFS", NewBaseDFSProtocol)
 }
 
 type ProofOfRetTxChan struct {
@@ -63,38 +61,6 @@ type PreparedBlockChan struct {
 type preparedBlock struct {
 	prb blkparser.Block
 }
-
-// type ProtocolBaseDFS struct {
-// 	*onet.TreeNodeInstance
-// 	FinalXor  chan string
-// 	Quit      chan bool
-// 	timeout   time.Duration
-// 	timeoutMu sync.Mutex
-// 	HelloChan chan struct {
-// 		*onet.TreeNode
-// 		Hello
-// 	}
-// 	OpinionChan chan []OpinionMsg
-// }
-
-// NewBaseDFS returns a new protocolInstance
-// func NewBaseDFS(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error) {
-// 	p := &BaseDFS{
-// 		TreeNodeInstance: n,
-// 		Quit:             make(chan bool),
-// 		FinalXor:         make(chan string),
-// 		timeout:          1 * time.Second,
-// 	}
-// 	t := n.Tree()
-// 	if t == nil {
-// 		return nil, xerrors.New("cannot find tree")
-// 	}
-// 	if err := p.RegisterChannelsLength(len(t.List()),
-// 		&p.HelloChan, &p.OpinionChan); err != nil {
-// 		log.Error("Couldn't reister channel:", err)
-// 	}
-// 	return p, nil
-// }
 
 // baseDFS is the main struct for running the protocol
 type BaseDFS struct {
@@ -130,8 +96,7 @@ type BaseDFS struct {
 	// Either after refusing or accepting the proposed block
 	// or at the end of a view change.
 	onDoneCallback func()
-	// onSignatureDone is the callback that will be called when a signature has
-	// been generated ( at the end of the response phase of the commit round)
+	// onAppendPoRTxDone is the callback that will be called when a por tx has been verified and appended to our cuurent temp block we may need it later!
 	onAppendPoRTxDone func(*por)
 	// rootTimeout is the timeout given to the root. It will be passed down the
 	// tree so every nodes knows how much time to wait. This root is a very nice
@@ -179,16 +144,17 @@ type BaseDFS struct {
 	finalBlock *blockchain.TrBlock
 }
 
-// NewByzCoinProtocol returns a new byzcoin struct
-func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (*BaseDFS, error) {
+// NewBaseDFSProtocol returns a new BaseDFS struct
+//func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (*BaseDFS, error) {
+func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error) {
 	// create the byzcoin
-	bz := new(BaseDFS)
-	bz.TreeNodeInstance = n
-	bz.suite = n.Suite()
-	bz.verifyBlockChan = make(chan bool)
-	bz.doneProcessing = make(chan bool, 2)
-	bz.timeoutChan = make(chan uint64, 1)
-
+	bz := &BaseDFS{
+		TreeNodeInstance: n,
+		suite:            n.Suite(),
+		verifyBlockChan:  make(chan bool),
+		doneProcessing:   make(chan bool, 2),
+		timeoutChan:      make(chan uint64, 1),
+	}
 	bz.viewChangeThreshold = int(math.Ceil(float64(len(bz.Tree().List())) * 2.0 / 3.0))
 
 	// register channels
@@ -199,34 +165,49 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (*BaseDFS, error) {
 		return bz, err
 	}
 
-	n.OnDoneCallback(bz.nodeDone)
+	n.OnDoneCallback(bz.nodeDone) //?
 
 	go bz.listen()
 	return bz, nil
 }
 
-// NewByzCoinRootProtocol returns a new byzcoin struct with the block to sign
-// that will be sent to all others nodes
-func NewbaseDFSRootProtocol(n *onet.TreeNodeInstance, transactions []blkparser.Tx, timeOutMs uint64, failMode uint) (*baseDFS, error) {
+// NewbaseDFSRootProtocol returns a new baseDFS struct with the block to sign that will be sent to all others nodes - when it has called???
+func NewbaseDFSRootProtocol(n *onet.TreeNodeInstance, transactions []blkparser.Tx, timeOutMs uint64, failMode uint) (onet.ProtocolInstance, error) {
 	bz, err := NewBaseDFSProtocol(n)
 	if err != nil {
 		return nil, err
 	}
-	bz.transactions = transactions
-	bz.rootFailMode = failMode
-	bz.rootTimeout = timeOutMs
+	//raha - fix later
+	//bz.transactions = transactions
+	//bz.rootFailMode = failMode
+	//bz.rootTimeout = timeOutMs
 	return bz, err
 }
 
-// Start will start both rounds "prepare" and "commit" at same time. The
-// "commit" round will wait the end of the "prepare" round during its challenge
-// phase.
+// The simple version:
+// we assume one server broadcast his por tx
+// - which is the root in tree structure -
+// and all servers on recieving this tx will verify
+// and add it to their prepared block
+// and then all server run leader election to check if
+// they are leader, then the leader add his proof
+// and broadcast his prepared block
+// and all servers verify and append his block to their blockchain
+
 func (bz *BaseDFS) Start() error {
-	if err := bz.startAnnouncementCommit(); err != nil {
-		return err
+	txs, _ := blkparser.NewTx([]byte{'x'})
+	portx := &ProofOfRetTxChan{
+		TreeNode: bz.TreeNode(),
+		por: por{
+			por: *txs,
+		},
 	}
-	log.Lvl3(bz.Name(), "finished announcment prepare")
-	return bz.startAnnouncementPrepare()
+	if err := bz.Broadcast(portx); err != nil {
+		//raha fix later : return err
+		return nil
+	}
+	log.Lvl3(bz.Name(), "finished broadcasting his por")
+	return nil
 }
 
 // Dispatch listen on the different channels
@@ -240,33 +221,17 @@ func (bz *BaseDFS) listen() {
 	for {
 		var err error
 		select {
-		case msg := <-bz.announceChan:
-			// Announcement
-			err = bz.handleAnnouncement(msg.Announce)
-		case msg := <-bz.commitChan:
-			// Commitment
+		case msg := <-bz.ProofOfRetTxChan:
+			// PoR
 			if !fail {
-				err = bz.handleCommit(msg.Commitment)
+				err = bz.handlePoRTx(msg.por)
 			}
-		case msg := <-bz.challengePrepareChan:
-			// Challenge
+		case msg := <-bz.PreparedBlockChan:
+			// Next Block
 			if !fail {
-				err = bz.handleChallengePrepare(&msg.ChallengePrepare)
+				err = bz.handleBlock(msg.preparedBlock)
 			}
-		case msg := <-bz.challengeCommitChan:
-			if !fail {
-				err = bz.handleChallengeCommit(&msg.ChallengeCommit)
-			}
-		case msg := <-bz.responseChan:
-			// Response
-			if !fail {
-				switch msg.Response.TYPE {
-				case RoundPrepare:
-					err = bz.handleResponsePrepare(&msg.Response)
-				case RoundCommit:
-					err = bz.handleResponseCommit(&msg.Response)
-				}
-			}
+			//-------------------------------------------------------------
 		case timeout := <-bz.timeoutChan:
 			// start the timer
 			if timeoutStarted {
@@ -279,7 +244,7 @@ func (bz *BaseDFS) listen() {
 			err = bz.handleViewChange(msg.TreeNode, &msg.viewChange)
 		case <-bz.doneProcessing:
 			// we are done
-			log.Lvl2(bz.Name(), "ByzCoin Dispatches stop.")
+			log.Lvl2(bz.Name(), "BaseDFS Dispatches stop.")
 			bz.tempBlock = nil
 			return
 		}
@@ -289,485 +254,65 @@ func (bz *BaseDFS) listen() {
 	}
 }
 
-// startAnnouncementPrepare create its announcement for the prepare round and
-// sends it down the tree.
-func (bz *BaseDFS) startAnnouncementPrepare() error {
-	if bz.onAnnouncementPrepare != nil {
-		go bz.onAnnouncementPrepare()
-	}
-
-	ann := bz.prepare.CreateAnnouncement()
-	bza := &Announce{
-		TYPE:         RoundPrepare,
-		Announcement: ann,
-		Timeout:      bz.rootTimeout,
-	}
-	log.Lvl3("ByzCoin Start Announcement (PREPARE)")
-	return bz.sendAnnouncement(bza)
-}
-
-// startAnnouncementCommit create the announcement for the commit phase and
-// sends it down the tree.
-func (bz *BaseDFS) startAnnouncementCommit() error {
-	ann := bz.commit.CreateAnnouncement()
-	bza := &Announce{
-		TYPE:         RoundCommit,
-		Announcement: ann,
-	}
-	log.Lvl3(bz.Name(), "ByzCoin Start Announcement (COMMIT)")
-	return bz.sendAnnouncement(bza)
-}
-
-func (bz *BaseDFS) sendAnnouncement(bza *Announce) error {
-	var err error
-	for _, tn := range bz.Children() {
-		err = bz.SendTo(tn, bza)
-	}
-	return err
-}
-
 // handleAnnouncement pass the announcement to the right CoSi struct.
-func (bz *BaseDFS) handleAnnouncement(ann Announce) error {
-	var announcement = new(Announce)
-
-	switch ann.TYPE {
-	case RoundPrepare:
-		announcement = &Announce{
-			TYPE:         RoundPrepare,
-			Announcement: bz.prepare.Announce(ann.Announcement),
-			Timeout:      ann.Timeout,
+func (bz *BaseDFS) handlePoRTx(proofOfRet por) error {
+	if err := verifyPoRTx(proofOfRet); err == nil {
+		e := bz.appendPoRTx(proofOfRet)
+		if e == nil {
+			log.Lvl1(bz.TreeNode, "PoR tx appended to current temp block")
+		} else {
+			log.Lvl1(bz.TreeNode, "PoR tx appending error:", e)
 		}
-
-		bz.timeoutChan <- ann.Timeout
-		// give the timeout
-		log.Lvl3(bz.Name(), "ByzCoin Handle Announcement PREPARE")
-
-		if bz.IsLeaf() {
-			return bz.startCommitmentPrepare()
-		}
-	case RoundCommit:
-		announcement = &Announce{
-			TYPE:         RoundCommit,
-			Announcement: bz.commit.Announce(ann.Announcement),
-		}
-		log.Lvl3(bz.Name(), "ByzCoin Handle Announcement COMMIT")
-
-		if bz.IsLeaf() {
-			return bz.startCommitmentCommit()
-		}
-	}
-
-	var err error
-	for _, tn := range bz.Children() {
-		err = bz.SendTo(tn, announcement)
-	}
-	return err
-}
-
-// startPrepareCommitment send the first commitment up the tree for the prepare
-// round.
-func (bz *BaseDFS) startCommitmentPrepare() error {
-	cm := bz.prepare.CreateCommitment()
-	err := bz.SendTo(bz.Parent(), &Commitment{TYPE: RoundPrepare, Commitment: cm})
-	log.Lvl3(bz.Name(), "ByzCoin Start Commitment PREPARE")
-	return err
-}
-
-// startCommitCommitment send the first commitment up the tree for the
-// commitment round.
-func (bz *BaseDFS) startCommitmentCommit() error {
-	cm := bz.commit.CreateCommitment()
-
-	err := bz.SendTo(bz.Parent(), &Commitment{TYPE: RoundCommit, Commitment: cm})
-	log.Lvl3(bz.Name(), "ByzCoin Start Commitment COMMIT", err)
-	return err
-}
-
-// handle the arrival of a commitment
-func (bz *BaseDFS) handleCommit(ann Commitment) error {
-	var commitment *Commitment
-	// store it and check if we have enough commitments
-	switch ann.TYPE {
-	case RoundPrepare:
-		log.Lvl3(bz.Name(), "ByzCoin handle Commit PREPARE")
-		bz.tpcMut.Lock()
-		bz.tempPrepareCommit = append(bz.tempPrepareCommit, ann.Commitment)
-		if len(bz.tempPrepareCommit) < len(bz.Children()) {
-			bz.tpcMut.Unlock()
-			return nil
-		}
-		commit := bz.prepare.Commit(bz.tempPrepareCommit)
-		bz.tpcMut.Unlock()
-		if bz.IsRoot() {
-			return bz.startChallengePrepare()
-		}
-		commitment = &Commitment{
-			TYPE:       RoundPrepare,
-			Commitment: commit,
-		}
-	case RoundCommit:
-		bz.tccMut.Lock()
-		bz.tempCommitCommit = append(bz.tempCommitCommit, ann.Commitment)
-		if len(bz.tempCommitCommit) < len(bz.Children()) {
-			bz.tccMut.Unlock()
-			return nil
-		}
-		commit := bz.commit.Commit(bz.tempCommitCommit)
-		bz.tccMut.Unlock()
-		if bz.IsRoot() {
-			// do nothing
-			//	bz.startChallengeCommit()
-			// stop the processing of the round, wait the end of the "prepare"
-			// round. startChallengeCOmmit will be called then.
-			return nil
-		}
-		commitment = &Commitment{
-			TYPE:       RoundCommit,
-			Commitment: commit,
-		}
-		log.Lvl3(bz.Name(), "ByzCoin handle Commit COMMIT")
-	}
-	err := bz.SendTo(bz.Parent(), commitment)
-	return err
-}
-
-// startPrepareChallenge create the challenge and send its down the tree
-func (bz *BaseDFS) startChallengePrepare() error {
-	// make the challenge out of it
-	var err error
-	bz.tempBlock, err = GetBlock(bz.transactions, bz.lastBlock, bz.lastKeyBlock)
-	if err != nil {
-		return err
-	}
-	trblock := bz.tempBlock
-	marshalled, err := json.Marshal(trblock)
-	if err != nil {
-		return err
-	}
-	ch, err := bz.prepare.CreateChallenge(marshalled)
-	if err != nil {
-		return err
-	}
-	bizChal := &ChallengePrepare{
-		TYPE:      RoundPrepare,
-		Challenge: ch,
-		TrBlock:   trblock,
-	}
-
-	go VerifyBlock(bz.tempBlock, bz.lastBlock, bz.lastKeyBlock, bz.verifyBlockChan)
-	log.Lvl3(bz.Name(), "ByzCoin Start Challenge PREPARE")
-	// send to children
-	for _, tn := range bz.Children() {
-		err = bz.SendTo(tn, bizChal)
-	}
-	return err
-}
-
-// startCommitChallenge waits the end of the "prepare" round.
-// Then it creates the challenge and sends it along with the
-// "prepare" signature down the tree.
-func (bz *BaseDFS) startChallengeCommit() error {
-	if bz.onChallengeCommit != nil {
-		bz.onChallengeCommit()
-	}
-	// create the challenge out of it
-	marshalled := bz.tempBlock.HashSum()
-	chal, err := bz.commit.CreateChallenge(marshalled)
-	if err != nil {
-		return err
-	}
-
-	// send challenge + signature
-	bzc := &ChallengeCommit{
-		TYPE:      RoundCommit,
-		Challenge: chal,
-		Signature: bz.prepare.Signature(),
-	}
-	log.Lvl3("ByzCoin Start Challenge COMMIT")
-	for _, tn := range bz.Children() {
-		err = bz.SendTo(tn, bzc)
-	}
-	return err
-}
-
-// handlePrepareChallenge receive the challenge messages for the "prepare"
-// round.
-func (bz *BaseDFS) handleChallengePrepare(ch *ChallengePrepare) error {
-	bz.tempBlock = ch.TrBlock
-	// start the verification of the block
-	go VerifyBlock(bz.tempBlock, bz.lastBlock, bz.lastKeyBlock, bz.verifyBlockChan)
-	// acknowledge the challenge and send its down
-	chal := bz.prepare.Challenge(ch.Challenge)
-	ch.Challenge = chal
-
-	log.Lvl3(bz.Name(), "ByzCoin handle Challenge PREPARE")
-	// go to response if leaf
-	if bz.IsLeaf() {
-		return bz.startResponsePrepare()
-	}
-	var err error
-	for _, tn := range bz.Children() {
-		err = bz.SendTo(tn, ch)
-	}
-	return err
-}
-
-// handleCommitChallenge will verify the signature + check if no more than 1/3
-// of participants refused to sign.
-func (bz *BaseDFS) handleChallengeCommit(ch *ChallengeCommit) error {
-	// marshal the block
-	marshalled, err := json.Marshal(bz.tempBlock)
-	if err != nil {
-		return err
-	}
-	ch.Challenge = bz.commit.Challenge(ch.Challenge)
-
-	// verify if the signature is correct
-	if err := cosi.VerifyCosiSignatureWithException(bz.suite, bz.aggregatedPublic, marshalled, ch.Signature, ch.Exceptions); err != nil {
-		log.Error(bz.Name(), "Verification of the signature failed:", err)
-		bz.signRefusal = true
-	}
-
-	// Verify if we have no more than 1/3 failed nodes
-
-	if len(ch.Exceptions) > int(bz.threshold) {
-		log.Errorf("More than 1/3 (%d/%d) refused to sign ! ABORT", len(ch.Exceptions), len(bz.Roster().List))
-		bz.signRefusal = true
-	}
-
-	// store the exceptions for later usage
-	bz.tempExceptions = ch.Exceptions
-	log.Lvl3(bz.Name(), "ByzCoin handle Challenge COMMIT")
-	if bz.IsLeaf() {
-		return bz.startResponseCommit()
-	}
-
-	// send it down
-	for _, tn := range bz.Children() {
-		err = bz.SendTo(tn, ch)
+	} else {
+		log.Lvl1(bz.TreeNode, "verifying PoR tx error:", err)
 	}
 	return nil
 }
 
-// startPrepareResponse wait the verification of the block and then start the
-// challenge process
-func (bz *BaseDFS) startResponsePrepare() error {
-	// create response
-	resp, err := bz.prepare.CreateResponse()
-	if err != nil {
-		return err
-	}
-	// wait the verification
-	bzr, ok := bz.waitResponseVerification()
-	if ok {
-		log.Lvl3(bz.Name(), "ok")
-		// apend response only if OK
-		bzr.Response = resp
-	}
-	log.Lvl3(bz.Name(), "ByzCoin Start Response PREPARE")
-	// send to parent
-	return bz.SendTo(bz.Parent(), bzr)
+// verifyPoRTx: servers will verify por taxs when they recieve it
+func verifyPoRTx(p por) error {
+	return nil
 }
 
-// startCommitResponse will create the response for the commit phase and send it
-// up. It will not create the response if it decided the signature is wrong from
-// the prepare phase.
-func (bz *BaseDFS) startResponseCommit() error {
-	bzr := &Response{
-		TYPE: RoundCommit,
-	}
-	// if i dont want to sign
-	if bz.signRefusal {
-		bzr.Exceptions = append(bzr.Exceptions, cosi.Exception{
-			Public:     bz.Public(),
-			Commitment: bz.commit.GetCommitment(),
-		})
+//appenPoRTx:
+func (bz *BaseDFS) appendPoRTx(p por) error {
+	return nil
+}
+
+// handle the arrival of a commitment
+func (bz *BaseDFS) handleBlock(pb preparedBlock) error {
+	if err := verifyBlock(pb); err == nil {
+		e := bz.appendBlock(pb)
+		if e == nil {
+			log.Lvl1(bz.TreeNode, "proposed block appended to blockchain")
+		} else {
+			log.Lvl1(bz.TreeNode, "proposed block appending error:", e)
+		}
 	} else {
-		// otherwise i create the response
-		resp, err := bz.commit.CreateResponse()
-		if err != nil {
-			return err
-		}
-		bzr.Response = resp
+		log.Lvl1(bz.TreeNode, "proposed block verifying error:", err)
 	}
-	log.Lvl3(bz.Name(), "ByzCoin Start Response COMMIT")
-	// send to parent
-	err := bz.SendTo(bz.Parent(), bzr)
-	bz.Done()
-	return err
+	return nil
 }
 
-// handleResponseCommit handles the responses for the commit round during the
-// response phase.
-func (bz *BaseDFS) handleResponseCommit(bzr *Response) error {
-	// check if we have enough
-	// FIXME possible data race
-	bz.tcrMut.Lock()
-	bz.tempCommitResponse = append(bz.tempCommitResponse, bzr.Response)
-
-	if len(bz.tempCommitResponse) < len(bz.Children()) {
-		bz.tcrMut.Unlock()
-		return nil
-	}
-
-	if bz.signRefusal {
-		bzr.Exceptions = append(bzr.Exceptions, cosi.Exception{
-			Public:     bz.Public(),
-			Commitment: bz.commit.GetCommitment(),
-		})
-		bz.tcrMut.Unlock()
-	} else {
-		resp, err := bz.commit.Response(bz.tempCommitResponse)
-		bz.tcrMut.Unlock()
-		if err != nil {
-			return err
-		}
-		bzr.Response = resp
-	}
-
-	// notify we have finished to participate in this signature
-	bz.doneSigning <- true
-	log.Lvl3(bz.Name(), "ByzCoin handle Response COMMIT (refusal=", bz.signRefusal, ")")
-	// if root we have finished
-	if bz.IsRoot() {
-		sig := bz.Signature()
-		if bz.onResponseCommitDone != nil {
-			bz.onResponseCommitDone()
-		}
-		if bz.onSignatureDone != nil {
-			bz.onSignatureDone(sig)
-		}
-		bz.Done()
-		return nil
-	}
-
-	// otherwise , send the response up
-	err := bz.SendTo(bz.Parent(), bzr)
-	bz.Done()
-	return err
+// verifyPoRTx: servers will verify por taxs when they recieve it
+func verifyBlock(pb preparedBlock) error {
+	return nil
 }
 
-func (bz *BaseDFS) handleResponsePrepare(bzr *Response) error {
-	// check if we have enough
-	bz.tprMut.Lock()
-	bz.tempPrepareResponse = append(bz.tempPrepareResponse, bzr.Response)
-	if len(bz.tempPrepareResponse) < len(bz.Children()) {
-		bz.tprMut.Unlock()
-		return nil
-	}
-
-	// wait for verification
-	bzrReturn, ok := bz.waitResponseVerification()
-	if ok {
-		// append response
-		resp, err := bz.prepare.Response(bz.tempPrepareResponse)
-		bz.tprMut.Unlock()
-		if err != nil {
-			return err
-		}
-		bzrReturn.Response = resp
-	} else {
-		bz.tprMut.Unlock()
-	}
-
-	log.Lvl3(bz.Name(), "ByzCoin Handle Response PREPARE")
-	// if I'm root, we are finished, let's notify the "commit" round
-	if bz.IsRoot() {
-		// notify listeners (simulation) we finished
-		if bz.onResponsePrepareDone != nil {
-			bz.onResponsePrepareDone()
-		}
-		return bz.startChallengeCommit()
-	}
-	// send up
-	return bz.SendTo(bz.Parent(), bzrReturn)
+//appenPoRTx:
+func (bz *BaseDFS) appendBlock(pb preparedBlock) error {
+	return nil
 }
 
-// computePrepareResponse wait the end of the verification and returns the
-// ByzCoinResponse along with the flag:
-// true => no exception, the verification is correct
-// false => exception, the verification is NOT correct
-func (bz *BaseDFS) waitResponseVerification() (*Response, bool) {
-	bzr := &Response{
-		TYPE: RoundPrepare,
-	}
-	// wait the verification
-	verified := <-bz.verifyBlockChan
-	if !verified {
-		// append our exception
-		bzr.Exceptions = append(bzr.Exceptions, cosi.Exception{
-			Public:     bz.Public(),
-			Commitment: bz.prepare.GetCommitment(),
-		})
-		bz.sendAndMeasureViewchange()
-		return bzr, false
-	}
-
-	return bzr, true
-}
-
-// VerifyBlock is a simulation of a real verification block algorithm
-// func VerifyBlock(block *blockchain.TrBlock, lastBlock, lastKeyBlock string, done chan bool) {
-// 	//We measure the average block verification delays is 174ms for an average
-// 	//block of 500kB.
-// 	//To simulate the verification cost of bigger blocks we multiply 174ms
-// 	//times the size/500*1024
-// 	b, _ := json.Marshal(block)
-// 	s := len(b)
-// 	var n time.Duration
-// 	n = time.Duration(s / (500 * 1024))
-// 	time.Sleep(150 * time.Millisecond * n) //verification of 174ms per 500KB simulated
-// 	// verification of the header
-// 	verified := block.Header.Parent == lastBlock && block.Header.ParentKey == lastKeyBlock
-// 	verified = verified && block.Header.MerkleRoot == blockchain.HashRootTransactions(block.TransactionList)
-// 	verified = verified && block.HeaderHash == blockchain.HashHeader(block.Header)
-// 	// notify it
-// 	log.Lvl3("Verification of the block done =", verified)
-// 	done <- verified
-// }
-
-// GetBlock returns the next block available from the transaction pool.
-// func GetBlock(transactions []blkparser.Tx, lastBlock, lastKeyBlock string) (*blockchain.TrBlock, error) {
-// 	if len(transactions) < 1 {
-// 		return nil, errors.New("no transaction available")
-// 	}
-
-// 	trlist := blockchain.NewTransactionList(transactions, len(transactions))
-// 	header := blockchain.NewHeader(trlist, lastBlock, lastKeyBlock)
-// 	trblock := blockchain.NewTrBlock(trlist, header)
-// 	return trblock, nil
-// }
-
-// Signature will generate the final signature, the output of the ByzCoin
-// protocol.
-func (bz *BaseDFS) Signature() *BlockSignature {
-	return &BlockSignature{
-		Sig:        bz.commit.Signature(),
-		Block:      bz.tempBlock,
-		Exceptions: bz.tempExceptions,
-	}
-}
-
-// RegisterOnDone registers a callback to call when the byzcoin protocols has
-// really finished (after a view change maybe)
-func (bz *BaseDFS) RegisterOnDone(fn func()) {
-	bz.onDoneCallback = fn
-}
-
-// RegisterOnSignatureDone register a callback to call when the byzcoin
-// protocol reached a signature on the block
-func (bz *BaseDFS) RegisterOnSignatureDone(fn func(*BlockSignature)) {
-	bz.onSignatureDone = fn
-}
-
-// startTimer starts the timer to decide whether we should request a view change
-// after a certain timeout or not. If the signature is done, we don't. otherwise
+//---------------------------------------------------------------------------
+// startTimer starts the timer to decide whether we should request a view change after a certain timeout or not.
+// If the signature is done, we don't. otherwise
 // we start the view change protocol.
 func (bz *BaseDFS) startTimer(millis uint64) {
 	if bz.rootFailMode != 0 {
 		log.Lvl3(bz.Name(), "Started timer (", millis, ")...")
 		select {
-		case <-bz.doneSigning:
+		case <-bz.done:
 			return
 		case <-time.After(time.Millisecond * time.Duration(millis)):
 			bz.sendAndMeasureViewchange()
