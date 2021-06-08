@@ -1,27 +1,31 @@
-// Base DFS protocol:
+/* Base DFS protocol:
 
-// Asumptions:
-// 1) market matching is done
-// (for each client we have one server who has stored his client's file
-// and the storage contract is fixed for all - fixed payment)
-// 2) clients have created their escrows -
-// a fixed amount of money is in some addresses (clients addresses)
+Asumptions:
+1) market matching is done
+(for each client we have one server who has stored his client's file
+and the storage contract is fixed for all - fixed payment)
+2) clients have created their escrows -
+a fixed amount of money is in some addresses (clients addresses)
 
-// The BaseDFSProtocol goes as follows:
-// 1- a server broadcast a por tx
-// (chanllenge's randomness comes from hash of the latest mined block)
-// 2) all miners (who recieve this tx) verify the por tx + add a fixed payment tx +
-// 		keep both in their current block
-// 3) (each epoch) miners check the predefined leader election mechanism
-//		 to see if they are the leader
-// 4) the leader broadcast his block, consisting por and payment tx.s
-//		and his election proof
-// 5) all miners (who recieve this tx) verify proposed block and
-//		add it to their chain
+The BaseDFSProtocol goes as follows:
+1- a server broadcast a por tx
+(chanllenge's randomness comes from hash of the latest mined block)
+2) all miners (who recieve this tx) verify the por tx + add a fixed payment tx +
+		keep both in their current block
+3) (each epoch) miners check the predefined leader election mechanism
+		 to see if they are the leader
+4) the leader broadcast his block, consisting por and payment tx.s
+		and his election proof
+5) all miners (who recieve this tx) verify proposed block and
+		add it to their chain
 
-//Types of Messages:
-// 1- por
-// 2- proposed block
+Types of Messages:
+1- por
+2- proposed block
+
+The simple version:
+we assume one server broadcast his por tx and all servers on recieving this tx will verify and add it to their prepared block and then all server run leader election to check if they are leader, then the leader add his proof and broadcast his prepared block and all servers verify and append his block to their blockchain
+*/
 
 package BaseDFSProtocol
 
@@ -47,7 +51,7 @@ func init() {
 }
 
 type ProofOfRetTxChan struct {
-	*onet.TreeNode
+	//*onet.TreeNode//
 	por
 }
 type por struct {
@@ -55,9 +59,10 @@ type por struct {
 }
 
 type PreparedBlockChan struct {
-	*onet.TreeNode
+	//*onet.TreeNode//
 	preparedBlock
 }
+
 type preparedBlock struct {
 	prb blkparser.Block
 }
@@ -73,21 +78,21 @@ type BaseDFS struct {
 	// channel for por from leader to miners
 	ProofOfRetTxChan chan ProofOfRetTxChan
 	// channel to notify when we are done ?
-	done chan bool //it is not initiated in new proto
+	//done chan bool //it is not initiated in new proto
 	// channel used to wait for the verification of the block
-	verifyBlockChan chan bool
+	//verifyBlockChan chan bool//
 	// block to be prepared for next epoch
 	tempBlock *blockchain.TrBlock
 	// transactions is the slice of transactions that contains transactions
 	// coming from servers (who convert the por into transaction?)
 	transactions []blkparser.Tx
 	// last block computed
-	lastBlock string
+	lastBlock string //?
 	// last key block computed
-	lastKeyBlock string
-	// temporary buffer of por transactions (how miners are store por transactions? )
-	tempCommitResponse []blkparser.Tx
-	tcrMut             sync.Mutex
+	lastKeyBlock string //?
+	// temporary buffer of ?
+	//tempCommitResponse []blkparser.Tx//
+	//tcrMut             sync.Mutex//
 	// refusal to append por-tx to current block
 	porTxRefusal bool
 
@@ -95,9 +100,12 @@ type BaseDFS struct {
 	// protocol when all nodes have finished.
 	// Either after refusing or accepting the proposed block
 	// or at the end of a view change.
+	// raha: when this function is called?
 	onDoneCallback func()
-	// onAppendPoRTxDone is the callback that will be called when a por tx has been verified and appended to our cuurent temp block we may need it later!
-	onAppendPoRTxDone func(*por)
+
+	// onAppendPoRTxDone is the callback that will be called when a por tx has been verified and appended to our cuurent temp block. raha: we may need it later!
+	//onAppendPoRTxDone func(*por)//
+
 	// rootTimeout is the timeout given to the root. It will be passed down the
 	// tree so every nodes knows how much time to wait. This root is a very nice
 	// malicious node.
@@ -105,7 +113,7 @@ type BaseDFS struct {
 	timeoutChan chan uint64
 	// onTimeoutCallback is the function that will be called if a timeout
 	// occurs.
-	onTimeoutCallback func()
+	//onTimeoutCallback func()//
 
 	// function to let callers of the protocol (or the server) add functionality
 	// to certain parts of the protocol; mainly used in simulation to do
@@ -114,22 +122,19 @@ type BaseDFS struct {
 	// root fails:
 	rootFailMode uint
 	// Call back when we start broadcasting our por tx
-	onBroadcastPoRTx func()
+	//onBroadcastPoRTx func()//
 	// Call back when we start checking this epoch's leadership
-	onCheckEpochLeadership func()
-	// callback when we finished
-	// "verifying por tx"
-	// + act = "adding payment tx + appending both to our current block"
-	onVerifyActPoRTxDone func()
-	// callback when we finished
-	// "verifying new block"
-	// + act = "appending it to our current blockchain"
-	onVerifyActEpochBlockDone func()
+	//onCheckEpochLeadership func()//
+	// callback when we finished "verifying por tx" + act = "adding payment tx + appending both to our current block"
+	//onVerifyActPoRTxDone func()//
+	// callback when we finished "verifying new block" + act = "appending it to our current blockchain"
+	//onVerifyActEpochBlockDone func()//
 	// view change setup and measurement
 	viewchangeChan chan struct {
 		*onet.TreeNode
 		viewChange
 	}
+	//raha: what does it do?
 	vcMeasure *monitor.TimeMeasure
 	// lock associated
 	doneLock sync.Mutex
@@ -151,9 +156,9 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	bz := &BaseDFS{
 		TreeNodeInstance: n,
 		suite:            n.Suite(),
-		verifyBlockChan:  make(chan bool),
-		doneProcessing:   make(chan bool, 2),
-		timeoutChan:      make(chan uint64, 1),
+		//verifyBlockChan:  make(chan bool),
+		doneProcessing: make(chan bool, 2),
+		timeoutChan:    make(chan uint64, 1),
 	}
 	bz.viewChangeThreshold = int(math.Ceil(float64(len(bz.Tree().List())) * 2.0 / 3.0))
 
@@ -164,38 +169,25 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	if err := n.RegisterChannel(&bz.ProofOfRetTxChan); err != nil {
 		return bz, err
 	}
+	if err := n.RegisterChannel(&bz.viewchangeChan); err != nil {
+		return bz, err
+	}
 
-	n.OnDoneCallback(bz.nodeDone) //?
+	bz.transactions = nil // raha: transactions was an in param in NewbaseDFSRootProtocol
+	bz.rootFailMode = 1   // raha: failMode was an in param in NewbaseDFSRootProtocol
+	bz.rootTimeout = 300  // raha: timeOutMs was an in param in NewbaseDFSRootProtocol
+
+	n.OnDoneCallback(bz.nodeDone) // raha: when this function is called?
 
 	go bz.listen()
 	return bz, nil
 }
 
-// NewbaseDFSRootProtocol returns a new baseDFS struct with the block to sign that will be sent to all others nodes - when it has called???
-func NewbaseDFSRootProtocol(n *onet.TreeNodeInstance, transactions []blkparser.Tx, timeOutMs uint64, failMode uint) (onet.ProtocolInstance, error) {
-	bz, err := NewBaseDFSProtocol(n)
-	if err != nil {
-		return nil, err
-	}
-	//raha - fix later
-	//bz.transactions = transactions
-	//bz.rootFailMode = failMode
-	//bz.rootTimeout = timeOutMs
-	return bz, err
-}
-
-// The simple version:
-// we assume one server broadcast his por tx
-// - which is the root in tree structure -
-// and all servers on recieving this tx will verify
-// and add it to their prepared block
-// and then all server run leader election to check if
-// they are leader, then the leader add his proof
-// and broadcast his prepared block
-// and all servers verify and append his block to their blockchain
-
+//Start: starts the simplified protocol by broadcasting a por tx
+// check to make sure that just tree root node will call start, later we want peridic broadcasting of por txs by random servers in the roster.
+// Question: who get to be the first leader?!
 func (bz *BaseDFS) Start() error {
-	txs, _ := blkparser.NewTx([]byte{'x'})
+	txs, _ := createPoRTx(*bz.TreeNode())
 	portx := &ProofOfRetTxChan{
 		TreeNode: bz.TreeNode(),
 		por: por{
@@ -203,14 +195,14 @@ func (bz *BaseDFS) Start() error {
 		},
 	}
 	if err := bz.Broadcast(portx); err != nil {
-		//raha fix later : return err
-		return nil
+		return nil // raha: fix later - return err
 	}
-	log.Lvl3(bz.Name(), "finished broadcasting his por")
+	log.Lvl3(bz.Name(), "finished broadcasting his por - raha: am I root?")
 	return nil
 }
 
 // Dispatch listen on the different channels
+//raha: where dispatch is been called? really!!
 func (bz *BaseDFS) Dispatch() error {
 	return nil
 }
@@ -224,12 +216,12 @@ func (bz *BaseDFS) listen() {
 		case msg := <-bz.ProofOfRetTxChan:
 			// PoR
 			if !fail {
-				err = bz.handlePoRTx(msg.por)
+				err = bz.handlePoRTx(msg)
 			}
 		case msg := <-bz.PreparedBlockChan:
 			// Next Block
 			if !fail {
-				err = bz.handleBlock(msg.preparedBlock)
+				_, err = bz.handleBlock(msg)
 			}
 			//-------------------------------------------------------------
 		case timeout := <-bz.timeoutChan:
@@ -254,14 +246,27 @@ func (bz *BaseDFS) listen() {
 	}
 }
 
+//createPoRTx: later we want peridic broadcasting of por txs by random servers in the roster.
+func createPoRTx(t onet.TreeNode) (*blkparser.Tx, error) {
+	f := t.ID.String()
+	x := []byte(f + "x") // this content will be contract specific later
+	tx, _ := blkparser.NewTx(x)
+	return tx, nil
+}
+
 // handleAnnouncement pass the announcement to the right CoSi struct.
-func (bz *BaseDFS) handlePoRTx(proofOfRet por) error {
-	if err := verifyPoRTx(proofOfRet); err == nil {
-		e := bz.appendPoRTx(proofOfRet)
-		if e == nil {
-			log.Lvl1(bz.TreeNode, "PoR tx appended to current temp block")
+func (bz *BaseDFS) handlePoRTx(proofOfRet ProofOfRetTxChan) error {
+	if refuse, err := verifyPoRTx(proofOfRet.por); err == nil {
+		if refuse == true {
+			bz.porTxRefusal = true
+			return nil
 		} else {
-			log.Lvl1(bz.TreeNode, "PoR tx appending error:", e)
+			e := bz.appendPoRTx(proofOfRet.por)
+			if e == nil {
+				log.Lvl1(bz.TreeNode, "PoR tx appended to current temp block")
+			} else {
+				log.Lvl1(bz.TreeNode, "PoR tx appending error:", e)
+			}
 		}
 	} else {
 		log.Lvl1(bz.TreeNode, "verifying PoR tx error:", err)
@@ -270,28 +275,28 @@ func (bz *BaseDFS) handlePoRTx(proofOfRet por) error {
 }
 
 // verifyPoRTx: servers will verify por taxs when they recieve it
-func verifyPoRTx(p por) error {
-	return nil
+func verifyPoRTx(p por) (bool, error) {
+	var refuse = false
+	var err error = nil
+	return refuse, err
 }
 
-//appenPoRTx:
+//appenPoRTx: append the recieved tx to his current temporary block
 func (bz *BaseDFS) appendPoRTx(p por) error {
+	bz.transactions = append(bz.transactions, p.por)
+	var h blockchain.TransactionList = blockchain.NewTransactionList(bz.transactions, 1)
+	bz.tempBlock = blockchain.NewTrBlock(h, blockchain.NewHeader(h, "raha", "raha"))
 	return nil
 }
 
 // handle the arrival of a commitment
-func (bz *BaseDFS) handleBlock(pb preparedBlock) error {
-	if err := verifyBlock(pb); err == nil {
-		e := bz.appendBlock(pb)
-		if e == nil {
-			log.Lvl1(bz.TreeNode, "proposed block appended to blockchain")
-		} else {
-			log.Lvl1(bz.TreeNode, "proposed block appending error:", e)
-		}
+func (bz *BaseDFS) handleBlock(pb PreparedBlockChan) (*blockchain.TrBlock, error) {
+	if err := verifyBlock(pb.preparedBlock); err == nil {
+		return (bz.appendBlock(pb.preparedBlock))
 	} else {
-		log.Lvl1(bz.TreeNode, "proposed block verifying error:", err)
+		log.Error(bz.Name(), "Error verying block", err)
+		return nil, nil
 	}
-	return nil
 }
 
 // verifyPoRTx: servers will verify por taxs when they recieve it
@@ -300,11 +305,11 @@ func verifyBlock(pb preparedBlock) error {
 }
 
 //appenPoRTx:
-func (bz *BaseDFS) appendBlock(pb preparedBlock) error {
-	return nil
+func (bz *BaseDFS) appendBlock(pb preparedBlock) (*blockchain.TrBlock, error) {
+	return nil, nil
 }
 
-//---------------------------------------------------------------------------
+//-------------------------------------------------------------------
 // startTimer starts the timer to decide whether we should request a view change after a certain timeout or not.
 // If the signature is done, we don't. otherwise
 // we start the view change protocol.
@@ -312,8 +317,8 @@ func (bz *BaseDFS) startTimer(millis uint64) {
 	if bz.rootFailMode != 0 {
 		log.Lvl3(bz.Name(), "Started timer (", millis, ")...")
 		select {
-		case <-bz.done:
-			return
+		//case <-bz.done:
+		//	return
 		case <-time.After(time.Millisecond * time.Duration(millis)):
 			bz.sendAndMeasureViewchange()
 		}

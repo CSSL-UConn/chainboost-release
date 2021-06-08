@@ -106,6 +106,8 @@ func NewHeader(transactions TransactionList, parent, parentKey string) *Header {
 	hdr.MerkleRoot = HashRootTransactions(transactions)
 	return hdr
 }
+
+//raha: what is the deal here?
 func HashRootTransactions(transactions TransactionList) string {
 	// var hashes []crypto.HashID
 
