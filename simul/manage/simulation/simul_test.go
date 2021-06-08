@@ -9,7 +9,8 @@ import (
 
 func TestSimulation(t *testing.T) {
 	log.SetDebugVisible(1)
-	simul.Start("OpinionGathering.toml")
+	//simul.Start("OpinionGathering.toml")
+	simul.Start("BaseDFS.toml")
 }
 
 /*

@@ -6,9 +6,9 @@ import (
 
 	"github.com/BurntSushi/toml"
 	onet "github.com/basedfs"
+	"github.com/basedfs/BaseDFSProtocol"
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
-	"github.com/basedfs/simul/manage"
 	"github.com/basedfs/simul/monitor"
 	"golang.org/x/xerrors"
 )
@@ -146,17 +146,19 @@ func Simulate(suite, serverAddress, simul, monitorAddress string) error {
 		for wait {
 			//p, err := rootSC.Overlay.CreateProtocol("Count", rootSC.Tree, onet.NilServiceID)
 			//Raha
-			p, err := rootSC.Overlay.CreateProtocol("OpinionGathering", rootSC.Tree, onet.NilServiceID)
+			//p, err := rootSC.Overlay.CreateProtocol("OpinionGathering", rootSC.Tree, onet.NilServiceID)
+			p, err := rootSC.Overlay.CreateProtocol("BaseDFS", rootSC.Tree, onet.NilServiceID)
 			if err != nil {
 				return xerrors.New("couldn't create protocol: " + err.Error())
 			}
 			//proto := p.(*manage.ProtocolCount)
-			proto := p.(*manage.ProtocolOpinionGathering)
+			//proto := p.(*manage.ProtocolOpinionGathering)
+			proto := p.(*BaseDFSProtocol.BaseDFS)
 			proto.SetTimeout(timeout)
 			proto.Start()
 			//log.Lvl1("Started counting children with timeout of", timeout)
 			//Raha
-			log.Lvl1("Started Gathering Opinions with timeout of", timeout)
+			log.Lvl1("Started protocol with timeout of ?", timeout)
 			/*
 				select {
 				case count := <-proto.Count:
@@ -170,7 +172,8 @@ func Simulate(suite, serverAddress, simul, monitorAddress string) error {
 			*/
 			//Raha
 			select {
-			case p := <-proto.FinalXor:
+			//case p := <-proto.FinalXor:
+			case p := <-proto.doneBaseDFS:
 				log.Lvl1("Final result is", p)
 				wait = false
 			}

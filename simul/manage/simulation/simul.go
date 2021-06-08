@@ -19,7 +19,8 @@ func init() {
 */
 //Raha
 func init() {
-	onet.SimulationRegister("OpinionGathering", NewSimulation)
+	//onet.SimulationRegister("OpinionGathering", NewSimulation)
+	onet.SimulationRegister("BaseDFS", NewSimulation)
 }
 
 // Simulation only holds the BFTree simulation
@@ -84,7 +85,8 @@ func (e *simulation) Run(config *onet.SimulationConfig) error {
 	for round := 0; round < e.Rounds; round++ {
 		log.Lvl1("Starting round", round)
 		round := monitor.NewTimeMeasure("round")
-		p, err := config.Overlay.CreateProtocol("OpinionGathering", config.Tree, onet.NilServiceID)
+		//p, err := config.Overlay.CreateProtocol("OpinionGathering", config.Tree, onet.NilServiceID)
+		p, err := config.Overlay.CreateProtocol("BaseDFS", config.Tree, onet.NilServiceID)
 		if err != nil {
 			return xerrors.Errorf("creating protocol: %v", err)
 		}

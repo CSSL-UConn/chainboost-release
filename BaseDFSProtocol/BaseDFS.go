@@ -58,6 +58,10 @@ type preparedBlock struct {
 	prb blkparser.Block
 }
 
+type leadershipProof struct {
+	u uint32
+}
+
 // baseDFS is the main struct for running the protocol
 type BaseDFS struct {
 	// the node we are represented-in
@@ -69,10 +73,10 @@ type BaseDFS struct {
 	// channel for por from leader to miners
 	ProofOfRetTxChan chan ProofOfRetTxChan
 	// channel to notify when we are done ?
-	//done chan bool //it is not initiated in new proto
+	doneBaseDFS chan bool //it is not initiated in new proto
 	// channel used to wait for the verification of the block
 	//verifyBlockChan chan bool//
-	// block to be prepared for next epoch
+	// block to be proposed by the leader - if 2/3 miners signal back it submitted it will be the final block
 	tempBlock *blockchain.TrBlock
 	// transactions is the slice of transactions that contains transactions
 	// coming from servers (who convert the por into transaction?)
@@ -138,6 +142,9 @@ type BaseDFS struct {
 	doneProcessing chan bool
 	// finale block that this BaseDFS epoch has produced
 	finalBlock *blockchain.TrBlock
+	//from opinion gathering protocol
+	timeout   time.Duration
+	timeoutMu sync.Mutex
 }
 
 // NewBaseDFSProtocol returns a new BaseDFS struct
@@ -147,7 +154,8 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	bz := &BaseDFS{
 		TreeNodeInstance: n,
 		suite:            n.Suite(),
-		//verifyBlockChan:  make(chan bool),
+		doneBaseDFS:      make(chan bool, 1),
+		//verifyBlockChan:  			make(chan bool),
 		doneProcessing: make(chan bool, 2),
 		timeoutChan:    make(chan uint64, 1),
 	}
@@ -178,7 +186,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 // check to make sure that just tree root node will call start, later we want peridic broadcasting of por txs by random servers in the roster.
 // Question: who get to be the first leader?!
 func (bz *BaseDFS) Start() error {
-	txs, _ := createPoRTx(*bz.TreeNode())
+	txs, _ := bz.createPoRTx()
 	portx := &ProofOfRetTxChan{
 		//TreeNode: bz.TreeNode(),
 		por: por{
@@ -230,6 +238,10 @@ func (bz *BaseDFS) listen() {
 			log.Lvl2(bz.Name(), "BaseDFS Dispatches stop.")
 			bz.tempBlock = nil
 			return
+		case <-bz.doneBaseDFS:
+			// what now?
+			log.Lvl2(bz.Name(), "doneBaseDFS just been called")
+			return
 		}
 		if err != nil {
 			log.Error(bz.Name(), "Error handling messages:", err)
@@ -238,8 +250,8 @@ func (bz *BaseDFS) listen() {
 }
 
 //createPoRTx: later we want peridic broadcasting of por txs by random servers in the roster.
-func createPoRTx(t onet.TreeNode) (*blkparser.Tx, error) {
-	f := t.ID.String()
+func (bz *BaseDFS) createPoRTx() (*blkparser.Tx, error) {
+	f := bz.TreeNode().String()
 	x := []byte(f + "x") // this content will be contract specific later
 	tx, _ := blkparser.NewTx(x)
 	return tx, nil
@@ -275,8 +287,6 @@ func verifyPoRTx(p por) (bool, error) {
 //appenPoRTx: append the recieved tx to his current temporary block
 func (bz *BaseDFS) appendPoRTx(p por) error {
 	bz.transactions = append(bz.transactions, p.por)
-	var h blockchain.TransactionList = blockchain.NewTransactionList(bz.transactions, 1)
-	bz.tempBlock = blockchain.NewTrBlock(h, blockchain.NewHeader(h, "raha", "raha"))
 	return nil
 }
 
@@ -288,6 +298,16 @@ func (bz *BaseDFS) handleBlock(pb PreparedBlockChan) (*blockchain.TrBlock, error
 		log.Error(bz.Name(), "Error verying block", err)
 		return nil, nil
 	}
+}
+
+//checkLeadership
+func (bz *BaseDFS) checkLeadership()
+
+//createEpochBlock: by leader
+func (bz *BaseDFS) createEpochBlock(lp leadershipProof) *blockchain.TrBlock {
+	var h blockchain.TransactionList = blockchain.NewTransactionList(bz.transactions, len(bz.transactions))
+	bz.tempBlock = blockchain.NewTrBlock(h, blockchain.NewHeader(h, "raha", "raha"))
+	return bz.tempBlock
 }
 
 // verifyPoRTx: servers will verify por taxs when they recieve it
@@ -308,8 +328,8 @@ func (bz *BaseDFS) startTimer(millis uint64) {
 	if bz.rootFailMode != 0 {
 		log.Lvl3(bz.Name(), "Started timer (", millis, ")...")
 		select {
-		//case <-bz.done:
-		//	return
+		case <-bz.doneBaseDFS:
+			return
 		case <-time.After(time.Millisecond * time.Duration(millis)):
 			bz.sendAndMeasureViewchange()
 		}
@@ -375,5 +395,24 @@ func (bz *BaseDFS) nodeDone() bool {
 	if bz.onDoneCallback != nil {
 		bz.onDoneCallback()
 	}
+	//raha
+	bz.doneBaseDFS <- true
 	return true
+}
+
+// -------------------
+// from OpinionGathering Protocol
+// -------------------
+// SetTimeout sets the new timeout
+func (p /* *ProtocolOpinionGathering */ BaseDFS) SetTimeout(t time.Duration) {
+	p.timeoutMu.Lock()
+	p.timeout = t
+	p.timeoutMu.Unlock()
+}
+
+// Timeout returns the current timeout
+func (p /* *ProtocolOpinionGathering */ BaseDFS) Timeout() time.Duration {
+	p.timeoutMu.Lock()
+	defer p.timeoutMu.Unlock()
+	return p.timeout
 }
