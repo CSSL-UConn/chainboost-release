@@ -3,10 +3,6 @@
 [![Coverage Status](https://coveralls.io/repos/github/dedis/onet/badge.svg)](https://coveralls.io/github/dedis/onet)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/11ec79aa77fe41748edfdfcd55e92fab)](https://www.codacy.com/manual/nkcr/onet?utm_source=github.com&utm_medium=referral&utm_content=dedis/onet&utm_campaign=Badge_Grade) -->
  
- - [ ] test todo
- 
- 
- 
 # The Cothority Overlay Network Library - Onet
 
 We used latest version of Onet (v.3.2.9) for network, simulation, and communication modules https://github.com/dedis/onet/tree/v3.2.9
