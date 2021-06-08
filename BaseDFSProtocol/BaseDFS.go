@@ -1,11 +1,5 @@
-/* Base DFS protocol:
-
-Asumptions:
-1) market matching is done
-(for each client we have one server who has stored his client's file
-and the storage contract is fixed for all - fixed payment)
-2) clients have created their escrows -
-a fixed amount of money is in some addresses (clients addresses)
+/* Base DFS protocol: The simple version:
+we assume one server broadcast his por tx and all servers on recieving this tx will verify and add it to their prepared block and then all server run leader election to check if they are leader, then the leader add his proof and broadcast his prepared block and all servers verify and append his block to their blockchain
 
 The BaseDFSProtocol goes as follows:
 1- a server broadcast a por tx
@@ -22,9 +16,6 @@ The BaseDFSProtocol goes as follows:
 Types of Messages:
 1- por
 2- proposed block
-
-The simple version:
-we assume one server broadcast his por tx and all servers on recieving this tx will verify and add it to their prepared block and then all server run leader election to check if they are leader, then the leader add his proof and broadcast his prepared block and all servers verify and append his block to their blockchain
 */
 
 package BaseDFSProtocol
@@ -223,7 +214,7 @@ func (bz *BaseDFS) listen() {
 			if !fail {
 				_, err = bz.handleBlock(msg)
 			}
-			//-------------------------------------------------------------
+			//-------------------------------------
 		case timeout := <-bz.timeoutChan:
 			// start the timer
 			if timeoutStarted {
@@ -348,7 +339,6 @@ func (bz *BaseDFS) sendAndMeasureViewchange() {
 // type viewChange struct {
 // 	LastBlock [sha256.Size]byte
 // }
-
 // newViewChange creates a new view change.
 // func newViewChange() *viewChange {
 // 	res := &viewChange{}
@@ -358,8 +348,7 @@ func (bz *BaseDFS) sendAndMeasureViewchange() {
 // 	return res
 // }
 
-// handleViewChange receives a view change request and if received more than
-// 2/3, accept the view change.
+// handleViewChange receives a view change request and if received more than 2/3, accept the view change.
 func (bz *BaseDFS) handleViewChange(tn *onet.TreeNode, vc *viewChange) error {
 	bz.vcCounter++
 	// only do it once
