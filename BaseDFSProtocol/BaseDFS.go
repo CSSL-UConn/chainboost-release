@@ -1,6 +1,5 @@
-
 /* Base DFS protocol:
-- [] test todo
+
 Asumptions:
 1) market matching is done
 (for each client we have one server who has stored his client's file
