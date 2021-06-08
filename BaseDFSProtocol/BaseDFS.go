@@ -189,7 +189,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 func (bz *BaseDFS) Start() error {
 	txs, _ := createPoRTx(*bz.TreeNode())
 	portx := &ProofOfRetTxChan{
-		TreeNode: bz.TreeNode(),
+		//TreeNode: bz.TreeNode(),
 		por: por{
 			por: *txs,
 		},
