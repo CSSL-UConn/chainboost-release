@@ -42,7 +42,7 @@ func init() {
 }
 
 type ProofOfRetTxChan struct {
-	//*onet.TreeNode//
+	*onet.TreeNode //
 	por
 }
 type por struct {
@@ -50,7 +50,7 @@ type por struct {
 }
 
 type PreparedBlockChan struct {
-	//*onet.TreeNode//
+	*onet.TreeNode
 	preparedBlock
 }
 
@@ -73,7 +73,7 @@ type BaseDFS struct {
 	// channel for por from leader to miners
 	ProofOfRetTxChan chan ProofOfRetTxChan
 	// channel to notify when we are done ?
-	doneBaseDFS chan bool //it is not initiated in new proto
+	DoneBaseDFS chan bool //it is not initiated in new proto
 	// channel used to wait for the verification of the block
 	//verifyBlockChan chan bool//
 	// block to be proposed by the leader - if 2/3 miners signal back it submitted it will be the final block
@@ -154,7 +154,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	bz := &BaseDFS{
 		TreeNodeInstance: n,
 		suite:            n.Suite(),
-		doneBaseDFS:      make(chan bool, 1),
+		DoneBaseDFS:      make(chan bool, 1),
 		//verifyBlockChan:  			make(chan bool),
 		doneProcessing: make(chan bool, 2),
 		timeoutChan:    make(chan uint64, 1),
@@ -186,6 +186,8 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 // check to make sure that just tree root node will call start, later we want peridic broadcasting of por txs by random servers in the roster.
 // Question: who get to be the first leader?!
 func (bz *BaseDFS) Start() error {
+	//-------------------------------------
+
 	txs, _ := bz.createPoRTx()
 	portx := &ProofOfRetTxChan{
 		//TreeNode: bz.TreeNode(),
@@ -238,7 +240,7 @@ func (bz *BaseDFS) listen() {
 			log.Lvl2(bz.Name(), "BaseDFS Dispatches stop.")
 			bz.tempBlock = nil
 			return
-		case <-bz.doneBaseDFS:
+		case <-bz.DoneBaseDFS:
 			// what now?
 			log.Lvl2(bz.Name(), "doneBaseDFS just been called")
 			return
@@ -251,10 +253,12 @@ func (bz *BaseDFS) listen() {
 
 //createPoRTx: later we want peridic broadcasting of por txs by random servers in the roster.
 func (bz *BaseDFS) createPoRTx() (*blkparser.Tx, error) {
-	f := bz.TreeNode().String()
-	x := []byte(f + "x") // this content will be contract specific later
-	tx, _ := blkparser.NewTx(x)
-	return tx, nil
+	//f := bz.TreeNode().String()
+	//x := []byte(f + "x") // this content will be contract specific later
+	x := []byte("010000000101820e2169131a77976cf204ce28685e49a6d2278861c33b6241ba3ae3e0a49f020000008b48304502210098a2851420e4daba656fd79cb60cb565bd7218b6b117fda9a512ffbf17f8f178022005c61f31fef3ce3f906eb672e05b65f506045a65a80431b5eaf28e0999266993014104f0f86fa57c424deb160d0fc7693f13fce5ed6542c29483c51953e4fa87ebf247487ed79b1ddcf3de66b182217fcaf3fcef3fcb44737eb93b1fcb8927ebecea26ffffffff02805cd705000000001976a91429d6a3540acfa0a950bef2bfdc75cd51c24390fd88ac80841e00000000001976a91417b5038a413f5c5ee288caa64cfab35a0c01914e88ac00000000")
+	tx, _ := blkparser.ParseTxs(x)
+	tx1 := tx[len(tx)-1]
+	return tx1, nil
 }
 
 // handleAnnouncement pass the announcement to the right CoSi struct.
@@ -301,7 +305,7 @@ func (bz *BaseDFS) handleBlock(pb PreparedBlockChan) (*blockchain.TrBlock, error
 }
 
 //checkLeadership
-func (bz *BaseDFS) checkLeadership()
+// func (bz *BaseDFS) checkLeadership()
 
 //createEpochBlock: by leader
 func (bz *BaseDFS) createEpochBlock(lp leadershipProof) *blockchain.TrBlock {
@@ -328,7 +332,7 @@ func (bz *BaseDFS) startTimer(millis uint64) {
 	if bz.rootFailMode != 0 {
 		log.Lvl3(bz.Name(), "Started timer (", millis, ")...")
 		select {
-		case <-bz.doneBaseDFS:
+		case <-bz.DoneBaseDFS:
 			return
 		case <-time.After(time.Millisecond * time.Duration(millis)):
 			bz.sendAndMeasureViewchange()
@@ -396,7 +400,7 @@ func (bz *BaseDFS) nodeDone() bool {
 		bz.onDoneCallback()
 	}
 	//raha
-	bz.doneBaseDFS <- true
+	bz.DoneBaseDFS <- true
 	return true
 }
 

@@ -1,4 +1,4 @@
-//  // Base DFS protocol:
+// Base DFS protocol:
 
 //  // Asumptions:
 //  // 1) market matching is done
@@ -23,7 +23,7 @@
 //  // 1- por
 //  // 2- proposed block
 
-//  ckage BaseDFSProtocol
+package BaseDFSProtocol
 
 //  import (
 //  	"encoding/json"

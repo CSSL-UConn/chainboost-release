@@ -173,7 +173,7 @@ func Simulate(suite, serverAddress, simul, monitorAddress string) error {
 			//Raha
 			select {
 			//case p := <-proto.FinalXor:
-			case p := <-proto.doneBaseDFS:
+			case p := <-proto.DoneBaseDFS:
 				log.Lvl1("Final result is", p)
 				wait = false
 			}

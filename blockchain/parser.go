@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	 blkparser
+	"github.com/basedfs/blockchain/blkparser"
 	"github.com/basedfs/log"
 )
 
@@ -65,6 +65,7 @@ func (p *Parser) Parse(first_block, last_block int) ([]blkparser.Tx, error) {
 // If that directory doesn't exist, it will be created.
 func SimulDirToBlockDir(dir string) string {
 	reg, _ := regexp.Compile("simul/.*")
+	//raha what direc
 	blockDir := string(reg.ReplaceAll([]byte(dir), []byte("protocols/byzcoin/block")))
 	if _, err := os.Stat(blockDir); os.IsNotExist(err) {
 		if err := os.Mkdir(blockDir, 0777); err != nil {
@@ -102,7 +103,8 @@ func DownloadBlock(dir string) (string, error) {
 	blockDir := SimulDirToBlockDir(dir)
 	cmd := exec.Command("wget", "--no-check-certificate", "-O",
 		blockDir+"/blk00000.dat", "-c",
-		"https://icsil1-box.epfl.ch:5001/fbsharing/IzTFdOxf")
+		//"https://icsil1-box.epfl.ch:5001/fbsharing/IzTFdOxf")
+		"https://blockchain.info/rawblock/0000000000000bae09a7a393a8acded75aa67e46cb81f7acaa5ad94f9eacd103?format=hex")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	log.Lvl1("Cmd is", cmd)
