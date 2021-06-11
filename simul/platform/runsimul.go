@@ -158,7 +158,7 @@ func Simulate(suite, serverAddress, simul, monitorAddress string) error {
 			proto.Start()
 			//log.Lvl1("Started counting children with timeout of", timeout)
 			//Raha
-			log.Lvl1("Started protocol with timeout of ?", timeout)
+			log.Lvl1("Started protocol with timeout of", timeout)
 			/*
 				select {
 				case count := <-proto.Count:
@@ -174,7 +174,7 @@ func Simulate(suite, serverAddress, simul, monitorAddress string) error {
 			select {
 			//case p := <-proto.FinalXor:
 			case p := <-proto.DoneBaseDFS:
-				log.Lvl1("Final result is", p)
+				log.Lvl1("Back to simulation module: Final result is", p)
 				wait = false
 			}
 		}

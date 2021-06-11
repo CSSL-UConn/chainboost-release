@@ -14,7 +14,7 @@ func DecodeVariableLengthInteger(raw []byte) (cnt int, cnt_size int) {
 	if raw[0] < 0xfd {
 		//raha
 		return 1, 1
-		//int(raw[0]), 1
+		//return int(raw[0]), 1
 	}
 	cnt_size = 1 + (2 << (2 - (0xff - raw[0])))
 	if len(raw) < 1+cnt_size {

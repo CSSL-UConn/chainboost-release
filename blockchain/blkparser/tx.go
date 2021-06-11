@@ -4,7 +4,6 @@ package blkparser
 import (
 	"encoding/binary"
 
-	"github.com/basedfs/log"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 )
@@ -98,13 +97,14 @@ func NewTxIn(txinraw []byte) (txin *TxIn, offset int) {
 
 	txin.ScriptSig = txinraw[offset : offset+scriptsig]
 	offset += scriptsig
-	if cap(txinraw) >= offset+4 {
-		txin.Sequence = binary.LittleEndian.Uint32(txinraw[offset : offset+4])
-		offset += 4
-	} else {
-		log.Lvl1("txinraw has capacity of", cap(txinraw), "but here they tried to get txinraw:", offset+4)
-		offset += 4
-	}
+	//raha
+	//if cap(txinraw) >= offset+4 {
+	txin.Sequence = binary.LittleEndian.Uint32(txinraw[offset : offset+4])
+	offset += 4
+	//} else {
+	//	log.Lvl1("txinraw has capacity of", cap(txinraw), "but here they tried to get txinraw:", offset+4)
+	//	offset += 4
+	//}
 	return
 }
 

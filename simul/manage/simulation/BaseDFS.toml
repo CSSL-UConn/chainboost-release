@@ -1,8 +1,8 @@
 Servers = 1
 Simulation = "BaseDFS"
 BF = 2
-Rounds = 1
+Rounds = 0
 Suite = "Ed25519"
 
 Hosts
-15
+7
