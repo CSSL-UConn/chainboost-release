@@ -1,7 +1,7 @@
 Servers = 1
 Simulation = "OpinionGathering"
 BF = 2
-Rounds = 0
+Rounds = 1
 Suite = "Ed25519"
 
 Hosts

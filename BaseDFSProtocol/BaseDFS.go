@@ -41,25 +41,27 @@ func init() {
 	onet.GlobalProtocolRegister("BaseDFS", NewBaseDFSProtocol)
 }
 
+//-----
 type ProofOfRetTxChan struct {
-	*onet.TreeNode //
-	por
+	*onet.TreeNode
+	Por
 }
-type por struct {
-	por blkparser.Tx
+
+type Por struct {
+	blkparser.Tx
 }
 
 type PreparedBlockChan struct {
 	*onet.TreeNode
-	preparedBlock
+	PreparedBlock
 }
 
-type preparedBlock struct {
-	prb blkparser.Block
+type PreparedBlock struct {
+	blkparser.Block
 }
 
 type leadershipProof struct {
-	u uint32
+	U uint32
 }
 
 // baseDFS is the main struct for running the protocol
@@ -173,52 +175,35 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	}
 
 	bz.transactions = nil // raha: transactions was an in param in NewbaseDFSRootProtocol
-	bz.rootFailMode = 1   // raha: failMode was an in param in NewbaseDFSRootProtocol
+	bz.rootFailMode = 0   // raha: failMode was an in param in NewbaseDFSRootProtocol
 	bz.rootTimeout = 300  // raha: timeOutMs was an in param in NewbaseDFSRootProtocol
 
 	n.OnDoneCallback(bz.nodeDone) // raha: when this function is called?
-
-	go bz.listen()
 	return bz, nil
 }
 
-//Start: starts the simplified protocol by broadcasting a por tx
-// check to make sure that just tree root node will call start, later we want peridic broadcasting of por txs by random servers in the roster.
-// Question: who get to be the first leader?!
+//Start: starts the simplified protocol by calling sendPoRTx function
 func (bz *BaseDFS) Start() error {
-	//-------------------------------------
-
-	txs, _ := bz.createPoRTx()
-	portx := &ProofOfRetTxChan{
-		//TreeNode: bz.TreeNode(),
-		por: por{
-			por: *txs,
-		},
-	}
-	if err := bz.Broadcast(portx); err != nil {
-		return nil // raha: fix later - return err
-	}
-	log.Lvl3(bz.Name(), "finished broadcasting his por - raha: am I root?")
+	bz.sendPoRTx()
+	log.Lvl3(bz.Info(), "Started the protocol by running Start function")
 	return nil
 }
 
 // Dispatch listen on the different channels
-//raha: where dispatch is been called? really!!
 func (bz *BaseDFS) Dispatch() error {
-	return nil
-}
-func (bz *BaseDFS) listen() {
-	// FIXME handle different failure modes
 	fail := (bz.rootFailMode != 0) && bz.IsRoot()
 	var timeoutStarted bool
-	for {
-		var err error
+	running := true
+	var err error
+	for running {
+		log.Lvl3(bz.Info(), "waiting for message for", bz.Timeout())
 		select {
 		case msg := <-bz.ProofOfRetTxChan:
+			log.Lvl1("raha in listen", msg.TreeNode.ServerIdentity.Address)
 			// PoR
-			if !fail {
-				err = bz.handlePoRTx(msg)
-			}
+			//if !fail {
+			err = bz.handlePoRTx(msg)
+			//}
 		case msg := <-bz.PreparedBlockChan:
 			// Next Block
 			if !fail {
@@ -239,38 +224,65 @@ func (bz *BaseDFS) listen() {
 			// we are done
 			log.Lvl2(bz.Name(), "BaseDFS Dispatches stop.")
 			bz.tempBlock = nil
-			return
 		case <-bz.DoneBaseDFS:
 			// what now?
 			log.Lvl2(bz.Name(), "doneBaseDFS just been called")
-			return
+			running = false
 		}
 		if err != nil {
 			log.Error(bz.Name(), "Error handling messages:", err)
 		}
 	}
+	return err
+	//p.Done()
+}
+
+//sendPoRTx send a por tx
+func (bz *BaseDFS) sendPoRTx() {
+	txs := bz.createPoRTx()
+	portx := &Por{*txs}
+
+	bz.Multicast(portx, bz.List()...)
+	// for _, child := range bz.Children() {
+	// 	err := bz.SendTo(child, portx)
+	// 	if err != nil {
+	// 		log.Lvl1(bz.Info(), "couldn't send to child:", child.ServerIdentity.Address)
+	// 	} else {
+	// 		log.Lvl1(bz.Info(), "sent his PoR to his children:", child.ServerIdentity.Address)
+	// 	}
+	// }
 }
 
 //createPoRTx: later we want peridic broadcasting of por txs by random servers in the roster.
-func (bz *BaseDFS) createPoRTx() (*blkparser.Tx, error) {
-	//f := bz.TreeNode().String()
-	//x := []byte(f + "x") // this content will be contract specific later
+func (bz *BaseDFS) createPoRTx() *blkparser.Tx {
 	x := []byte("010000000101820e2169131a77976cf204ce28685e49a6d2278861c33b6241ba3ae3e0a49f020000008b48304502210098a2851420e4daba656fd79cb60cb565bd7218b6b117fda9a512ffbf17f8f178022005c61f31fef3ce3f906eb672e05b65f506045a65a80431b5eaf28e0999266993014104f0f86fa57c424deb160d0fc7693f13fce5ed6542c29483c51953e4fa87ebf247487ed79b1ddcf3de66b182217fcaf3fcef3fcb44737eb93b1fcb8927ebecea26ffffffff02805cd705000000001976a91429d6a3540acfa0a950bef2bfdc75cd51c24390fd88ac80841e00000000001976a91417b5038a413f5c5ee288caa64cfab35a0c01914e88ac00000000")
 	tx, _ := blkparser.ParseTxs(x)
 	tx1 := tx[len(tx)-1]
-	return tx1, nil
+	return tx1
+	// tx2 := &blkparser.Tx{
+	// 	Hash:     "",
+	// 	Size:     2,
+	// 	LockTime: 2,
+	// 	Version:  1,
+	// 	TxInCnt:  1,
+	// 	TxOutCnt: 1,
+	// 	TxIns:    nil,
+	// 	TxOuts:   nil,
+	// }
 }
 
 // handleAnnouncement pass the announcement to the right CoSi struct.
 func (bz *BaseDFS) handlePoRTx(proofOfRet ProofOfRetTxChan) error {
-	if refuse, err := verifyPoRTx(proofOfRet.por); err == nil {
+	log.Lvl2(bz.Name(), "recieved") //, msg.por.Hash), "from", msg.TreeNode.Name())
+	if refuse, err := verifyPoRTx(proofOfRet); err == nil {
 		if refuse == true {
 			bz.porTxRefusal = true
 			return nil
 		} else {
-			e := bz.appendPoRTx(proofOfRet.por)
+			e := bz.appendPoRTx(proofOfRet)
 			if e == nil {
 				log.Lvl1(bz.TreeNode, "PoR tx appended to current temp block")
+				bz.DoneBaseDFS <- true
 			} else {
 				log.Lvl1(bz.TreeNode, "PoR tx appending error:", e)
 			}
@@ -282,22 +294,22 @@ func (bz *BaseDFS) handlePoRTx(proofOfRet ProofOfRetTxChan) error {
 }
 
 // verifyPoRTx: servers will verify por taxs when they recieve it
-func verifyPoRTx(p por) (bool, error) {
+func verifyPoRTx(p ProofOfRetTxChan) (bool, error) {
 	var refuse = false
 	var err error = nil
 	return refuse, err
 }
 
 //appenPoRTx: append the recieved tx to his current temporary block
-func (bz *BaseDFS) appendPoRTx(p por) error {
-	bz.transactions = append(bz.transactions, p.por)
+func (bz *BaseDFS) appendPoRTx(p ProofOfRetTxChan) error {
+	//bz.transactions = append(bz.transactions, p.portx)
 	return nil
 }
 
 // handle the arrival of a commitment
 func (bz *BaseDFS) handleBlock(pb PreparedBlockChan) (*blockchain.TrBlock, error) {
-	if err := verifyBlock(pb.preparedBlock); err == nil {
-		return (bz.appendBlock(pb.preparedBlock))
+	if err := verifyBlock(pb.PreparedBlock); err == nil {
+		return (bz.appendBlock(pb.PreparedBlock))
 	} else {
 		log.Error(bz.Name(), "Error verying block", err)
 		return nil, nil
@@ -315,12 +327,12 @@ func (bz *BaseDFS) createEpochBlock(lp leadershipProof) *blockchain.TrBlock {
 }
 
 // verifyPoRTx: servers will verify por taxs when they recieve it
-func verifyBlock(pb preparedBlock) error {
+func verifyBlock(pb PreparedBlock) error {
 	return nil
 }
 
 //appenPoRTx:
-func (bz *BaseDFS) appendBlock(pb preparedBlock) (*blockchain.TrBlock, error) {
+func (bz *BaseDFS) appendBlock(pb PreparedBlock) (*blockchain.TrBlock, error) {
 	return nil, nil
 }
 
@@ -408,15 +420,16 @@ func (bz *BaseDFS) nodeDone() bool {
 // from OpinionGathering Protocol
 // -------------------
 // SetTimeout sets the new timeout
-func (p /* *ProtocolOpinionGathering */ BaseDFS) SetTimeout(t time.Duration) {
-	p.timeoutMu.Lock()
-	p.timeout = t
-	p.timeoutMu.Unlock()
+// SetTimeout sets the new timeout
+func (bz *BaseDFS) SetTimeout(t time.Duration) {
+	bz.timeoutMu.Lock()
+	bz.timeout = t
+	bz.timeoutMu.Unlock()
 }
 
 // Timeout returns the current timeout
-func (p /* *ProtocolOpinionGathering */ BaseDFS) Timeout() time.Duration {
-	p.timeoutMu.Lock()
-	defer p.timeoutMu.Unlock()
-	return p.timeout
+func (bz *BaseDFS) Timeout() time.Duration {
+	bz.timeoutMu.Lock()
+	defer bz.timeoutMu.Unlock()
+	return bz.timeout
 }
