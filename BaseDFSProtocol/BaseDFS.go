@@ -295,6 +295,7 @@ func (bz *BaseDFS) handlePoRTx(proofOfRet ProofOfRetTxChan) error {
 
 // verifyPoRTx: servers will verify por taxs when they recieve it
 func verifyPoRTx(p ProofOfRetTxChan) (bool, error) {
+	//test if new repo in chainBst is connected to local Git
 	var refuse = false
 	var err error = nil
 	return refuse, err
