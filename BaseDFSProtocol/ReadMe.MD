@@ -32,17 +32,19 @@ we assume one server broadcast his por tx and all servers on recieving this tx w
 
 ## To Dos
 
-- [ ] Clean Protocol structure
-- [ ] Resolve NewbaseDFSRootProtocol issue
+- [x] Clean Protocol structure
+- [x] Resolve NewbaseDFSRootProtocol issue
 - [ ] onet.Broadcast returns []error, I want error!
-- [ ] Periodic action procedure (a simple storage server: por tx: each t1 + the miners: checkleadership: each epoch)
-- [ ] Now tree root is broadcasting a por tx, later we want peridic broadcasting of por txs by random servers in the roster
+- [x] Periodic action procedure (a simple storage server: por tx: each t1 + the miners: checkleadership: each epoch)
+- [x] Now tree root is broadcasting a por tx, later we want peridic broadcasting of por txs by random servers in the roster
 - [ ] Creating por tx function (a simple storage server)
 - [ ] Verying por tx function (the miners)
-- [ ] Adding por tx to temp block (not new block)
+- [x] Adding por tx to temp block (not new block)
 - [ ] Verifying block function (the miners)
-- [ ] Appending block function (the miners)
+- [ ] Appending block function (the miners) (still needed?)
 - [ ] Creating leadership proof function (the leader)
-- [ ] Checking leadership function (the miners)
-- [ ] Creating new block and broadcasting it (the leader)
+- [x] Checking leadership function (the miners)
+- [x] Creating new block and 
+- [x] broadcasting new block (the leader)
 - [ ] Modifying Block, Transaction, por proof, and election proof structure based on FileCoin's Block structure <https://github.com/filecoin-project/specs/blob/master/content/systems/filecoin_blockchain/struct/block/block.id>
+- [ ] miners eliminate existing verified tx.s in proposed block from their temp tx lists
