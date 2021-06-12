@@ -45,5 +45,5 @@ we assume one server broadcast his por tx and all servers on recieving this tx w
 - [ ] Creating leadership proof function (the leader)
 - [ ] Checking leadership function (the miners)
 - [x] Creating new block and 
-- [ ] [ ] broadcasting new block (the leader)
+- [ ] broadcasting new block (the leader)
 - [ ] Modifying Block, Transaction, por proof, and election proof structure based on FileCoin's Block structure <https://github.com/filecoin-project/specs/blob/master/content/systems/filecoin_blockchain/struct/block/block.id>
