@@ -1,7 +1,9 @@
-/* Base DFS protocol: The simple version:
-we assume one server broadcast his por tx and all servers on recieving this tx will verify and add it to their prepared block and then all server run leader election to check if they are leader, then the leader add his proof and broadcast his prepared block and all servers verify and append his block to their blockchain
+/*
+Base DFS protocol: The simple version:
 
-The BaseDFSProtocol goes as follows:
+we assume one server broadcast his por tx and all servers on recieving this tx will verify and add it to their prepared block and then all server run leader election to check if they are leader, then the leader add his proof and broadcast his prepared block and all servers verify and append his block to their blockchain
+---------------------------------------------
+The BaseDFSProtocol goes as follows: it should change - its better now:)
 1- a server broadcast a por tx
 (chanllenge's randomness comes from hash of the latest mined block)
 2) all miners (who recieve this tx) verify the por tx + add a fixed payment tx +
@@ -12,10 +14,12 @@ The BaseDFSProtocol goes as follows:
 		and his election proof
 5) all miners (who recieve this tx) verify proposed block and
 		add it to their chain
-
+--------------------------------------------
 Types of Messages:
 1- por
 2- proposed block
+3- Hello (to notify start of protocol)
+4- epoch timeOut
 */
 
 package BaseDFSProtocol
@@ -31,7 +35,6 @@ import (
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"github.com/basedfs/simul/monitor"
-	//same as sda in byzcoin - replaced all sda objects with onet/network
 )
 
 func init() {
@@ -68,7 +71,7 @@ type PreparedBlockChan struct {
 }
 
 type PreparedBlock struct {
-	blkparser.Block
+	blockchain.Block
 }
 
 type leadershipProof struct {
@@ -79,8 +82,6 @@ type leadershipProof struct {
 type BaseDFS struct {
 	// the node we are represented-in
 	*onet.TreeNodeInstance
-	// the suite we use
-	suite network.Suite
 	// channel for por from servers to miners
 	PreparedBlockChan chan PreparedBlockChan
 	// channel for por from leader to miners
@@ -89,48 +90,60 @@ type BaseDFS struct {
 	DoneBaseDFS chan bool //it is not initiated in new proto
 	// channel used to let all servers that the protocol has started
 	HelloChan chan HelloChan
-	// channel used to wait for the verification of the block
-	//verifyBlockChan chan bool//
 	// block to be proposed by the leader - if 2/3 miners signal back it submitted it will be the final block
 	tempBlock *blockchain.TrBlock
 	// transactions is the slice of transactions that contains transactions
 	// coming from servers (who convert the por into transaction?)
-	transactions []blkparser.Tx
+	transactions  []blkparser.Tx
+	epochDuration uint32
+	PoRTxDuration uint32
+	// finale block that this BaseDFS epoch has produced
+	finalBlock *blockchain.TrBlock
+
+	/* -----------------------------------------------------------
+	These fields are borrowed from ByzCoin
+	and may be useful for future functionalities
+	------------------------------------------------------------ */
+
+	// the suite we use
+	suite network.Suite //?
 	// last block computed
 	lastBlock string //?
 	// last key block computed
 	lastKeyBlock string //?
+	// refusal to append por-tx to current block
+	porTxRefusal bool //?
 	// temporary buffer of ?
 	//tempCommitResponse []blkparser.Tx//
 	//tcrMut             sync.Mutex//
-	// refusal to append por-tx to current block
-	porTxRefusal bool
+	// channel used to wait for the verification of the block
+	//verifyBlockChan chan bool//
 
 	// onDoneCallback is the callback that will be called at the end of the
 	// protocol when all nodes have finished.
 	// Either after refusing or accepting the proposed block
 	// or at the end of a view change.
 	// raha: when this function is called?
-	onDoneCallback func()
+	onDoneCallback func() //?
 
 	// onAppendPoRTxDone is the callback that will be called when a por tx has been verified and appended to our cuurent temp block. raha: we may need it later!
-	//onAppendPoRTxDone func(*por)//
+	//onAppendPoRTxDone func(*por) //?
 
 	// rootTimeout is the timeout given to the root. It will be passed down the
 	// tree so every nodes knows how much time to wait. This root is a very nice
 	// malicious node.
-	rootTimeout uint64
-	timeoutChan chan uint64
+	rootTimeout uint64      //?
+	timeoutChan chan uint64 //?
 	// onTimeoutCallback is the function that will be called if a timeout
 	// occurs.
-	//onTimeoutCallback func()//
+	//onTimeoutCallback func() //?
 
 	// function to let callers of the protocol (or the server) add functionality
 	// to certain parts of the protocol; mainly used in simulation to do
 	// measurements. Hence functions will not be called in go routines
 
 	// root fails:
-	rootFailMode uint
+	rootFailMode uint //?
 	// Call back when we start broadcasting our por tx
 	//onBroadcastPoRTx func()//
 	// Call back when we start checking this epoch's leadership
@@ -140,33 +153,29 @@ type BaseDFS struct {
 	// callback when we finished "verifying new block" + act = "appending it to our current blockchain"
 	//onVerifyActEpochBlockDone func()//
 	// view change setup and measurement
-	viewchangeChan chan struct {
+	viewchangeChan chan struct { //?
 		*onet.TreeNode
 		viewChange
 	}
 	//raha: what does it do?
-	vcMeasure *monitor.TimeMeasure
+	vcMeasure *monitor.TimeMeasure //?
 	// lock associated
-	doneLock sync.Mutex
+	doneLock sync.Mutex //?
 	// threshold for how much view change acceptance we need
 	// basically n - threshold
-	viewChangeThreshold int
+	viewChangeThreshold int //?
 	// how many view change request have we received
-	vcCounter int
+	vcCounter int //?
 	// done processing is used to stop the processing of the channels
-	doneProcessing chan bool
-	// finale block that this BaseDFS epoch has produced
-	finalBlock *blockchain.TrBlock
+	doneProcessing chan bool //?
 	//from opinion gathering protocol
-	timeout   time.Duration
-	timeoutMu sync.Mutex
-	epochNo   uint32
+	timeout   time.Duration //?
+	timeoutMu sync.Mutex    //?
 }
 
 // NewBaseDFSProtocol returns a new BaseDFS struct
 //func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (*BaseDFS, error) {
 func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error) {
-	// create the byzcoin
 	bz := &BaseDFS{
 		TreeNodeInstance: n,
 		suite:            n.Suite(),
@@ -190,7 +199,10 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	if err := n.RegisterChannel(&bz.HelloChan); err != nil {
 		return bz, err
 	}
-	// --------------------------  this section is in opinion gathering but byzcoin has the above code instead! check later; which is enough and required
+	/* ----------------------------------------------------
+	 this section is in opinion gathering but byzcoin has
+	 the above code instead! check later; which is enough and required
+	-------------------------------------------------------*/
 	// t := n.Tree()
 	// if t == nil {
 	// 	return nil, nil //raha: fix later: raise an error
@@ -203,7 +215,9 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	bz.transactions = nil // raha: transactions was an in param in NewbaseDFSRootProtocol
 	bz.rootFailMode = 0   // raha: failMode was an in param in NewbaseDFSRootProtocol
 	bz.rootTimeout = 300  // raha: timeOutMs was an in param in NewbaseDFSRootProtocol
-	//epochNo = 1
+	// epoch duration on which after this time the leader get choosed and propose a new block (unit?!)
+	bz.epochDuration = 5
+	bz.PoRTxDuration = 5
 
 	n.OnDoneCallback(bz.nodeDone) // raha: when this function is called?
 	return bz, nil
@@ -213,7 +227,6 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 func (bz *BaseDFS) Start() error {
 	//bz.sendPoRTx()
 	bz.helloBaseDFS()
-	//var leaderNo  *network.ServerIdentity = bz.checkLeadership()
 	log.Lvl2(bz.Info(), "Started the protocol by running Start function")
 	return nil
 }
@@ -225,22 +238,39 @@ func (bz *BaseDFS) Dispatch() error {
 	running := true
 	var err error
 	for running {
-		//log.Lvl2(bz.Info(), "waiting for message for", bz.Timeout())
 		select {
+
 		case msg := <-bz.HelloChan:
 			log.Lvl2(bz.Info(), "received Hello from", msg.TreeNode.ServerIdentity.Address)
 			bz.helloBaseDFS()
+
 		case msg := <-bz.ProofOfRetTxChan:
 			log.Lvl2(bz.Info(), "received por", msg.Por.N, "tx from", msg.TreeNode.ServerIdentity.Address)
 			if !fail {
 				err = bz.handlePoRTx(msg)
 			}
+
+		case <-time.After(time.Second * time.Duration(bz.epochDuration)):
+			bz.SendFinalBlock(bz.createEpochBlock(bz.checkLeadership()))
+
+		case <-time.After(time.Second * time.Duration(bz.PoRTxDuration)):
+			bz.sendPoRTx()
+
 		case msg := <-bz.PreparedBlockChan:
 			log.Lvl2(bz.Info(), "received block from", msg.TreeNode.ServerIdentity.Address)
 			if !fail {
 				_, err = bz.handleBlock(msg)
 			}
-			//-------------------------------------
+		// this msg is catched in simulation codes
+		// and do what? (FileName: ?)
+		//case <-bz.DoneBaseDFS:
+		// 	running = false
+
+		/* -----------------------------------------------------------
+		These section are borrowed from ByzCoin
+		and may be useful for future functionalities
+		------------------------------------------------------------ */
+
 		case timeout := <-bz.timeoutChan:
 			// start the timer
 			if timeoutStarted {
@@ -255,10 +285,6 @@ func (bz *BaseDFS) Dispatch() error {
 			// we are done
 			log.Lvl2(bz.Name(), "BaseDFS Dispatches stop.")
 			bz.tempBlock = nil
-		case <-bz.DoneBaseDFS:
-			// what now?
-			// log.Lvl2(bz.Name(), "doneBaseDFS just been called")
-			// running = false
 		}
 		if err != nil {
 			log.Error(bz.Name(), "Error handling messages:", err)
@@ -272,7 +298,7 @@ func (bz *BaseDFS) helloBaseDFS() {
 	if !bz.IsLeaf() {
 		for _, child := range bz.Children() {
 			go func(c *onet.TreeNode) {
-				log.Lvl2(bz.Info(), "sending hello to", c.ServerIdentity.Address, c.ID, "timeout", bz.timeout)
+				//log.Lvl2(bz.Info(), "sending hello to", c.ServerIdentity.Address, c.ID, "timeout", bz.timeout)
 				err := bz.SendTo(c, &HelloBaseDFS{Timeout: bz.timeout})
 				if err != nil {
 					log.Lvl2(bz.Info(), "couldn't send hello to child",
@@ -286,7 +312,7 @@ func (bz *BaseDFS) helloBaseDFS() {
 	}
 }
 
-//createPoRTx: later we want peridic broadcasting of por txs by random servers in the roster.
+//createPoRTx:
 func (bz *BaseDFS) createPoRTx() *blkparser.Tx {
 	// x := []byte("010000000101820e2169131a77976cf204ce28685e49a6d2278861c33b6241ba3ae3e0a49f020000008b48304502210098a2851420e4daba656fd79cb60cb565bd7218b6b117fda9a512ffbf17f8f178022005c61f31fef3ce3f906eb672e05b65f506045a65a80431b5eaf28e0999266993014104f0f86fa57c424deb160d0fc7693f13fce5ed6542c29483c51953e4fa87ebf247487ed79b1ddcf3de66b182217fcaf3fcef3fcb44737eb93b1fcb8927ebecea26ffffffff02805cd705000000001976a91429d6a3540acfa0a950bef2bfdc75cd51c24390fd88ac80841e00000000001976a91417b5038a413f5c5ee288caa64cfab35a0c01914e88ac00000000")
 	// // tx, _ := blkparser.ParseTxs(x)
@@ -396,25 +422,42 @@ func (bz *BaseDFS) appendPoRTx(p ProofOfRetTxChan) error {
 }
 
 //checkLeadership
-func (bz *BaseDFS) checkLeadership() *network.ServerIdentity {
+func (bz *BaseDFS) checkLeadership() network.ServerIdentityID {
 	n := bz.Roster().RandomServerIdentity()
-	return n
+	log.Lvl2(bz.Info(), "random server is", n.Address)
+	return n.GetID()
 }
 
 //createEpochBlock: by leader
-func (bz *BaseDFS) createEpochBlock(lp *leadershipProof) *blockchain.
+func (bz *BaseDFS) createEpochBlock(leaderServerIdentityID network.ServerIdentityID) *blockchain.
 	TrBlock {
-	//if bz.ServerIdentity().Equal(){
-	var h blockchain.TransactionList = blockchain.NewTransactionList(bz.transactions, len(bz.transactions))
-	bz.tempBlock = blockchain.NewTrBlock(h, blockchain.NewHeader(h, "raha", "raha"))
-	return bz.tempBlock
-	//}else{
-	//	return nil
-	//}
+	if bz.ServerIdentity().GetID().Equal(leaderServerIdentityID) {
+		// later: add appropriate payment tx.s for each por tx in temp transactions list
+		var h blockchain.TransactionList = blockchain.NewTransactionList(bz.transactions, len(bz.transactions))
+		bz.tempBlock = blockchain.NewTrBlock(h, blockchain.NewHeader(h, "raha", "raha"))
+		return bz.tempBlock
+	} else {
+		return nil
+	}
 }
 
 //SendFinalBlock   bz.SendFinalBlock(createEpochBlock)
 func (bz *BaseDFS) SendFinalBlock(fb *blockchain.TrBlock) {
+	if fb == nil {
+		return
+	} else { // it's the leader
+		var err error
+		for _, n := range bz.Tree().List() {
+			// don't send to ourself
+			if n.ID.Equal(bz.TreeNode().ID) {
+				continue
+			}
+			err = bz.SendTo(n, &PreparedBlock{fb.Block})
+			if err != nil {
+				log.Error(bz.Name(), "Error sending new block", err)
+			}
+		}
+	}
 	log.Lvl1("final block hash is:", fb.Block.HeaderHash)
 	return
 }
@@ -422,6 +465,22 @@ func (bz *BaseDFS) SendFinalBlock(fb *blockchain.TrBlock) {
 // handle the arrival of a block
 func (bz *BaseDFS) handleBlock(pb PreparedBlockChan) (*blockchain.TrBlock, error) {
 	if err := verifyBlock(pb.PreparedBlock); err == nil {
+		//they eliminate existing tx.s in block from their current temp tx list
+		cap := cap(bz.transactions)
+		txs := bz.transactions
+		bz.transactions = nil
+		for _, tx1 := range pb.PreparedBlock.Block.Txs {
+			for index, tx2 := range txs {
+				if tx1.Hash == tx2.Hash {
+					if cap > index+1 {
+						txs = append(txs[:index], txs[index+1:]...)
+					} else {
+						txs = txs[:index]
+					}
+				}
+			}
+		}
+		bz.transactions = append(bz.transactions, txs...)
 		return (bz.appendBlock(pb.PreparedBlock))
 	} else {
 		log.Error(bz.Name(), "Error verying block", err)
@@ -436,10 +495,14 @@ func verifyBlock(pb PreparedBlock) error {
 
 //appendBlock:
 func (bz *BaseDFS) appendBlock(pb PreparedBlock) (*blockchain.TrBlock, error) {
+	//measure block's size
 	return nil, nil
 }
 
 //-------------------------------------------------------------------
+// this section is borrowed from ByzCoin - may need them later but not sure we should keep them
+//-------------------------------------------------------------------
+
 // startTimer starts the timer to decide whether we should request a view change after a certain timeout or not.
 // If the signature is done, we don't. otherwise
 // we start the view change protocol.
@@ -475,12 +538,13 @@ func (bz *BaseDFS) sendAndMeasureViewchange() {
 }
 
 // viewChange is simply the last hash / id of the previous leader.
-// type viewChange struct {
+// type viewChange2 struct {
 // 	LastBlock [sha256.Size]byte
 // }
-// newViewChange creates a new view change.
-// func newViewChange() *viewChange {
-// 	res := &viewChange{}
+
+// // newViewChange creates a new view change.
+// func newViewChange2() *viewChange2 {
+// 	res := &viewChange2{}
 // 	for i := 0; i < sha256.Size; i++ {
 // 		res.LastBlock[i] = 0
 // 	}
