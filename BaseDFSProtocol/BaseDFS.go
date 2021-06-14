@@ -35,6 +35,7 @@ import (
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"github.com/basedfs/simul/monitor"
+	//"go.dedis.ch/kyber/v3/sign/bls"
 )
 
 func init() {
@@ -314,45 +315,19 @@ func (bz *BaseDFS) helloBaseDFS() {
 
 //createPoRTx:
 func (bz *BaseDFS) createPoRTx() *blkparser.Tx {
-	// x := []byte("010000000101820e2169131a77976cf204ce28685e49a6d2278861c33b6241ba3ae3e0a49f020000008b48304502210098a2851420e4daba656fd79cb60cb565bd7218b6b117fda9a512ffbf17f8f178022005c61f31fef3ce3f906eb672e05b65f506045a65a80431b5eaf28e0999266993014104f0f86fa57c424deb160d0fc7693f13fce5ed6542c29483c51953e4fa87ebf247487ed79b1ddcf3de66b182217fcaf3fcef3fcb44737eb93b1fcb8927ebecea26ffffffff02805cd705000000001976a91429d6a3540acfa0a950bef2bfdc75cd51c24390fd88ac80841e00000000001976a91417b5038a413f5c5ee288caa64cfab35a0c01914e88ac00000000")
-	// // tx, _ := blkparser.ParseTxs(x)
-	// // tx1 := tx[len(tx)-1]
-	// txIns := []*blkparser.TxIn{{
-	// 	InputHash: "b6f6991d03df0e2e04dafffcd6bc418aac66049e2cd74b80f14ac86db1e3f0da",
-	// 	InputVout: 5,
-	// 	ScriptSig: x,
-	// 	Sequence:  12,
-	// }, {
-	// 	InputHash: "b6f6991d03df0e2e04dafffcd6bc418aac66049e2cd74b80f14ac86db1e3f0da",
-	// 	InputVout: 5,
-	// 	ScriptSig: x,
-	// 	Sequence:  12,
-	// },
-	// }
-	// tx1 := &blkparser.Tx{
-	// 	Hash:     "b6f6991d03df0e2e04dafffcd6bc418aac66049e2cd74b80f14ac86db1e3f0da",
-	// 	Size:     2,
-	// 	LockTime: 0,
-	// 	Version:  1,
-	// 	TxInCnt:  1,
-	// 	TxOutCnt: 1,
-	// 	TxIns:    txIns,
-	// 	TxOuts:   nil,
-	// }
 	x := []byte("fds")
-	// tx, _ := blkparser.ParseTxs(x)
-	// tx1 := tx[len(tx)-1]
-	txIns := []*blkparser.TxIn{{
-		InputHash: "ff",
-		InputVout: 5,
-		ScriptSig: x,
-		Sequence:  12,
-	}, {
-		InputHash: "sd",
-		InputVout: 5,
-		ScriptSig: x,
-		Sequence:  12,
-	},
+	txIns := []*blkparser.TxIn{
+		{
+			InputHash: "ff",
+			InputVout: 5,
+			ScriptSig: x,
+			Sequence:  12,
+		}, {
+			InputHash: "sd",
+			InputVout: 5,
+			ScriptSig: x,
+			Sequence:  12,
+		},
 	}
 	tx1 := &blkparser.Tx{
 		Hash:     "s",
@@ -407,7 +382,7 @@ func (bz *BaseDFS) handlePoRTx(proofOfRet ProofOfRetTxChan) error {
 
 // verifyPoRTx: servers will verify por tx.s when they recieve it
 func verifyPoRTx(p ProofOfRetTxChan) (bool, error) {
-	//test if new repo in chainBst is connected to local Git
+
 	var refuse = false
 	var err error = nil
 	return refuse, err
