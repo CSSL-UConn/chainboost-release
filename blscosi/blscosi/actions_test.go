@@ -6,10 +6,10 @@ import (
 	"path"
 	"testing"
 
+	onet "github.com/basedfs"
+	"github.com/basedfs/app"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/kyber/v3/pairing"
-	"go.dedis.ch/onet/v3"
-	"go.dedis.ch/onet/v3/app"
 )
 
 var testSuite = pairing.NewSuiteBn256()

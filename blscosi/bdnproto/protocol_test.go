@@ -5,12 +5,11 @@ import (
 	"testing"
 	"time"
 
+	onet "github.com/basedfs"
+	"github.com/basedfs/blscosi/protocol"
+	"github.com/basedfs/log"
 	"github.com/stretchr/testify/require"
-	"go.dedis.ch/cothority/v3"
-	"go.dedis.ch/cothority/v3/blscosi/protocol"
 	"go.dedis.ch/kyber/v3/pairing"
-	"go.dedis.ch/onet/v3"
-	"go.dedis.ch/onet/v3/log"
 )
 
 var testSuite = pairing.NewSuiteBn256()
@@ -44,7 +43,7 @@ func TestBdnProto_SimpleCase(t *testing.T) {
 }
 
 func runProtocol(nbrNodes, nbrSubTrees, threshold int) error {
-	local := onet.NewLocalTest(cothority.Suite)
+	local := onet.NewLocalTest(onet.Suite)
 	defer local.CloseAll()
 	servers, roster, tree := local.GenTree(nbrNodes, false)
 

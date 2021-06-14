@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.dedis.ch/cothority/v3/blscosi/protocol"
+	"github.com/basedfs/blscosi/protocol"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/sign"
