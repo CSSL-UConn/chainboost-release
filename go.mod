@@ -19,14 +19,15 @@ require (
 	github.com/honeycombio/libhoney-go v1.15.3 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/montanaflynn/stats v0.5.0
-	github.com/shirou/gopsutil v3.21.5+incompatible
+	github.com/shirou/gopsutil v3.21.7+incompatible
 	github.com/stretchr/testify v1.7.0
+	github.com/tklauser/go-sysconf v0.3.8 // indirect
 	github.com/urfave/cli v1.22.2
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	go.dedis.ch/kyber/v3 v3.0.13
 	go.dedis.ch/protobuf v1.0.11
 	go.etcd.io/bbolt v1.3.4
-	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd
+	golang.org/x/sys v0.0.0-20210816074244-15123e1e1f71
 	golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	rsc.io/goversion v1.2.0
