@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/basedfs/blockchain/blkparser"
 	"github.com/basedfs/log"
+	//"github.com/blockchain/blkparser"
 	"github.com/dedis/crypto/abstract"
 	// "go.dedis.ch/kyber/v3/suites" commented to later clear bug
 )
@@ -14,10 +14,11 @@ type MessageType int
 
 type SeqNo byte
 
+/*
 type TransactionAnnouncment struct {
 	Val blkparser.Tx // Trasaction to be included in a block
 }
-
+*/
 // NOTE: In order to decode correctly the proof, we need to the get the suite
 // somehow. We could just simply add it as a field and not (un)marhsal it
 // We'd just make sure that the suite is setup before unmarshaling.
@@ -40,7 +41,7 @@ type BitCoSiMessage struct {
 	ReqNo SeqNo // Request sequence number
 	// ErrorReply *ErrorReply // Generic error reply to any request
 	Type MessageType
-	Treq *TransactionAnnouncment
+	//Treq *TransactionAnnouncment
 	Brep *BlockReply
 }
 

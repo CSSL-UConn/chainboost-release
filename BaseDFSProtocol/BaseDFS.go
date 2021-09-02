@@ -25,7 +25,14 @@ Types of Messages:
 package BaseDFSProtocol
 
 import (
+	"go.dedis.ch/kyber/v3"
+	"go.dedis.ch/kyber/v3/group/edwards25519"
+	"go.dedis.ch/kyber/v3/sign/schnorr"
+	"go.dedis.ch/kyber/v3/suites"
+	"go.dedis.ch/kyber/v3/util/key"
+	"go.dedis.ch/kyber/v3/xof/blake2xb"
 	"math"
+	"strconv"
 	"sync"
 	"time"
 
@@ -35,7 +42,6 @@ import (
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"github.com/basedfs/simul/monitor"
-	//"go.dedis.ch/kyber/v3/sign/bls"
 )
 
 func init() {
@@ -46,7 +52,9 @@ func init() {
 	onet.GlobalProtocolRegister("BaseDFS", NewBaseDFSProtocol)
 }
 
-// Hello is sent down the tree from the root node, every node who gets it send it to its children and start multicasting his por tx.s
+// Hello is sent down the tree from the root node,
+// every node who gets it send it to its children
+// and start multicasting his por tx.s
 type HelloBaseDFS struct {
 	Timeout time.Duration
 }
@@ -58,12 +66,7 @@ type HelloChan struct {
 
 type ProofOfRetTxChan struct {
 	*onet.TreeNode
-	Por
-}
-
-type Por struct {
-	Tx blkparser.Tx
-	N  uint32
+	por
 }
 
 type PreparedBlockChan struct {
@@ -77,6 +80,10 @@ type PreparedBlock struct {
 
 type leadershipProof struct {
 	U uint32
+}
+
+type tx struct{
+	i int8
 }
 
 // baseDFS is the main struct for running the protocol
@@ -100,7 +107,7 @@ type BaseDFS struct {
 	PoRTxDuration uint32
 	// finale block that this BaseDFS epoch has produced
 	finalBlock *blockchain.TrBlock
-
+	currentRandomSeed string
 	/* -----------------------------------------------------------
 	These fields are borrowed from ByzCoin
 	and may be useful for future functionalities
@@ -184,6 +191,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 		//verifyBlockChan:  			make(chan bool),
 		doneProcessing: make(chan bool, 2),
 		timeoutChan:    make(chan uint64, 1),
+		currentRandomSeed: "testrandomseed",
 	}
 	bz.viewChangeThreshold = int(math.Ceil(float64(len(bz.Tree().List())) * 2.0 / 3.0))
 
@@ -226,8 +234,8 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 
 //Start: starts the simplified protocol by sending hello msg to all nodes which later makes them to start sending their por tx.s
 func (bz *BaseDFS) Start() error {
-	//bz.sendPoRTx()
-	bz.helloBaseDFS()
+	bz.randomizedFileStoring()
+	//bz.helloBaseDFS()
 	log.Lvl2(bz.Info(), "Started the protocol by running Start function")
 	return nil
 }
@@ -246,7 +254,7 @@ func (bz *BaseDFS) Dispatch() error {
 			bz.helloBaseDFS()
 
 		case msg := <-bz.ProofOfRetTxChan:
-			log.Lvl2(bz.Info(), "received por", msg.Por.N, "tx from", msg.TreeNode.ServerIdentity.Address)
+			log.Lvl2(bz.Info(), "received por", msg.por.sigma, "tx from", msg.TreeNode.ServerIdentity.Address)
 			if !fail {
 				err = bz.handlePoRTx(msg)
 			}
@@ -313,41 +321,12 @@ func (bz *BaseDFS) helloBaseDFS() {
 	}
 }
 
-//createPoRTx:
-func (bz *BaseDFS) createPoRTx() *blkparser.Tx {
-	x := []byte("fds")
-	txIns := []*blkparser.TxIn{
-		{
-			InputHash: "ff",
-			InputVout: 5,
-			ScriptSig: x,
-			Sequence:  12,
-		}, {
-			InputHash: "sd",
-			InputVout: 5,
-			ScriptSig: x,
-			Sequence:  12,
-		},
-	}
-	tx1 := &blkparser.Tx{
-		Hash:     "s",
-		Size:     2,
-		LockTime: 0,
-		Version:  1,
-		TxInCnt:  1,
-		TxOutCnt: 1,
-		TxIns:    txIns,
-		TxOuts:   nil,
-	}
-	return tx1
-}
-
 //sendPoRTx send a por tx
 func (bz *BaseDFS) sendPoRTx() {
-	txs := bz.createPoRTx()
-	portx := &Por{*txs, uint32(bz.Index())}
+	//txs := bz.createPoRTx()
+	//portx := &Por{*txs, uint32(bz.Index())}
 	log.Lvl2(bz.Name(), ": multicasting por tx")
-	bz.Multicast(portx, bz.List()...)
+	//bz.Multicast(portx, bz.List()...)
 
 	// for _, child := range bz.Children() {
 	// 	err := bz.SendTo(child, portx)
@@ -361,7 +340,7 @@ func (bz *BaseDFS) sendPoRTx() {
 
 // handleAnnouncement pass the announcement to the right CoSi struct.
 func (bz *BaseDFS) handlePoRTx(proofOfRet ProofOfRetTxChan) error {
-	if refuse, err := verifyPoRTx(proofOfRet); err == nil {
+	if refuse, err := verifyPoR(proofOfRet); err == nil {
 		if refuse == true {
 			bz.porTxRefusal = true
 			return nil
@@ -380,17 +359,9 @@ func (bz *BaseDFS) handlePoRTx(proofOfRet ProofOfRetTxChan) error {
 	return nil
 }
 
-// verifyPoRTx: servers will verify por tx.s when they recieve it
-func verifyPoRTx(p ProofOfRetTxChan) (bool, error) {
-
-	var refuse = false
-	var err error = nil
-	return refuse, err
-}
-
-//appenPoRTx: append the recieved tx to his current temporary block
+//appendPoRTx: append the recieved tx to his current temporary block
 func (bz *BaseDFS) appendPoRTx(p ProofOfRetTxChan) error {
-	bz.transactions = append(bz.transactions, p.Por.Tx)
+	//bz.transactions = append(bz.transactions, p.por.Tx)
 	// for test creating block:
 	//bz.createEpochBlock(&leadershipProof{1})
 	return nil
@@ -574,4 +545,96 @@ func (bz *BaseDFS) Timeout() time.Duration {
 	bz.timeoutMu.Lock()
 	defer bz.timeoutMu.Unlock()
 	return bz.timeout
+}
+
+//--------------- Compact PoR -----------------
+type Tau struct{
+	tau string
+}
+type processedFile struct{
+	sigma_i []string
+	m_ij [][]string
+}
+type randomQuery struct{
+	i int
+	v_i int
+}
+type por struct {
+	mu []int
+	sigma kyber.Point
+}
+//
+func (bz *BaseDFS) randomizedFileStoring()/*(Tau,processedFile)*/{
+
+	//randomizedKeyGeneration: pubK=(alpha,ssk),prK=(v,spk)
+	clientKeyPair := key.NewKeyPair(bz.suite)
+	ssk := clientKeyPair.Private
+	spk := clientKeyPair.Public
+	//BLS keyPair
+	suite := suites.MustFind("Ed25519")		// Use the edwards25519-curve
+	alpha := suite.Scalar().Pick(suite.RandomStream()) // private key
+	v := suite.Point().Mul(alpha, nil)          // public key
+
+	//	------   createFileTag(Tau)
+	//u1,..,us random G
+	const s = 10 // number of sectors in eac block (sys. par.)
+	var n int64 = 10 // number of blocks (sys. par.)
+	ns := strconv.FormatInt(n, 10)
+
+	var u[s]kyber.Scalar
+	var U[s]kyber.Point
+	var st string
+	for j := 0; j<s; j++ {
+		rand := blake2xb.New([]byte("seed"))
+		suite := edwards25519.NewBlakeSHA256Ed25519WithRand(rand)
+		u[j] = suite.Scalar().Pick(rand)
+		U[j] = suite.Point().Mul(u[j], nil)
+		st = st + u[j].String()
+	}
+
+	//Tau0 := "name"||string(n)||u1||...||us
+	//Tau=Tau0||Ssig(ssk)(Tau0)
+	Tau0 := "aRandomFileName"+ ns +st
+	sg, _ := schnorr.Sign(bz.suite,ssk,[]byte(Tau0))
+	Tau := Tau0 + string(sg)
+	log.LLvl2(ssk,spk,v,st,Tau)
+
+	//createAuthValue(Sigma_i) for block i
+	//Sigma_i = Hash(name||i).P(j=1,..,s)u_i^m_ij
+	//Sigma_i := hash
+
+
+	//mStar = &processedFile
+	//	{sigma_i:	Sigma_i,
+	//	m_ij:		...
+	//}
+	//return Tau, mStar
+}
+//
+func randomizedVerifyingQuery()/*randomQuery*/{
+	// n,|I|: sys. par.
+	//bz.currentRandomSeed
+	//rq = &randomQuery{
+	//	i: 		random [1,n],
+	//	v_i:	v_i random G
+	//return rq
+}
+//createPoR:
+func (bz *BaseDFS) createPoR() *por {
+	// input: pubK, Tau, mStar
+	//Mu_j= S(Q)(v_i.m_ij)
+	//sigma=P(Q)(sigma_i^v_i)
+	return &por{
+		//mu: ..,
+		sigma: nil,
+	}
+}
+
+// verifyPoR: servers will verify por tx.s when they recieve it
+func verifyPoR(p ProofOfRetTxChan) (bool, error) {
+	//input: PoR , pubK, Tau
+	//check: e(sigma, g) =? e(PHash(name||i)^v_i.P(j=1,..,s)(u_j^mu_j,v)
+	var refuse = false
+	var err error = nil
+	return refuse, err
 }
