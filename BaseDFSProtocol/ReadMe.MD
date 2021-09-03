@@ -48,3 +48,4 @@ we assume one server broadcast his por tx and all servers on recieving this tx w
 - [x] broadcasting new block (the leader)
 - [ ] Modifying Block, Transaction, por proof, and election proof structure based on FileCoin's Block structure <https://github.com/filecoin-project/specs/blob/master/content/systems/filecoin_blockchain/struct/block/block.id>
 - [ ] miners eliminate existing verified tx.s in proposed block from their temp tx lists
+- [ ] track list of servers that have sent proof of storage(por) for leader-election
