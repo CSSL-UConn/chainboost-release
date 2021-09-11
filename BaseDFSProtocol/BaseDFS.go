@@ -547,7 +547,10 @@ func (bz *BaseDFS) Timeout() time.Duration {
 	return bz.timeout
 }
 
-//--------------- Compact PoR -----------------
+//------------------------------------------------
+//  --------------- Compact PoR -----------------
+//------------------------------------------------
+
 type Tau struct{
 	tau string
 }
@@ -563,7 +566,8 @@ type por struct {
 	mu []int
 	sigma kyber.Point
 }
-//
+
+
 func (bz *BaseDFS) randomizedFileStoring()/*(Tau,processedFile)*/{
 
 	//randomizedKeyGeneration: pubK=(alpha,ssk),prK=(v,spk)
@@ -577,9 +581,25 @@ func (bz *BaseDFS) randomizedFileStoring()/*(Tau,processedFile)*/{
 
 	//	------   createFileTag(Tau)
 	//u1,..,us random G
-	const s = 10 // number of sectors in eac block (sys. par.)
-	var n int64 = 10 // number of blocks (sys. par.)
-	ns := strconv.FormatInt(n, 10)
+	const s = 10 			// number of sectors in eac block (sys. par.)
+	//Each sector is one element of Zp,
+	//and there are s sectors per block.
+	//If the processed file is b bits long,
+	//then there are n=[b/s lg p] blocks. ???
+	const n int = 10 		// number of blocks (sys. par.)
+	ns := strconv.FormatInt(int64(n), 10)
+
+	// first apply the erasure code to obtain M′; then split M′
+	// into n blocks (for some n), each s sectors long:
+	// {mij} 1≤i≤n 1≤j≤s
+
+	var m_ij [n][s] string
+	for i:=0; i<n; i++{
+		for j:=0; j<s; j++{
+			m_ij[i][j] = "1111"
+		}
+	}
+	log.LLvl2(m_ij)
 
 	var u[s]kyber.Scalar
 	var U[s]kyber.Point
@@ -600,9 +620,20 @@ func (bz *BaseDFS) randomizedFileStoring()/*(Tau,processedFile)*/{
 	log.LLvl2(ssk,spk,v,st,Tau)
 
 	//createAuthValue(Sigma_i) for block i
-	//Sigma_i = Hash(name||i).P(j=1,..,s)u_i^m_ij
-	//Sigma_i := hash
+	//Sigma_i = Hash(name||i).P(j=1,..,s)u_j^m_ij
+	//h := suite.Hash()
+	for i:=0; i<n; i++{
+		//xxx=1
+		// check bls hash???
+		//x, _ := h.Write([]byte("aRandomFileName"+string(i)))
+		for j:=1;j<s;j++{
+			//xx := suite.Point().Mul(u[j], nil)
+				//m_ij[i][j]
+			//xxx =xx*xxx
+		}
+		//xxx = xxx*x
 
+	}
 
 	//mStar = &processedFile
 	//	{sigma_i:	Sigma_i,
