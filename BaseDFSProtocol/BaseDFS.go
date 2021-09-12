@@ -26,13 +26,12 @@ package BaseDFSProtocol
 
 import (
 	"go.dedis.ch/kyber/v3"
-	"go.dedis.ch/kyber/v3/group/edwards25519"
 	"go.dedis.ch/kyber/v3/pairing"
+	"go.dedis.ch/kyber/v3/pairing/bn256"
+	"go.dedis.ch/kyber/v3/sign/bls"
 	"go.dedis.ch/kyber/v3/sign/schnorr"
-	"go.dedis.ch/kyber/v3/suites"
 	"go.dedis.ch/kyber/v3/util/key"
 	"go.dedis.ch/kyber/v3/util/random"
-	"go.dedis.ch/kyber/v3/xof/blake2xb"
 	"math"
 	"strconv"
 	"sync"
@@ -573,19 +572,10 @@ type por struct {
 func (bz *BaseDFS) randomizedFileStoring()/*(Tau,processedFile)*/{
 
 	//randomizedKeyGeneration: pubK=(alpha,ssk),prK=(v,spk)
-	clientKeyPair := key.NewKeyPair(bz.suite)
+	clientKeyPair := key.NewKeyPair(bz.suite) //right?
 	ssk := clientKeyPair.Private
 	spk := clientKeyPair.Public
 	//BLS keyPair
-	//suite := suites.MustFind("Ed25519")		// Use the edwards25519-curve
-	//The curve used is y^{2}=x^{3}+486662x^{2}+x}
-	//a Montgomery curve, over the prime field defined by the prime number
-	//2^{255}-19, and it uses the base point x=9
-	//This point generates a cyclic subgroup whose order is
-	//the prime 2^{252}+27742317777372353535851937790883648493
-	//this subgroup has a co-factor of 8, meaning the number of
-	//elements in the subgroup is 1/8 that of the elliptic curve group.
-
 	//Package bn256: implements the Optimal Ate pairing over a
 	//256-bit Barreto-Naehrig curve as described in
 	//http://cryptojedi.org/papers/dclxvi-20100714.pdf.
@@ -594,8 +584,12 @@ func (bz *BaseDFS) randomizedFileStoring()/*(Tau,processedFile)*/{
 	//See https://moderncrypto.org/mail-archive/curves/2016/000740.html.
 	//Package bn256 from kyber library is used in blscosi module for bls scheme.
 	suite := pairing.NewSuiteBn256()
-	alpha := suite.Scalar().Pick(suite.RandomStream()) // private key
-	v := suite.Point().Mul(alpha, nil)          // public key
+	//alpha := suite.Scalar().Pick(suite.RandomStream()) // private key
+	private, public := bls.NewKeyPair(suite, random.New())
+	alpha := private
+	//v := suite.Point().Mul(alpha, nil)          // public key
+	v := public
+	log.Lvl2(alpha)
 
 	//	------   createFileTag(Tau)
 	//u1,..,us random G
@@ -604,7 +598,7 @@ func (bz *BaseDFS) randomizedFileStoring()/*(Tau,processedFile)*/{
 	//and there are s sectors per block.
 	//If the processed file is b bits long,
 	//then there are n=[b/s lg p] blocks. we assume a fixed file, b bit long
-	//p=?
+	//p is the Order???
 	const n int = 10 		// number of blocks (sys. par.)
 	ns := strconv.FormatInt(int64(n), 10)
 
@@ -612,53 +606,59 @@ func (bz *BaseDFS) randomizedFileStoring()/*(Tau,processedFile)*/{
 	// into n blocks (for some n), each s sectors long:
 	// {mij} 1≤i≤n 1≤j≤s
 
-	var m_ij [n][s] string
+	var m_ij [n][s] byte
 	for i:=0; i<n; i++{
 		for j:=0; j<s; j++{
-			m_ij[i][j] = "1111"
+			m_ij[i][j] = byte(123)
 		}
 	}
-	log.LLvl2(m_ij)
 
 	var u[s]kyber.Scalar
 	var U[s]kyber.Point
 	var st string
 	//a random file name from some sufficiently large domain (e.g.,Zp)
-	aRandomFileName := random.Int(i.M, random.New())
-		//random.New()
-		//blake2xb.New([]byte("seed")) //fix this!
+	//check weather p is the Order???
+	aRandomFileName := random.Int(bn256.Order, random.New())
+
 	for j := 0; j<s; j++ {
-		rand := blake2xb.New([]byte("seed"))
-		suite := pairing.NewSuiteBn256()
-		//edwards25519.NewBlakeSHA256Ed25519WithRand(rand)
-		u[j] = suite.Scalar().Pick(rand)
+		rand := random.New()
+		u[j] = suite.Scalar().Pick(rand) //right?
 		U[j] = suite.Point().Mul(u[j], nil)
 		st = st + U[j].String()
 	}
 
 	//Tau0 := "name"||string(n)||u1||...||us
 	//Tau=Tau0||Ssig(ssk)(Tau0)
-	Tau0 := String(aRandomFileName)+ ns +st
+	Tau0 := aRandomFileName.String()+ ns + st
 	sg, _ := schnorr.Sign(bz.suite,ssk,[]byte(Tau0))
 	Tau := Tau0 + string(sg)
 	log.LLvl2(ssk,spk,v,st,Tau)
 
-	//createAuthValue(Sigma_i) for block i
-	//Sigma_i = Hash(name||i).P(j=1,..,s)u_j^m_ij
-	//h := suite.Hash()
-	for i:=0; i<n; i++{
-		//xxx=1
-		// check bls hash???
-		//x, _ := h.Write([]byte("aRandomFileName"+string(i)))
-		for j:=1;j<s;j++{
-			//xx := suite.Point().Mul(u[j], nil)
-				//m_ij[i][j]
-			//xxx =xx*xxx
-		}
-		//xxx = xxx*x
-
+	type hashablePoint interface {
+		Hash([]byte) kyber.Point
+	}
+	hashable, ok := suite.G1().Point().(hashablePoint)
+	if !ok {
+		log.LLvl2("err")
 	}
 
+	//xHM := HM.Mul(x, HM)
+	//s, err := xHM.MarshalBinary()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//return s, nil
+
+	//createAuthValue(Sigma_i) for block i
+	//Sigma_i = Hash(name||i).P(j=1,..,s)u_j^m_ij
+	for i:=0; i<n; i++{
+		h := hashable.Hash(append(aRandomFileName.Bytes(),byte(i)))
+		log.LLvl2(h)
+		for j:=1;j<s;j++{
+			log.LLvl2("hey")
+		}
+	}
+	log.LLvl2("hey")
 	//mStar = &processedFile
 	//	{sigma_i:	Sigma_i,
 	//	m_ij:		...
