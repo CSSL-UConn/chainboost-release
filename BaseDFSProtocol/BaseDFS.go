@@ -584,15 +584,12 @@ func (bz *BaseDFS) randomizedFileStoring()/*(Tau,processedFile)*/{
 	//See https://moderncrypto.org/mail-archive/curves/2016/000740.html.
 	//Package bn256 from kyber library is used in blscosi module for bls scheme.
 	suite := pairing.NewSuiteBn256()
-	//alpha := suite.Scalar().Pick(suite.RandomStream()) // private key
 	private, public := bls.NewKeyPair(suite, random.New())
 	alpha := private
-	//v := suite.Point().Mul(alpha, nil)          // public key
 	v := public
-	log.Lvl2(alpha)
+	log.Lvl2(alpha, v)
 
 	//	------   createFileTag(Tau)
-	//u1,..,us random G
 	const s = 10 			// number of sectors in eac block (sys. par.)
 	//Each sector is one element of Zp,
 	//and there are s sectors per block.
@@ -602,23 +599,25 @@ func (bz *BaseDFS) randomizedFileStoring()/*(Tau,processedFile)*/{
 	const n int = 10 		// number of blocks (sys. par.)
 	ns := strconv.FormatInt(int64(n), 10)
 
+	//a random file name from some sufficiently large domain (e.g.,Zp)
+	//check weather p is the Order???
+	aRandomFileName := random.Int(bn256.Order, random.New())
+
 	// first apply the erasure code to obtain M′; then split M′
 	// into n blocks (for some n), each s sectors long:
 	// {mij} 1≤i≤n 1≤j≤s
 
-	var m_ij [n][s] byte
+	var m_ij [n][s] []byte
 	for i:=0; i<n; i++{
 		for j:=0; j<s; j++{
-			m_ij[i][j] = byte(123)
+			m_ij[i][j] = []byte{1,2,3}
 		}
 	}
 
+	//u1,..,us random G
 	var u[s]kyber.Scalar
 	var U[s]kyber.Point
 	var st string
-	//a random file name from some sufficiently large domain (e.g.,Zp)
-	//check weather p is the Order???
-	aRandomFileName := random.Int(bn256.Order, random.New())
 
 	for j := 0; j<s; j++ {
 		rand := random.New()
@@ -633,7 +632,7 @@ func (bz *BaseDFS) randomizedFileStoring()/*(Tau,processedFile)*/{
 	sg, _ := schnorr.Sign(bz.suite,ssk,[]byte(Tau0))
 	Tau := Tau0 + string(sg)
 	log.LLvl2(ssk,spk,v,st,Tau)
-
+	// ----  isnt there another way?
 	type hashablePoint interface {
 		Hash([]byte) kyber.Point
 	}
@@ -641,21 +640,19 @@ func (bz *BaseDFS) randomizedFileStoring()/*(Tau,processedFile)*/{
 	if !ok {
 		log.LLvl2("err")
 	}
-
-	//xHM := HM.Mul(x, HM)
-	//s, err := xHM.MarshalBinary()
-	//if err != nil {
-	//	return nil, err
-	//}
-	//return s, nil
+	// ------------------------------
 
 	//createAuthValue(Sigma_i) for block i
 	//Sigma_i = Hash(name||i).P(j=1,..,s)u_j^m_ij
 	for i:=0; i<n; i++{
 		h := hashable.Hash(append(aRandomFileName.Bytes(),byte(i)))
 		log.LLvl2(h)
-		for j:=1;j<s;j++{
-			log.LLvl2("hey")
+		p := suite.G1().Point()
+		xxx := suite.Scalar().One()
+		for j:=0;j<s;j++{
+			xxx = suite.Scalar().SetBytes(m_ij[i][j]) //is this right?!!
+			p = U[0].Mul(xxx, U[j])
+			log.LLvl2("hey",p)
 		}
 	}
 	log.LLvl2("hey")
