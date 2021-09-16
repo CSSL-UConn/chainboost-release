@@ -25,6 +25,7 @@ Types of Messages:
 package BaseDFSProtocol
 
 import (
+	"crypto/rand"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/pairing/bn256"
@@ -33,9 +34,12 @@ import (
 	"go.dedis.ch/kyber/v3/util/key"
 	"go.dedis.ch/kyber/v3/util/random"
 	"math"
+	"math/big"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
+	randmath "math/rand"
 
 	onet "github.com/basedfs"
 	"github.com/basedfs/blockchain"
@@ -235,7 +239,8 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 
 //Start: starts the simplified protocol by sending hello msg to all nodes which later makes them to start sending their por tx.s
 func (bz *BaseDFS) Start() error {
-	bz.randomizedFileStoring()
+	//randomizedFileStoring()
+	randomizedVerifyingQuery()
 	//bz.helloBaseDFS()
 	log.Lvl2(bz.Info(), "Started the protocol by running Start function")
 	return nil
@@ -548,91 +553,80 @@ func (bz *BaseDFS) Timeout() time.Duration {
 	return bz.timeout
 }
 
-//------------------------------------------------
-//  --------------- Compact PoR -----------------
-//------------------------------------------------
+//-----------------------------------------------------------------------
+//  --------------- Compact PoR ----------------------------------------
+//-----------------------------------------------------------------------
 
-type Tau struct{
-	tau string
-}
+//	------   file is assumed fixed for now
+const s = 20 				// number of sectors in eac block (sys. par.)
+//Each sector is one element of Zp,and there are s sectors per block.
+//If the processed file is b bits long,then there are n=[b/s lg p] blocks.
+const  n  = 10		// number of blocks
+const l  = 5  		//size of query set (i<n)
 type processedFile struct{
-	sigma_i []string
-	m_ij [][]string
+	m_ij [n][s] kyber.Scalar
+	sigma[n] kyber.Point
 }
 type randomQuery struct{
-	i int
-	v_i int
+	i [l] int
+	v_i [l] kyber.Scalar
 }
 type por struct {
 	mu []int
 	sigma kyber.Point
 }
 
-
-func (bz *BaseDFS) randomizedFileStoring()/*(Tau,processedFile)*/{
+func  randomizedFileStoring() (string,*processedFile) {
+	// move this part  to an independent function: KeyGeneration ---------
 
 	//randomizedKeyGeneration: pubK=(alpha,ssk),prK=(v,spk)
-	clientKeyPair := key.NewKeyPair(bz.suite) //right?
+	clientKeyPair := key.NewKeyPair(onet.Suite) //what specific suite is needed here?
 	ssk := clientKeyPair.Private
 	spk := clientKeyPair.Public
+
 	//BLS keyPair
 	//Package bn256: implements the Optimal Ate pairing over a
 	//256-bit Barreto-Naehrig curve as described in
 	//http://cryptojedi.org/papers/dclxvi-20100714.pdf.
-	//This package previously claimed to operate at a 128-bit security level.
-	//However, recent improvements in attacks mean that is no longer true.
-	//See https://moderncrypto.org/mail-archive/curves/2016/000740.html.
-	//Package bn256 from kyber library is used in blscosi module for bls scheme.
+	//claimed 128-bit security level.
+	//Package bn256 from kyber library is used in blscosi module for bls scheme
 	suite := pairing.NewSuiteBn256()
 	private, public := bls.NewKeyPair(suite, random.New())
 	alpha := private
 	v := public
-	log.Lvl2(alpha, v)
-
-	//	------   createFileTag(Tau)
-	const s = 10 			// number of sectors in eac block (sys. par.)
-	//Each sector is one element of Zp,
-	//and there are s sectors per block.
-	//If the processed file is b bits long,
-	//then there are n=[b/s lg p] blocks. we assume a fixed file, b bit long
-	//p is the Order???
-	const n int = 10 		// number of blocks (sys. par.)
+	// --------------------------------------------------------------------
 	ns := strconv.FormatInt(int64(n), 10)
-
-	//a random file name from some sufficiently large domain (e.g.,Zp)
-	//check weather p is the Order???
-	aRandomFileName := random.Int(bn256.Order, random.New())
-
 	// first apply the erasure code to obtain M′; then split M′
 	// into n blocks (for some n), each s sectors long:
 	// {mij} 1≤i≤n 1≤j≤s
-
-	var m_ij [n][s] []byte
-	for i:=0; i<n; i++{
-		for j:=0; j<s; j++{
-			m_ij[i][j] = []byte{1,2,3}
+	var m_ij [n][s]kyber.Scalar
+	for i := 0; i < n; i++ {
+		for j := 0; j < s; j++ {
+			m_ij[i][j] = suite.Scalar().Pick(suite.RandomStream())
 		}
 	}
-
-	//u1,..,us random G
-	var u[s]kyber.Scalar
-	var U[s]kyber.Point
+	//a random file name from some sufficiently large domain (e.g.,Zp)
+	aRandomFileName := random.Int(bn256.Order, random.New())
+	//u1,..,us random from G
+	var u [s]kyber.Scalar
+	var U [s]kyber.Point
 	var st string
 
-	for j := 0; j<s; j++ {
+	for j := 0; j < s; j++ {
 		rand := random.New()
-		u[j] = suite.Scalar().Pick(rand) //right?
-		U[j] = suite.Point().Mul(u[j], nil)
+		u[j] = suite.G1().Scalar().Pick(rand)
+		U[j] = suite.G1().Point().Mul(u[j], nil)
 		st = st + U[j].String()
 	}
 
 	//Tau0 := "name"||string(n)||u1||...||us
-	//Tau=Tau0||Ssig(ssk)(Tau0)
-	Tau0 := aRandomFileName.String()+ ns + st
-	sg, _ := schnorr.Sign(bz.suite,ssk,[]byte(Tau0))
+	//Tau=Tau0||Ssig(ssk)(Tau0) "File Tag"
+	Tau0 := aRandomFileName.String() + ns + st
+	sg, _ := schnorr.Sign(onet.Suite, ssk, []byte(Tau0))
 	Tau := Tau0 + string(sg)
-	log.LLvl2(ssk,spk,v,st,Tau)
-	// ----  isnt there another way?
+	log.LLvl2(ssk, v, Tau, alpha, v, spk)
+
+	// ----  isn't there another way?---------------------------------------
 	type hashablePoint interface {
 		Hash([]byte) kyber.Point
 	}
@@ -640,45 +634,69 @@ func (bz *BaseDFS) randomizedFileStoring()/*(Tau,processedFile)*/{
 	if !ok {
 		log.LLvl2("err")
 	}
-	// ------------------------------
-
-	//createAuthValue(Sigma_i) for block i
+	// --------------------------------------------------------------------
+	//create "AuthValue" (Sigma_i) for block i
 	//Sigma_i = Hash(name||i).P(j=1,..,s)u_j^m_ij
-	for i:=0; i<n; i++{
-		h := hashable.Hash(append(aRandomFileName.Bytes(),byte(i)))
-		log.LLvl2(h)
+	var b[n] kyber.Point
+	for i := 0; i < n; i++ {
+		h := hashable.Hash(append(aRandomFileName.Bytes(), byte(i)))
 		p := suite.G1().Point()
-		xxx := suite.Scalar().One()
-		for j:=0;j<s;j++{
-			xxx = suite.Scalar().SetBytes(m_ij[i][j]) //is this right?!!
-			p = U[0].Mul(xxx, U[j])
-			log.LLvl2("hey",p)
+		for j := 0; j < s; j++ {
+			p = p.Add(p, U[j].Mul(m_ij[i][j], U[j]))
 		}
+		b[i] = p.Add(p, h)
 	}
-	log.LLvl2("hey")
-	//mStar = &processedFile
-	//	{sigma_i:	Sigma_i,
-	//	m_ij:		...
-	//}
-	//return Tau, mStar
+	return Tau, &processedFile{
+		m_ij: m_ij,
+		sigma:  b,
+	}
 }
-//
-func randomizedVerifyingQuery()/*randomQuery*/{
-	// n,|I|: sys. par.
+
+func randomizedVerifyingQuery() *randomQuery {
 	//bz.currentRandomSeed
-	//rq = &randomQuery{
-	//	i: 		random [1,n],
-	//	v_i:	v_i random G
-	//return rq
+	suite := pairing.NewSuiteBn256()
+	r := strings.NewReader("some stream to be used from last submitted block")
+	var b[l] int
+	var v[l] kyber.Scalar
+	var f big.Int
+	f.SetInt64(n)
+	x := random.New(r, rand.Reader)
+	for i:=0; i<l; i++{
+		b[i] = randmath.Intn(n)
+		//b[i] = random.(&f, x)
+		v[i] = suite.Scalar().Pick(x)
+	}
+	return &randomQuery{i: b, v_i:    v}
 }
+
 //createPoR:
-func (bz *BaseDFS) createPoR() *por {
-	// input: pubK, Tau, mStar
-	//Mu_j= S(Q)(v_i.m_ij)
-	//sigma=P(Q)(sigma_i^v_i)
+func (bz *BaseDFS) createPoR(public kyber.Point,Tau string, m_ij [n][s]kyber.Scalar) *por {
+	rq := randomizedVerifyingQuery()
+	suite := pairing.NewSuiteBn256()
+	var Mu [s] kyber.Scalar
+	for i:=0; i<s; i++{
+	li := rq.i[i]
+	var tv kyber.Scalar
+		for j:=0; j<l; j++{
+			//Mu_j= S(Q)(v_i.m_ij)
+			tv = suite.Scalar().Add(suite.Scalar().Mul(rq.v_i[j], m_ij[li][j]), tv)
+		}
+		Mu [i] = tv
+	}
+/*	for j:=0; j<l; j++{
+		//sigma=P(Q)(sigma_i^v_i)
+		for i := 0; i < n; i++ {
+			p := suite.G1().Point()
+			for j := 0; j < s; j++ {
+				p = p.Add(p, U[j].Mul(m_ij[i][j], U[j]))
+			}
+			b[i] = p.Add(p, h)
+		}
+		tv = suite.Point().Add(suite.Point.Mul()
+	}*/
 	return &por{
 		//mu: ..,
-		sigma: nil,
+		//sigma: nil,
 	}
 }
 
@@ -690,3 +708,5 @@ func verifyPoR(p ProofOfRetTxChan) (bool, error) {
 	var err error = nil
 	return refuse, err
 }
+
+//-------------------------------------------------------------
