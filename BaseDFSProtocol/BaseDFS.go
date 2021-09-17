@@ -26,27 +26,27 @@ package BaseDFSProtocol
 
 import (
 	"crypto/rand"
-	"go.dedis.ch/kyber/v3"
-	"go.dedis.ch/kyber/v3/pairing"
-	"go.dedis.ch/kyber/v3/pairing/bn256"
-	"go.dedis.ch/kyber/v3/sign/bls"
-	"go.dedis.ch/kyber/v3/sign/schnorr"
-	"go.dedis.ch/kyber/v3/util/key"
-	"go.dedis.ch/kyber/v3/util/random"
-	"math"
-	"math/big"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
-	randmath "math/rand"
-
 	onet "github.com/basedfs"
 	"github.com/basedfs/blockchain"
 	"github.com/basedfs/blockchain/blkparser"
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"github.com/basedfs/simul/monitor"
+	"go.dedis.ch/kyber/v3"
+	"go.dedis.ch/kyber/v3/pairing"
+	"go.dedis.ch/kyber/v3/pairing/bn256"
+	"go.dedis.ch/kyber/v3/sign/bls"
+	"go.dedis.ch/kyber/v3/sign/schnorr"
+	"go.dedis.ch/kyber/v3/util/encoding"
+	"go.dedis.ch/kyber/v3/util/key"
+	"go.dedis.ch/kyber/v3/util/random"
+	"math"
+	"math/big"
+	randmath "math/rand"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
 func init() {
@@ -239,8 +239,12 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 
 //Start: starts the simplified protocol by sending hello msg to all nodes which later makes them to start sending their por tx.s
 func (bz *BaseDFS) Start() error {
-	//randomizedFileStoring()
-	randomizedVerifyingQuery()
+	sk,pk := randomizedKeyGeneration()
+	Tau,pf := RandomizedFileStoring(sk, generateFile ())
+	por := CreatePoR(pf)
+	verifyPoR(pk, Tau, por)
+
+
 	//bz.helloBaseDFS()
 	log.Lvl2(bz.Info(), "Started the protocol by running Start function")
 	return nil
@@ -346,7 +350,7 @@ func (bz *BaseDFS) sendPoRTx() {
 
 // handleAnnouncement pass the announcement to the right CoSi struct.
 func (bz *BaseDFS) handlePoRTx(proofOfRet ProofOfRetTxChan) error {
-	if refuse, err := verifyPoR(proofOfRet); err == nil {
+	/*if refuse, err := verifyPoR(proofOfRet); err == nil {
 		if refuse == true {
 			bz.porTxRefusal = true
 			return nil
@@ -361,7 +365,7 @@ func (bz *BaseDFS) handlePoRTx(proofOfRet ProofOfRetTxChan) error {
 		}
 	} else {
 		log.Lvl2(bz.TreeNode, "verifying PoR tx error:", err)
-	}
+	}*/
 	return nil
 }
 
@@ -556,34 +560,40 @@ func (bz *BaseDFS) Timeout() time.Duration {
 //-----------------------------------------------------------------------
 //  --------------- Compact PoR ----------------------------------------
 //-----------------------------------------------------------------------
-
-//	------   file is assumed fixed for now
 const s = 20 				// number of sectors in eac block (sys. par.)
 //Each sector is one element of Zp,and there are s sectors per block.
 //If the processed file is b bits long,then there are n=[b/s lg p] blocks.
 const  n  = 10		// number of blocks
 const l  = 5  		//size of query set (i<n)
 type processedFile struct{
-	m_ij [n][s] kyber.Scalar
+	m_ij initialFile
 	sigma[n] kyber.Point
+}
+type initialFile struct{
+	m [n][s] kyber.Scalar
 }
 type randomQuery struct{
 	i [l] int
 	v_i [l] kyber.Scalar
 }
 type por struct {
-	mu []int
+	mu [s]kyber.Scalar
 	sigma kyber.Point
 }
-
-func  randomizedFileStoring() (string,*processedFile) {
-	// move this part  to an independent function: KeyGeneration ---------
-
+type privateKey struct{
+	alpha kyber.Scalar
+	ssk kyber.Scalar
+}
+type publicKey struct{
+	v kyber.Point
+	spk kyber.Point
+}
+// utility functions
+func randomizedKeyGeneration() ( privateKey, publicKey){
 	//randomizedKeyGeneration: pubK=(alpha,ssk),prK=(v,spk)
 	clientKeyPair := key.NewKeyPair(onet.Suite) //what specific suite is needed here?
 	ssk := clientKeyPair.Private
 	spk := clientKeyPair.Public
-
 	//BLS keyPair
 	//Package bn256: implements the Optimal Ate pairing over a
 	//256-bit Barreto-Naehrig curve as described in
@@ -594,8 +604,16 @@ func  randomizedFileStoring() (string,*processedFile) {
 	private, public := bls.NewKeyPair(suite, random.New())
 	alpha := private
 	v := public
-	// --------------------------------------------------------------------
-	ns := strconv.FormatInt(int64(n), 10)
+	return privateKey{
+		alpha,
+		ssk,
+		},publicKey{
+		spk: spk,
+		v: v,
+		}
+}
+func generateFile () (initialFile) {
+	suite := pairing.NewSuiteBn256()
 	// first apply the erasure code to obtain M′; then split M′
 	// into n blocks (for some n), each s sectors long:
 	// {mij} 1≤i≤n 1≤j≤s
@@ -605,27 +623,51 @@ func  randomizedFileStoring() (string,*processedFile) {
 			m_ij[i][j] = suite.Scalar().Pick(suite.RandomStream())
 		}
 	}
+	return initialFile{m: m_ij}
+}
+func randomizedVerifyingQuery() *randomQuery {
+	//bz.currentRandomSeed
+	suite := pairing.NewSuiteBn256()
+	r := strings.NewReader("some stream to be used from last submitted block")
+	var b[l] int
+	var v[l] kyber.Scalar
+	var f big.Int
+	f.SetInt64(n)
+	x := random.New(r, rand.Reader)
+	for i:=0; i<l; i++{
+		b[i] = randmath.Intn(n)
+		v[i] = suite.Scalar().Pick(x)
+	}
+	return &randomQuery{i: b, v_i:    v}
+}
+// this function is called by the file owner to create file tag - file authentication values - and key-pair
+func  RandomizedFileStoring(sk privateKey, initialfile initialFile) ( string, processedFile) {
+	suite := pairing.NewSuiteBn256()
+	m_ij := initialfile.m
+	ns := strconv.FormatInt(int64(n), 10)
 	//a random file name from some sufficiently large domain (e.g.,Zp)
 	aRandomFileName := random.Int(bn256.Order, random.New())
 	//u1,..,us random from G
 	var u [s]kyber.Scalar
 	var U [s]kyber.Point
 	var st string
-
+	var x1,x2,x3,x4 int
 	for j := 0; j < s; j++ {
 		rand := random.New()
 		u[j] = suite.G1().Scalar().Pick(rand)
 		U[j] = suite.G1().Point().Mul(u[j], nil)
-		st = st + U[j].String()
+		st = st + U[j].String() + "||"
+		x3 = len(U[j].String())
 	}
-
 	//Tau0 := "name"||string(n)||u1||...||us
 	//Tau=Tau0||Ssig(ssk)(Tau0) "File Tag"
-	Tau0 := aRandomFileName.String() + ns + st
-	sg, _ := schnorr.Sign(onet.Suite, ssk, []byte(Tau0))
+	Tau0 := aRandomFileName.String() + "||" +  ns + "||" +  st
+	x1 = len(aRandomFileName.String())
+	x2 = len(ns)
+	sg, _ := schnorr.Sign(onet.Suite, sk.ssk, []byte(Tau0))
 	Tau := Tau0 + string(sg)
-	log.LLvl2(ssk, v, Tau, alpha, v, spk)
-
+	x4 = len(Tau)
+	log.LLvl2(x1,x2,x3,x4)
 	// ----  isn't there another way?---------------------------------------
 	type hashablePoint interface {
 		Hash([]byte) kyber.Point
@@ -644,69 +686,71 @@ func  randomizedFileStoring() (string,*processedFile) {
 		for j := 0; j < s; j++ {
 			p = p.Add(p, U[j].Mul(m_ij[i][j], U[j]))
 		}
-		b[i] = p.Add(p, h)
+		b[i] = p.Mul(sk.alpha, p.Add(p, h))
 	}
-	return Tau, &processedFile{
-		m_ij: m_ij,
+	return Tau, processedFile{
+		m_ij: initialFile{m: m_ij},
 		sigma:  b,
 	}
 }
-
-func randomizedVerifyingQuery() *randomQuery {
-	//bz.currentRandomSeed
-	suite := pairing.NewSuiteBn256()
-	r := strings.NewReader("some stream to be used from last submitted block")
-	var b[l] int
-	var v[l] kyber.Scalar
-	var f big.Int
-	f.SetInt64(n)
-	x := random.New(r, rand.Reader)
-	for i:=0; i<l; i++{
-		b[i] = randmath.Intn(n)
-		//b[i] = random.(&f, x)
-		v[i] = suite.Scalar().Pick(x)
-	}
-	return &randomQuery{i: b, v_i:    v}
-}
-
-//createPoR:
-func (bz *BaseDFS) createPoR(public kyber.Point,Tau string, m_ij [n][s]kyber.Scalar) *por {
+// this function will be called by the server who wants to create a PoR
+// in the paper this function takes 3 inputs: public key , file tag , and processedFile -
+// I don't see why the first two parameters are needed!
+func CreatePoR(processedfile processedFile) por {
+	// "the query can be generated from a short seed using a random oracle,
+	// and this short seed can be transmitted instead of the longer query."
+	// note: this function is called by the verifier in the paper but a prover who have access
+	// to the random seed (from blockchain) can call this (and get the query) herself.
 	rq := randomizedVerifyingQuery()
 	suite := pairing.NewSuiteBn256()
+	m_ij := processedfile.m_ij.m
+	sigma := processedfile.sigma
 	var Mu [s] kyber.Scalar
-	for i:=0; i<s; i++{
-	li := rq.i[i]
-	var tv kyber.Scalar
-		for j:=0; j<l; j++{
-			//Mu_j= S(Q)(v_i.m_ij)
-			tv = suite.Scalar().Add(suite.Scalar().Mul(rq.v_i[j], m_ij[li][j]), tv)
-		}
-		Mu [i] = tv
-	}
-/*	for j:=0; j<l; j++{
-		//sigma=P(Q)(sigma_i^v_i)
-		for i := 0; i < n; i++ {
-			p := suite.G1().Point()
-			for j := 0; j < s; j++ {
-				p = p.Add(p, U[j].Mul(m_ij[i][j], U[j]))
+	for j:=0; j<s; j++{
+		tv := suite.Scalar().Mul(rq.v_i[0], m_ij[rq.i[0]][j])
+			for i:=1; i<l; i++{
+				//Mu_j= S(Q)(v_i.m_ij)
+				tv = suite.Scalar().Add(suite.Scalar().Mul(rq.v_i[i], m_ij[rq.i[i]][j]), tv)
 			}
-			b[i] = p.Add(p, h)
+		Mu [j] = tv
+	}
+	p := suite.G1().Point()
+	for i:=1; i<l; i++{
+		//sigma=P(Q)(sigma_i^v_i)
+		p = p.Add(p, p.Mul(rq.v_i[i], sigma[i]))
 		}
-		tv = suite.Point().Add(suite.Point.Mul()
-	}*/
-	return &por{
-		//mu: ..,
-		//sigma: nil,
+	return por{
+		mu: Mu,
+		sigma: p,
 	}
 }
-
 // verifyPoR: servers will verify por tx.s when they recieve it
-func verifyPoR(p ProofOfRetTxChan) (bool, error) {
-	//input: PoR , pubK, Tau
+// in the paper this function takes 3 inputs: public key , private key, and file tag
+// I don't see why the private key is needed!
+func verifyPoR(pk publicKey, Tau string, p por) (bool, error) {
+	suite := pairing.NewSuiteBn256()
+	//check file tag authenticity
+	x := strings.Split(Tau, "||")
+	randomFileName := x[0]
+	n := x[1]
+	log.LLvl2(n,randomFileName)
+	var U [s]kyber.Point
+	for i:=0;i<s;i++{
+		//U[i] = kyber.Point(x[i+2])
+		U [i],_ = encoding.StringHexToPoint(suite, (x[i+2]))
+	}
+	//signedTau0 := x[s+3]
+	//error := schnorr.Verify(onet.Suite., pk.spk, signedTau0)
+	//if error != nil{log.LLvl2(error)}
+	//pk.spk
+
+
 	//check: e(sigma, g) =? e(PHash(name||i)^v_i.P(j=1,..,s)(u_j^mu_j,v)
+
+
+
 	var refuse = false
 	var err error = nil
 	return refuse, err
 }
-
 //-------------------------------------------------------------
