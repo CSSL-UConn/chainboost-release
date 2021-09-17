@@ -25,3 +25,4 @@ large number of nodes for distributed signing and related projects. In
 cothority, nodes are commonly named "conodes". A collective authority
 (cothority) is a set of conodes that work together to handle a distributed,
 decentralized task.
+connect to slack channel test
