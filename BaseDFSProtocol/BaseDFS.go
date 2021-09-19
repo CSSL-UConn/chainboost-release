@@ -37,7 +37,6 @@ import (
 	"go.dedis.ch/kyber/v3/pairing/bn256"
 	"go.dedis.ch/kyber/v3/sign/bls"
 	"go.dedis.ch/kyber/v3/sign/schnorr"
-	"go.dedis.ch/kyber/v3/util/encoding"
 	"go.dedis.ch/kyber/v3/util/key"
 	"go.dedis.ch/kyber/v3/util/random"
 	"math"
@@ -243,8 +242,6 @@ func (bz *BaseDFS) Start() error {
 	Tau,pf := RandomizedFileStoring(sk, generateFile ())
 	por := CreatePoR(pf)
 	verifyPoR(pk, Tau, por)
-
-
 	//bz.helloBaseDFS()
 	log.Lvl2(bz.Info(), "Started the protocol by running Start function")
 	return nil
@@ -648,8 +645,8 @@ func  RandomizedFileStoring(sk privateKey, initialfile initialFile) ( string, pr
 	//a random file name from some sufficiently large domain (e.g.,Zp)
 	aRandomFileName := random.Int(bn256.Order, random.New())
 	//u1,..,us random from G
-	var u [s]kyber.Scalar
-	var U [s]kyber.Point
+	var u [s]		kyber.Scalar
+	var U [s]		kyber.Point
 	var st string
 	var x1,x2,x3,x4 int
 	for j := 0; j < s; j++ {
@@ -657,7 +654,23 @@ func  RandomizedFileStoring(sk privateKey, initialfile initialFile) ( string, pr
 		u[j] = suite.G1().Scalar().Pick(rand)
 		U[j] = suite.G1().Point().Mul(u[j], nil)
 		st = st + U[j].String() + "||"
-		x3 = len(U[j].String())
+/*		var e,_ = encoding.PointToStringHex(suite,U[j])
+		st = st + e + "||"
+		x3 = len(e)
+		log.LLvl2("wait")*/
+
+		//var e2 = U[j].String()
+		//p,et := encoding.StringHexToPoint(suite,e)
+		//if et!=nil{log.LLvl2(et)}
+		//log.LLvl2(p.String())
+
+/*		var s = edwards25519.NewBlakeSHA256Ed25519()
+		p := s.Point().Pick(s.RandomStream())
+		pstr, _ := encoding.PointToStringHex(s, p)
+		p2, _ := encoding.StringHexToPoint(s, pstr)
+		ss := p.String()
+		sss:= p2.String()
+		log.LLvl2(ss,sss)*/
 	}
 	//Tau0 := "name"||string(n)||u1||...||us
 	//Tau=Tau0||Ssig(ssk)(Tau0) "File Tag"
@@ -729,15 +742,20 @@ func CreatePoR(processedfile processedFile) por {
 // I don't see why the private key is needed!
 func verifyPoR(pk publicKey, Tau string, p por) (bool, error) {
 	suite := pairing.NewSuiteBn256()
-	//check file tag authenticity
+	//check the file tag (Tau) integrity
 	x := strings.Split(Tau, "||")
 	randomFileName := x[0]
 	n := x[1]
 	log.LLvl2(n,randomFileName)
-	var U [s]kyber.Point
+	var U [s]	kyber.Point
 	for i:=0;i<s;i++{
-		//U[i] = kyber.Point(x[i+2])
-		U [i],_ = encoding.StringHexToPoint(suite, (x[i+2]))
+		//U[i] = suite.G1().Point()
+		var r error
+		//U [i],r = encoding.StringHexToPoint(suite, (x[i+2]))
+		z1 := strings.Split(x[i+2],"(")
+		z2 := strings.Split(z1[1],",")
+		U [i] = &bn256.pointG1{g: &bn256.curvePoint{ x: z2[0], y: z2[1], z: z2[2], t: z2[3],}}
+		if r!=nil{ log.LLvl2(r)}
 	}
 	//signedTau0 := x[s+3]
 	//error := schnorr.Verify(onet.Suite., pk.spk, signedTau0)
