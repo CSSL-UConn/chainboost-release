@@ -25,25 +25,14 @@ Types of Messages:
 package BaseDFSProtocol
 
 import (
-	"crypto/rand"
 	onet "github.com/basedfs"
 	"github.com/basedfs/blockchain"
 	"github.com/basedfs/blockchain/blkparser"
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
+	"github.com/basedfs/por"
 	"github.com/basedfs/simul/monitor"
-	"go.dedis.ch/kyber/v3"
-	"go.dedis.ch/kyber/v3/pairing"
-	"go.dedis.ch/kyber/v3/pairing/bn256"
-	"go.dedis.ch/kyber/v3/sign/bls"
-	"go.dedis.ch/kyber/v3/sign/schnorr"
-	"go.dedis.ch/kyber/v3/util/key"
-	"go.dedis.ch/kyber/v3/util/random"
 	"math"
-	"math/big"
-	randmath "math/rand"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -56,6 +45,7 @@ func init() {
 	onet.GlobalProtocolRegister("BaseDFS", NewBaseDFSProtocol)
 }
 
+//-----------------------------------------------------------------------
 // Hello is sent down the tree from the root node,
 // every node who gets it send it to its children
 // and start multicasting his por tx.s
@@ -70,7 +60,7 @@ type HelloChan struct {
 
 type ProofOfRetTxChan struct {
 	*onet.TreeNode
-	por
+	por.Por
 }
 
 type PreparedBlockChan struct {
@@ -86,7 +76,7 @@ type leadershipProof struct {
 	U uint32
 }
 
-type tx struct{
+type tx struct {
 	i int8
 }
 
@@ -110,7 +100,7 @@ type BaseDFS struct {
 	epochDuration uint32
 	PoRTxDuration uint32
 	// finale block that this BaseDFS epoch has produced
-	finalBlock *blockchain.TrBlock
+	finalBlock        *blockchain.TrBlock
 	currentRandomSeed string
 	/* -----------------------------------------------------------
 	These fields are borrowed from ByzCoin
@@ -193,8 +183,8 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 		suite:            n.Suite(),
 		DoneBaseDFS:      make(chan bool, 1),
 		//verifyBlockChan:  			make(chan bool),
-		doneProcessing: make(chan bool, 2),
-		timeoutChan:    make(chan uint64, 1),
+		doneProcessing:    make(chan bool, 2),
+		timeoutChan:       make(chan uint64, 1),
 		currentRandomSeed: "testrandomseed",
 	}
 	bz.viewChangeThreshold = int(math.Ceil(float64(len(bz.Tree().List())) * 2.0 / 3.0))
@@ -238,12 +228,9 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 
 //Start: starts the simplified protocol by sending hello msg to all nodes which later makes them to start sending their por tx.s
 func (bz *BaseDFS) Start() error {
-	sk,pk := randomizedKeyGeneration()
-	Tau,pf := RandomizedFileStoring(sk, generateFile ())
-	por := CreatePoR(pf)
-	verifyPoR(pk, Tau, por)
+	por.Testpor()
 	//bz.helloBaseDFS()
-	log.Lvl2(bz.Info(), "Started the protocol by running Start function")
+	log.Lvl2(bz.Info(),"Started the protocol by running Start function")
 	return nil
 }
 
@@ -261,7 +248,7 @@ func (bz *BaseDFS) Dispatch() error {
 			bz.helloBaseDFS()
 
 		case msg := <-bz.ProofOfRetTxChan:
-			log.Lvl2(bz.Info(), "received por", msg.por.sigma, "tx from", msg.TreeNode.ServerIdentity.Address)
+			//log.Lvl2(bz.Info(), "received por", msg.Por.sigma, "tx from", msg.TreeNode.ServerIdentity.Address)
 			if !fail {
 				err = bz.handlePoRTx(msg)
 			}
@@ -553,222 +540,3 @@ func (bz *BaseDFS) Timeout() time.Duration {
 	defer bz.timeoutMu.Unlock()
 	return bz.timeout
 }
-
-//-----------------------------------------------------------------------
-//  --------------- Compact PoR ----------------------------------------
-//-----------------------------------------------------------------------
-const s = 20 				// number of sectors in eac block (sys. par.)
-//Each sector is one element of Zp,and there are s sectors per block.
-//If the processed file is b bits long,then there are n=[b/s lg p] blocks.
-const  n  = 10		// number of blocks
-const l  = 5  		//size of query set (i<n)
-type processedFile struct{
-	m_ij initialFile
-	sigma[n] kyber.Point
-}
-type initialFile struct{
-	m [n][s] kyber.Scalar
-}
-type randomQuery struct{
-	i [l] int
-	v_i [l] kyber.Scalar
-}
-type por struct {
-	mu [s]kyber.Scalar
-	sigma kyber.Point
-}
-type privateKey struct{
-	alpha kyber.Scalar
-	ssk kyber.Scalar
-}
-type publicKey struct{
-	v kyber.Point
-	spk kyber.Point
-}
-// utility functions
-func randomizedKeyGeneration() ( privateKey, publicKey){
-	//randomizedKeyGeneration: pubK=(alpha,ssk),prK=(v,spk)
-	clientKeyPair := key.NewKeyPair(onet.Suite) //what specific suite is needed here?
-	ssk := clientKeyPair.Private
-	spk := clientKeyPair.Public
-	//BLS keyPair
-	//Package bn256: implements the Optimal Ate pairing over a
-	//256-bit Barreto-Naehrig curve as described in
-	//http://cryptojedi.org/papers/dclxvi-20100714.pdf.
-	//claimed 128-bit security level.
-	//Package bn256 from kyber library is used in blscosi module for bls scheme
-	suite := pairing.NewSuiteBn256()
-	private, public := bls.NewKeyPair(suite, random.New())
-	alpha := private
-	v := public
-	return privateKey{
-		alpha,
-		ssk,
-		},publicKey{
-		spk: spk,
-		v: v,
-		}
-}
-func generateFile () (initialFile) {
-	suite := pairing.NewSuiteBn256()
-	// first apply the erasure code to obtain M′; then split M′
-	// into n blocks (for some n), each s sectors long:
-	// {mij} 1≤i≤n 1≤j≤s
-	var m_ij [n][s]kyber.Scalar
-	for i := 0; i < n; i++ {
-		for j := 0; j < s; j++ {
-			m_ij[i][j] = suite.Scalar().Pick(suite.RandomStream())
-		}
-	}
-	return initialFile{m: m_ij}
-}
-func randomizedVerifyingQuery() *randomQuery {
-	//bz.currentRandomSeed
-	suite := pairing.NewSuiteBn256()
-	r := strings.NewReader("some stream to be used from last submitted block")
-	var b[l] int
-	var v[l] kyber.Scalar
-	var f big.Int
-	f.SetInt64(n)
-	x := random.New(r, rand.Reader)
-	for i:=0; i<l; i++{
-		b[i] = randmath.Intn(n)
-		v[i] = suite.Scalar().Pick(x)
-	}
-	return &randomQuery{i: b, v_i:    v}
-}
-// this function is called by the file owner to create file tag - file authentication values - and key-pair
-func  RandomizedFileStoring(sk privateKey, initialfile initialFile) ( string, processedFile) {
-	suite := pairing.NewSuiteBn256()
-	m_ij := initialfile.m
-	ns := strconv.FormatInt(int64(n), 10)
-	//a random file name from some sufficiently large domain (e.g.,Zp)
-	aRandomFileName := random.Int(bn256.Order, random.New())
-	//u1,..,us random from G
-	var u [s]		kyber.Scalar
-	var U [s]		kyber.Point
-	var st string
-	var x1,x2,x3,x4 int
-	for j := 0; j < s; j++ {
-		rand := random.New()
-		u[j] = suite.G1().Scalar().Pick(rand)
-		U[j] = suite.G1().Point().Mul(u[j], nil)
-		st = st + U[j].String() + "||"
-/*		var e,_ = encoding.PointToStringHex(suite,U[j])
-		st = st + e + "||"
-		x3 = len(e)
-		log.LLvl2("wait")*/
-
-		//var e2 = U[j].String()
-		//p,et := encoding.StringHexToPoint(suite,e)
-		//if et!=nil{log.LLvl2(et)}
-		//log.LLvl2(p.String())
-
-/*		var s = edwards25519.NewBlakeSHA256Ed25519()
-		p := s.Point().Pick(s.RandomStream())
-		pstr, _ := encoding.PointToStringHex(s, p)
-		p2, _ := encoding.StringHexToPoint(s, pstr)
-		ss := p.String()
-		sss:= p2.String()
-		log.LLvl2(ss,sss)*/
-	}
-	//Tau0 := "name"||string(n)||u1||...||us
-	//Tau=Tau0||Ssig(ssk)(Tau0) "File Tag"
-	Tau0 := aRandomFileName.String() + "||" +  ns + "||" +  st
-	x1 = len(aRandomFileName.String())
-	x2 = len(ns)
-	sg, _ := schnorr.Sign(onet.Suite, sk.ssk, []byte(Tau0))
-	Tau := Tau0 + string(sg)
-	x4 = len(Tau)
-	log.LLvl2(x1,x2,x3,x4)
-	// ----  isn't there another way?---------------------------------------
-	type hashablePoint interface {
-		Hash([]byte) kyber.Point
-	}
-	hashable, ok := suite.G1().Point().(hashablePoint)
-	if !ok {
-		log.LLvl2("err")
-	}
-	// --------------------------------------------------------------------
-	//create "AuthValue" (Sigma_i) for block i
-	//Sigma_i = Hash(name||i).P(j=1,..,s)u_j^m_ij
-	var b[n] kyber.Point
-	for i := 0; i < n; i++ {
-		h := hashable.Hash(append(aRandomFileName.Bytes(), byte(i)))
-		p := suite.G1().Point()
-		for j := 0; j < s; j++ {
-			p = p.Add(p, U[j].Mul(m_ij[i][j], U[j]))
-		}
-		b[i] = p.Mul(sk.alpha, p.Add(p, h))
-	}
-	return Tau, processedFile{
-		m_ij: initialFile{m: m_ij},
-		sigma:  b,
-	}
-}
-// this function will be called by the server who wants to create a PoR
-// in the paper this function takes 3 inputs: public key , file tag , and processedFile -
-// I don't see why the first two parameters are needed!
-func CreatePoR(processedfile processedFile) por {
-	// "the query can be generated from a short seed using a random oracle,
-	// and this short seed can be transmitted instead of the longer query."
-	// note: this function is called by the verifier in the paper but a prover who have access
-	// to the random seed (from blockchain) can call this (and get the query) herself.
-	rq := randomizedVerifyingQuery()
-	suite := pairing.NewSuiteBn256()
-	m_ij := processedfile.m_ij.m
-	sigma := processedfile.sigma
-	var Mu [s] kyber.Scalar
-	for j:=0; j<s; j++{
-		tv := suite.Scalar().Mul(rq.v_i[0], m_ij[rq.i[0]][j])
-			for i:=1; i<l; i++{
-				//Mu_j= S(Q)(v_i.m_ij)
-				tv = suite.Scalar().Add(suite.Scalar().Mul(rq.v_i[i], m_ij[rq.i[i]][j]), tv)
-			}
-		Mu [j] = tv
-	}
-	p := suite.G1().Point()
-	for i:=1; i<l; i++{
-		//sigma=P(Q)(sigma_i^v_i)
-		p = p.Add(p, p.Mul(rq.v_i[i], sigma[i]))
-		}
-	return por{
-		mu: Mu,
-		sigma: p,
-	}
-}
-// verifyPoR: servers will verify por tx.s when they recieve it
-// in the paper this function takes 3 inputs: public key , private key, and file tag
-// I don't see why the private key is needed!
-func verifyPoR(pk publicKey, Tau string, p por) (bool, error) {
-	suite := pairing.NewSuiteBn256()
-	//check the file tag (Tau) integrity
-	x := strings.Split(Tau, "||")
-	randomFileName := x[0]
-	n := x[1]
-	log.LLvl2(n,randomFileName)
-	var U [s]	kyber.Point
-	for i:=0;i<s;i++{
-		//U[i] = suite.G1().Point()
-		var r error
-		//U [i],r = encoding.StringHexToPoint(suite, (x[i+2]))
-		z1 := strings.Split(x[i+2],"(")
-		z2 := strings.Split(z1[1],",")
-		U [i] = &bn256.pointG1{g: &bn256.curvePoint{ x: z2[0], y: z2[1], z: z2[2], t: z2[3],}}
-		if r!=nil{ log.LLvl2(r)}
-	}
-	//signedTau0 := x[s+3]
-	//error := schnorr.Verify(onet.Suite., pk.spk, signedTau0)
-	//if error != nil{log.LLvl2(error)}
-	//pk.spk
-
-
-	//check: e(sigma, g) =? e(PHash(name||i)^v_i.P(j=1,..,s)(u_j^mu_j,v)
-
-
-
-	var refuse = false
-	var err error = nil
-	return refuse, err
-}
-//-------------------------------------------------------------
