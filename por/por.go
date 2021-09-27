@@ -1,4 +1,4 @@
-		//-----------------------------------------------------------------------
+		// Package por -----------------------------------------------------------------------
 		//  --------------- Compact PoR ----------------------------------------
 		//-----------------------------------------------------------------------
 		// https://link.springer.com/article/10.1007%2Fs00145-012-9129-2
@@ -161,7 +161,8 @@
 				sigma:  b,
 			}
 		}
-		// this function will be called by the server who wants to create a PoR
+
+		// CreatePoR this function will be called by the server who wants to create a PoR
 		// in the paper this function takes 3 inputs: public key , file tag , and processedFile -
 		// I don't see why the first two parameters are needed!
 		func CreatePoR(processedfile processedFile) Por {
@@ -192,7 +193,8 @@
 				sigma: p,
 			}
 		}
-		// verifyPoR: servers will verify por tx.s when they recieve it
+
+		// VerifyPoR servers will verify por tx.s when they receive it
 		// in the paper this function takes 3 inputs: public key , private key, and file tag
 		// I don't see why the private key is needed!
 		func VerifyPoR(pk publicKey, Tau []byte, p Por) (bool, error) {
@@ -235,8 +237,10 @@
 			var refuse = false
 			return refuse, error
 		}
-		//-------------------------------------------------------------
-		// move it to a seperate test file
+
+		// -------------------------------------------------------------//
+
+		// Testpor move it to a seperate test file
 		func Testpor() {
 			sk, pk := RandomizedKeyGeneration()
 			Tau, pf := RandomizedFileStoring(sk, GenerateFile())

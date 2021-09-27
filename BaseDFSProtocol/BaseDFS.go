@@ -32,6 +32,7 @@ import (
 	"github.com/basedfs/network"
 	"github.com/basedfs/por"
 	"github.com/basedfs/simul/monitor"
+	crypto "github.com/basedfs/vrf"
 	"math"
 	"sync"
 	"time"
@@ -73,7 +74,7 @@ type PreparedBlock struct {
 }
 
 type leadershipProof struct {
-	U uint32
+	proof crypto.VrfProof
 }
 
 type tx struct {
@@ -84,6 +85,7 @@ type tx struct {
 type BaseDFS struct {
 	// the node we are represented-in
 	*onet.TreeNodeInstance
+	ECPrivateKey crypto.VrfPrivkey
 	// channel for por from servers to miners
 	PreparedBlockChan chan PreparedBlockChan
 	// channel for por from leader to miners
@@ -149,7 +151,7 @@ type BaseDFS struct {
 	// Call back when we start broadcasting our por tx
 	//onBroadcastPoRTx func()//
 	// Call back when we start checking this epoch's leadership
-	//onCheckEpochLeadership func()//
+	onCheckEpochLeadership func()
 	// callback when we finished "verifying por tx" + act = "adding payment tx + appending both to our current block"
 	//onVerifyActPoRTxDone func()//
 	// callback when we finished "verifying new block" + act = "appending it to our current blockchain"
@@ -221,7 +223,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	// epoch duration on which after this time the leader get choosed and propose a new block (unit?!)
 	bz.epochDuration = 5
 	bz.PoRTxDuration = 5
-
+	_, bz.ECPrivateKey = crypto.VrfKeygen()
 	n.OnDoneCallback(bz.nodeDone) // raha: when this function is called?
 	return bz, nil
 }
@@ -229,6 +231,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 //Start: starts the simplified protocol by sending hello msg to all nodes which later makes them to start sending their por tx.s
 func (bz *BaseDFS) Start() error {
 	por.Testpor()
+	crypto.Testvrf()
 	//bz.helloBaseDFS()
 	log.Lvl2(bz.Info(),"Started the protocol by running Start function")
 	return nil
@@ -362,10 +365,19 @@ func (bz *BaseDFS) appendPoRTx(p ProofOfRetTxChan) error {
 }
 
 //checkLeadership
-func (bz *BaseDFS) checkLeadership() network.ServerIdentityID {
-	n := bz.Roster().RandomServerIdentity()
-	log.Lvl2(bz.Info(), "random server is", n.Address)
-	return n.GetID()
+func (bz *BaseDFS) checkLeadership() bool {
+	//n := bz.Roster().RandomServerIdentity()
+	toBeHashed := []byte("this is a test")// it should be changed later? previous block seed?
+	proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed)
+	if !ok {
+		log.LLvl2("error while generating proof")
+	}
+	r, un := bz.ECPrivateKey.Pubkey().VerifyBytes(toBeHashed)
+	if r!=true{
+		log.LLvl2("the proof is not approved")
+	}
+	_, t := math.Modf(un.)
+	if ==bz.ServerIdentity().ID
 }
 
 //createEpochBlock: by leader
