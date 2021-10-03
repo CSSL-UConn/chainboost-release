@@ -89,9 +89,8 @@
 		}
 		func randomizedVerifyingQuery() *randomQuery {
 			//--------- randomness: initialize the seed base on a known blockchain related param
-			var blockchainRandomSeed = 3 // it needs to be related to some bc params later
+			var blockchainRandomSeed = 3 // ToDo: be related to some bc params later  -- bz.currentRoundSeed
 			rand.Seed(int64(blockchainRandomSeed))
-
 			var randombyte = make([]byte, 8)
 			binary.LittleEndian.PutUint64(randombyte, uint64(blockchainRandomSeed))
 			var rng = blake2xb.New(randombyte)
