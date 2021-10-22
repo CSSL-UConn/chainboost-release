@@ -62,7 +62,7 @@ func testVector(t *testing.T, skHex, pkHex, alphaHex, piHex, betaHex string) {
 		t.Errorf("Computed public key does not match the test vector")
 	}
 
-	piTest, ok := sk.proveBytes(alpha)
+	piTest, ok := sk.ProveBytes(alpha)
 	if !ok {
 		t.Errorf("Failed to produce a proof")
 	}
@@ -70,7 +70,7 @@ func testVector(t *testing.T, skHex, pkHex, alphaHex, piHex, betaHex string) {
 		t.Errorf("Proof produced by Prove() does not match the test vector")
 	}
 
-	ok, betaTest := pk.verifyBytes(pi, alpha)
+	ok, betaTest := pk.VerifyBytes(pi, alpha)
 	if !ok {
 		t.Errorf("Verify() fails on proof from the test vector")
 	}
@@ -112,7 +112,7 @@ func BenchmarkVrfVerify(b *testing.B) {
 			panic(err)
 		}
 		var ok bool
-		proofs[i], ok = sk.proveBytes(strs[i])
+		proofs[i], ok = sk.ProveBytes(strs[i])
 		if !ok {
 			panic("Failed to construct VRF proof")
 		}
@@ -121,6 +121,6 @@ func BenchmarkVrfVerify(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _ = pks[i].verifyBytes(proofs[i], strs[i])
+		_, _ = pks[i].VerifyBytes(proofs[i], strs[i])
 	}
 }

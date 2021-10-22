@@ -3,7 +3,7 @@ Simulation = "BaseDFS"
 BF = 2
 Rounds = 0
 Suite = "Ed25519"
-PreScript = "testPreScript.toml"
+PreScript = "aname"
 
 Hosts
 7

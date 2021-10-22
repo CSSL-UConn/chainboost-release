@@ -134,9 +134,12 @@ func (d *Localhost) Deploy(rc *RunConfig) error {
 	// Check for PreScript and copy it to the deploy-dir
 	d.PreScript = rc.Get("PreScript")
 	if d.PreScript != "" {
-		_, err := os.Stat(d.PreScript)
+		//raha added next 2 line
+		pwd := "/Users/raha/Documents/GitHub/basedfs/simul/platform/"
+		pwd = pwd + d.PreScript
+		_, err := os.Stat(pwd /*d.PreScript*/)
 		if !os.IsNotExist(err) {
-			if err := app.Copy(d.runDir, d.PreScript); err != nil {
+			if err := app.Copy(d.runDir, pwd /*d.PreScript*/); err != nil {
 				return xerrors.Errorf("copying: %v", err)
 			}
 		}

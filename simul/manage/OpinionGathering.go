@@ -358,7 +358,7 @@ func (p *ProtocolOpinionGathering) FuncOpinion(cc []OpinionMsg) {
 		// ----------------------------------------------
 		log.Lvl2("Raha: \n public key method 1:", p.ServerIdentity().Public.String(),
 			"\n public key method 2:", kp.Public, "!!!")
-		//ToDo: check why these two are different
+		//ToDo: raha: check why these two are different
 
 		ChildrenRandomStrings = append(ChildrenRandomStrings, msg...)
 		ChildrenPublicKeys = append(ChildrenPublicKeys, kp.Public /* , p.ServerIdentity().Public */)
@@ -382,7 +382,7 @@ func (p *ProtocolOpinionGathering) FuncOpinion(cc []OpinionMsg) {
 	} else {
 		log.Lvl1("Root recieved opinions!")
 		var invalidSigniture = false
-		// ToDo: check if all of them are recieved
+		// ToDo: raha: check if all of them are recieved
 		// verify signed strings
 		index := 0
 		for _, c := range cc {

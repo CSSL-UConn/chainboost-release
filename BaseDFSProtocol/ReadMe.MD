@@ -30,7 +30,7 @@ a fixed amount of money is in some addresses (clients addresses)
 
 we assume one server broadcast his por tx and all servers on recieving this tx will verify and add it to their prepared block and then all server run leader election to check if they are leader, then the leader add his proof and broadcast his prepared block and all servers verify and append his block to their blockchain
 
-## To Dos
+## ToDo s
 
 - [x] Clean Protocol structure
 - [x] Resolve NewbaseDFSRootProtocol issue

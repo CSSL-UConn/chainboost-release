@@ -26,6 +26,7 @@ require (
 	go.etcd.io/bbolt v1.3.4
 	golang.org/x/sys v0.0.0-20210816074244-15123e1e1f71
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
+	gonum.org/v1/gonum v0.9.3
 	rsc.io/goversion v1.2.0
 )
 

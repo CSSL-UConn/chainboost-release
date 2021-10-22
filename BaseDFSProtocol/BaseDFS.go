@@ -25,6 +25,7 @@ Types of Messages:
 package BaseDFSProtocol
 
 import (
+	"encoding/binary"
 	onet "github.com/basedfs"
 	"github.com/basedfs/blockchain"
 	"github.com/basedfs/blockchain/blkparser"
@@ -33,6 +34,7 @@ import (
 	"github.com/basedfs/por"
 	"github.com/basedfs/simul/monitor"
 	crypto "github.com/basedfs/vrf"
+	// "gonum.org/v1/gonum/stat/distuv" bionomial distribution in algorand leader election
 	"math"
 	"math/rand"
 	"sync"
@@ -101,14 +103,16 @@ type BaseDFS struct {
 	// transactions is the slice of transactions that contains transactions
 	// coming from servers (who convert the por into transaction?)
 	transactions  []blkparser.Tx
-	epochDuration uint32
-	PoRTxDuration uint32
+	epochDuration time.Duration
+	PoRTxDuration time.Duration
 	// finale block that this BaseDFS epoch has produced
 	finalBlock        *blockchain.TrBlock
 	currentWeight map[*network.ServerIdentity] int
 	totalCurrency int
 	initialSeed  [32]byte
 	currentRoundSeed [32]byte
+	roundNumber int
+	blockChainSize uint64
 	/* -----------------------------------------------------------
 	These fields are borrowed from ByzCoin
 	and may be useful for future functionalities
@@ -224,11 +228,12 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	bz.rootFailMode = 0   // raha: failMode was an in param in NewbaseDFSRootProtocol
 	bz.rootTimeout = 300  // raha: timeOutMs was an in param in NewbaseDFSRootProtocol
 	// epoch duration on which after this time the leader get choosed and propose a new block (unit?!)
-	bz.epochDuration = 5
+	bz.epochDuration = 30 // similar to Filecoin round durartion
 	bz.PoRTxDuration = 5
 	bz.totalCurrency = 0
+	bz.roundNumber = 0
 	// bls key pair for each node as its needed for VRF
-	//To Do: check how nodes key pair are handeled in network layer
+	//ToDo: raha: check how nodes key pair are handeled in network layer
 	_, bz.ECPrivateKey = crypto.VrfKeygen()
 	//currentRoundSeed: crypto.NextRoundSeed(), // it should be called by the leader in previous round
 	// test
@@ -236,10 +241,12 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	//bz.currentRoundSeed = t
 	// iniitial weight of all nodes
 	//rand.Seed(int64(bz.currentRoundSeed))
-	rand.Seed(86)
-	log.LLvl2("raha:", rand.Intn(100),rand.Intn(100),rand.Intn(100),rand.Intn(100),rand.Intn(100),rand.Intn(100))
+	//rand.Seed(int64(blockchainRandomSeed))
+	//rand.Seed(86)
+	rng := rand.New(rand.NewSource(0))
 	for _, si := range n.Roster().List{
-		bz.currentWeight[si] = 10 //rand.Intn(100) // a fixed number for the maximum stake of each node
+		// ToDO : raha: they should have a similar view of the initial stake in the blockchain. it gives us different arrays for each node
+		bz.currentWeight[si] = rng.Intn(100) // 100: a fixed number for the maximum stake of each node
 		bz.totalCurrency = bz.totalCurrency + bz.currentWeight[si]
 	}
 	n.OnDoneCallback(bz.nodeDone) // raha: when this function is called?
@@ -250,7 +257,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 func (bz *BaseDFS) Start() error {
 	//por.Testpor()
 	//crypto.Testvrf()
-	//bz.helloBaseDFS()
+	bz.helloBaseDFS()
 	log.Lvl2(bz.Info(),"Started the protocol by running Start function")
 	return nil
 }
@@ -266,6 +273,7 @@ func (bz *BaseDFS) Dispatch() error {
 
 		case msg := <-bz.HelloChan:
 			log.Lvl2(bz.Info(), "received Hello from", msg.TreeNode.ServerIdentity.Address)
+			log.Lvl2(bz.Info(), "check if he is the leader")
 			bz.helloBaseDFS()
 
 		case msg := <-bz.ProofOfRetTxChan:
@@ -274,9 +282,11 @@ func (bz *BaseDFS) Dispatch() error {
 				err = bz.handlePoRTx(msg)
 			}
 
-		case <-time.After(time.Second * time.Duration(bz.epochDuration)):
-			bz.SendFinalBlock(bz.createEpochBlock(bz.checkLeadership()))
-
+		case <-time.After(time.Second * bz.epochDuration):
+			// bz.SendFinalBlock(bz.createEpochBlock(bz.checkLeadership()))
+			// next round seed
+			log.LLvl2("next round:", bz.roundNumber, "seen by", bz.Info())
+			// call a function that next round starts
 		case <-time.After(time.Second * time.Duration(bz.PoRTxDuration)):
 			bz.sendPoRTx()
 
@@ -330,9 +340,11 @@ func (bz *BaseDFS) helloBaseDFS() {
 				}
 			}(child)
 		}
-		bz.sendPoRTx()
+		bz.createEpochBlock(bz.checkLeadership())
+		//bz.sendPoRTx()
 	} else {
-		bz.sendPoRTx()
+		bz.createEpochBlock(bz.checkLeadership())
+		//bz.sendPoRTx()
 	}
 }
 
@@ -340,17 +352,17 @@ func (bz *BaseDFS) helloBaseDFS() {
 func (bz *BaseDFS) sendPoRTx() {
 	//txs := bz.createPoRTx()
 	//portx := &Por{*txs, uint32(bz.Index())}
-	log.Lvl2(bz.Name(), ": multicasting por tx")
+	//log.Lvl2(bz.Name(), ": multicasting por tx")
 	//bz.Multicast(portx, bz.List()...)
 
 	// for _, child := range bz.Children() {
 	// 	err := bz.SendTo(child, portx)
 	// 	if err != nil {
 	// 		log.Lvl1(bz.Info(), "couldn't send to child:", child.ServerIdentity.Address)
-	// 	} else {
+	 //	} else {
 	// 		log.Lvl1(bz.Info(), "sent his PoR to his children:", child.ServerIdentity.Address)
-	// 	}
-	// }
+	 //	}
+	//}
 }
 
 // handleAnnouncement pass the announcement to the right CoSi struct.
@@ -381,33 +393,45 @@ func (bz *BaseDFS) appendPoRTx(p ProofOfRetTxChan) error {
 	//bz.createEpochBlock(&leadershipProof{1})
 	return nil
 }
-
+// ------------   Sortition Algorithm from ALgorand:
+// ⟨hash,π⟩←VRFsk(seed||role)
+// p←τ/W
+// j←0
+// while hash/ 2^hashleng </ [ sigma(k=0,j) (B(k,w,p),  sigma(k=0,j+1) (B(k,w,p)] do
+//	----	 j++
+// return <hash,π, j>
+// ------------
 //checkLeadership
-func (bz *BaseDFS) checkLeadership() bool {
+func (bz *BaseDFS) checkLeadership() (bool, crypto.VrfProof) {
 	 //the seed of this round is publicly known in advance
 	var toBeHashed = bz.currentRoundSeed
 	proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
 	if !ok {
 		log.LLvl2("error while generating proof")
 	}
-	r, vrfOutput := bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
-	if r!=true{
-		log.LLvl2("the proof is not approved", vrfOutput)
-	}
-	return r
+	_, vrfOutput := bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
+	t := binary.BigEndian.Uint64(vrfOutput[:])
+	 if math.Mod(float64(t), 7) == 0 {
+	 	return true,proof
+	 } // ToDo : raha:  replace with the number fo nodes! temp leader election
+	return false, proof
 }
 // verifyLeadership
 //func verifyLeadership(roundNumber int, )
 
 //createEpochBlock: by leader
-func (bz *BaseDFS) createEpochBlock(ok bool) *blockchain.TrBlock {
-	if ok==true{
-		log.LLvl2("I am the leader")
-	}
+func (bz *BaseDFS) createEpochBlock(ok bool, p crypto.VrfProof ) *blockchain.TrBlock {
+	if ok==false{
+		log.LLvl2(bz.Info(), "is not the leader")
+	} else {
+		log.LLvl2(bz.Info(), "is the leader, generating block ... ")
 		// later: add appropriate payment tx.s for each por tx in temp transactions list
 		var h blockchain.TransactionList = blockchain.NewTransactionList(bz.transactions, len(bz.transactions))
 		bz.tempBlock = blockchain.NewTrBlock(h, blockchain.NewHeader(h, "raha", "raha"))
+		bz.roundNumber = bz.roundNumber + 1
 		return bz.tempBlock
+	}
+	return nil
 }
 
 //SendFinalBlock   bz.SendFinalBlock(createEpochBlock)
@@ -433,28 +457,35 @@ func (bz *BaseDFS) SendFinalBlock(fb *blockchain.TrBlock) {
 
 // handle the arrival of a block
 func (bz *BaseDFS) handleBlock(pb PreparedBlockChan) (*blockchain.TrBlock, error) {
-	if err := verifyBlock(pb.PreparedBlock); err == nil {
-		//they eliminate existing tx.s in block from their current temp tx list
-		cap := cap(bz.transactions)
-		txs := bz.transactions
-		bz.transactions = nil
-		for _, tx1 := range pb.PreparedBlock.Block.Txs {
-			for index, tx2 := range txs {
-				if tx1.Hash == tx2.Hash {
-					if cap > index+1 {
-						txs = append(txs[:index], txs[index+1:]...)
-					} else {
-						txs = txs[:index]
+	t,_ := bz.checkLeadership()
+	if t == false {
+		if err := verifyBlock(pb.PreparedBlock); err == nil {
+			//they eliminate existing tx.s in block from their current temp tx list
+			cap := cap(bz.transactions)
+			txs := bz.transactions
+			bz.transactions = nil
+			for _, tx1 := range pb.PreparedBlock.Block.Txs {
+				for index, tx2 := range txs {
+					if tx1.Hash == tx2.Hash {
+						if cap > index+1 {
+							txs = append(txs[:index], txs[index+1:]...)
+						} else {
+							txs = txs[:index]
+						}
 					}
 				}
 			}
+			bz.transactions = append(bz.transactions, txs...)
+			return (bz.appendBlock(pb.PreparedBlock))
+			//-----
+			bz.roundNumber = bz.roundNumber + 1
+			bz.blockChainSize = bz.blockChainSize + 1 //uint64(length(blockchain.Block))
+		} else {
+			log.Error(bz.Name(), "Error verying block", err)
+			return nil, nil
 		}
-		bz.transactions = append(bz.transactions, txs...)
-		return (bz.appendBlock(pb.PreparedBlock))
-	} else {
-		log.Error(bz.Name(), "Error verying block", err)
-		return nil, nil
 	}
+	return nil, nil
 }
 
 // verifyBlock: servers will verify proposed block when they recieve it
