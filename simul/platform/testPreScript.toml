@@ -1,9 +1,1 @@
-Servers = 1
-Simulation = "BaseDFS"
-BF = 2
-Rounds = 0
-Suite = "Ed25519"
-PreScript = "aname"
-
-Hosts
-7
+touch centralbc.csv

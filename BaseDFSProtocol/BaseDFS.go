@@ -1,7 +1,10 @@
 /*
 Base DFS protocol: The simple version:
 
-we assume one server broadcast his por tx and all servers on recieving this tx will verify and add it to their prepared block and then all server run leader election to check if they are leader, then the leader add his proof and broadcast his prepared block and all servers verify and append his block to their blockchain
+we assume one server broadcast his por tx and all servers on recieving this tx will verify
+and add it to their prepared block and then all server run leader election
+to check if they are leader, then the leader add his proof and broadcast
+his prepared block and all servers verify and append his block to their blockchain
 ---------------------------------------------
 The BaseDFSProtocol goes as follows: it should change - its better now:)
 1- a server broadcast a por tx
@@ -26,6 +29,10 @@ package BaseDFSProtocol
 
 import (
 	"encoding/binary"
+	"io/ioutil"
+
+	//"strings"
+
 	onet "github.com/basedfs"
 	"github.com/basedfs/blockchain"
 	"github.com/basedfs/blockchain/blkparser"
@@ -34,6 +41,7 @@ import (
 	"github.com/basedfs/por"
 	"github.com/basedfs/simul/monitor"
 	crypto "github.com/basedfs/vrf"
+
 	// "gonum.org/v1/gonum/stat/distuv" bionomial distribution in algorand leader election
 	"math"
 	"math/rand"
@@ -106,13 +114,13 @@ type BaseDFS struct {
 	epochDuration time.Duration
 	PoRTxDuration time.Duration
 	// finale block that this BaseDFS epoch has produced
-	finalBlock        *blockchain.TrBlock
-	currentWeight map[*network.ServerIdentity] int
-	totalCurrency int
-	initialSeed  [32]byte
+	finalBlock       *blockchain.TrBlock
+	currentWeight    map[*network.ServerIdentity]int
+	totalCurrency    int
+	initialSeed      [32]byte
 	currentRoundSeed [32]byte
-	roundNumber int
-	blockChainSize uint64
+	roundNumber      int
+	blockChainSize   uint64
 	/* -----------------------------------------------------------
 	These fields are borrowed from ByzCoin
 	and may be useful for future functionalities
@@ -192,11 +200,11 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	bz := &BaseDFS{
 		TreeNodeInstance: n,
 		suite:            n.Suite(),
-		DoneBaseDFS:      	make(chan bool, 1),
+		DoneBaseDFS:      make(chan bool, 1),
 		//verifyBlockChan:  			make(chan bool),
-		doneProcessing:    make(chan bool, 2),
-		timeoutChan:       	make(chan uint64, 1),
-		currentWeight: 		make(map[*network.ServerIdentity] int, 100),
+		doneProcessing: make(chan bool, 2),
+		timeoutChan:    make(chan uint64, 1),
+		currentWeight:  make(map[*network.ServerIdentity]int, 100),
 	}
 	bz.viewChangeThreshold = int(math.Ceil(float64(len(bz.Tree().List())) * 2.0 / 3.0))
 	// register channels
@@ -244,7 +252,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	//rand.Seed(int64(blockchainRandomSeed))
 	//rand.Seed(86)
 	rng := rand.New(rand.NewSource(0))
-	for _, si := range n.Roster().List{
+	for _, si := range n.Roster().List {
 		// ToDO : raha: they should have a similar view of the initial stake in the blockchain. it gives us different arrays for each node
 		bz.currentWeight[si] = rng.Intn(100) // 100: a fixed number for the maximum stake of each node
 		bz.totalCurrency = bz.totalCurrency + bz.currentWeight[si]
@@ -253,12 +261,17 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	return bz, nil
 }
 
-//Start: starts the simplified protocol by sending hello msg to all nodes which later makes them to start sending their por tx.s
+//Start: starts the simplified protocol by sending hello msg to all nodes
+// which later makes them start sending their por tx.s
 func (bz *BaseDFS) Start() error {
 	//por.Testpor()
 	//crypto.Testvrf()
 	bz.helloBaseDFS()
-	log.Lvl2(bz.Info(),"Started the protocol by running Start function")
+	log.Lvl2(bz.Info(), "Started the protocol by running Start function")
+	csv, err := ioutil.ReadFile("centralbc.csv")
+	log.ErrFatal(err)
+	log.LLvl2("the csv is like: ", string(csv))
+	//assert.Equal(t, 7, len(strings.Split(string(csv), "\n")))
 	return nil
 }
 
@@ -359,9 +372,9 @@ func (bz *BaseDFS) sendPoRTx() {
 	// 	err := bz.SendTo(child, portx)
 	// 	if err != nil {
 	// 		log.Lvl1(bz.Info(), "couldn't send to child:", child.ServerIdentity.Address)
-	 //	} else {
+	//	} else {
 	// 		log.Lvl1(bz.Info(), "sent his PoR to his children:", child.ServerIdentity.Address)
-	 //	}
+	//	}
 	//}
 }
 
@@ -393,6 +406,7 @@ func (bz *BaseDFS) appendPoRTx(p ProofOfRetTxChan) error {
 	//bz.createEpochBlock(&leadershipProof{1})
 	return nil
 }
+
 // ------------   Sortition Algorithm from ALgorand:
 // ⟨hash,π⟩←VRFsk(seed||role)
 // p←τ/W
@@ -403,7 +417,7 @@ func (bz *BaseDFS) appendPoRTx(p ProofOfRetTxChan) error {
 // ------------
 //checkLeadership
 func (bz *BaseDFS) checkLeadership() (bool, crypto.VrfProof) {
-	 //the seed of this round is publicly known in advance
+	//the seed of this round is publicly known in advance
 	var toBeHashed = bz.currentRoundSeed
 	proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
 	if !ok {
@@ -411,17 +425,18 @@ func (bz *BaseDFS) checkLeadership() (bool, crypto.VrfProof) {
 	}
 	_, vrfOutput := bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
 	t := binary.BigEndian.Uint64(vrfOutput[:])
-	 if math.Mod(float64(t), 7) == 0 {
-	 	return true,proof
-	 } // ToDo : raha:  replace with the number fo nodes! temp leader election
+	if math.Mod(float64(t), 7) == 0 {
+		return true, proof
+	} // ToDo : raha:  replace with the number fo nodes! temp leader election
 	return false, proof
 }
+
 // verifyLeadership
 //func verifyLeadership(roundNumber int, )
 
 //createEpochBlock: by leader
-func (bz *BaseDFS) createEpochBlock(ok bool, p crypto.VrfProof ) *blockchain.TrBlock {
-	if ok==false{
+func (bz *BaseDFS) createEpochBlock(ok bool, p crypto.VrfProof) *blockchain.TrBlock {
+	if ok == false {
 		log.LLvl2(bz.Info(), "is not the leader")
 	} else {
 		log.LLvl2(bz.Info(), "is the leader, generating block ... ")
@@ -457,7 +472,7 @@ func (bz *BaseDFS) SendFinalBlock(fb *blockchain.TrBlock) {
 
 // handle the arrival of a block
 func (bz *BaseDFS) handleBlock(pb PreparedBlockChan) (*blockchain.TrBlock, error) {
-	t,_ := bz.checkLeadership()
+	t, _ := bz.checkLeadership()
 	if t == false {
 		if err := verifyBlock(pb.PreparedBlock); err == nil {
 			//they eliminate existing tx.s in block from their current temp tx list
