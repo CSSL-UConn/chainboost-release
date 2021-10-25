@@ -3,6 +3,7 @@ package simul
 import (
 	"flag"
 	"fmt"
+	"github.com/basedfs/blockchain"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -200,7 +201,6 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 		log.Error(err)
 		return nil, xerrors.Errorf("deploy: %v", err)
 	}
-
 	m := monitor.NewMonitor(stats[0])
 	m.SinkPort = uint16(monitorPort)
 	defer m.Stop()
@@ -233,6 +233,9 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 		// Start monitor before so ssh tunnel can connect to the monitor
 		// in case of deterlab.
 		err := deployP.Start()
+		// Raha: initializing central blockchain -------------------------
+		blockchain.Testfileaccess(rc.Get("RoundDuration"))
+		// --------------------------------------------
 		if err != nil {
 			done <- err
 			return

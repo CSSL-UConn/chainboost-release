@@ -29,7 +29,7 @@ package BaseDFSProtocol
 
 import (
 	"encoding/binary"
-	"io/ioutil"
+	//"io/ioutil"
 
 	//"strings"
 
@@ -268,10 +268,6 @@ func (bz *BaseDFS) Start() error {
 	//crypto.Testvrf()
 	bz.helloBaseDFS()
 	log.Lvl2(bz.Info(), "Started the protocol by running Start function")
-	csv, err := ioutil.ReadFile("centralbc.csv")
-	log.ErrFatal(err)
-	log.LLvl2("the csv is like: ", string(csv))
-	//assert.Equal(t, 7, len(strings.Split(string(csv), "\n")))
 	return nil
 }
 
