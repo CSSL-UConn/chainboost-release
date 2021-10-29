@@ -127,6 +127,7 @@
 			//a random file name from some sufficiently large domain (e.g.,Zp)
 			aRandomFileName := random.Int(bn256.Order, random.New())
 			st2.Write(aRandomFileName.Bytes())
+			// ToDo: if we want to have servers generate their own specific pors, this file name should be stored on the ccentralBC file as a new row after contract duration and file size, so later verifiers can read the bc and verify their pors
 			//st2.Write([]byte("1")) // for test purpose only!
 			st2.Write([]byte(strconv.Itoa(n)))
 			st2.ReadFrom(&st1)

@@ -2,6 +2,7 @@
 // CoSi for signing sidechains.
 package BaseDFSProtocol
 
+/*
 import (
 	"crypto/sha256"
 	"encoding/json"
@@ -921,3 +922,4 @@ type responseChan struct {
 	*onet.TreeNode
 	Response
 }
+*/

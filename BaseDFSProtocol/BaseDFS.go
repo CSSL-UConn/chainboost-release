@@ -28,11 +28,9 @@ Types of Messages:
 package BaseDFSProtocol
 
 import (
+	"bufio"
 	"encoding/binary"
-	//"io/ioutil"
-
-	//"strings"
-
+	"fmt"
 	onet "github.com/basedfs"
 	"github.com/basedfs/blockchain"
 	"github.com/basedfs/blockchain/blkparser"
@@ -41,10 +39,12 @@ import (
 	"github.com/basedfs/por"
 	"github.com/basedfs/simul/monitor"
 	crypto "github.com/basedfs/vrf"
-
+	"github.com/xuri/excelize/v2"
+	"io/ioutil"
+	"math/rand"
+	"os"
 	// "gonum.org/v1/gonum/stat/distuv" bionomial distribution in algorand leader election
 	"math"
-	"math/rand"
 	"sync"
 	"time"
 )
@@ -111,8 +111,6 @@ type BaseDFS struct {
 	// transactions is the slice of transactions that contains transactions
 	// coming from servers (who convert the por into transaction?)
 	transactions  []blkparser.Tx
-	epochDuration time.Duration
-	PoRTxDuration time.Duration
 	// finale block that this BaseDFS epoch has produced
 	finalBlock       *blockchain.TrBlock
 	currentWeight    map[*network.ServerIdentity]int
@@ -174,10 +172,10 @@ type BaseDFS struct {
 	// callback when we finished "verifying new block" + act = "appending it to our current blockchain"
 	//onVerifyActEpochBlockDone func()//
 	// view change setup and measurement
-	viewchangeChan chan struct { //?
-		*onet.TreeNode
-		viewChange
-	}
+	//viewchangeChan chan struct { //?
+	//	*onet.TreeNode
+	//	viewChange
+	//}
 	//raha: what does it do?
 	vcMeasure *monitor.TimeMeasure //?
 	// lock associated
@@ -192,6 +190,13 @@ type BaseDFS struct {
 	//from opinion gathering protocol
 	timeout   time.Duration //?
 	timeoutMu sync.Mutex    //?
+
+	//  -----  system-wide configurations params from the config file
+	//these  params get initialized "after" NewBaseDFSProtocol call (in func: Simulate in file: runsimul.go)
+	PercentageTxEscrow string
+	PercentageTxPoR string
+	PercentageTxPay string
+	RoundDuration time.Duration
 }
 
 // NewBaseDFSProtocol returns a new BaseDFS struct
@@ -214,9 +219,9 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	if err := n.RegisterChannel(&bz.ProofOfRetTxChan); err != nil {
 		return bz, err
 	}
-	if err := n.RegisterChannel(&bz.viewchangeChan); err != nil {
-		return bz, err
-	}
+	//if err := n.RegisterChannel(&bz.viewchangeChan); err != nil {
+	//	return bz, err
+	//}
 	if err := n.RegisterChannel(&bz.HelloChan); err != nil {
 		return bz, err
 	}
@@ -235,9 +240,6 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	bz.transactions = nil // raha: transactions was an in param in NewbaseDFSRootProtocol
 	bz.rootFailMode = 0   // raha: failMode was an in param in NewbaseDFSRootProtocol
 	bz.rootTimeout = 300  // raha: timeOutMs was an in param in NewbaseDFSRootProtocol
-	// epoch duration on which after this time the leader get choosed and propose a new block (unit?!)
-	bz.epochDuration = 30 // similar to Filecoin round durartion
-	bz.PoRTxDuration = 5
 	bz.totalCurrency = 0
 	bz.roundNumber = 0
 	// bls key pair for each node as its needed for VRF
@@ -257,20 +259,46 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 		bz.currentWeight[si] = rng.Intn(100) // 100: a fixed number for the maximum stake of each node
 		bz.totalCurrency = bz.totalCurrency + bz.currentWeight[si]
 	}
-	n.OnDoneCallback(bz.nodeDone) // raha: when this function is called?
+	//n.OnDoneCallback(bz.nodeDone) // raha: when this function is called
 	return bz, nil
 }
 
 //Start: starts the simplified protocol by sending hello msg to all nodes
 // which later makes them start sending their por tx.s
 func (bz *BaseDFS) Start() error {
+	// update the centralbc file with created nodes' information
+	bz.finalCentralBCInitialization()
 	//por.Testpor()
 	//crypto.Testvrf()
 	bz.helloBaseDFS()
 	log.Lvl2(bz.Info(), "Started the protocol by running Start function")
 	return nil
 }
+func (bz *BaseDFS) finalCentralBCInitialization() {
+	var NodeInfoRow []string
+	for _, a := range bz.Roster().List{
+		NodeInfoRow = append(NodeInfoRow, a.String())
+	}
+	f, _ := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	// --- market matching sheet
+	index := f.GetSheetIndex("MarketMatching")
+	f.SetActiveSheet(index)
+	err := f.SetSheetRow("MarketMatching", "B1", &NodeInfoRow)
+	if err != nil {
+		log.LLvl2(err)
+	}
+	// --- power table sheet
+	index = f.GetSheetIndex("PowerTable")
+	f.SetActiveSheet(index)
+	err = f.SetSheetRow("PowerTable", "B1", &NodeInfoRow)
+	if err != nil {
+		log.LLvl2(err)
+	}
 
+	if err := f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"); err != nil {
+		log.LLvl2(err)
+	}
+}
 // Dispatch listen on the different channels
 func (bz *BaseDFS) Dispatch() error {
 	fail := (bz.rootFailMode != 0) && bz.IsRoot()
@@ -291,14 +319,11 @@ func (bz *BaseDFS) Dispatch() error {
 				err = bz.handlePoRTx(msg)
 			}
 
-		case <-time.After(time.Second * bz.epochDuration):
+		case <-time.After(time.Second * bz.RoundDuration):
 			// bz.SendFinalBlock(bz.createEpochBlock(bz.checkLeadership()))
 			// next round seed
 			log.LLvl2("next round:", bz.roundNumber, "seen by", bz.Info())
 			// call a function that next round starts
-		case <-time.After(time.Second * time.Duration(bz.PoRTxDuration)):
-			bz.sendPoRTx()
-
 		case msg := <-bz.PreparedBlockChan:
 			log.Lvl2(bz.Info(), "received block from", msg.TreeNode.ServerIdentity.Address)
 			if !fail {
@@ -321,9 +346,9 @@ func (bz *BaseDFS) Dispatch() error {
 			}
 			timeoutStarted = true
 			go bz.startTimer(timeout)
-		case msg := <-bz.viewchangeChan:
+		//case msg := <-bz.viewchangeChan:
 			// receive view change
-			err = bz.handleViewChange(msg.TreeNode, &msg.viewChange)
+			//err = bz.handleViewChange(msg.TreeNode, &msg.viewChange)
 		case <-bz.doneProcessing:
 			// we are done
 			log.Lvl2(bz.Name(), "BaseDFS Dispatches stop.")
@@ -402,7 +427,42 @@ func (bz *BaseDFS) appendPoRTx(p ProofOfRetTxChan) error {
 	//bz.createEpochBlock(&leadershipProof{1})
 	return nil
 }
-
+func (bz *BaseDFS) readBC() () {
+	//---- test file read / write access
+	data, err := ioutil.ReadFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	if err != nil {
+		log.Lvl2(bz.Info(), "error reading from centralbc", err)
+	} else {
+		log.Lvl2(bz.Info(), "This is the file content:", string(data))
+	}
+	//----------------
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/simple.xlsx")
+	if err != nil {
+		log.LLvl2(err)
+	}
+	c1, err := f.GetCellValue("Sheet1", "A1")
+	if err != nil {
+		log.LLvl2(err)
+	}
+	log.LLvl2(c1)
+	c2, err := f.GetCellValue("Sheet1", "A4")
+	if err != nil {
+		log.LLvl2(err)
+	}
+	log.LLvl2(c2)
+	c3, err := f.GetCellValue("Sheet1", "B2")
+	result, err := f.SearchSheet("Sheet1", "100")
+	if err != nil {
+		log.LLvl2(err)
+	}
+	log.LLvl2(c3)
+	log.LLvl2(result)
+	f.SetCellValue("Sheet1", "A3", 42)
+	if err := f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/simple.xlsx"); err != nil {
+		log.LLvl2(err)
+	}
+	log.LLvl2("wait")
+}
 // ------------   Sortition Algorithm from ALgorand:
 // ⟨hash,π⟩←VRFsk(seed||role)
 // p←τ/W
@@ -413,6 +473,7 @@ func (bz *BaseDFS) appendPoRTx(p ProofOfRetTxChan) error {
 // ------------
 //checkLeadership
 func (bz *BaseDFS) checkLeadership() (bool, crypto.VrfProof) {
+	bz.readBC()
 	//the seed of this round is publicly known in advance
 	var toBeHashed = bz.currentRoundSeed
 	proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
@@ -442,9 +503,27 @@ func (bz *BaseDFS) createEpochBlock(ok bool, p crypto.VrfProof) *blockchain.TrBl
 		bz.roundNumber = bz.roundNumber + 1
 		return bz.tempBlock
 	}
+	bz.updateBC()
 	return nil
 }
-
+//updateBC: by leader
+func (bz *BaseDFS) updateBC () {
+	//---- test file read / write access
+	f, err := os.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx", os.O_APPEND|os.O_WRONLY, 0600)
+	defer f.Close()
+	_, err = f.WriteString(bz.TreeNode().String() + "\n")
+	w := bufio.NewWriter(f)
+	_, err = fmt.Fprintf(w, "%v\n", 10)
+	_, err = fmt.Fprintf(w, "%v\n", "hi")
+	w.Flush()
+	data, err := ioutil.ReadFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	if err!=nil{
+		log.Lvl2(bz.Info(), "error reading from centralbc", err)
+	} else {
+		log.Lvl2(bz.Info(), "This is the file content which leader see:" , string(data))
+	}
+	//----------------
+}
 //SendFinalBlock   bz.SendFinalBlock(createEpochBlock)
 func (bz *BaseDFS) SendFinalBlock(fb *blockchain.TrBlock) {
 	if fb == nil {
@@ -534,17 +613,17 @@ func (bz *BaseDFS) startTimer(millis uint64) {
 func (bz *BaseDFS) sendAndMeasureViewchange() {
 	log.Lvl3(bz.Name(), "Created viewchange measure")
 	bz.vcMeasure = monitor.NewTimeMeasure("viewchange")
-	vc := newViewChange()
-	var err error
+	//vc := newViewChange()
+	//var err error
 	for _, n := range bz.Tree().List() {
 		// don't send to ourself
 		if n.ID.Equal(bz.TreeNode().ID) {
 			continue
 		}
-		err = bz.SendTo(n, vc)
-		if err != nil {
-			log.Error(bz.Name(), "Error sending view change", err)
-		}
+		//err = bz.SendTo(n, vc)
+		//if err != nil {
+		//	log.Error(bz.Name(), "Error sending view change", err)
+		//}
 	}
 }
 
@@ -563,6 +642,7 @@ func (bz *BaseDFS) sendAndMeasureViewchange() {
 // }
 
 // handleViewChange receives a view change request and if received more than 2/3, accept the view change.
+/*
 func (bz *BaseDFS) handleViewChange(tn *onet.TreeNode, vc *viewChange) error {
 	bz.vcCounter++
 	// only do it once
@@ -579,9 +659,10 @@ func (bz *BaseDFS) handleViewChange(tn *onet.TreeNode, vc *viewChange) error {
 	}
 	return nil
 }
-
+*/
 // nodeDone is either called by the end of EndProtocol or by the end of the
 // response phase of the commit round.
+/*
 func (bz *BaseDFS) nodeDone() bool {
 	log.Lvl3(bz.Name(), "nodeDone()      ----- ")
 	bz.doneProcessing <- true
@@ -593,7 +674,7 @@ func (bz *BaseDFS) nodeDone() bool {
 	bz.DoneBaseDFS <- true
 	return true
 }
-
+*/
 // -------------------
 // from OpinionGathering Protocol
 // -------------------

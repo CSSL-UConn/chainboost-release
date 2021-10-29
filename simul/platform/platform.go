@@ -66,6 +66,11 @@ type Config struct {
 	Suite       string
 	MonitorPort int
 	Debug       int
+	// raha: adding some other system-wide configurations
+	RoundDuration      string
+	PercentageTxPoR    string
+	PercentageTxPay    string
+	PercentageTxEscrow string
 }
 
 var deterlab = "deterlab"

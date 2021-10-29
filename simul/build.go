@@ -3,11 +3,12 @@ package simul
 import (
 	"flag"
 	"fmt"
-	"github.com/basedfs/blockchain"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/basedfs/blockchain"
 
 	"math"
 	"time"
@@ -68,6 +69,11 @@ func startBuild() {
 			MonitorPort: monitorPort,
 			Debug:       log.DebugVisible(),
 			Suite:       runconfigs[0].Get("Suite"),
+			// raha: adding some other system-wide configurations
+			RoundDuration:      runconfigs[0].Get("RoundDuration"),
+			PercentageTxPoR:    runconfigs[0].Get("PercentageTxPoR"),
+			PercentageTxPay:    runconfigs[0].Get("PercentageTxPay"),
+			PercentageTxEscrow: runconfigs[0].Get("PercentageTxEscrow"),
 		})
 
 		if clean {
@@ -234,7 +240,12 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 		// in case of deterlab.
 		err := deployP.Start()
 		// Raha: initializing central blockchain -------------------------
-		blockchain.Testfileaccess(rc.Get("RoundDuration"))
+		blockchain.InitializeCentralBC(rc.Get("RoundDuration"),
+			rc.Get("PercentageTxPoR"), rc.Get("PercentageTxPay"), rc.Get("PercentageTxEscrow"),
+			rc.Get("DistributionMeanFileSize"), rc.Get("DistributionVarianceFileSize"),
+			rc.Get("DistributionMeanContractDuration"), rc.Get("DistributionVarianceContractDuration"),
+			rc.Get("Nodes"),
+			rc.Get("DistributionMeanInitialPower"), rc.Get("DistributionVarianceInitialPower"))
 		// --------------------------------------------
 		if err != nil {
 			done <- err

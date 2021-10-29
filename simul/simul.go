@@ -16,7 +16,6 @@ import (
 	"os"
 
 	"github.com/basedfs/log"
-	"github.com/basedfs/simul/platform"
 )
 
 // The address of this server - if there is only one server in the config
@@ -64,7 +63,8 @@ func Start(rcs ...string) {
 	if simul == "" {
 		startBuild()
 	} else {
-		err := platform.Simulate(suite, serverAddress, simul, monitorAddress)
+		//raha: commented next line
+		//err := platform.Simulate(suite, serverAddress, simul, monitorAddress)
 		log.ErrFatal(err)
 	}
 	os.Chdir(wd)

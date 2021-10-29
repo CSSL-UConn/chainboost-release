@@ -1,6 +1,7 @@
 package platform
 
 import (
+	"strconv"
 	"sync"
 	"time"
 
@@ -24,7 +25,9 @@ type simulInitDone struct{}
 // monitorAddress = ""
 // simul = localhost.simulation
 
-func Simulate(suite, serverAddress, simul, monitorAddress string) error {
+// raha: adding some other system-wide configurations
+func Simulate(PercentageTxEscrow,PercentageTxPoR,PercentageTxPay,RoundDuration string,
+	suite, serverAddress, simul, monitorAddress string) error {
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 	if err != nil {
 		// We probably are not needed
@@ -155,6 +158,14 @@ func Simulate(suite, serverAddress, simul, monitorAddress string) error {
 			//proto := p.(*manage.ProtocolOpinionGathering)
 			proto := p.(*BaseDFSProtocol.BaseDFS)
 			proto.SetTimeout(timeout)
+			// raha: finally passing our system-wide configurations to our protocol
+			proto.PercentageTxEscrow = PercentageTxEscrow
+			proto.PercentageTxPoR = PercentageTxPoR
+			proto.PercentageTxPay = PercentageTxPay
+			t,_ := strconv.Atoi(RoundDuration)
+			proto.RoundDuration = time.Duration(t)
+			log.LLvl2(PercentageTxEscrow,PercentageTxPoR,PercentageTxPay,RoundDuration)
+			// ---------------------------------------------------------------
 			proto.Start()
 			//log.Lvl1("Started counting children with timeout of", timeout)
 			//Raha

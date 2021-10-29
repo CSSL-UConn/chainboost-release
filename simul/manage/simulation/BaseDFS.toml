@@ -5,6 +5,16 @@ Rounds = 0
 Suite = "Ed25519"
 PreScript = "testPreScript.toml"
 RoundDuration = 30
+PercentageTxPoR = 40
+PercentageTxPay = 25
+PercentageTxEscrow = 35
+DistributionMeanFileSize = 50
+DistributionVarianceFileSize = 20
+DistributionMeanContractDuration = 10
+DistributionVarianceContractDuration = 5
+DistributionMeanInitialPower = 100
+DistributionVarianceInitialPower = 10
+Nodes = 7
 
 Hosts
 7

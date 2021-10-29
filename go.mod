@@ -21,12 +21,12 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/tklauser/go-sysconf v0.3.8 // indirect
 	github.com/urfave/cli v1.22.2
+	github.com/xuri/excelize/v2 v2.4.1
 	go.dedis.ch/kyber/v3 v3.0.13
 	go.dedis.ch/protobuf v1.0.11
 	go.etcd.io/bbolt v1.3.4
 	golang.org/x/sys v0.0.0-20210816074244-15123e1e1f71
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
-	gonum.org/v1/gonum v0.9.3
 	rsc.io/goversion v1.2.0
 )
 

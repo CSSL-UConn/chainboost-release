@@ -73,6 +73,12 @@ type Localhost struct {
 
 	// RunWait for long simulations
 	RunWait string
+
+	// raha: adding some other system-wide configurations
+	RoundDuration      string
+	PercentageTxPoR    string
+	PercentageTxPay    string
+	PercentageTxEscrow string
 }
 
 // Configure various internal variables
@@ -84,6 +90,12 @@ func (d *Localhost) Configure(pc *Config) {
 	os.RemoveAll(d.runDir)
 	log.ErrFatal(os.Mkdir(d.runDir, 0770))
 	d.Suite = pc.Suite
+	// raha: adding some other system-wide configurations
+	d.RoundDuration = pc.RoundDuration
+	d.PercentageTxPoR = pc.PercentageTxPoR
+	d.PercentageTxPay = pc.PercentageTxPay
+	d.PercentageTxEscrow = pc.PercentageTxEscrow
+	// raha
 	d.localDir = pwd
 	d.debug = pc.Debug
 	d.running = false
@@ -204,7 +216,9 @@ func (d *Localhost) Start(args ...string) error {
 		host := "127.0.0." + strconv.Itoa(index+1)
 		go func(i int, h string) {
 			log.Lvl3("Localhost: will start host", i, h)
-			err := Simulate(d.Suite, host, d.Simulation, "")
+			// raha: adding some other system-wide configurations
+			err := Simulate(d.PercentageTxEscrow,d.PercentageTxPoR,d.PercentageTxPay,d.RoundDuration,
+				d.Suite, host, d.Simulation, "")
 			if err != nil {
 				log.Error("Error running localhost", h, ":", err)
 				d.errChan <- err
