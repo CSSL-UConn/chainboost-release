@@ -14,7 +14,6 @@ package crypto
 
 import "github.com/basedfs/log"
 
-
 //Testvrf is called in Start in BaseDFS to test the VRF module
 func Testvrf() {
 	t := []byte("first test")

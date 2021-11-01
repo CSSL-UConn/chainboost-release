@@ -6,7 +6,11 @@
 // License, or (at your option) any later version.
 
 //All Algorand users execute crypto-graphic sortition to determine if they are selected to propose a block in a given round
-//Algorand’s blocks consist of a list of transactions,  alongwith metadata needed byBA⋆.  Specifically, the metadataconsists of the round number,  the proposer’s VRF-basedseed (§6), a hash of the previous block in the ledger, and atimestamp indicating when the block was proposed.  Thelist of transactions in a block logically translates to a setof weights for each user’s public key (based on the balanceof currency for that key), along with the total weight of alloutstanding currency.
+//Algorand’s blocks consist of a list of transactions,  along with metadata needed by BA⋆.
+//Specifically, the metadata consists of the round number,  the proposer’s VRF-based seed (§6), a hash of the previous block in the ledger,
+//and a timestamp indicating when the block was proposed.
+//The list of transactions in a block logically translates to a set of weights for each user’s public key
+//(based on the balance of currency for that key), along with the total weight of all outstanding currency.
 
 package crypto
 
