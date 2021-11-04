@@ -58,3 +58,46 @@ func TestNormalDistribution (t *testing.T) {
 		list[i] = mean + derivation*rand.NormFloat64()
 		}
 }
+
+func TestTime (t *testing.T){
+		// Creating channel using make keyword
+		mychan1 := make(chan string, 2)
+		// Calling Sleep function of go
+		go func() {
+			t := time.Now()
+			fmt.Println("start:" , t.String())
+			time.Sleep(2 * time.Second)
+			// Displayed after sleep overs
+			mychan1 <- "output: after two seconds"
+		}()
+		// Select statement
+		select {
+			// Case statement
+			case out := <-mychan1:
+				t := time.Now()
+				fmt.Println(t.String(), "---", out)
+			// Calling After method
+			case <-time.After(3 * time.Second):
+				t := time.Now()
+				fmt.Println(t.String(), "---", "timeout: after three seconds")
+		}
+		// Again Creating channel using make keyword
+		mychan2 := make(chan string, 2)
+		// Calling Sleep method of go
+		go func() {
+			time.Sleep(6 * time.Second)
+			// Printed after sleep overs
+			mychan2 <- "output2"
+		}()
+		// Select statement
+		select {
+		// Case statement
+		case out := <-mychan2:
+			t := time.Now()
+			fmt.Println(t.String(), "-----", out)
+			// Calling After method
+		case <-time.After(3 * time.Second):
+			t := time.Now()
+			fmt.Println(t.String(), "---", "timeout: after three seconds")
+		}
+}

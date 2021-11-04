@@ -1,10 +1,9 @@
 package main
 
 import (
-	"testing"
-
 	"github.com/basedfs/log"
 	"github.com/basedfs/simul"
+	"testing"
 )
 
 func TestSimulation(t *testing.T) {

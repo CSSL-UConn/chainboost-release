@@ -244,8 +244,7 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 			rc.Get("PercentageTxPoR"), rc.Get("PercentageTxPay"), rc.Get("PercentageTxEscrow"),
 			rc.Get("DistributionMeanFileSize"), rc.Get("DistributionVarianceFileSize"),
 			rc.Get("DistributionMeanContractDuration"), rc.Get("DistributionVarianceContractDuration"),
-			rc.Get("Nodes"),
-			rc.Get("DistributionMeanInitialPower"), rc.Get("DistributionVarianceInitialPower"))
+			rc.Get("Nodes"))
 		// --------------------------------------------
 		if err != nil {
 			done <- err

@@ -164,7 +164,11 @@ func Simulate(PercentageTxEscrow,PercentageTxPoR,PercentageTxPay,RoundDuration s
 			proto.PercentageTxPay = PercentageTxPay
 			t,_ := strconv.Atoi(RoundDuration)
 			proto.RoundDuration = time.Duration(t)
-			log.LLvl2(PercentageTxEscrow,PercentageTxPoR,PercentageTxPay,RoundDuration)
+			log.LLvl2("passing our system-wide configurations to the protocol",
+				"\n PercentageTxEscrow: ", PercentageTxEscrow,
+				"\n PercentageTxPoR: ", PercentageTxPoR,
+				"\n  PercentageTxPay: ", PercentageTxPay,
+				"\n  RoundDuration: ", RoundDuration)
 			// ---------------------------------------------------------------
 			proto.Start()
 			//log.Lvl1("Started counting children with timeout of", timeout)
