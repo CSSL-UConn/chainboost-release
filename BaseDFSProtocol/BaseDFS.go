@@ -36,34 +36,77 @@
 		"github.com/basedfs/blockchain/blkparser"
 		"github.com/basedfs/log"
 		"github.com/basedfs/network"
+		"github.com/basedfs/por"
 		"github.com/basedfs/simul/monitor"
 		crypto "github.com/basedfs/vrf"
 		"github.com/xuri/excelize/v2"
 		"math/big"
 		"strconv"
-
 		"sync"
 		"time"
 	)
+	//--------------------------------------------------------------------
+	// ------- TYPES  --------------------------------------------
+	//--------------------------------------------------------------------
+	//------   transactions and block structure:
+	type TxPay struct {
+		LockTime uint32
+		Version  uint32
+		TxInCnt  uint32
+		TxOutCnt uint32
+		TxPayIns    []*TxPayIn
+		TxOuts   []*TxPayOut
+	}
+	type TxPayIn struct {
+		UTXOHash string
+		UnlockingScriptSize uint
+		UnlockinScript  string
+		UTXOIndex  uint
+	}
+	type TxPayOut struct {
+		Addr     string
+		Amount    uint
+		LockingScript  string
+		LockingScriptSize uint
+	}
+	type TxPoR struct {
+		por por.Por //Todo: check when passing its pointer is better?
+		StorageMinerPublicKey por.PublicKey
+		Tau []byte
 
-	func init() {
-		//network.RegisterMessage(ProofOfRetTxChan{})
-		//network.RegisterMessage(PreparedBlockChan{})
-		network.RegisterMessage(HelloBaseDFS{})
-		onet.GlobalProtocolRegister("BaseDFS", NewBaseDFSProtocol)
+	}
+	type TxEscrow struct {
+
+	}
+	type TransactionList struct {
+		TxPays   [] 							TxPay
+		TxPayCnt 								uint
+		TxPoRs   [] 							TxPoR
+		TxPoRCnt 								uint
+		TxEscrows   [] 							TxEscrow
+		TxEscrowCnt 								uint
+		Fees  								float64
+	}
+	type BlockHeader struct {
+		LeaderPublicKey             int
+		LeadershipProof        		*LeadershipProof
+		RoundNumber 				uint
+		Timestamp             			uint64
+		BlockSig              			onet.TreeNode
+		MerkleRootHash 			string
+		PreviousBlockHash  	  	string
+		RoundSeed 					string
+	}
+	type Block struct {
+		BlockSize  						uint
+		*BlockHeader
+		TransactionList
 	}
 
-	//---------------- these channel were used for communication----------
-	/*type ProofOfRetTxChan struct {
-		*onet.TreeNode
-		por.Por
-	}
 
-	type PreparedBlockChan struct {
-		*onet.TreeNode
-		PreparedBlock
-	}*/
-	//-----------------------------------------------------------------------
+	type LeadershipProof struct {
+		proof crypto.VrfProof
+	}
 	// Hello is sent down the tree from the root node, every node who gets it starts the protocol and send it to its children
 	type HelloBaseDFS struct {
 		Timeout time.Duration
@@ -72,25 +115,12 @@
 		PercentageTxPoR string
 		PercentageTxPay string
 		RoundDuration time.Duration
+		BlockSize string
 	}
-
 	type HelloChan struct {
 		*onet.TreeNode
 		HelloBaseDFS
 	}
-	//---------------- transaction and block structure --------------------
-	type PreparedBlock struct {
-		blockchain.Block
-	}
-
-	type LeadershipProof struct {
-		proof crypto.VrfProof
-	}
-
-	type tx struct {
-		i int8
-	} //ToDo: the structure for three types of transactions: payment, escrow creation, and PoR should be finalized
-	//---------------------------------------------------------------------
 	// baseDFS is the main struct for running the protocol
 	type BaseDFS struct {
 		// the node we are represented-in
@@ -115,12 +145,13 @@
 		//  -----  system-wide configurations params from the config file
 		// ------------------------------------------------------------------
 		//these  params get initialized
-		//for the root node: "after" NewBaseDFSProtocol call (in func: Simulate in file: runsimul.go)
-		//for the rest of nodes node: while joining protocol by the HelloBaseDFS message
+				//for the root node: "after" NewBaseDFSProtocol call (in func: Simulate in file: runsimul.go)
+				//for the rest of nodes node: while joining protocol by the HelloBaseDFS message
 		PercentageTxEscrow string
 		PercentageTxPoR string
 		PercentageTxPay string
 		RoundDuration time.Duration
+		BlockSize string
 		// ------------------------------------------------------------------
 		roundNumber int
 		// ------------------------------------------------------------------------------------------------------------------
@@ -130,6 +161,15 @@
 		doneLock sync.Mutex
 		timeout   time.Duration
 		timeoutMu sync.Mutex
+	}
+	//--------------------------------------------------------------------
+	// ------- FUNCTIONS  --------------------------------------------
+	//--------------------------------------------------------------------
+	func init() {
+		//network.RegisterMessage(ProofOfRetTxChan{})
+		//network.RegisterMessage(PreparedBlockChan{})
+		network.RegisterMessage(HelloBaseDFS{})
+		onet.GlobalProtocolRegister("BaseDFS", NewBaseDFSProtocol)
 	}
 	// NewBaseDFSProtocol returns a new BaseDFS struct
 	func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error) {
@@ -179,11 +219,22 @@
 		for _, a := range bz.Roster().List{
 			NodeInfoRow = append(NodeInfoRow, a.String())
 		}
-		f, _ := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+		failedAttempts := 0
+		f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+		if err!=nil {
+			log.LLvl2(bz.TreeNode().Name(), "Can't open the centralbc file: pause 1 sec. for each attempt ----------------")
+			//panic(err)
+			for err!=nil{
+				time.Sleep(1 * time.Second)
+				f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx");
+				failedAttempts = failedAttempts + 1
+			}
+			log.LLvl2("---------- Opened the centralbc file after ", failedAttempts, " attempts")
+		}
 		// --- market matching sheet
 		index := f.GetSheetIndex("MarketMatching")
 		f.SetActiveSheet(index)
-		err := f.SetSheetRow("MarketMatching", "B1", &NodeInfoRow)
+		err = f.SetSheetRow("MarketMatching", "B1", &NodeInfoRow)
 		if err != nil {
 			log.LLvl2("Panic Raised:\n\n")
 			panic(err)
@@ -215,10 +266,11 @@
 				bz.PercentageTxPoR= msg.PercentageTxPoR
 				bz.PercentageTxPay= msg.PercentageTxPay
 				bz.RoundDuration= msg.RoundDuration
+				bz.BlockSize = msg.BlockSize
 				bz.helloBaseDFS()
 			// this msg is catched in simulation codes
-			case <-bz.DoneBaseDFS:
-				running = false
+	/*		case <-bz.DoneBaseDFS:
+				running = false*/
 			case <-time.After(5 * time.Second):
 				log.Lvl2("cheking for new round..")
 				if r := bz.readBCForNewRound(); r == true {
@@ -258,7 +310,8 @@
 						PercentageTxEscrow: bz.PercentageTxEscrow ,
 						PercentageTxPoR: bz.PercentageTxPoR ,
 						PercentageTxPay: bz.PercentageTxPay ,
-						RoundDuration: bz.RoundDuration ,})
+						RoundDuration: bz.RoundDuration ,
+						BlockSize: bz.BlockSize})
 					if err != nil {log.Lvl2(bz.Info(), "couldn't send hello to child", c.Name())}
 				}(child)
 			}
@@ -290,9 +343,7 @@
 	}
 	//createEpochBlock: by leader
 	func (bz *BaseDFS) createEpochBlock(ok bool, p crypto.VrfProof) {
-		if ok == false {
-			//log.LLvl2(bz.TreeNode().Name(), "is not a leader!")
-		} else {
+		if ok != false {
 			log.LLvl2(bz.TreeNode().Name(), "is a leader for round number", bz.roundNumber,
 				"will wait for round duration:", bz.RoundDuration,
 				"and then check if another leader has already updated bc ...")
@@ -310,10 +361,20 @@
 		} else {return false}
 	}
 	func (bz *BaseDFS) readBCPreCheckLeadership () (power *big.Int, seed string){
-		f, _ := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+		failedAttempts := 0
+		f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+		if err!=nil {
+			log.LLvl2(bz.TreeNode().Name(), "Can't open the centralbc file: pause 1 sec. for each attempt ----------------")
+			//panic(err)
+			for err!=nil{
+				time.Sleep(1 * time.Second)
+				f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx");
+				failedAttempts = failedAttempts + 1
+			}
+			log.LLvl2("---------- Opened the centralbc file after ", failedAttempts, " attempts")
+		}
 		var rows *excelize.Rows
 		var row []string
-		var err error
 		rowNumber := 0
 		// looking for last round's seed in the round table sheet in the centralbc file
 		if rows, err = f.Rows("RoundTable"); err!=nil {
@@ -368,10 +429,20 @@
 		}
 	}
 	func (bz *BaseDFS) readBCForNewRound () bool {
-		f, _ := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+		failedAttempts := 0
+		f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx");
+		if err!=nil {
+			log.LLvl2(bz.TreeNode().Name(), "Can't open the centralbc file: pause 1 sec. for each attempt ----------------")
+			//panic(err)
+			for err!=nil{
+				time.Sleep(1 * time.Second)
+				f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx");
+				failedAttempts = failedAttempts + 1
+			}
+			log.LLvl2("---------- Opened the centralbc file after ", failedAttempts, " attempts")
+		}
 		var rows *excelize.Rows
 		var row []string
-		var err error
 		rowNumber := 0
 		var lastRound int
 		// looking for last round's seed in the round table sheet in the centralbc file
@@ -396,10 +467,20 @@
 	}
 	//updateBC: by leader
 	func (bz *BaseDFS) updateBCPostLeadership () {
-		f, _ := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+		failedAttempts := 0
+		f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+		if err!=nil {
+			log.LLvl2(bz.TreeNode().Name(), "Can't open the centralbc file: pause 1 sec. for each attempt ----------------")
+			//panic(err)
+			for err!=nil{
+				time.Sleep(1 * time.Second)
+				f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx");
+				failedAttempts = failedAttempts + 1
+			}
+			log.LLvl2("---------- Opened the centralbc file after ", failedAttempts, " attempts")
+		}
 		var rows *excelize.Rows
 		var row []string
-		var err error
 		var seed string
 		//var power *big.Int
 		rowNumber := 0
@@ -424,7 +505,7 @@
 		// updating the current last row in the "BCsize" column
 		currentRow := strconv.Itoa(rowNumber)
 		axisBCSize := "C" + currentRow
-		err = f.SetCellValue("RoundTable", axisBCSize, 10) //ToDo: measure and update bcsize
+		err = f.SetCellValue("RoundTable", axisBCSize, bz.BlockSize) //ToDo: measure and update bcsize
 		if err != nil {
 			return
 		}
@@ -709,3 +790,16 @@
 	//	----	 j++
 	// return <hash,π, j>
 	// ----------------------------------------------------------------------
+	//structures
+	/*---------------------------------------------------------------------
+	---------------- these channel were used for communication----------
+	type ProofOfRetTxChan struct {
+		*onet.TreeNode
+		por.Por
+	}
+
+	type PreparedBlockChan struct {
+		*onet.TreeNode
+		PreparedBlock
+	}
+	-------------------------------------------------------------------- */

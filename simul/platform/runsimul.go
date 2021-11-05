@@ -26,7 +26,7 @@ type simulInitDone struct{}
 // simul = localhost.simulation
 
 // raha: adding some other system-wide configurations
-func Simulate(PercentageTxEscrow,PercentageTxPoR,PercentageTxPay,RoundDuration string,
+func Simulate(PercentageTxEscrow,PercentageTxPoR,PercentageTxPay,RoundDuration, BlockSize string,
 	suite, serverAddress, simul, monitorAddress string) error {
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 	if err != nil {
@@ -164,11 +164,13 @@ func Simulate(PercentageTxEscrow,PercentageTxPoR,PercentageTxPay,RoundDuration s
 			proto.PercentageTxPay = PercentageTxPay
 			t,_ := strconv.Atoi(RoundDuration)
 			proto.RoundDuration = time.Duration(t)
+			proto.BlockSize = BlockSize
 			log.LLvl2("passing our system-wide configurations to the protocol",
 				"\n PercentageTxEscrow: ", PercentageTxEscrow,
 				"\n PercentageTxPoR: ", PercentageTxPoR,
 				"\n  PercentageTxPay: ", PercentageTxPay,
-				"\n  RoundDuration: ", RoundDuration)
+				"\n  RoundDuration: ", RoundDuration,
+				"\n BlockSize: ", BlockSize )
 			// ---------------------------------------------------------------
 			proto.Start()
 			//log.Lvl1("Started counting children with timeout of", timeout)

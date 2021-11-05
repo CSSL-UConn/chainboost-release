@@ -21,6 +21,7 @@ type Block struct {
 	TransactionList
 }
 
+
 type TrBlock struct {
 	Block
 }

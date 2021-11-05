@@ -14,6 +14,7 @@ DistributionVarianceFileSize = 20
 DistributionMeanContractDuration = 10
 DistributionVarianceContractDuration = 5
 Nodes = 300
+BlockSize = 13
 
 Hosts
 300

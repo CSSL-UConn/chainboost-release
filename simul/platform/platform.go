@@ -71,6 +71,7 @@ type Config struct {
 	PercentageTxPoR    string
 	PercentageTxPay    string
 	PercentageTxEscrow string
+	BlockSize string
 }
 
 var deterlab = "deterlab"

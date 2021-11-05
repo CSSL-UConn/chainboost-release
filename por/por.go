@@ -42,16 +42,16 @@
 			mu    [s]kyber.Scalar
 			sigma kyber.Point
 		}
-		type privateKey struct {
-			alpha kyber.Scalar
-			ssk   kyber.Scalar
+		type PrivateKey struct {
+			alpha  kyber.Scalar
+			ssk     kyber.Scalar  //Todo: these keys should be united if its possible!
 		}
-		type publicKey struct {
+		type PublicKey struct {
 			v   kyber.Point
 			spk kyber.Point
 		}
 		// utility functions
-		func RandomizedKeyGeneration() ( privateKey, publicKey){
+		func RandomizedKeyGeneration() ( PrivateKey, PublicKey){
 			//randomizedKeyGeneration: pubK=(alpha,ssk),prK=(v,spk)
 			clientKeyPair := key.NewKeyPair(onet.Suite)
 			ssk := clientKeyPair.Private
@@ -66,15 +66,15 @@
 			alpha := private
 			v := public
 			// make it two functions that give private and public keys separately and the private one should not be accessible publicly.
-			return privateKey{
+			return PrivateKey{
 					alpha,
 					ssk,
-				},publicKey{
+				},PublicKey{
 					spk: spk,
 					v: v,
 				}
 		}
-		func GenerateFile () (initialFile) {
+		func generateFile () (initialFile) {
 			// first apply the erasure code to obtain M′; then split M′
 			// into n blocks (for some n), each s sectors long:
 			// {mij} 1≤i≤n 1≤j≤s
@@ -82,7 +82,6 @@
 			for i := 0; i < n; i++ {
 				for j := 0; j < s; j++ {
 					m_ij[i][j] = suite.Scalar().Pick(suite.RandomStream())
-					//m_ij[i][j] = suite.Scalar().One() // for test purpose only!
 				}
 			}
 			return initialFile{m: m_ij}
@@ -99,14 +98,12 @@
 			var v[l] kyber.Scalar
 			for i:=0; i<l; i++{
 				b[i] = rand.Intn(n)
-				//b[i] = 0 // for test purpose only!
 				v[i] = suite.Scalar().Pick(rng)
-				//v[i] = suite.Scalar().One() // for test purpose only!
 			}
 			return &randomQuery{i: b, v_i:    v}
 		}
-		// this function is called by the file owner to create file tag - file authentication values - and key-pair
-		func  RandomizedFileStoring(sk privateKey, initialfile initialFile) ( []byte, processedFile) {
+		// this function is called by the """file owner""" to create file tag - file authentication values - and key-pair
+		func  RandomizedFileStoring(sk PrivateKey, initialfile initialFile) ( []byte, processedFile) {
 			m_ij := initialfile.m
 			//u1,..,us random from G
 			var u [s]		kyber.Scalar
@@ -115,7 +112,6 @@
 			for j := 0; j < s; j++ {
 				rand := random.New()
 				u[j] = suite.G1().Scalar().Pick(rand)
-				//u[j] = suite.G1().Scalar().One() // for test purpose only!
 				U[j] = suite.G1().Point().Mul(u[j], nil)
 				t, _ := u[j].MarshalBinary()
 				st1.Write(t)
@@ -127,8 +123,7 @@
 			//a random file name from some sufficiently large domain (e.g.,Zp)
 			aRandomFileName := random.Int(bn256.Order, random.New())
 			st2.Write(aRandomFileName.Bytes())
-			// ToDo: if we want to have servers generate their own specific pors, this file name should be stored on the ccentralBC file as a new row after contract duration and file size, so later verifiers can read the bc and verify their pors
-			//st2.Write([]byte("1")) // for test purpose only!
+			// ToDo: if we want to have servers generate their own specific pors, this file name should be stored on the centralBC file as a new row after contract duration and file size, so later verifiers can read the bc and verify their pors
 			st2.Write([]byte(strconv.Itoa(n)))
 			st2.ReadFrom(&st1)
 			Tau0 := st2
@@ -148,8 +143,6 @@
 			var b[n] kyber.Point
 			for i := 0; i < n; i++ {
 				h := hashable.Hash(append(aRandomFileName.Bytes(), byte(i)))
-				//h := hashable.Hash(append([]byte("1"), byte(i))) // for test purpose only!
-				//h = suite.G1().Point().Base() // for test
 				p := suite.G1().Point().Null()
 				for j := 0; j < s; j++ {
 					p = suite.G1().Point().Add(p, suite.G1().Point().Mul(m_ij[i][j], U[j]))
@@ -197,11 +190,10 @@
 		// VerifyPoR servers will verify por tx.s when they receive it
 		// in the paper this function takes 3 inputs: public key , private key, and file tag
 		// I don't see why the private key is needed!
-		func VerifyPoR(pk publicKey, Tau []byte, p Por) (bool, error) {
+		func VerifyPoR(pk PublicKey, Tau []byte, p Por) (bool, error) {
 			rq := randomizedVerifyingQuery()
 			//check the file tag (Tau) integrity
 			error := schnorr.Verify(onet.Suite, pk.spk, Tau[:32+len(strconv.Itoa(n))+s*32],Tau[32+len(strconv.Itoa(n))+s*32:])
-			//error := schnorr.Verify(onet.Suite, pk.spk, Tau[:1+len(strconv.Itoa(n))+s*32],Tau[1+len(strconv.Itoa(n))+s*32:]) //for test
 			if error != nil{
 				log.LLvl2("issue in verifying the file tag signature:", error)
 			}
@@ -211,7 +203,6 @@
 				//These numbers (length of components) can be extracted from calling
 				//some utility function in kyber. in case we wanted to customize stuff!
 				thisPoint := Tau[32+len(strconv.Itoa(n))+j*32 : 32+len(strconv.Itoa(n))+(j+1)*32]
-				//thisPoint := Tau[1+len(strconv.Itoa(n))+j*32 : 1+len(strconv.Itoa(n))+(j+1)*32] // for test
 				u := suite.Scalar().SetBytes(thisPoint)
 				U := suite.G1().Point().Mul(u, nil)
 				rightTermPoint = rightTermPoint.Add(rightTermPoint, U.Mul(p.mu[j], U))
@@ -225,7 +216,6 @@
 			for i := 0; i < l; i++ {
 				h := hashable.Hash(append(Tau[:32],byte(rq.i[i])))
 				//h := hashable.Hash(append(Tau[:1],byte(rq.i[i])))
-				//h = suite.G1().Point().Base() // for test
 				leftTermPoint = suite.G1().Point().Add(leftTermPoint, suite.G1().Point().Mul(rq.v_i[i],h))
 			}
 			//check: e(sigma, g) =? e(PHash(name||i)^v_i.P(j=1,..,s)(u_j^mu_j,v)
@@ -240,10 +230,10 @@
 
 		// -------------------------------------------------------------//
 
-		// Testpor move it to a seperate test file
+		// Testpor //todo: move it to a seperate test file
 		func Testpor() {
 			sk, pk := RandomizedKeyGeneration()
-			Tau, pf := RandomizedFileStoring(sk, GenerateFile())
+			Tau, pf := RandomizedFileStoring(sk, generateFile())
 			p := CreatePoR(pf)
 			d, _ := VerifyPoR(pk, Tau, p)
 			if d==false{log.LLvl2(d)}

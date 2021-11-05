@@ -54,7 +54,7 @@ func generateRandomValuesBigInt(nodes int) [] *big.Int {
 func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, PercentageTxEscrow,
 	DistributionMeanFileSize, DistributionVarianceFileSize,
 	DistributionMeanContractDuration, DistributionVarianceContractDuration,
-	Nodes string) {
+	Nodes,BlockSize string) {
 	// --------------------- generating normal distributed number based on config params ---------------------
 	intVar, _ := strconv.Atoi(Nodes)
 	numberOfNodes := intVar
@@ -188,7 +188,8 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 		"\n DistributionMeanFileSize: ", DistributionMeanFileSize,
 		"\n DistributionVarianceFileSize: ", DistributionVarianceFileSize,
 		"\n DistributionMeanContractDuration: ", DistributionMeanContractDuration,
-		"\n DistributionVarianceContractDuration: ", DistributionVarianceContractDuration)
+		"\n DistributionVarianceContractDuration: ", DistributionVarianceContractDuration,
+		"\n BlockSize: ", BlockSize,)
 }
 
 

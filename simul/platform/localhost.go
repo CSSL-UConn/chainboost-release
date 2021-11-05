@@ -79,6 +79,7 @@ type Localhost struct {
 	PercentageTxPoR    string
 	PercentageTxPay    string
 	PercentageTxEscrow string
+	BlockSize string
 }
 
 // Configure various internal variables
@@ -95,6 +96,7 @@ func (d *Localhost) Configure(pc *Config) {
 	d.PercentageTxPoR = pc.PercentageTxPoR
 	d.PercentageTxPay = pc.PercentageTxPay
 	d.PercentageTxEscrow = pc.PercentageTxEscrow
+	d.BlockSize = pc.BlockSize
 	// raha
 	d.localDir = pwd
 	d.debug = pc.Debug
@@ -217,7 +219,7 @@ func (d *Localhost) Start(args ...string) error {
 		go func(i int, h string) {
 			log.Lvl3("Localhost: will start host", i, h)
 			// raha: adding some other system-wide configurations
-			err := Simulate(d.PercentageTxEscrow,d.PercentageTxPoR,d.PercentageTxPay,d.RoundDuration,
+			err := Simulate(d.PercentageTxEscrow,d.PercentageTxPoR,d.PercentageTxPay,d.RoundDuration, d.BlockSize,
 				d.Suite, host, d.Simulation, "")
 			if err != nil {
 				log.Error("Error running localhost", h, ":", err)
