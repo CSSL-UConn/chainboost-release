@@ -87,9 +87,13 @@ func startBuild() {
 		} else {
 			logname := strings.Replace(filepath.Base(simulation), ".toml", "", 1)
 			testsDone := make(chan bool)
-			timeout, err := getExperimentWait(runconfigs)
+			// Raha: set timeout for the experiment from the config file
+			//timeout, err := getExperimentWait(runconfigs)
+			t,err := strconv.Atoi(runconfigs[0].Get("timeout"))
+			timeout := time.Duration(int64(t)) *time.Second
 			if err != nil {
-				log.Fatal("ExperimentWait:", err)
+				//log.Fatal("ExperimentWait:", err)
+				panic("Raha: set timeout for the experiment from the config file")
 			}
 			go func() {
 				RunTests(deployP, logname, runconfigs)

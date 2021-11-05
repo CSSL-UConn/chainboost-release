@@ -4,7 +4,8 @@ BF = 2
 Rounds = 0
 Suite = "Ed25519"
 PreScript = "testPreScript.toml"
-RoundDuration = 15
+RoundDuration = 10
+timeout = 1000
 PercentageTxPoR = 40
 PercentageTxPay = 25
 PercentageTxEscrow = 35
@@ -12,7 +13,7 @@ DistributionMeanFileSize = 50
 DistributionVarianceFileSize = 20
 DistributionMeanContractDuration = 10
 DistributionVarianceContractDuration = 5
-Nodes = 7
+Nodes = 300
 
 Hosts
-7
+300

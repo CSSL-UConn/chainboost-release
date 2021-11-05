@@ -185,18 +185,21 @@
 		f.SetActiveSheet(index)
 		err := f.SetSheetRow("MarketMatching", "B1", &NodeInfoRow)
 		if err != nil {
-			log.LLvl2(err)
+			log.LLvl2("Panic Raised:\n\n")
+			panic(err)
 		}
 		// --- power table sheet
 		index = f.GetSheetIndex("PowerTable")
 		f.SetActiveSheet(index)
 		err = f.SetSheetRow("PowerTable", "B1", &NodeInfoRow)
 		if err != nil {
-			log.LLvl2(err)
+			log.LLvl2("Panic Raised:\n\n")
+			panic(err)
 		}
 
 		if err := f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"); err != nil {
-			log.LLvl2(err)
+			log.LLvl2("Panic Raised:\n\n")
+			panic(err)
 		}
 	}
 	// Dispatch listen on the different channels
@@ -207,7 +210,7 @@
 		for running {
 			select {
 			case msg := <-bz.HelloChan:
-				log.Lvl2(bz.Info(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
+				log.Lvl2(bz.TreeNode().Name(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
 				bz.PercentageTxEscrow = msg.PercentageTxEscrow
 				bz.PercentageTxPoR= msg.PercentageTxPoR
 				bz.PercentageTxPay= msg.PercentageTxPay
@@ -217,6 +220,7 @@
 			case <-bz.DoneBaseDFS:
 				running = false
 			case <-time.After(5 * time.Second):
+				log.Lvl2("cheking for new round..")
 				if r := bz.readBCForNewRound(); r == true {
 					// a timer should get started now for the next selected leader to use it later
 					bz.createEpochBlock(bz.checkLeadership())
@@ -287,10 +291,10 @@
 	//createEpochBlock: by leader
 	func (bz *BaseDFS) createEpochBlock(ok bool, p crypto.VrfProof) {
 		if ok == false {
-			log.LLvl2(bz.TreeNode().Name(), "is not a leader!")
+			//log.LLvl2(bz.TreeNode().Name(), "is not a leader!")
 		} else {
-			log.LLvl2(bz.Info(), "is a leader for round number", bz.roundNumber,
-				"\n wait for round duration:", bz.RoundDuration,
+			log.LLvl2(bz.TreeNode().Name(), "is a leader for round number", bz.roundNumber,
+				"will wait for round duration:", bz.RoundDuration,
 				"and then check if another leader has already updated bc ...")
 			time.Sleep(bz.RoundDuration * time.Second) //ToDo: use timer
 			if result := bz.readBCPostLeadership(); result == true {
@@ -303,7 +307,7 @@
 		//  readBCForNewRound returns "true" when a new round has been started / another leader has updated the centralbc file
 		if bz.readBCForNewRound() == false {
 			return true // you are the first leader. go ahead and update the centralbc file
-		} else {return true}
+		} else {return false}
 	}
 	func (bz *BaseDFS) readBCPreCheckLeadership () (power *big.Int, seed string){
 		f, _ := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
@@ -312,23 +316,38 @@
 		var err error
 		rowNumber := 0
 		// looking for last round's seed in the round table sheet in the centralbc file
-		if rows, err = f.Rows("RoundTable"); err!=nil {log.LLvl2(err)}
+		if rows, err = f.Rows("RoundTable"); err!=nil {
+			log.LLvl2("Panic Raised:\n\n")
+			panic(err)
+		}
 		for rows.Next() {
 			rowNumber++
-			if row, err = rows.Columns(); err!=nil{log.LLvl2(err)}
+			if row, err = rows.Columns(); err!=nil{
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			}
 		}
 		for i, colCell := range row {
 			// --- in RoundTable: i = 0 is (next) round number, i = 1 is (next) round seed, i=2 is blockchain size (empty now, will be updated by the leader)
-			if i == 0 {if bz.roundNumber,err = strconv.Atoi(colCell); err!=nil {log.LLvl2(err)}}
+			if i == 0 {if bz.roundNumber,err = strconv.Atoi(colCell); err!=nil {
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			}
+			}
 			if i == 1 {seed = colCell}
 		}
-		log.Lvl2(seed)
 		// looking for my power in the last round in the power table sheet in the centralbc file
 		rowNumber = 0 //ToDo: later it can go straight to last row based on the round number found in round table
-		if rows, err = f.Rows("PowerTable"); err!=nil {log.LLvl2(err)}
+		if rows, err = f.Rows("PowerTable"); err!=nil {
+			log.LLvl2("Panic Raised:\n\n")
+			panic(err)
+		}
 		for rows.Next() {
 			rowNumber++
-			if row, err = rows.Columns(); err!=nil{log.LLvl2(err)}
+			if row, err = rows.Columns(); err!=nil{
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			}
 		}
 		var myColumn []string
 		var myCell string
@@ -336,15 +355,15 @@
 		myCell = myColumn[0][:1] + strconv.Itoa(rowNumber)
 		var p string
 		p,err = f.GetCellValue("PowerTable", myCell)
-		log.Lvl2(p)
 		var success bool
 		power, success = new(big.Int).SetString( p,10) //ToDo: check if another base should have been set
 		//power, err = strconv.ParseFloat(p, 64)
 		if success == true {
-			log.LLvl2("blockchain: we have had", rowNumber-2, "rounds intil now")
-			log.LLvl2("blockchain:", bz.ServerIdentity().String() ,"'s power is", power, "and current round seed is", seed)
+			//log.LLvl2("blockchain: we have had", rowNumber-2, "rounds intil now")
+			//log.LLvl2("blockchain:", bz.ServerIdentity().String() ,"'s power is", power, "and current round seed is", seed)
 			return power, seed
 		} else {
+			log.LLvl2("Panic Raised:\n\n")
 			panic("error in decoding power (string) to big.int from centralbc file")
 		}
 	}
@@ -356,10 +375,16 @@
 		rowNumber := 0
 		var lastRound int
 		// looking for last round's seed in the round table sheet in the centralbc file
-		if rows, err = f.Rows("RoundTable"); err!=nil {log.LLvl2(err)}
+		if rows, err = f.Rows("RoundTable"); err!=nil {
+			log.LLvl2("Panic Raised:\n\n")
+			panic(err)
+		}
 		for rows.Next() {
 			rowNumber++
-			if row, err = rows.Columns(); err!=nil{log.LLvl2(err)}
+			if row, err = rows.Columns(); err!=nil{
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			}
 		}
 		for i, colCell := range row {
 			// --- in RoundTable: i = 0 is (next) round number, i = 1 is (next) round seed, i=2 is blockchain size (empty now, will be updated by the leader)
@@ -379,10 +404,16 @@
 		//var power *big.Int
 		rowNumber := 0
 		// looking for last round's seed in the round table sheet in the centralbc file
-		if rows, err = f.Rows("RoundTable"); err!=nil {log.LLvl2(err)}
+		if rows, err = f.Rows("RoundTable"); err!=nil {
+			log.LLvl2("Panic Raised:\n\n")
+			panic(err)
+		}
 		for rows.Next() {
 			rowNumber++
-			if row, err = rows.Columns(); err!=nil{log.LLvl2(err)}
+			if row, err = rows.Columns(); err!=nil{
+				log.LLvl2("Panic Raised:\n\n")
+			panic(err)
+			}
 		}
 		for i, colCell := range row {
 			// --- in RoundTable: i = 0 is (next) round number, i = 1 is (next) round seed, i=2 is blockchain size (empty now, will be updated by the leader)
@@ -394,6 +425,13 @@
 		currentRow := strconv.Itoa(rowNumber)
 		axisBCSize := "C" + currentRow
 		err = f.SetCellValue("RoundTable", axisBCSize, 10) //ToDo: measure and update bcsize
+		if err != nil {
+			return
+		}
+		// --------------------------------------------------------------------
+		// updating the current last row in the "miner" column
+		axisMiner := "D" + currentRow
+		err = f.SetCellValue("RoundTable", axisMiner, bz.TreeNode().Name()) //ToDo: measure and update bcsize
 		if err != nil {
 			return
 		}
@@ -445,10 +483,13 @@
 		// --------------------------------------------------------------------
 		if result := bz.readBCPostLeadership(); result == true {
 			if err := f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"); err != nil {
-				log.LLvl2(err)
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
 			}
+			log.LLvl2(bz.TreeNode().Name(), "is the final round number ", bz.roundNumber, " leader ........................")
+			bz.roundNumber = bz.roundNumber +1
 		} else {
-			log.LLvl2("another leader has already published his block")
+			log.LLvl2("another leader has already published his block for round number", bz.roundNumber )
 		}
 	}
 
