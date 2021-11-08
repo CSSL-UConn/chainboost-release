@@ -1,7 +1,21 @@
-		// Package por -----------------------------------------------------------------------
+		// Package por
+		//-----------------------------------------------------------------------
 		//  --------------- Compact PoR ----------------------------------------
 		//-----------------------------------------------------------------------
-		// https://link.springer.com/article/10.1007%2Fs00145-012-9129-2
+		/* https://link.springer.com/article/10.1007%2Fs00145-012-9129-2
+		-----------------------------------------------------------------------
+		The information that a miner will need to verify a por:
+			1- To authenticate File Tag:
+				a. File owner's pk1
+			2- To verify proof
+				a. File owner's pk2
+				b. The por
+					i. Sigma
+					ii. Mu[]
+			3- The file tag (Tau)
+			4- Access to "the query!":
+		The round seed should generate identical query (with the one that storage server got its challenged)
+		*/
 		package por
 
 		import (
@@ -39,8 +53,8 @@
 			v_i [l]kyber.Scalar
 		}
 		type Por struct {
-			mu    [s]kyber.Scalar
-			sigma kyber.Point
+			mu				[s]kyber.Scalar
+			sigma 				kyber.Point
 		}
 		type PrivateKey struct {
 			alpha  kyber.Scalar
@@ -102,7 +116,15 @@
 			}
 			return &randomQuery{i: b, v_i:    v}
 		}
-		// this function is called by the """file owner""" to create file tag - file authentication values - and key-pair
+		// RandomizedFileStoring
+		/*
+		This function is called by the """file owner""" to create
+				// file tag -
+				// file authentication values -
+				// and key-pair
+		// The file tag and the public key pair should be stored on the bc (to be verified along with por proof later)
+		// and the authentication values should be sent and stored on prover's server , he will need it to create por
+		*/
 		func  RandomizedFileStoring(sk PrivateKey, initialfile initialFile) ( []byte, processedFile) {
 			m_ij := initialfile.m
 			//u1,..,us random from G

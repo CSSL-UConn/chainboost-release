@@ -5,10 +5,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	log "github.com/basedfs/log"
-	crypto "github.com/basedfs/vrf"
 	"github.com/xuri/excelize/v2"
 	"math"
-	"math/big"
 	"math/rand"
 	"strconv"
 	"time"
@@ -30,7 +28,8 @@ func generateNormalValues(variance , mean , nodes int) [] int {
 	}
 	return intlist
 }
-func generateRandomValuesBigInt(nodes int) [] *big.Int {
+
+/*func generateRandomValuesBigInt(nodes int) [] *big.Int {
 	var bigIntlist [] *big.Int
 	//------------------------------  a sample vrfOutput ------------------
 	var vrfOutput [64]byte
@@ -49,8 +48,9 @@ func generateRandomValuesBigInt(nodes int) [] *big.Int {
 		bigIntlist = append(bigIntlist, new(big.Int).Rand(rand.New(rand.NewSource(time.Now().UnixNano())),bi ))
 	}
 	return bigIntlist
-}
+}*/
 // InitializeCentralBC function is called in simulation level
+
 func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, PercentageTxEscrow,
 	DistributionMeanFileSize, DistributionVarianceFileSize,
 	DistributionMeanContractDuration, DistributionVarianceContractDuration,
@@ -79,27 +79,61 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 	// Set active sheet of the workbook.
 	f.SetActiveSheet(index)
 	// --------------------------------------------------------------------
-	err = f.SetCellValue("MarketMatching", "A1", "Node Info")
+	err = f.SetCellValue("MarketMatching", "A1", "Server's Info")
 	if err != nil {
 		return
 	}
 
-	err = f.SetCellValue("MarketMatching", "A2", "FileSize")
+	err = f.SetCellValue("MarketMatching", "B1", "FileSize")
 	if err != nil {
 		return
 	}
-	err = f.SetSheetRow("MarketMatching", "B2", &FileSizeRow)
+	for i := 2; i <= len(FileSizeRow)+1 ; i++{
+		contractRow := strconv.Itoa(i)
+		t := "B" + contractRow
+		err = f.SetCellValue("MarketMatching", t , FileSizeRow[i-2])
+	}
 	if err != nil {
-		log.LLvl2(err)
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
 	}
 
-	err = f.SetCellValue("MarketMatching", "A3", "ContractDuration")
+	err = f.SetCellValue("MarketMatching", "C1", "ContractDuration")
 	if err != nil {
 		return
 	}
-	err = f.SetSheetRow("MarketMatching", "B3", &ContractDurationRow)
+	for i := 2; i <= len(ContractDurationRow)+1 ; i++{
+		contractRow := strconv.Itoa(i)
+		t := "C" + contractRow
+		err = f.SetCellValue("MarketMatching", t , ContractDurationRow[i-2])
+	}
 	if err != nil {
-		log.LLvl2(err)
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+
+	err = f.SetCellValue("MarketMatching", "D1", "RoundNumber")
+	if err != nil {
+		return
+	}
+	for i := 2; i <= len(ContractDurationRow)+2 ; i++{
+		contractRow := strconv.Itoa(i)
+		t := "D" + contractRow
+		err = f.SetCellValue("MarketMatching", t , 1)
+	}
+	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+
+	// later we want to ad market matching transaction and compelete contract info in bc
+	err = f.SetCellValue("MarketMatching", "E1", "ContractID")
+	if err != nil {
+		return
+	}
+	err = f.SetCellValue("MarketMatching", "F1", "Client's PK")
+	if err != nil {
+		return
 	}
 	// ---------------------------------------------------------------------------
 	// ------------------------- power table sheet  -----------------------
@@ -109,11 +143,15 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 	// Set active sheet of the workbook.
 	f.SetActiveSheet(index)
 	// --------------------- distribution of initial power -------------------
-	InitialPowerRow := generateRandomValuesBigInt(numberOfNodes)
-	var InitialPowerRowString []string
+	intVar, _ = strconv.Atoi(DistributionVarianceFileSize)
+	VarianceFileSize = intVar
+	intVar, _ = strconv.Atoi(DistributionMeanFileSize)
+	MeanFileSize = intVar
+	InitialPowerRow := generateNormalValues(VarianceFileSize , MeanFileSize , numberOfNodes) //ToDo: re-add! var and mean
+	/*var InitialPowerRowString []string
 	for i:=0;i<len(InitialPowerRow);i++{
-		InitialPowerRowString = append(InitialPowerRowString,InitialPowerRow[i].String())
-	}
+		InitialPowerRowString = append(InitialPowerRowString,InitialPowerRow[i])
+	}*/
 	// -----------------------    Filling Power Table's Headers   -----------
 	err = f.SetCellValue("PowerTable", "A1", "Round#/NodeInfo")
 	if err != nil {
@@ -125,7 +163,7 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 		return
 	}
 	// -----------------------    Filling Power Table's first row ------------
-	err = f.SetSheetRow("PowerTable", "B2", &InitialPowerRowString)
+	err = f.SetSheetRow("PowerTable", "B2", &InitialPowerRow)
 	if err != nil {
 		log.LLvl2(err)
 	}
