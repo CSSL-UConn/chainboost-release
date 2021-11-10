@@ -4,6 +4,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+<<<<<<< HEAD
+=======
+	log "github.com/basedfs/log"
+	"github.com/xuri/excelize/v2"
+>>>>>>> 8a306a3ad52da6b57e03595ab4225ccc4d78eb5a
 	"math"
 	"math/rand"
 	"strconv"
@@ -29,7 +34,31 @@ func generateNormalValues(variance, mean, nodes int) []uint64 {
 	return intlist
 }
 
+<<<<<<< HEAD
+=======
+/*func generateRandomValuesBigInt(nodes int) [] *big.Int {
+	var bigIntlist [] *big.Int
+	//------------------------------  a sample vrfOutput ------------------
+	var vrfOutput [64]byte
+	var bi *big.Int
+	seed := rand.Intn(100) //ToDo: Hash
+	toBeHashed:= []byte(strconv.Itoa(seed))
+	_, ECPrivateKey := crypto.VrfKeygen()
+	proof, ok := ECPrivateKey.ProveBytes(toBeHashed[:])
+	if !ok {
+		log.LLvl2("error while generating proof")
+	}
+	_, vrfOutput = ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
+	bi = new(big.Int).SetBytes(vrfOutput[:])
+	// --------------------------------------------------------------------
+	for i := 1; i<= nodes;i++{
+		bigIntlist = append(bigIntlist, new(big.Int).Rand(rand.New(rand.NewSource(time.Now().UnixNano())),bi ))
+	}
+	return bigIntlist
+}*/
+>>>>>>> 8a306a3ad52da6b57e03595ab4225ccc4d78eb5a
 // InitializeCentralBC function is called in simulation level
+
 func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, PercentageTxEscrow,
 	DistributionMeanFileSize, DistributionVarianceFileSize,
 	DistributionMeanContractDuration, DistributionVarianceContractDuration,
@@ -68,10 +97,17 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 	if err != nil {
 		return
 	}
+<<<<<<< HEAD
 	for i := 2; i <= len(FileSizeRow)+1; i++ {
 		contractRow := strconv.Itoa(i)
 		t := "B" + contractRow
 		err = f.SetCellValue("MarketMatching", t, FileSizeRow[i-2])
+=======
+	for i := 2; i <= len(FileSizeRow)+1 ; i++{
+		contractRow := strconv.Itoa(i)
+		t := "B" + contractRow
+		err = f.SetCellValue("MarketMatching", t , FileSizeRow[i-2])
+>>>>>>> 8a306a3ad52da6b57e03595ab4225ccc4d78eb5a
 	}
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
@@ -82,10 +118,17 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 	if err != nil {
 		return
 	}
+<<<<<<< HEAD
 	for i := 2; i <= len(ContractDurationRow)+1; i++ {
 		contractRow := strconv.Itoa(i)
 		t := "C" + contractRow
 		err = f.SetCellValue("MarketMatching", t, ContractDurationRow[i-2])
+=======
+	for i := 2; i <= len(ContractDurationRow)+1 ; i++{
+		contractRow := strconv.Itoa(i)
+		t := "C" + contractRow
+		err = f.SetCellValue("MarketMatching", t , ContractDurationRow[i-2])
+>>>>>>> 8a306a3ad52da6b57e03595ab4225ccc4d78eb5a
 	}
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
@@ -96,10 +139,17 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 	if err != nil {
 		return
 	}
+<<<<<<< HEAD
 	for i := 2; i <= len(ContractDurationRow)+2; i++ {
 		contractRow := strconv.Itoa(i)
 		t := "D" + contractRow
 		err = f.SetCellValue("MarketMatching", t, 1)
+=======
+	for i := 2; i <= len(ContractDurationRow)+2 ; i++{
+		contractRow := strconv.Itoa(i)
+		t := "D" + contractRow
+		err = f.SetCellValue("MarketMatching", t , 1)
+>>>>>>> 8a306a3ad52da6b57e03595ab4225ccc4d78eb5a
 	}
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
@@ -123,11 +173,19 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 	// Set active sheet of the workbook.
 	f.SetActiveSheet(index)
 	// --------------------- distribution of initial power -------------------
+<<<<<<< HEAD
 	intVar, _ = strconv.Atoi(DistributionVarianceInitialPower)
 	VarianceFileSize = intVar
 	intVar, _ = strconv.Atoi(DistributionMeanInitialPower)
 	MeanFileSize = intVar
 	InitialPowerRow := generateNormalValues(VarianceFileSize, MeanFileSize, numberOfNodes)
+=======
+	intVar, _ = strconv.Atoi(DistributionVarianceFileSize)
+	VarianceFileSize = intVar
+	intVar, _ = strconv.Atoi(DistributionMeanFileSize)
+	MeanFileSize = intVar
+	InitialPowerRow := generateNormalValues(VarianceFileSize , MeanFileSize , numberOfNodes) //ToDo: re-add! var and mean
+>>>>>>> 8a306a3ad52da6b57e03595ab4225ccc4d78eb5a
 	/*var InitialPowerRowString []string
 	for i:=0;i<len(InitialPowerRow);i++{
 		InitialPowerRowString = append(InitialPowerRowString,InitialPowerRow[i])

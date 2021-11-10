@@ -336,7 +336,7 @@ func (bz *BaseDFS) Dispatch() error {
 			}
 		case <-bz.LeaderPropose:
 			log.LLvl2("I am elected :)")
-			time.Sleep(bz.RoundDuration)
+			time.Sleep(bz.RoundDuration) //ToDO: it should be based on timer "until" round duration
 			bz.createEpochBlock()
 		}
 		// -------- cases used for communication ------------------
