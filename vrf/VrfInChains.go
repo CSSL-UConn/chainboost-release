@@ -10,7 +10,7 @@
 
 
 
-package crypto
+package vrf
 
 import "github.com/basedfs/log"
 

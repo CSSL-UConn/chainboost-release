@@ -74,7 +74,7 @@ func startBuild() {
 			PercentageTxPoR:    runconfigs[0].Get("PercentageTxPoR"),
 			PercentageTxPay:    runconfigs[0].Get("PercentageTxPay"),
 			PercentageTxEscrow: runconfigs[0].Get("PercentageTxEscrow"),
-			BlockSize:      runconfigs[0].Get("BlockSize"),
+			BlockSize:          runconfigs[0].Get("BlockSize"),
 		})
 
 		if clean {
@@ -90,8 +90,8 @@ func startBuild() {
 			testsDone := make(chan bool)
 			// Raha: set timeout for the experiment from the config file
 			//timeout, err := getExperimentWait(runconfigs)
-			t,err := strconv.Atoi(runconfigs[0].Get("timeout"))
-			timeout := time.Duration(int64(t)) *time.Second
+			t, err := strconv.Atoi(runconfigs[0].Get("timeout"))
+			timeout := time.Duration(int64(t)) * time.Second
 			if err != nil {
 				//log.Fatal("ExperimentWait:", err)
 				panic("Raha: set timeout for the experiment from the config file")
@@ -249,8 +249,9 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 			rc.Get("PercentageTxPoR"), rc.Get("PercentageTxPay"), rc.Get("PercentageTxEscrow"),
 			rc.Get("DistributionMeanFileSize"), rc.Get("DistributionVarianceFileSize"),
 			rc.Get("DistributionMeanContractDuration"), rc.Get("DistributionVarianceContractDuration"),
+			rc.Get("DistributionMeanInitialPower"), rc.Get("DistributionVarianceInitialPower"),
 			rc.Get("Nodes"),
-			rc.Get("BlockSize"))  //ToDo: check if percentage params are needed here
+			rc.Get("BlockSize")) //ToDo: check if percentage params are needed here
 		// --------------------------------------------
 		if err != nil {
 			done <- err
