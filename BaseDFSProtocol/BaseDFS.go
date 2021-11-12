@@ -32,7 +32,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -197,12 +196,16 @@ type BaseDFS struct {
 	timeout            time.Duration
 	// ------------------------------------------------------------------
 	roundNumber int
+	isLeader    bool
 	// ------------------------------------------------------------------------------------------------------------------
 	//ToDo: dol I need these items?
 	vcMeasure *monitor.TimeMeasure
 	// lock associated
 	doneLock  sync.Mutex
 	timeoutMu sync.Mutex
+	// ------------------------------------------------------------------------------------------------------------------
+	f   *excelize.File
+	fMu sync.Mutex
 }
 
 /* -------------------------------------------------------------------- */
@@ -248,6 +251,15 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 		}
 	*/
 	//---------------------------------------------------------------------
+	var err error
+	bz.fMu.Lock()
+	defer bz.fMu.Unlock()
+	bz.f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	if err != nil {
+		log.LLvl2("Raha: ", err)
+		panic(err)
+	}
+	//---------------------------------------------------------------------
 	return bz, nil
 }
 
@@ -275,9 +287,19 @@ func (bz *BaseDFS) finalCentralBCInitialization() {
 	for _, a := range bz.Roster().List {
 		NodeInfoRow = append(NodeInfoRow, a.String())
 	}
-	failedAttempts := 0
-	//f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
-	file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+
+	/* var (
+		f  *excelize.File
+		mu sync.Mutex // guards f,
+	)*/
+	var err error
+
+	//failedAttempts := 0
+	bz.fMu.Lock()
+	defer bz.fMu.Unlock()
+
+	//f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	/* file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
@@ -289,16 +311,19 @@ func (bz *BaseDFS) finalCentralBCInitialization() {
 		panic(err)
 	}
 	f.Path = "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"
-	// ----------
-	if err != nil {
+	// ---------- */
+	//if err != nil {
+	//	log.LLvl2("Raha: ", err)
+	//}
+	/* {
 		log.LLvl2(bz.TreeNode().Name(), "Can't open the centralbc file: pause 1 sec. for each attempt ----------------")
 		for err != nil {
 			if failedAttempts == 11 {
 				log.LLvl2("Can't open the centralbc file: 10 attempts!")
 			}
 			time.Sleep(1 * time.Second)
-			//f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
-			file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			/* file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
 			if err != nil {
 				log.LLvl2("Panic Raised:\n\n")
 				panic(err)
@@ -314,34 +339,45 @@ func (bz *BaseDFS) finalCentralBCInitialization() {
 			failedAttempts = failedAttempts + 1
 		}
 		log.LLvl2("---------- Opened the centralbc file after ", failedAttempts, " attempts")
-	}
+	} */
 	// --- market matching sheet
-	index := f.GetSheetIndex("MarketMatching")
-	f.SetActiveSheet(index)
+	index := bz.f.GetSheetIndex("MarketMatching")
+	bz.f.SetActiveSheet(index)
 	// column format
 	for i := 2; i <= len(NodeInfoRow)+1; i++ {
 		contractRow := strconv.Itoa(i)
 		t := "A" + contractRow
-		err = f.SetCellValue("MarketMatching", t, NodeInfoRow[i-2])
+		err = bz.f.SetCellValue("MarketMatching", t, NodeInfoRow[i-2])
 	}
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// --- power table sheet
-	index = f.GetSheetIndex("PowerTable")
-	f.SetActiveSheet(index)
-	err = f.SetSheetRow("PowerTable", "B1", &NodeInfoRow)
+	index = bz.f.GetSheetIndex("PowerTable")
+	bz.f.SetActiveSheet(index)
+	err = bz.f.SetSheetRow("PowerTable", "B1", &NodeInfoRow)
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
+	// test sheet
+	bz.f.NewSheet("TestSheet")
 
-	if err := f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"); err != nil {
+	err = bz.f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
+	} else {
+		bz.f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+		if err != nil {
+			log.LLvl2("Panic Raised:\n\n")
+			panic(err)
+		}
 	}
-} /* ----------------------------------------------------------------------
+}
+
+/* ----------------------------------------------------------------------
 -----------------
 ------------------------------------------------------------------------ */
 // Dispatch listen on the different channels
@@ -362,19 +398,64 @@ func (bz *BaseDFS) Dispatch() error {
 		// this msg is catched in simulation codes
 		case <-bz.DoneBaseDFS:
 			running = false
-		case <-time.After(10 * time.Second):
-			log.Lvl2("cheking for new round..")
-			if r := bz.readBCForNewRound(); r == true {
-				// a timer should get started now for the next selected leader to use it later
-				// and after round duration of the timer, if its a leader, propose the block,
-				// if its not and if no body else have prposed any block, some body shoudl!
-				//bz.SetTimeout(bz.RoundDuration)
+		case <-time.After(2 * time.Second):
+			if bz.isLeader == false {
+				//log.LLvl2(bz.Name(), "Lock: locked to refresh")
+				//bz.fMu.Lock()
+				bz.f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+				if err != nil {
+					log.LLvl2("Raha: ", bz.Name(), "--", err)
+					panic(err)
+				} else {
+					log.LLvl2(bz.Name(), "refresh BC")
+				}
+				//log.LLvl2(bz.Name(), "Lock: un-locked")
+				//bz.fMu.Unlock()
+				// --
+				if bz.readBCForNewRound(bz.f) == true {
+					// a timer should get started now for the next selected leader to use it later
+					// and after round duration of the timer, if its a leader, propose the block,
+					// if its not and if no body else have prposed any block, some body shoudl!
+					//bz.SetTimeout(bz.RoundDuration)
+					bz.checkLeadership()
+				}
+			} else {
+				log.LLvl2(bz.Name(), "Lock: locked to add")
+				bz.fMu.Lock()
+				//---
+				f2, err2 := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+				if err2 != nil {
+					log.LLvl2("Raha: ", bz.Name(), "--", err2)
+					panic(err2)
+				}
+				r := bz.readBCForNewRound(f2)
+				if r == false {
+					//---
+					log.LLvl2(bz.Name(), "Lock: --", "adding new block")
+					err := bz.f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+					if err != nil {
+						log.LLvl2("Panic Raised:\n\n")
+						panic(err)
+					} else {
+						log.LLvl2(bz.TreeNode().Name(), "is the final leader of round number ", bz.roundNumber, "$$$$$$$$$$$")
+						bz.roundNumber = bz.roundNumber + 1
+						bz.isLeader = false
+					}
+				} else {
+					log.LLvl2("another leader has already published his block for round number", bz.roundNumber)
+					bz.isLeader = false
+				}
+				log.LLvl2(bz.Name(), "Lock: un-locked")
+				bz.fMu.Unlock()
 				bz.checkLeadership()
 			}
+
 		case <-bz.LeaderPropose:
-			log.LLvl2("I am elected :)")
+			log.LLvl2(bz.Name(), "I am elected :)")
 			time.Sleep(bz.RoundDuration) //ToDO: it should be based on timer "until" round duration
-			bz.createEpochBlock()
+			if bz.readBCForNewRound(bz.f) == false {
+				bz.updateBCPostLeadership()
+			}
 		}
 		// -------- cases used for communication ------------------
 		/*		case msg := <-bz.ProofOfRetTxChan:
@@ -430,7 +511,7 @@ func (bz *BaseDFS) helloBaseDFS() {
 ------------------------------------------------------------------------ */
 //checkLeadership
 func (bz *BaseDFS) checkLeadership() {
-	power, seed := bz.readBCPreCheckLeadership()
+	power, seed := bz.readBCMyPowerNextSeed()
 	var vrfOutput [64]byte
 
 	toBeHashed := []byte(seed)
@@ -475,34 +556,19 @@ func (bz *BaseDFS) checkLeadership() {
 /* ----------------------------------------------------------------------
 -----------------
 ------------------------------------------------------------------------ */
-//createEpochBlock: by leader
-func (bz *BaseDFS) createEpochBlock() {
-	log.LLvl2(bz.TreeNode().Name(), "is a leader for round number", bz.roundNumber)
-	if result := bz.readBCPostLeadership(); result == true {
-		bz.updateBCPostLeadership()
-	}
-}
+func (bz *BaseDFS) readBCMyPowerNextSeed() (power uint64, seed string) {
+	/* 	var (
+		f  *excelize.File
+		mu sync.Mutex // guards f,
+	) */
+	var err error
 
-/* ----------------------------------------------------------------------
------------------
------------------------------------------------------------------------- */
-// readBCPostLeadership checks if another leader has updated the centralbc file for this round earlier
-func (bz *BaseDFS) readBCPostLeadership() bool {
-	//  readBCForNewRound returns "true" when a new round has been started / another leader has updated the centralbc file
-	if bz.readBCForNewRound() == false {
-		return true // you are the first leader. go ahead and update the centralbc file
-	} else {
-		return false
-	}
-}
+	//failedAttempts := 0
+	/* 	bz.fMu.Lock()
+	   	defer bz.fMu.Unlock() */
 
-/* ----------------------------------------------------------------------
------------------
------------------------------------------------------------------------- */
-func (bz *BaseDFS) readBCPreCheckLeadership() (power uint64, seed string) {
-	failedAttempts := 0
-	//f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
-	file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	//f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	/* file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
@@ -514,17 +580,21 @@ func (bz *BaseDFS) readBCPreCheckLeadership() (power uint64, seed string) {
 		panic(err)
 	}
 	f.Path = "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"
-	// ----------
+	// ---------- */
 
-	if err != nil {
+	/* 	if err != nil {
+		log.LLvl2("Raha: ", err)
+	} */
+
+	/* {
 		log.LLvl2(bz.TreeNode().Name(), "Can't open the centralbc file: pause 1 sec. for each attempt ---------------- error msg: ", err)
 		for err != nil {
 			if failedAttempts == 11 {
 				log.LLvl2("Can't open the centralbc file: 10 attempts!")
 			}
 			time.Sleep(1 * time.Second)
-			//f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
-			file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			/* file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
 			if err != nil {
 				log.LLvl2("Panic Raised:\n\n")
 				panic(err)
@@ -541,12 +611,12 @@ func (bz *BaseDFS) readBCPreCheckLeadership() (power uint64, seed string) {
 
 		}
 		log.LLvl2("---------- Opened the centralbc file after ", failedAttempts, " attempts")
-	}
+	} */
 	var rows *excelize.Rows
 	var row []string
 	rowNumber := 0
 	// looking for last round's seed in the round table sheet in the centralbc file
-	if rows, err = f.Rows("RoundTable"); err != nil {
+	if rows, err = bz.f.Rows("RoundTable"); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
@@ -571,7 +641,7 @@ func (bz *BaseDFS) readBCPreCheckLeadership() (power uint64, seed string) {
 	}
 	// looking for my power in the last round in the power table sheet in the centralbc file
 	rowNumber = 0 //ToDo: later it can go straight to last row based on the round number found in round table
-	if rows, err = f.Rows("PowerTable"); err != nil {
+	if rows, err = bz.f.Rows("PowerTable"); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
@@ -585,7 +655,7 @@ func (bz *BaseDFS) readBCPreCheckLeadership() (power uint64, seed string) {
 	var myColumnHeader []string
 	var myCell string
 	var myColumn string
-	myColumnHeader, err = f.SearchSheet("PowerTable", bz.ServerIdentity().String())
+	myColumnHeader, err = bz.f.SearchSheet("PowerTable", bz.ServerIdentity().String())
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
@@ -598,7 +668,7 @@ func (bz *BaseDFS) readBCPreCheckLeadership() (power uint64, seed string) {
 
 	myCell = myColumn + strconv.Itoa(rowNumber) //such as A2,B3,C3..
 	var p string
-	p, err = f.GetCellValue("PowerTable", myCell)
+	p, err = bz.f.GetCellValue("PowerTable", myCell)
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
@@ -613,7 +683,7 @@ func (bz *BaseDFS) readBCPreCheckLeadership() (power uint64, seed string) {
 	// add accumulated power to recently added power in last round
 	for i := 2; i < rowNumber; i++ {
 		upperPowerCell := myColumn + strconv.Itoa(i)
-		p, err = f.GetCellValue("PowerTable", upperPowerCell)
+		p, err = bz.f.GetCellValue("PowerTable", upperPowerCell)
 		if err != nil {
 			log.LLvl2("Panic Raised:\n\n")
 			panic(err)
@@ -633,31 +703,38 @@ func (bz *BaseDFS) readBCPreCheckLeadership() (power uint64, seed string) {
 /* ----------------------------------------------------------------------
 -----------------
 ------------------------------------------------------------------------ */
-func (bz *BaseDFS) readBCForNewRound() bool {
-	failedAttempts := 0
-	//f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
-	file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
-	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
-		panic(err)
-	}
-	defer file.Close()
-	f, err := excelize.OpenReader(file)
-	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
-		panic(err)
-	}
-	f.Path = "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"
-	// ----------
-	if err != nil {
+func (bz *BaseDFS) readBCForNewRound(f *excelize.File) bool {
+	/* 	var (
+		f  *excelize.File
+		mu sync.Mutex // guards f,
+	) */
+	var err error
+
+	//failedAttempts := 0
+
+	/* 	file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	   	if err != nil {
+	   		log.LLvl2("Panic Raised:\n\n")
+	   		panic(err)
+	   	}
+	   	defer file.Close()
+	   	f, err := excelize.OpenReader(file)
+	   	if err != nil {
+	   		log.LLvl2("Panic Raised:\n\n")
+	   		panic(err)
+	   	}
+	   	f.Path = "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"
+	   	// ---------- */
+
+	/* 	{
 		log.LLvl2(bz.TreeNode().Name(), "Can't open the centralbc file: pause 1 sec. for each attempt ----------------")
 		for err != nil {
 			if failedAttempts == 11 {
 				log.LLvl2("Can't open the centralbc file: 10 attempts!")
 			}
 			time.Sleep(1 * time.Second)
-			//f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
-			file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			/* 		file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
 			if err != nil {
 				log.LLvl2("Panic Raised:\n\n")
 				panic(err)
@@ -673,7 +750,7 @@ func (bz *BaseDFS) readBCForNewRound() bool {
 			failedAttempts = failedAttempts + 1
 		}
 		log.LLvl2("---------- Opened the centralbc file after ", failedAttempts, " attempts")
-	}
+	} */
 	var rows *excelize.Rows
 	var row []string
 	rowNumber := 0
@@ -713,53 +790,63 @@ func (bz *BaseDFS) readBCForNewRound() bool {
 ------------------------------------------------------------------------ */
 //updateBC: by leader
 func (bz *BaseDFS) updateBCPostLeadership() {
-	failedAttempts := 0
-	//f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
-	file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
-	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
-		panic(err)
-	}
-	defer file.Close()
-	f, err := excelize.OpenReader(file)
-	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
-		panic(err)
-	}
-	f.Path = "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"
-	// ----------
-	if err != nil {
+	/* 	var (
+		f  *excelize.File
+		mu sync.Mutex // guards f,
+	) */
+	var err error
+
+	//failedAttempts := 0
+	//bz.fMu.Lock()
+
+	//f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	/* 	file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	   	if err != nil {
+	   		log.LLvl2("Panic Raised:\n\n")
+	   		panic(err)
+	   	}
+	   	defer file.Close()
+	   	f, err := excelize.OpenReader(file)
+	   	if err != nil {
+	   		log.LLvl2("Panic Raised:\n\n")
+	   		panic(err)
+	   	}
+	   	f.Path = "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"
+	   	// ---------- */
+	/*
+	 */
+	/* 	{
 		log.LLvl2(bz.TreeNode().Name(), "Can't open the centralbc file: pause 1 sec. for each attempt ---------------- error:", err)
 		for err != nil {
 			if failedAttempts == 11 {
 				log.LLvl2("Can't open the centralbc file: 10 attempts!")
 			}
 			time.Sleep(1 * time.Second)
-			//f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
-			file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
-			if err != nil {
-				log.LLvl2("Panic Raised:\n\n")
-				panic(err)
-			}
-			defer file.Close()
-			f, err := excelize.OpenReader(file)
-			if err != nil {
-				log.LLvl2("Panic Raised:\n\n")
-				panic(err)
-			}
-			f.Path = "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"
-			// ----------
+			f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			/* 			file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			   			if err != nil {
+			   				log.LLvl2("Panic Raised:\n\n")
+			   				panic(err)
+			   			}
+			   			defer file.Close()
+			   			f, err := excelize.OpenReader(file)
+			   			if err != nil {
+			   				log.LLvl2("Panic Raised:\n\n")
+			   				panic(err)
+			   			}
+			   			f.Path = "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"
+			   			// ----------
 			failedAttempts = failedAttempts + 1
 		}
 		log.LLvl2("---------- Opened the centralbc file after ", failedAttempts, " attempts")
-	}
+	} */
 	var rows *excelize.Rows
 	var row []string
 	var seed string
 	//var power *big.Int
 	rowNumber := 0
 	// looking for last round's seed in the round table sheet in the centralbc file
-	if rows, err = f.Rows("RoundTable"); err != nil {
+	if rows, err = bz.f.Rows("RoundTable"); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
@@ -781,7 +868,7 @@ func (bz *BaseDFS) updateBCPostLeadership() {
 	// updating the current last row in the "BCsize" column
 	currentRow := strconv.Itoa(rowNumber)
 	axisBCSize := "C" + currentRow
-	err = f.SetCellValue("RoundTable", axisBCSize, bz.BlockSize) //ToDo: measure and update bcsize
+	err = bz.f.SetCellValue("RoundTable", axisBCSize, bz.BlockSize) //ToDo: measure and update bcsize
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
@@ -789,7 +876,7 @@ func (bz *BaseDFS) updateBCPostLeadership() {
 	// --------------------------------------------------------------------
 	// updating the current last row in the "miner" column
 	axisMiner := "D" + currentRow
-	err = f.SetCellValue("RoundTable", axisMiner, bz.TreeNode().Name())
+	err = bz.f.SetCellValue("RoundTable", axisMiner, bz.TreeNode().Name())
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
@@ -798,7 +885,7 @@ func (bz *BaseDFS) updateBCPostLeadership() {
 	// adding one row in round table (round number and seed columns)
 	nextRow := strconv.Itoa(rowNumber + 1)
 	axisRoundNumber := "A" + nextRow
-	err = f.SetCellValue("RoundTable", axisRoundNumber, bz.roundNumber+1)
+	err = bz.f.SetCellValue("RoundTable", axisRoundNumber, bz.roundNumber+1)
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
@@ -813,7 +900,7 @@ func (bz *BaseDFS) updateBCPostLeadership() {
 	}
 	hash := sha.Sum(nil)
 	axisSeed := "B" + nextRow
-	err = f.SetCellValue("RoundTable", axisSeed, hex.EncodeToString(hash))
+	err = bz.f.SetCellValue("RoundTable", axisSeed, hex.EncodeToString(hash))
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
@@ -822,7 +909,7 @@ func (bz *BaseDFS) updateBCPostLeadership() {
 	/*	each round, adding one row in power table based on the information in market matching sheet,
 		assuming that servers are honest  and have honestly publish por for their actice (not expired) contracts,
 		  for each storage server and each of their active contracst, add the stored file size to their current power*/
-	if rows, err = f.Rows("MarketMatching"); err != nil {
+	if rows, err = bz.f.Rows("MarketMatching"); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
@@ -876,14 +963,14 @@ func (bz *BaseDFS) updateBCPostLeadership() {
 		}
 	}
 	// --- Power Table sheet  ----------------------------------------------
-	index := f.GetSheetIndex("PowerTable")
-	f.SetActiveSheet(index)
+	index := bz.f.GetSheetIndex("PowerTable")
+	bz.f.SetActiveSheet(index)
 	var PowerInfoRow []int
 	for _, a := range bz.Roster().List {
 		PowerInfoRow = append(PowerInfoRow, MinerServers[a.Address.String()])
 	}
 	axisRoundNumber = "B" + currentRow
-	err = f.SetSheetRow("PowerTable", axisRoundNumber, &PowerInfoRow)
+	err = bz.f.SetSheetRow("PowerTable", axisRoundNumber, &PowerInfoRow)
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
@@ -899,17 +986,7 @@ func (bz *BaseDFS) updateBCPostLeadership() {
 	// --------------------------------------------------------------------
 	// re-check: being the leader (the earliest leader in this round) before saving
 	// --------------------------------------------------------------------
-	if result := bz.readBCPostLeadership(); result == true {
-		if err := f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"); err != nil {
-			log.LLvl2("Panic Raised:\n\n")
-			panic(err)
-		} else {
-			log.LLvl2(bz.TreeNode().Name(), "is the final leader of round number ", bz.roundNumber, "$$$$$$$$$$$")
-			bz.roundNumber = bz.roundNumber + 1
-		}
-	} else {
-		log.LLvl2("another leader has already published his block for round number", bz.roundNumber)
-	}
+	bz.isLeader = true
 }
 
 /* ----------------------------------------------------------------------
