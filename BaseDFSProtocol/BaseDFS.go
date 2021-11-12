@@ -32,6 +32,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -214,6 +215,9 @@ func init() {
 	onet.GlobalProtocolRegister("BaseDFS", NewBaseDFSProtocol)
 }
 
+/* ----------------------------------------------------------------------
+-----------------
+------------------------------------------------------------------------ */
 // NewBaseDFSProtocol returns a new BaseDFS struct
 func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error) {
 	bz := &BaseDFS{
@@ -247,6 +251,9 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	return bz, nil
 }
 
+/* ----------------------------------------------------------------------
+-----------------
+------------------------------------------------------------------------ */
 //Start: starts the protocol by sending hello msg to all nodes //ToDo : could I don't send any mgs?
 func (bz *BaseDFS) Start() error {
 	// update the centralbc file with created nodes' information
@@ -258,6 +265,9 @@ func (bz *BaseDFS) Start() error {
 	return nil
 }
 
+/* ----------------------------------------------------------------------
+-----------------
+------------------------------------------------------------------------ */
 //finalCentralBCInitialization initialize the central bc file based on the config params defined in the config file (.toml file of the protocol)
 // the info we hadn't before and we have now is nodes' info that this function add to the centralbc file
 func (bz *BaseDFS) finalCentralBCInitialization() {
@@ -266,7 +276,20 @@ func (bz *BaseDFS) finalCentralBCInitialization() {
 		NodeInfoRow = append(NodeInfoRow, a.String())
 	}
 	failedAttempts := 0
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	//f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	defer file.Close()
+	f, err := excelize.OpenReader(file)
+	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	f.Path = "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"
+	// ----------
 	if err != nil {
 		log.LLvl2(bz.TreeNode().Name(), "Can't open the centralbc file: pause 1 sec. for each attempt ----------------")
 		for err != nil {
@@ -274,7 +297,20 @@ func (bz *BaseDFS) finalCentralBCInitialization() {
 				log.LLvl2("Can't open the centralbc file: 10 attempts!")
 			}
 			time.Sleep(1 * time.Second)
-			f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			//f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			if err != nil {
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			}
+			defer file.Close()
+			f, err := excelize.OpenReader(file)
+			if err != nil {
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			}
+			f.Path = "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"
+			// ----------
 			failedAttempts = failedAttempts + 1
 		}
 		log.LLvl2("---------- Opened the centralbc file after ", failedAttempts, " attempts")
@@ -305,8 +341,9 @@ func (bz *BaseDFS) finalCentralBCInitialization() {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-}
-
+} /* ----------------------------------------------------------------------
+-----------------
+------------------------------------------------------------------------ */
 // Dispatch listen on the different channels
 func (bz *BaseDFS) Dispatch() error {
 	//var timeoutStarted bool
@@ -325,7 +362,7 @@ func (bz *BaseDFS) Dispatch() error {
 		// this msg is catched in simulation codes
 		case <-bz.DoneBaseDFS:
 			running = false
-		case <-time.After(5 * time.Second):
+		case <-time.After(10 * time.Second):
 			log.Lvl2("cheking for new round..")
 			if r := bz.readBCForNewRound(); r == true {
 				// a timer should get started now for the next selected leader to use it later
@@ -359,6 +396,9 @@ func (bz *BaseDFS) Dispatch() error {
 	return err
 }
 
+/* ----------------------------------------------------------------------
+-----------------
+------------------------------------------------------------------------ */
 //helloBaseDFS
 func (bz *BaseDFS) helloBaseDFS() {
 	log.Lvl2(bz.TreeNode().Name(), " joined to the protocol")
@@ -385,6 +425,9 @@ func (bz *BaseDFS) helloBaseDFS() {
 	}
 }
 
+/* ----------------------------------------------------------------------
+-----------------
+------------------------------------------------------------------------ */
 //checkLeadership
 func (bz *BaseDFS) checkLeadership() {
 	power, seed := bz.readBCPreCheckLeadership()
@@ -429,6 +472,9 @@ func (bz *BaseDFS) checkLeadership() {
 	}
 }
 
+/* ----------------------------------------------------------------------
+-----------------
+------------------------------------------------------------------------ */
 //createEpochBlock: by leader
 func (bz *BaseDFS) createEpochBlock() {
 	log.LLvl2(bz.TreeNode().Name(), "is a leader for round number", bz.roundNumber)
@@ -437,6 +483,9 @@ func (bz *BaseDFS) createEpochBlock() {
 	}
 }
 
+/* ----------------------------------------------------------------------
+-----------------
+------------------------------------------------------------------------ */
 // readBCPostLeadership checks if another leader has updated the centralbc file for this round earlier
 func (bz *BaseDFS) readBCPostLeadership() bool {
 	//  readBCForNewRound returns "true" when a new round has been started / another leader has updated the centralbc file
@@ -446,17 +495,48 @@ func (bz *BaseDFS) readBCPostLeadership() bool {
 		return false
 	}
 }
+
+/* ----------------------------------------------------------------------
+-----------------
+------------------------------------------------------------------------ */
 func (bz *BaseDFS) readBCPreCheckLeadership() (power uint64, seed string) {
 	failedAttempts := 0
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	//f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
 	if err != nil {
-		log.LLvl2(bz.TreeNode().Name(), "Can't open the centralbc file: pause 1 sec. for each attempt ----------------")
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	defer file.Close()
+	f, err := excelize.OpenReader(file)
+	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	f.Path = "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"
+	// ----------
+
+	if err != nil {
+		log.LLvl2(bz.TreeNode().Name(), "Can't open the centralbc file: pause 1 sec. for each attempt ---------------- error msg: ", err)
 		for err != nil {
 			if failedAttempts == 11 {
 				log.LLvl2("Can't open the centralbc file: 10 attempts!")
 			}
 			time.Sleep(1 * time.Second)
-			f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			//f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			if err != nil {
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			}
+			defer file.Close()
+			f, err := excelize.OpenReader(file)
+			if err != nil {
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			}
+			f.Path = "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"
+			// ----------
 			failedAttempts = failedAttempts + 1
 
 		}
@@ -549,9 +629,26 @@ func (bz *BaseDFS) readBCPreCheckLeadership() (power uint64, seed string) {
 
 	return power, seed
 }
+
+/* ----------------------------------------------------------------------
+-----------------
+------------------------------------------------------------------------ */
 func (bz *BaseDFS) readBCForNewRound() bool {
 	failedAttempts := 0
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	//f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	defer file.Close()
+	f, err := excelize.OpenReader(file)
+	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	f.Path = "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"
+	// ----------
 	if err != nil {
 		log.LLvl2(bz.TreeNode().Name(), "Can't open the centralbc file: pause 1 sec. for each attempt ----------------")
 		for err != nil {
@@ -559,7 +656,20 @@ func (bz *BaseDFS) readBCForNewRound() bool {
 				log.LLvl2("Can't open the centralbc file: 10 attempts!")
 			}
 			time.Sleep(1 * time.Second)
-			f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			//f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			if err != nil {
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			}
+			defer file.Close()
+			f, err := excelize.OpenReader(file)
+			if err != nil {
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			}
+			f.Path = "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"
+			// ----------
 			failedAttempts = failedAttempts + 1
 		}
 		log.LLvl2("---------- Opened the centralbc file after ", failedAttempts, " attempts")
@@ -595,20 +705,50 @@ func (bz *BaseDFS) readBCForNewRound() bool {
 	} else {
 		return false
 	}
+
 }
 
+/* ----------------------------------------------------------------------
+-----------------
+------------------------------------------------------------------------ */
 //updateBC: by leader
 func (bz *BaseDFS) updateBCPostLeadership() {
 	failedAttempts := 0
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	//f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
 	if err != nil {
-		log.LLvl2(bz.TreeNode().Name(), "Can't open the centralbc file: pause 1 sec. for each attempt ----------------")
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	defer file.Close()
+	f, err := excelize.OpenReader(file)
+	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	f.Path = "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"
+	// ----------
+	if err != nil {
+		log.LLvl2(bz.TreeNode().Name(), "Can't open the centralbc file: pause 1 sec. for each attempt ---------------- error:", err)
 		for err != nil {
 			if failedAttempts == 11 {
 				log.LLvl2("Can't open the centralbc file: 10 attempts!")
 			}
 			time.Sleep(1 * time.Second)
-			f, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			//f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			file, err := os.Open("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			if err != nil {
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			}
+			defer file.Close()
+			f, err := excelize.OpenReader(file)
+			if err != nil {
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			}
+			f.Path = "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"
+			// ----------
 			failedAttempts = failedAttempts + 1
 		}
 		log.LLvl2("---------- Opened the centralbc file after ", failedAttempts, " attempts")
@@ -772,6 +912,9 @@ func (bz *BaseDFS) updateBCPostLeadership() {
 	}
 }
 
+/* ----------------------------------------------------------------------
+-----------------
+------------------------------------------------------------------------ */
 // startTimer starts the timer to decide whether we should ... or not.
 func (bz *BaseDFS) startTimer(millis uint64) {
 	log.Lvl3(bz.Name(), "Started timer (", millis, ")...")
@@ -783,6 +926,9 @@ func (bz *BaseDFS) startTimer(millis uint64) {
 	}
 }
 
+/* ----------------------------------------------------------------------
+-----------------
+------------------------------------------------------------------------ */
 // SetTimeout sets the new timeout
 //ToDo: do we need the following functions?
 func (bz *BaseDFS) SetTimeout(t time.Duration) {
@@ -791,6 +937,9 @@ func (bz *BaseDFS) SetTimeout(t time.Duration) {
 	bz.timeoutMu.Unlock()
 }
 
+/* ----------------------------------------------------------------------
+-----------------
+------------------------------------------------------------------------ */
 // Timeout returns the current timeout
 func (bz *BaseDFS) Timeout() time.Duration {
 	bz.timeoutMu.Lock()
@@ -798,6 +947,9 @@ func (bz *BaseDFS) Timeout() time.Duration {
 	return bz.timeout
 }
 
+/* ----------------------------------------------------------------------
+-----------------
+------------------------------------------------------------------------ */
 // test file access : central bc file from inside the protocol
 /*func (bz *BaseDFS) readwriteBC() () {
 	//---- test file read / write access

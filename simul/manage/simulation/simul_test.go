@@ -1,18 +1,19 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/basedfs/log"
 	"github.com/basedfs/simul"
-	"testing"
 )
 
 func TestSimulation(t *testing.T) {
-	log.SetDebugVisible(2)
+	log.SetDebugVisible(5)
 	//simul.Start("OpinionGathering.toml")
-/*	s3 := rand.NewSource(55)
-	r3 := rand.New(s3)
-	log.Lvl2(r3.Intn(1000))
-	log.Lvl2(r3.Intn(1000))*/
+	/*	s3 := rand.NewSource(55)
+		r3 := rand.New(s3)
+		log.Lvl2(r3.Intn(1000))
+		log.Lvl2(r3.Intn(1000))*/
 	simul.Start("BaseDFS.toml")
 }
 
