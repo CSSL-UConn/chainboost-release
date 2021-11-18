@@ -432,7 +432,7 @@ func xor(x []byte, state bool) string {
 	signedStringLength := 13
 	y := []byte{}
 	s := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	if state == true {
+	if state {
 		for index := 0; (index*13 + 13) < len(x); index++ {
 			y = x[index*13 : index*13+13]
 			log.Lvl1("\n node", index, "signed string:", y)

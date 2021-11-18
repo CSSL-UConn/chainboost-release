@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/basedfs/BaseDFSProtocol"
 	log "github.com/basedfs/log"
 	"github.com/xuri/excelize/v2"
 	//"strings"
@@ -30,7 +31,7 @@ func generateNormalValues(variance, mean, nodes int) []uint64 {
 }
 
 // InitializeCentralBC function is called in simulation level
-
+// Nodes: # of nodes
 func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, PercentageTxEscrow,
 	DistributionMeanFileSize, DistributionVarianceFileSize,
 	DistributionMeanContractDuration, DistributionVarianceContractDuration,
@@ -97,7 +98,7 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 	if err != nil {
 		return
 	}
-	for i := 2; i <= len(ContractDurationRow)+2; i++ {
+	for i := 2; i <= len(ContractDurationRow)+1; i++ {
 		contractRow := strconv.Itoa(i)
 		t := "D" + contractRow
 		err = f.SetCellValue("MarketMatching", t, 1)
@@ -213,6 +214,13 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 		"\n DistributionMeanInitialPower: ", DistributionMeanInitialPower,
 		"\n DistributionVarianceInitialPower: ", DistributionVarianceInitialPower,
 		"\n BlockSize: ", BlockSize)
+
+	// --- block measurement
+	bs, _ := strconv.Atoi(BlockSize)
+	portx, _ := strconv.Atoi(PercentageTxPoR)
+	paytx, _ := strconv.Atoi(PercentageTxPay)
+	estx, _ := strconv.Atoi(PercentageTxEscrow)
+	BaseDFSProtocol.BlockMeasurement(bs, portx, paytx, estx)
 }
 
 /*	// in case of initializing a column

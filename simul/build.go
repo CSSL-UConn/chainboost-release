@@ -278,13 +278,10 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 	select {
 	case err := <-done:
 		if err != nil {
-			log.Lvl1("t1")
 			return nil, xerrors.Errorf("simulation error: %v", err)
 		}
-		log.Lvl1("t3")
 		return stats, nil
 	case <-time.After(timeout):
-		log.Lvl1("t2")
 		return nil, xerrors.New("simulation timeout")
 	}
 }

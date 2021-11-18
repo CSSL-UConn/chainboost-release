@@ -2,9 +2,10 @@ Servers = 1
 Simulation = "BaseDFS"
 BF = 2
 Rounds = 0
+RunWait = "600000s"
 Suite = "Ed25519"
 PreScript = "testPreScript.toml"
-RoundDuration = 5000000000
+RoundDuration = 15000000000
 timeout = 1000
 PercentageTxPoR = 40
 PercentageTxPay = 25
@@ -15,8 +16,8 @@ DistributionMeanContractDuration = 10
 DistributionVarianceContractDuration = 50
 DistributionMeanInitialPower = 9000000000000000000
 DistributionVarianceInitialPower = 9000000000000000
-Nodes = 300
+Nodes = 7
 BlockSize = 13
 
 Hosts
-300
+7
