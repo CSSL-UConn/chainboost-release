@@ -217,10 +217,11 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 
 	// --- block measurement
 	bs, _ := strconv.Atoi(BlockSize)
+	nodes, _ := strconv.Atoi(Nodes)
 	portx, _ := strconv.Atoi(PercentageTxPoR)
 	paytx, _ := strconv.Atoi(PercentageTxPay)
 	estx, _ := strconv.Atoi(PercentageTxEscrow)
-	BaseDFSProtocol.BlockMeasurement(bs, portx, paytx, estx)
+	BaseDFSProtocol.BlockMeasurement(bs, nodes, portx, paytx, estx)
 }
 
 /*	// in case of initializing a column
