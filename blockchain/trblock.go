@@ -1,6 +1,7 @@
 // Bitcoin-blockchain specific functions.
 package blockchain
 
+/*
 import (
 	"crypto/sha256"
 	"encoding/binary"
@@ -136,3 +137,4 @@ func HashHeader(h *Header) string {
 	hash := sha.Sum(nil)
 	return hex.EncodeToString(hash)
 }
+*/

@@ -16,8 +16,8 @@ DistributionMeanContractDuration = 10
 DistributionVarianceContractDuration = 50
 DistributionMeanInitialPower = 9000000000000000000
 DistributionVarianceInitialPower = 9000000000000000
-Nodes = 7
-BlockSize = 13
+Nodes = 50
+BlockSize = 300
 
 Hosts
-7
+50

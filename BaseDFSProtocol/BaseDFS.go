@@ -35,16 +35,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/DmitriyVTitov/size"
 	onet "github.com/basedfs"
+	"github.com/basedfs/blockchain"
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"github.com/basedfs/por"
 	"github.com/basedfs/vrf"
 	"github.com/xuri/excelize/v2"
-	"go.dedis.ch/kyber/v3"
-	"go.dedis.ch/kyber/v3/util/random"
-	"go.dedis.ch/kyber/v3/xof/blake2xb"
 )
 
 /* -------------------------------------------------------------------- */
@@ -52,101 +49,6 @@ import (
 /* -------------------------------------------------------------------- */
 //  -------------------  Transactions and Block Structurse -----------------
 /* -------------------------------------------------------------------- */
-
-/*  payment transactions are close to byzcoin's and from the structure
-provided in: https://developer.bitcoin.org/reference/transactions.html */
-type outpoint struct {
-	hash  string //[32]string //TXID
-	index string //[4]byte
-}
-type TxPayIn struct {
-	outpoint            *outpoint // 36 bytes
-	UnlockingScriptSize string    //uint
-	UnlockinScript      string    // signature script
-	SequenceNumber      string    //uint
-}
-type TxPayOut struct {
-	Amount            string //[8]byte
-	LockingScript     string // pubkey script
-	LockingScriptSize string //uint
-}
-type TxPay struct {
-	LockTime string //uint
-	Version  string //[4]byte
-	TxInCnt  string //uint // compactSize uint
-	TxOutCnt string //uint
-	TxIns    []*TxPayIn
-	TxOuts   []*TxPayOut
-}
-
-/* ---------------- market matching transactions ---------------- */
-type Contract struct {
-	duration   time.Time
-	fileSize   string //uint
-	startRound string //uint
-	// -- ToDo: commitment construiction?
-	serverCommitment string
-	clientCommitment string
-}
-
-/* ---------------- transactions that will be issued until a contract is active ---------------- */
-
-/* after matching is done (contract is created) the client creates an escrow */
-type TxEscrow struct {
-	tx         *TxPay
-	ContractID *Contract
-}
-
-/* por txs are designed in away that the verifier (any miner) has sufficient information to verify it */
-type TxPoR struct {
-	ContractID  *Contract
-	por         *por.Por
-	Tau         []byte
-	roundNumber string //uint // to determine the random query used for it
-}
-
-/* ---------------- transactions that will be issued for each round ---------------- */
-/* the proof is generated as an output of fucntion call "ProveBytes" in vrf package*/
-/* ---------------- block structure and its metadata ----------------
-(from algorand) : "Blocks consist of a list of transactions,  along with metadata needed by MainChain miners.
-Specifically, the metadata consists of
-	- the round number,
-	- the proposer’s VRF-based seed,
-	- a hash of the previous block in the ledger,and
-	- a timestamp indicating when the block was proposed
-The list of transactions in a block logically translates to a set of weights for each user’s public key
-(based on the balance of currency for that key), along with the total weight of all outstanding currency." //ToDo: compelete this later
-*/
-type TransactionList struct {
-	//---
-	TxPays   []*TxPay
-	TxPayCnt string //uint
-	//---
-	TxPoRs   []*TxPoR
-	TxPoRCnt string //uint
-	//---
-	TxEscrows   []*TxEscrow
-	TxEscrowCnt string //uint
-	//---
-	Fees string //float64
-}
-type BlockHeader struct {
-	RoundNumber       string //uint
-	RoundSeed         string //proposer’s VRF-based seed
-	PreviousBlockHash string
-	Timestamp         time.Time
-	//--
-	MerkleRootHash string
-	// -- ToDo: these two are required as well, right?
-	Version             string // [4]byte
-	SignedBlockByLeader string // []byte //length?
-	LeaderAddress       string //ToDo: public key?
-}
-type Block struct {
-	BlockSize       string
-	BlockHeader     *BlockHeader
-	TransactionList *TransactionList
-}
 
 // ------  types used for communication (msgs) -------------------------
 /*Hello is sent down the tree from the root node, every node who gets it starts the protocol and send it to its children*/
@@ -357,7 +259,9 @@ func (bz *BaseDFS) Dispatch() error {
 		case <-bz.LeaderPropose:
 			log.LLvl2(bz.Name(), "I am elected :)")
 			time.Sleep(time.Duration(bz.RoundDuration))
-			bz.updateBCPostLeadership()
+			bz.updateBCPowerRound()
+			bz.updateBCTransactionQueueCollect()
+			bz.updateBCTransactionQueueTake()
 			var newround = new(NewRound)
 			newround = &NewRound{}
 			for _, b := range bz.Tree().List() {
@@ -426,7 +330,7 @@ func (bz *BaseDFS) checkLeadership() {
 /* ----------------------------------------------------------------------
 ------------------------------------------------------------------------ */
 //updateBC: by leader
-func (bz *BaseDFS) updateBCPostLeadership() {
+func (bz *BaseDFS) updateBCPowerRound() {
 	var err error
 	var rows *excelize.Rows
 	var row []string
@@ -463,7 +367,7 @@ func (bz *BaseDFS) updateBCPostLeadership() {
 
 	// no longer nodes read from centralbc file, instead the round are determined by their local round number variable
 	currentRow := strconv.Itoa(rowNumber)
-	nextRow := strconv.Itoa(rowNumber + 1)
+	nextRow := strconv.Itoa(rowNumber + 1) //ToDo: remove these, use bz.roundnumber instead!
 	//currentRow := strconv.Itoa(bz.roundNumber + 1)
 	//nextRow := strconv.Itoa(bz.roundNumber + 2)
 	//seed = "!" //todo: fix it later
@@ -526,8 +430,10 @@ func (bz *BaseDFS) updateBCPostLeadership() {
 				panic(err)
 			} else {
 				for i, colCell := range row {
-					// --- in MarketMatching: i = 0 is Server's Info,  i = 1 is FileSize, i=2 is ContractDuration, i=3 is RoundNumber, i=4 is ContractID, i=5 is Client's PK
-					// EXCELIZE KEEPS INITIALIZING ROWS WITH HAVING HEADERS VALUE FOR COLUMNS 1 TO 6, SO 1 STARTS FROM 7!!
+					/* --- in MarketMatching: i = 0 is Server's Info,
+					i = 1 is FileSize, i=2 is ContractDuration,
+					i=3 is RoundNumber, i=4 is ContractID, i=5 is Client's PK,
+					i = 6 is ContractPublished */
 					if i == 0 {
 						MinerServer = colCell
 					}
@@ -588,7 +494,269 @@ func (bz *BaseDFS) updateBCPostLeadership() {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl2(bz.Name(), "is the leader of round number ", bz.roundNumber, "- new block added")
+		log.LLvl2(bz.Name(), "is the leader of round number ", bz.roundNumber)
+		bz.isLeader = false
+	}
+}
+
+/* ----------------------------------------------------------------------
+------------------------------------------------------------------------ */
+//updateBC: by leader
+func (bz *BaseDFS) updateBCTransactionQueueCollect() {
+	var err error
+	var rows *excelize.Rows
+	var row []string
+
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	if err != nil {
+		log.LLvl2("Raha: ", err)
+		panic(err)
+	}
+
+	//	each round, adding one row in power table based on the information in market matching sheet,assuming that servers are honest  and have honestly publish por for their actice (not expired) contracts,for each storage server and each of their active contracst, add the stored file size to their current power
+	if rows, err = f.Rows("MarketMatching"); err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	var ContractDuration, ContractStartedRoundNumber, FileSize, ContractPublished, ContractID int
+	var MinerServer string
+
+	rowNum := 0
+	transactionQueue := make(map[string][5]int)
+	// first int: stored file size in this round,
+	// second int: corresponding contract id
+	// third int: TxEscrow required
+	// fourth int: TxStoragePayment required
+	for rows.Next() {
+		rowNum++
+		if rowNum == 1 { // first row is header
+			_, _ = rows.Columns()
+		} else {
+			row, err = rows.Columns()
+			if err != nil {
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			} else {
+				for i, colCell := range row {
+					/* --- in MarketMatching: i = 0 is Server's Info,
+					i = 1 is FileSize, i=2 is ContractDuration,
+					i=3 is RoundNumber, i=4 is ContractID, i=5 is Client's PK,
+					i = 6 is ContractPublished */
+					if i == 0 {
+						MinerServer = colCell
+					}
+					if i == 1 {
+						FileSize, err = strconv.Atoi(colCell)
+						if err != nil {
+							log.LLvl2("Panic Raised:\n\n")
+							panic(err)
+						}
+					}
+					if i == 2 {
+						ContractDuration, err = strconv.Atoi(colCell)
+						if err != nil {
+							log.LLvl2("Panic Raised:\n\n")
+							panic(err)
+						}
+					}
+					if i == 3 {
+						ContractStartedRoundNumber, err = strconv.Atoi(colCell)
+						if err != nil {
+							log.LLvl2("Panic Raised:\n\n")
+							panic(err)
+						}
+					}
+					if i == 4 {
+						ContractID, err = strconv.Atoi(colCell)
+						if err != nil {
+							log.LLvl2("Panic Raised:\n\n")
+							panic(err)
+						}
+					}
+					if i == 6 {
+						ContractPublished, err = strconv.Atoi(colCell)
+						if err != nil {
+							log.LLvl2("Panic Raised:\n\n")
+							panic(err)
+						}
+					}
+				}
+			}
+			t := [5]int{0, ContractID, 0, 0, 0}
+			// map transactionQueue:
+			// t[0]: stored file size in this round,
+			// t[1]: corresponding contract id
+			// t[2]: TxEscrow required
+			// t[3]: TxStoragePayment required
+			// t[4]: TxPor required
+			if ContractPublished == 0 {
+				// Add TxEscrow
+				t[2] = 1
+				transactionQueue[MinerServer] = t
+			} else if bz.roundNumber-ContractStartedRoundNumber <= ContractDuration { // contract is not expired
+				t[0] = FileSize //if each server one contract
+				// Add TxPor
+				t[4] = 1
+				transactionQueue[MinerServer] = t
+			} else if bz.roundNumber-ContractStartedRoundNumber > ContractDuration {
+				// Set ContractPublished to false
+				row[6] = "0" //todo: check if it is working
+				// Add TxStoragePayment
+				t[3] = 1
+				transactionQueue[MinerServer] = t
+			}
+		}
+	}
+	// Later : when this tx left queue:
+	//	1) set ContractPublished to True
+	//	2) set start round number to current round
+
+	// ----------------------------------------------------------------------
+	// ------ add transactions into transaction queue sheet -----
+	// ----------------------------------------------------------------------
+	/* each transaction has the following column stored on the transaction queue sheet:
+	0) name
+	1) size
+	2) time
+	3) issuedRoundNumber
+	4) contractId */
+	var newTransactionRow [5]string
+	s := make([]interface{}, len(newTransactionRow)) //ToDo: check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
+
+	newTransactionRow[2] = time.Now().Format("01-02 15:04:05")
+	newTransactionRow[3] = strconv.Itoa(bz.roundNumber)
+	var PorTxSize, EscrowTxSize, PayTxSize int
+	PorTxSize, EscrowTxSize, PayTxSize = blockchain.TransactionMeasurement()
+	// map transactionQueue:
+	// [0]: stored file size in this round,
+	// [1]: corresponding contract id
+	// [2]: TxEscrow required
+	// [3]: TxStoragePayment required
+	// [4]: TxPor required
+	for _, a := range bz.Roster().List {
+		if transactionQueue[a.Address.String()][2] == 1 {
+			newTransactionRow[0] = "TxEscrow"
+			newTransactionRow[1] = strconv.Itoa(EscrowTxSize)
+			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
+		} else if transactionQueue[a.Address.String()][3] == 1 {
+			newTransactionRow[0] = "TxStoragePayment"
+			newTransactionRow[1] = strconv.Itoa(PayTxSize) //ToDo: replace with storagePayment transaction size
+			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
+		} else if transactionQueue[a.Address.String()][4] == 1 {
+			newTransactionRow[0] = "TxPor"
+			newTransactionRow[1] = strconv.Itoa(PorTxSize)
+			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
+		}
+
+		for i, v := range newTransactionRow {
+			s[i] = v
+		}
+		if err = f.InsertRow("TransactionQueue", 2); err != nil {
+			log.LLvl2("Panic Raised:\n\n")
+			panic(err)
+		} else {
+			if err = f.SetSheetRow("TransactionQueue", "A2", &s); err != nil {
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			}
+		}
+	}
+
+	// ----
+	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	} else {
+		log.LLvl2(bz.Name(), " Collected new transactions to queue in round number ", bz.roundNumber)
+		bz.isLeader = false
+	}
+}
+
+/* ----------------------------------------------------------------------
+------------------------------------------------------------------------ */
+//updateBC: by leader
+func (bz *BaseDFS) updateBCTransactionQueueTake() {
+	var err error
+	var rows [][]string
+
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	if err != nil {
+		log.LLvl2("Raha: ", err)
+		panic(err)
+	}
+
+	//	each round, adding one row in power table based on the information in market matching sheet,assuming that servers are honest  and have honestly publish por for their actice (not expired) contracts,for each storage server and each of their active contracst, add the stored file size to their current power
+	if rows, err = f.GetRows("TransactionQueue"); err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	var accumulatedTxSize, txsize int
+	var contractIdCellMarketMatching []string
+	blockSize, _ := strconv.Atoi(bz.BlockSize)
+	blockIsFull := false
+
+	for i := len(rows); i > 1 && !blockIsFull; i-- {
+		row := rows[i-1][:]
+		/* each transaction has the following column stored on the transaction queue sheet:
+		0) name
+		1) size
+		2) time
+		3) issuedRoundNumber
+		4) contractId */
+		for j, colCell := range row {
+			if j == 1 {
+				if txsize, err = strconv.Atoi(colCell); err != nil {
+					log.LLvl2("Panic Raised:\n\n")
+					panic(err)
+				} else if accumulatedTxSize+txsize <= blockSize*1000 {
+					accumulatedTxSize = accumulatedTxSize + txsize
+					/* transaction name in transaction queue can be "TxEscrow", "TxStoragePayment", or "TxPor"
+					in case of "TxEscrow":
+					1) The corresponding contract in marketmatching should be updated to published
+					2) set start round number to current round
+					other transactions are just removed from queue and their size are added to included transactions' size in block */
+					if row[0] == "TxEscrow" {
+						cid := row[4]
+						if contractIdCellMarketMatching, err = f.SearchSheet("MarketMatching", cid); err != nil {
+							log.LLvl2("Panic Raised:\n\n")
+							panic(err)
+						}
+						publishedCellMarketMatching := "G" + contractIdCellMarketMatching[0][1:]
+						err = f.SetCellValue("MarketMatching", publishedCellMarketMatching, 1)
+						if err != nil {
+							log.LLvl2("Panic Raised:\n\n")
+							panic(err)
+						}
+						startRoundCellMarketMatching := "D" + contractIdCellMarketMatching[0][1:]
+						err = f.SetCellValue("MarketMatching", startRoundCellMarketMatching, bz.roundNumber)
+						if err != nil {
+							log.LLvl2("Panic Raised:\n\n")
+							panic(err)
+						}
+					}
+					if row[0] == "TxStoragePayment" {
+						log.LLvl2("a TxStoragePayment tx added to block from the queue")
+					}
+					if row[0] == "TxPor" {
+						log.LLvl2("a por tx added to block from the queue")
+					}
+					f.RemoveRow("TransactionQueue", i)
+				} else {
+					blockIsFull = true
+					break
+				}
+			}
+		}
+	}
+
+	// ----
+	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	} else {
+		log.LLvl2(bz.Name(), " Took transactions from queue (FIFO) into new block in round number ", bz.roundNumber)
 		bz.isLeader = false
 	}
 }
@@ -1066,145 +1234,3 @@ func (bz *BaseDFS) refreshBC() {
 	}
 	log.LLvl2(bz.Name(), "Un-Lock BC")
 } */
-
-/* -------------------------------------------------------------------- */
-//  ----------------  Block and Transactions size measurements -----
-/* -------------------------------------------------------------------- */
-func BlockMeasurement(blocksize int, nodes int, payTxShare int, escrowTxShare int, porTxShare int) (payTxnum int, escrowTxnum int, porTxnum int) {
-	log.LLvl2("number of nodes: ", nodes,
-		"\n payTxShare: ", payTxShare,
-		"\n escrowTxShare: ", escrowTxShare,
-		"\n porTxShare: ", porTxShare)
-
-	// ---------------- payment transaction sample ----------------
-	hash := "f3f6a909f8521adb57d898d2985834e632374e770fd9e2b98656f1bf1fdfd42701"
-	x1 := &outpoint{
-		hash:  hash,
-		index: "000000",
-	}
-	x2 := &TxPayIn{
-		outpoint:            x1,
-		UnlockingScriptSize: "6b",
-		UnlockinScript:      "48304502203a776322ebf8eb8b58cc6ced4f2574f4c73aa664edce0b0022690f2f6f47c521022100b82353305988cb0ebd443089a173ceec93fe4dbfe98d74419ecc84a6a698e31d012103c5c1bc61f60ce3d6223a63cedbece03b12ef9f0068f2f3c4a7e7f06c523c3664",
-		SequenceNumber:      "ffffffff",
-	}
-	x3 := &TxPayOut{
-		Amount:            "60e3160000000000",
-		LockingScript:     "76a914977ae6e32349b99b72196cb62b5ef37329ed81b488ac063d1000000000001976a914f76bc4190f3d8e2315e5c11c59cfc8be9df747e388ac",
-		LockingScriptSize: "19",
-	}
-	xin := []*TxPayIn{x2}
-	xout := []*TxPayOut{x3}
-	x4 := &TxPay{
-		LockTime: "00000000",
-		Version:  "01000000",
-		TxInCnt:  "01",
-		TxOutCnt: "02",
-		TxIns:    xin,
-		TxOuts:   xout,
-	}
-
-	TxInCntInt, _ := strconv.Atoi(x4.TxInCnt)
-	TxOutCntInt, _ := strconv.Atoi(x4.TxOutCnt)
-	PayTxSize := size.Of(x4) + TxInCntInt*size.Of(x2) + TxOutCntInt*size.Of(x3)
-	log.LLvl2("size of a pay transaction is: ", PayTxSize, " bytes \n with ",
-		TxInCntInt, " number of input transaction, each ", size.Of(x2),
-		" bytes \n and ", TxOutCntInt, " number of output transaction, each ", size.Of(x3),
-		"\n plus size of payment transaction itself which is ", size.Of(x4))
-
-	// ---------------- escrow transaction sample ----------------
-	x5 := &Contract{
-		duration:   time.Now(),
-		fileSize:   "10000000000",
-		startRound: "10000000000",
-
-		serverCommitment: hash,
-		clientCommitment: hash,
-	}
-	x7 := &TxEscrow{
-		tx:         x4,
-		ContractID: x5,
-	}
-	EscrowTxSize := size.Of(x7) + (size.Of(x4) + TxInCntInt*size.Of(x2) + TxOutCntInt*size.Of(x3)) + size.Of(x5)
-	log.LLvl2("size of a escrow transaction (including contract creation tx) is: ", EscrowTxSize, "bytes \n with ",
-		size.Of(x5), " bytes for contract, \n and ", PayTxSize, " bytes for payment")
-
-	// ---------------- por transaction sample ----------------
-	var randombyte = make([]byte, 8)
-	rand := random.New()
-	var muArraySample [por.S]kyber.Scalar
-	for i := range muArraySample {
-		muArraySample[i] = por.Suite.Scalar().Pick(blake2xb.New(randombyte))
-	}
-	sigmaSample := por.Suite.G1().Point().Mul(por.Suite.G1().Scalar().Pick(rand), nil)
-	x8 := &por.Por{
-		Mu:    muArraySample,
-		Sigma: sigmaSample,
-	}
-	porSize := por.S*por.Suite.G1().ScalarLen() + por.Suite.G2().PointLen() + size.Of(x8)
-
-	sk, _ := por.RandomizedKeyGeneration()
-	Tau, pf := por.RandomizedFileStoring(sk, por.GenerateFile())
-	p := por.CreatePoR(pf)
-
-	x6 := &TxPoR{
-		ContractID:  x5,
-		por:         &p,
-		Tau:         Tau,
-		roundNumber: "10000000000",
-	}
-	PorTxSize := size.Of(x6) + size.Of(x8) + porSize
-	log.LLvl2("size of a por transaction is: ", PorTxSize, " bytes \n with ",
-		size.Of(x8)+porSize, " bytes for pure por")
-
-	// ---------------- block sample ----------------
-
-	var TxPayArraySample []*TxPay
-	for i := 1; i <= nodes; i++ {
-		TxPayArraySample = append(TxPayArraySample, x4)
-	}
-	var TxPorArraySample []*TxPoR
-	for i := 1; i <= nodes; i++ {
-		TxPorArraySample = append(TxPorArraySample, x6)
-	}
-	var TxEscrowArraySample []*TxEscrow
-	for i := 1; i <= nodes; i++ {
-		TxEscrowArraySample = append(TxEscrowArraySample, x7)
-	}
-	x9 := &TransactionList{
-		//---
-		TxPays:   TxPayArraySample,
-		TxPayCnt: "010",
-		//---
-		TxPoRs:   TxPorArraySample,
-		TxPoRCnt: "010",
-		//---
-		TxEscrows:   TxEscrowArraySample,
-		TxEscrowCnt: "03",
-		//---
-		Fees: "10000000000",
-	}
-	TransactionListSize := nodes*(PayTxSize+PorTxSize) + size.Of(x9)
-	x10 := &BlockHeader{
-		RoundNumber:         "10000000000",
-		RoundSeed:           hash,
-		PreviousBlockHash:   "9500c43a25c624520b5100adf82cb9f9da72fd2447a496bc600b000000000000",
-		Timestamp:           time.Now(),
-		MerkleRootHash:      "6cd862370395dedf1da2841ccda0fc489e3039de5f1ccddef0e834991a65600e",
-		Version:             "01000000",
-		SignedBlockByLeader: hash,
-		LeaderAddress:       hash,
-	}
-	x11 := &Block{
-		BlockSize:       "10000000000",
-		BlockHeader:     x10,
-		TransactionList: x9,
-	}
-	BlockSize := size.Of(x10) + TransactionListSize + size.Of(x11)
-
-	log.LLvl2("size of a Block Header is: ", size.Of(x10), " bytes, ",
-		"\n size of Transaction List is: ", TransactionListSize, " bytes, ",
-		"\n overall, size of Block is: ", BlockSize)
-
-	return payTxnum, escrowTxnum, porTxnum
-}

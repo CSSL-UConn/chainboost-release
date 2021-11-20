@@ -1,5 +1,6 @@
 package blockchain
 
+/*
 import (
 	"crypto/sha256"
 	"encoding/binary"
@@ -81,3 +82,4 @@ func (tran *TransactionList) Print() {
 	}
 
 }
+*/

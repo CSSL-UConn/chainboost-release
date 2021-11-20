@@ -1,5 +1,6 @@
 package blockchain
 
+/*
 import (
 	"log"
 	"net"
@@ -38,3 +39,4 @@ func (trb *KeyBlock) Print() {
 	log.Printf("Hash %v", trb.HeaderHash)
 	return
 }
+*/
