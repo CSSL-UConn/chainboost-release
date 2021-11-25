@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"math/rand"
 	"strconv"
 	"time"
 
@@ -45,25 +46,40 @@ type Contract struct {
 	fileSize      string //uint
 	startRound    string //uint
 	pricePerRound string
-	// -- ToDo: commitment construiction?
-	serverCommitment string
+	roundNumber   string /* Instead of the "fiel tag" (Tau []byte),
+	the round number is sent and stored on chain (later sent to sideChain in summery) and the verifiers
+	can reproduce the file tag (as well as random query)
+	from that round's seed as a source of randomness */
+}
+
+/* TxContractPropose: A client create a contract and add approprite (duration*price) escrow and sign it and issue a contract propose transaction
+which has the contract and payment (escrow) info in it */
+type TxContractPropose struct {
+	tx               *TxPay
+	ContractID       *Contract
 	clientCommitment string
+}
+
+//ToDo: ContractCommit
+type TxContractCommit struct {
+	serverCommitment string
+	ContractID       string
 }
 
 /* ---------------- transactions that will be issued until a contract is active ---------------- */
 
-/* after matching is done (contract is created) the client creates an escrow */
-type TxEscrow struct {
-	tx         *TxPay
-	ContractID *Contract
-}
-
 /* por txs are designed in away that the verifier (any miner) has sufficient information to verify it */
 type TxPoR struct {
-	ContractID  *Contract
+	ContractID  string
 	por         *por.Por
-	Tau         []byte
 	roundNumber string //uint // to determine the random query used for it
+}
+
+/* ---------------- transactions that will be issued after a contract is expired ---------------- */
+
+type TxStoragePay struct {
+	ContractID string
+	tx         *TxPay
 }
 
 /* ---------------- transactions that will be issued for each round ---------------- */
@@ -86,10 +102,15 @@ type TransactionList struct {
 	TxPoRs   []*TxPoR
 	TxPoRCnt string //uint
 	//---
-	TxEscrows   []*TxEscrow
+	TxEscrows   []*TxContractPropose
 	TxEscrowCnt string //uint
 	//---
-	Fees string //float64
+	TxContractCommits   []*TxContractCommit
+	TxContractCommitCnt string
+	//---
+	TxStoragePay    []*TxStoragePay
+	TxStoragePayCnt string
+	Fees            string //float64
 }
 type BlockHeader struct {
 	RoundNumber       string //uint
@@ -112,114 +133,15 @@ type Block struct {
 /* -------------------------------------------------------------------- */
 //  ----------------  Block and Transactions size measurements -----
 /* -------------------------------------------------------------------- */
-func BlockMeasurement(
-	blocksize int,
-	nodes int,
-	payTxShare int,
-	escrowTxShare int,
-	porTxShare int) (PorTxSize int,
-	EscrowTxSize int,
-	PayTxSize int) {
-	log.LLvl2("number of nodes: ", nodes,
-		"\n payTxShare: ", payTxShare,
-		"\n escrowTxShare: ", escrowTxShare,
-		"\n porTxShare: ", porTxShare) // todo: remove two last shares
-
-	// ---------------- payment transaction sample ----------------
+func BlockMeasurement() (BlockSizeMinusTransactions int) {
 	hash := "f3f6a909f8521adb57d898d2985834e632374e770fd9e2b98656f1bf1fdfd42701"
-	x1 := &outpoint{
-		hash:  hash,
-		index: "000000",
-	}
-	x2 := &TxPayIn{
-		outpoint:            x1,
-		UnlockingScriptSize: "6b",
-		UnlockinScript:      "48304502203a776322ebf8eb8b58cc6ced4f2574f4c73aa664edce0b0022690f2f6f47c521022100b82353305988cb0ebd443089a173ceec93fe4dbfe98d74419ecc84a6a698e31d012103c5c1bc61f60ce3d6223a63cedbece03b12ef9f0068f2f3c4a7e7f06c523c3664",
-		SequenceNumber:      "ffffffff",
-	}
-	x3 := &TxPayOut{
-		Amount:            "60e3160000000000",
-		LockingScript:     "76a914977ae6e32349b99b72196cb62b5ef37329ed81b488ac063d1000000000001976a914f76bc4190f3d8e2315e5c11c59cfc8be9df747e388ac",
-		LockingScriptSize: "19",
-	}
-	xin := []*TxPayIn{x2}
-	xout := []*TxPayOut{x3}
-	x4 := &TxPay{
-		LockTime: "00000000",
-		Version:  "01000000",
-		TxInCnt:  "01",
-		TxOutCnt: "02",
-		TxIns:    xin,
-		TxOuts:   xout,
-	}
-
-	TxInCntInt, _ := strconv.Atoi(x4.TxInCnt)
-	TxOutCntInt, _ := strconv.Atoi(x4.TxOutCnt)
-	PayTxSize = size.Of(x4) + TxInCntInt*size.Of(x2) + TxOutCntInt*size.Of(x3)
-	log.LLvl2("size of a pay transaction is: ", PayTxSize, " bytes \n with ",
-		TxInCntInt, " number of input transaction, each ", size.Of(x2),
-		" bytes \n and ", TxOutCntInt, " number of output transaction, each ", size.Of(x3),
-		"\n plus size of payment transaction itself which is ", size.Of(x4))
-
-	// ---------------- escrow transaction sample ----------------
-	x5 := &Contract{
-		duration:      time.Now(),
-		fileSize:      "10000000000",
-		startRound:    "10000000000",
-		pricePerRound: "10000000000",
-
-		serverCommitment: hash,
-		clientCommitment: hash,
-	}
-	x7 := &TxEscrow{
-		tx:         x4,
-		ContractID: x5,
-	}
-	EscrowTxSize = size.Of(x7) + (size.Of(x4) + TxInCntInt*size.Of(x2) + TxOutCntInt*size.Of(x3)) + size.Of(x5)
-	log.LLvl2("size of a escrow transaction (including contract creation tx) is: ", EscrowTxSize, "bytes \n with ",
-		size.Of(x5), " bytes for contract, \n and ", PayTxSize, " bytes for payment")
-
-	// ---------------- por transaction sample ----------------
-	var randombyte = make([]byte, 8)
-	rand := random.New()
-	var muArraySample [por.S]kyber.Scalar
-	for i := range muArraySample {
-		muArraySample[i] = por.Suite.Scalar().Pick(blake2xb.New(randombyte))
-	}
-	sigmaSample := por.Suite.G1().Point().Mul(por.Suite.G1().Scalar().Pick(rand), nil)
-	x8 := &por.Por{
-		Mu:    muArraySample,
-		Sigma: sigmaSample,
-	}
-	porSize := por.S*por.Suite.G1().ScalarLen() + por.Suite.G2().PointLen() + size.Of(x8)
-
-	sk, _ := por.RandomizedKeyGeneration()
-	Tau, pf := por.RandomizedFileStoring(sk, por.GenerateFile())
-	p := por.CreatePoR(pf)
-
-	x6 := &TxPoR{
-		ContractID:  x5,
-		por:         &p,
-		Tau:         Tau,
-		roundNumber: "10000000000",
-	}
-	PorTxSize = size.Of(x6) + size.Of(x8) + porSize
-	log.LLvl2("size of a por transaction is: ", PorTxSize, " bytes \n with ",
-		size.Of(x8)+porSize, " bytes for pure por")
-
 	// ---------------- block sample ----------------
 	var TxPayArraySample []*TxPay
-	for i := 1; i <= nodes; i++ {
-		TxPayArraySample = append(TxPayArraySample, x4)
-	}
 	var TxPorArraySample []*TxPoR
-	for i := 1; i <= nodes; i++ {
-		TxPorArraySample = append(TxPorArraySample, x6)
-	}
-	var TxEscrowArraySample []*TxEscrow
-	for i := 1; i <= nodes; i++ {
-		TxEscrowArraySample = append(TxEscrowArraySample, x7)
-	}
+	var TxEscrowArraySample []*TxContractPropose
+	var TxContractCommitSample []*TxContractCommit
+	var TxStoragePaySample []*TxStoragePay
+
 	x9 := &TransactionList{
 		//---
 		TxPays:   TxPayArraySample,
@@ -231,9 +153,14 @@ func BlockMeasurement(
 		TxEscrows:   TxEscrowArraySample,
 		TxEscrowCnt: "03",
 		//---
-		Fees: "10000000000",
+		TxContractCommits:   TxContractCommitSample,
+		TxContractCommitCnt: "09",
+		//---
+		TxStoragePay:    TxStoragePaySample,
+		TxStoragePayCnt: "02",
+		Fees:            "10000000000",
 	}
-	TransactionListSize := nodes*(PayTxSize+PorTxSize) + size.Of(x9)
+	// real! TransactionListSize = size.Of(x9) + sum of size of included transactions
 	// ---
 	x10 := &BlockHeader{
 		RoundNumber:         "10000000000",
@@ -250,20 +177,19 @@ func BlockMeasurement(
 		BlockHeader:     x10,
 		TransactionList: x9,
 	}
-	BlockSize := size.Of(x10) + TransactionListSize + size.Of(x11)
+	BlockSizeMinusTransactions = size.Of(x10) + size.Of(x9) + size.Of(x11)
 	// ---
+	log.LLvl2("Block Size Minus Transactions is: ", BlockSizeMinusTransactions)
 
-	log.LLvl2("size of a Block Header is: ", size.Of(x10), " bytes, ",
-		"\n size of Transaction List is: ", TransactionListSize, " bytes, ",
-		"\n overall, size of Block is: ", BlockSize)
-
-	return PorTxSize, EscrowTxSize, PayTxSize
+	return BlockSizeMinusTransactions
 }
 
-func TransactionMeasurement() (PorTxSize int, EscrowTxSize int, PayTxSize int) {
+func TransactionMeasurement() (PorTxSize int, ContractProposeTxSize int, PayTxSize int, StoragePayTxSize int, ContractCommitTxSize int) {
 
 	// ---------------- payment transaction sample ----------------
 	hash := "f3f6a909f8521adb57d898d2985834e632374e770fd9e2b98656f1bf1fdfd42701"
+	r := rand.New(rand.NewSource(99))
+
 	x1 := &outpoint{
 		hash:  hash,
 		index: "000000",
@@ -304,45 +230,61 @@ func TransactionMeasurement() (PorTxSize int, EscrowTxSize int, PayTxSize int) {
 		fileSize:      "10000000000",
 		startRound:    "10000000000",
 		pricePerRound: "10000000000",
-
-		serverCommitment: hash,
+		roundNumber:   "10000000000",
+	}
+	x7 := &TxContractPropose{
+		tx:               x4,
+		ContractID:       x5,
 		clientCommitment: hash,
 	}
-	x7 := &TxEscrow{
-		tx:         x4,
-		ContractID: x5,
-	}
-	EscrowTxSize = size.Of(x7) + PayTxSize + size.Of(x5)
-	log.LLvl2("size of a escrow transaction (including contract creation tx) is: ", EscrowTxSize, "bytes \n with ",
+	ContractProposeTxSize = size.Of(x7) + PayTxSize + size.Of(x5)
+	log.LLvl2("size of a escrow transaction (including contract creation tx) is: ", ContractProposeTxSize, "bytes \n with ",
 		size.Of(x5), " bytes for contract, \n and ", PayTxSize, " bytes for payment")
 
 	// ---------------- por transaction sample ----------------
 	var randombyte = make([]byte, 8)
 	rand := random.New()
 	var muArraySample [por.S]kyber.Scalar
+
 	for i := range muArraySample {
 		muArraySample[i] = por.Suite.Scalar().Pick(blake2xb.New(randombyte))
 	}
 	sigmaSample := por.Suite.G1().Point().Mul(por.Suite.G1().Scalar().Pick(rand), nil)
+
 	x8 := &por.Por{
 		Mu:    muArraySample,
 		Sigma: sigmaSample,
 	}
+
 	porSize := por.S*por.Suite.G1().ScalarLen() + por.Suite.G2().PointLen() + size.Of(x8)
 
 	sk, _ := por.RandomizedKeyGeneration()
-	Tau, pf := por.RandomizedFileStoring(sk, por.GenerateFile())
+	//Tau, pf := por.RandomizedFileStoring(sk, por.GenerateFile())
+	_, pf := por.RandomizedFileStoring(sk, por.GenerateFile())
 	p := por.CreatePoR(pf)
 
 	x6 := &TxPoR{
-		ContractID:  x5,
+		ContractID:  strconv.Itoa(r.Int()),
 		por:         &p,
-		Tau:         Tau,
 		roundNumber: "10000000000",
 	}
-	PorTxSize = size.Of(x6) + size.Of(x8) + porSize
+	PorTxSize = size.Of(x6) + porSize
 	log.LLvl2("size of a por transaction is: ", PorTxSize, " bytes \n with ",
 		size.Of(x8)+porSize, " bytes for pure por")
+	// ---------------- TxStoragePay transaction sample ----------------
+	x9 := &TxStoragePay{
+		ContractID: strconv.Itoa(r.Int()),
+		tx:         x4,
+	}
+	StoragePayTxSize = size.Of(x9) + PayTxSize
+	log.LLvl2("size of a StoragePay transaction is: ", StoragePayTxSize)
+	// ---------------- TxContractCommit transaction sample ----------------
+	x10 := TxContractCommit{
+		serverCommitment: hash,
+		ContractID:       strconv.Itoa(r.Int()),
+	}
+	ContractCommitTxSize = size.Of(x10)
+	log.LLvl2("size of a ContractCommit transaction is: ", ContractCommitTxSize)
 
-	return PorTxSize, EscrowTxSize, PayTxSize
+	return PorTxSize, ContractProposeTxSize, PayTxSize, StoragePayTxSize, ContractCommitTxSize
 }

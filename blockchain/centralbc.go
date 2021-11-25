@@ -35,6 +35,7 @@ func generateNormalValues(variance, mean, nodes int) []uint64 {
 
 // InitializeCentralBC function is called in simulation level
 // Nodes: # of nodes
+//ToDo: change percentage params appropriately!
 func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, PercentageTxEscrow,
 	DistributionMeanFileSize, DistributionVarianceFileSize,
 	DistributionMeanContractDuration, DistributionVarianceContractDuration,
@@ -62,12 +63,19 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 	// ------------------------- Market Matching sheet  ------------------
 	// ---------------------------------------------------------------------------
 	index = f.NewSheet("MarketMatching")
-	if err = f.SetColWidth("MarketMatching", "A", "AAA", 50); err != nil {
+	if err = f.SetColWidth("MarketMatching", "A", "AAA", 25); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// Set active sheet of the workbook.
 	f.SetActiveSheet(index)
+	if err := f.SetSheetPrOptions("MarketMatching",
+		excelize.FitToPage(true),
+		excelize.TabColor("#FFFF00"),
+		excelize.AutoPageBreaks(true),
+	); err != nil {
+		fmt.Println(err)
+	}
 	// --------------------------------------------------------------------
 	err = f.SetCellValue("MarketMatching", "A1", "Server's Info")
 	if err != nil {
@@ -77,6 +85,10 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 
 	err = f.SetCellValue("MarketMatching", "B1", "FileSize")
 	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err = f.SetColWidth("MarketMatching", "B", "B", 10); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
@@ -95,6 +107,10 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
+	if err = f.SetColWidth("MarketMatching", "C", "C", 15); err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
 	for i := 2; i <= len(ContractDurationRow)+1; i++ {
 		contractRow := strconv.Itoa(i)
 		t := "C" + contractRow
@@ -107,6 +123,10 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 
 	err = f.SetCellValue("MarketMatching", "D1", "StartedRoundNumber")
 	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err = f.SetColWidth("MarketMatching", "D", "D", 15); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
@@ -130,27 +150,28 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 	for i := 2; i <= numberOfNodes+1; i++ {
 		contractRow := strconv.Itoa(i)
 		t := "E" + contractRow
-		if err = f.SetCellValue("MarketMatching", t, r.Int63()); err != nil {
+		if err = f.SetCellValue("MarketMatching", t, r.Int()); err != nil {
 			log.LLvl2("Panic Raised:\n\n")
 			panic(err)
 		}
 	}
-	err = f.SetCellValue("MarketMatching", "F1", "Client'sPK")
-	if err != nil {
+	// err = f.SetCellValue("MarketMatching", "F1", "Client'sPK")
+	// if err != nil {
+	// 	log.LLvl2("Panic Raised:\n\n")
+	// 	panic(err)
+	// }
+
+	if err = f.SetCellValue("MarketMatching", "F1", "Published"); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-
-	// once the escrow creation transaction leave the transaction queue (the contract get published) the contract will be activated
-	// contract start round number will be set to current round
-	//todo: what about the first time?
-	if err = f.SetCellValue("MarketMatching", "G1", "Published"); err != nil {
+	if err = f.SetColWidth("MarketMatching", "F", "F", 10); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	for i := 2; i <= numberOfNodes+1; i++ {
 		contractRow := strconv.Itoa(i)
-		t := "G" + contractRow
+		t := "F" + contractRow
 		if err = f.SetCellValue("MarketMatching", t, 0); err != nil {
 			log.LLvl2("Panic Raised:\n\n")
 			panic(err)
@@ -160,12 +181,19 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 	// ------------------------- Transaction Queue sheet  ------------------
 	// ---------------------------------------------------------------------------
 	index = f.NewSheet("TransactionQueue")
-	if err = f.SetColWidth("TransactionQueue", "A", "AAA", 50); err != nil {
+	if err = f.SetColWidth("TransactionQueue", "A", "AAA", 25); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// Set active sheet of the workbook.
 	f.SetActiveSheet(index)
+	if err := f.SetSheetPrOptions("TransactionQueue",
+		excelize.FitToPage(true),
+		excelize.TabColor("#8B0000"),
+		excelize.AutoPageBreaks(true),
+	); err != nil {
+		fmt.Println(err)
+	}
 	// --------------------------------------------------------------------
 	err = f.SetCellValue("TransactionQueue", "A1", "Name")
 	if err != nil {
@@ -175,6 +203,10 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 
 	err = f.SetCellValue("TransactionQueue", "B1", "Size")
 	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err = f.SetColWidth("TransactionQueue", "B", "B", 10); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
@@ -190,6 +222,10 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
+	if err = f.SetColWidth("TransactionQueue", "D", "D", 15); err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
 	err = f.SetCellValue("TransactionQueue", "E1", "ContractId")
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
@@ -199,12 +235,19 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 	// ------------------------- power table sheet  -----------------------
 	// ---------------------------------------------------------------------------
 	index = f.NewSheet("PowerTable")
-	if err = f.SetColWidth("PowerTable", "A", "AAA", 50); err != nil {
+	if err = f.SetColWidth("PowerTable", "A", "AAA", 30); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// Set active sheet of the workbook.
 	f.SetActiveSheet(index)
+	if err := f.SetSheetPrOptions("PowerTable",
+		excelize.FitToPage(true),
+		excelize.TabColor("#B2FF66"),
+		excelize.AutoPageBreaks(true),
+	); err != nil {
+		fmt.Println(err)
+	}
 	// --------------------- distribution of initial power -------------------
 	intVar, _ = strconv.Atoi(DistributionVarianceInitialPower)
 	VarianceInitialPower := intVar
@@ -218,6 +261,10 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 	// -----------------------    Filling Power Table's Headers   -----------
 	err = f.SetCellValue("PowerTable", "A1", "Round#/NodeInfo")
 	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err = f.SetColWidth("PowerTable", "A", "A", 15); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
@@ -243,9 +290,20 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 	}
 	// Set active sheet of the workbook.
 	f.SetActiveSheet(index)
+	if err := f.SetSheetPrOptions("RoundTable",
+		excelize.FitToPage(true),
+		excelize.TabColor("#FF66FF"),
+		excelize.AutoPageBreaks(true),
+	); err != nil {
+		fmt.Println(err)
+	}
 	// -----------------------    Filling Round Table's Headers ------------
 	err = f.SetCellValue("RoundTable", "A1", "Round#")
 	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err = f.SetColWidth("RoundTable", "A", "A", 10); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
@@ -257,6 +315,18 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 	err = f.SetCellValue("RoundTable", "C1", "BCSize")
 	if err != nil {
 		log.LLvl2(err)
+	}
+	if err = f.SetColWidth("RoundTable", "C", "C", 10); err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("RoundTable", "D1", "Round Leader")
+	if err != nil {
+		log.LLvl2(err)
+	}
+	if err = f.SetColWidth("RoundTable", "D", "D", 15); err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
 	}
 	// -----------------------    Filling Round Table's first row +
 	err = f.SetCellValue("RoundTable", "A2", 1)

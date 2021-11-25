@@ -16,6 +16,8 @@ The information that a miner will need to verify a por:
 	4- Access to "the query!":
 The round seed should generate identical query (with the one that storage server got its challenged)
 */
+
+//TODO: Random Query and File tag should be generated and parsed from the current round's seed as a source of randomness
 package por
 
 import (
@@ -36,11 +38,11 @@ import (
 	"go.dedis.ch/kyber/v3/xof/blake2xb"
 )
 
-const S = 10 // number of sectors in eac block (sys. par.)
+const S = 1 // number of sectors in eac block (sys. par.)
 // Each sector is one element of Zp, and there are s sectors per block.
 // If the processed file is b bits long,then there are n = [b/s lg p] blocks.
-const n = 10 // number of blocks
-const l = 5  //size of query set (i<n)
+const n = 1000 // number of blocks
+const l = 5    //size of query set (i<n)
 var Suite = pairing.NewSuiteBn256()
 
 //ToDo: find prime and let s make sense!
@@ -110,7 +112,7 @@ func GenerateFile() initialFile {
 }
 func randomizedVerifyingQuery() *randomQuery {
 	//--------- randomness: initialize the seed base on a known blockchain related param
-	var blockchainRandomSeed = 3 // ToDo: raha: be related to some bc params later  -- bz.currentRoundSeed
+	var blockchainRandomSeed = 3
 	rand.Seed(int64(blockchainRandomSeed))
 	var randombyte = make([]byte, 8)
 	binary.LittleEndian.PutUint64(randombyte, uint64(blockchainRandomSeed))
@@ -154,7 +156,6 @@ func RandomizedFileStoring(sk PrivateKey, initialfile initialFile) ([]byte, proc
 	//a random file name from some sufficiently large domain (e.g.,Zp)
 	aRandomFileName := random.Int(bn256.Order, random.New())
 	st2.Write(aRandomFileName.Bytes())
-	// ToDo: if we want to have servers generate their own specific pors, this file name should be stored on the centralBC file as a new row after contract duration and file size, so later verifiers can read the bc and verify their pors
 	st2.Write([]byte(strconv.Itoa(n)))
 	st2.ReadFrom(&st1)
 	Tau0 := st2

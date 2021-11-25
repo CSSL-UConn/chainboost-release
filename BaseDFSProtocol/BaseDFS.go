@@ -519,13 +519,13 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 		panic(err)
 	}
 	var ContractDuration, ContractStartedRoundNumber, FileSize, ContractPublished, ContractID int
-	var MinerServer string
+	var MinerServer, ContractIDString string
 
 	rowNum := 0
 	transactionQueue := make(map[string][5]int)
 	// first int: stored file size in this round,
 	// second int: corresponding contract id
-	// third int: TxEscrow required
+	// third int: TxContractPropose required
 	// fourth int: TxStoragePayment required
 	for rows.Next() {
 		rowNum++
@@ -538,9 +538,13 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 				panic(err)
 			} else {
 				for i, colCell := range row {
-					/* --- in MarketMatching: i = 0 is Server's Info,
-					i = 1 is FileSize, i=2 is ContractDuration,
-					i=3 is RoundNumber, i=4 is ContractID, i=5 is Client's PK,
+					/* --- in MarketMatching:
+					i = 0 is Server's Info,
+					i = 1 is FileSize,
+					i=2 is ContractDuration,
+					i=3 is RoundNumber,
+					i=4 is ContractID,
+					i=5 is Client's PK,
 					i = 6 is ContractPublished */
 					if i == 0 {
 						MinerServer = colCell
@@ -567,13 +571,14 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 						}
 					}
 					if i == 4 {
+						ContractIDString = colCell
 						ContractID, err = strconv.Atoi(colCell)
 						if err != nil {
 							log.LLvl2("Panic Raised:\n\n")
 							panic(err)
 						}
 					}
-					if i == 6 {
+					if i == 5 {
 						ContractPublished, err = strconv.Atoi(colCell)
 						if err != nil {
 							log.LLvl2("Panic Raised:\n\n")
@@ -586,11 +591,11 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 			// map transactionQueue:
 			// t[0]: stored file size in this round,
 			// t[1]: corresponding contract id
-			// t[2]: TxEscrow required
+			// t[2]: TxContractPropose required
 			// t[3]: TxStoragePayment required
 			// t[4]: TxPor required
 			if ContractPublished == 0 {
-				// Add TxEscrow
+				// Add TxContractPropose
 				t[2] = 1
 				transactionQueue[MinerServer] = t
 			} else if bz.roundNumber-ContractStartedRoundNumber <= ContractDuration { // contract is not expired
@@ -600,16 +605,23 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 				transactionQueue[MinerServer] = t
 			} else if bz.roundNumber-ContractStartedRoundNumber > ContractDuration {
 				// Set ContractPublished to false
-				row[6] = "0" //todo: check if it is working
+				if contractIdCellMarketMatching, err := f.SearchSheet("MarketMatching", ContractIDString); err != nil {
+					log.LLvl2("Panic Raised:\n\n")
+					panic(err)
+				} else {
+					publishedCellMarketMatching := "F" + contractIdCellMarketMatching[0][1:]
+					err = f.SetCellValue("MarketMatching", publishedCellMarketMatching, 0)
+					if err != nil {
+						log.LLvl2("Panic Raised:\n\n")
+						panic(err)
+					}
+				}
 				// Add TxStoragePayment
 				t[3] = 1
 				transactionQueue[MinerServer] = t
 			}
 		}
 	}
-	// Later : when this tx left queue:
-	//	1) set ContractPublished to True
-	//	2) set start round number to current round
 
 	// ----------------------------------------------------------------------
 	// ------ add transactions into transaction queue sheet -----
@@ -625,24 +637,28 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 
 	newTransactionRow[2] = time.Now().Format("01-02 15:04:05")
 	newTransactionRow[3] = strconv.Itoa(bz.roundNumber)
-	var PorTxSize, EscrowTxSize, PayTxSize int
-	PorTxSize, EscrowTxSize, PayTxSize = blockchain.TransactionMeasurement()
+	var PorTxSize, ContractProposeTxSize, PayTxSize, StoragePayTxSize, ContractCommitTxSize int
+	log.LLvl2("pay tx size should be used in the other queue and in its allocated percentage (clean the percentages!)", PayTxSize)
+	PorTxSize, ContractProposeTxSize, PayTxSize, StoragePayTxSize, ContractCommitTxSize = blockchain.TransactionMeasurement()
+
+	addCommitTx := false
 	// map transactionQueue:
 	// [0]: stored file size in this round,
 	// [1]: corresponding contract id
-	// [2]: TxEscrow required
+	// [2]: TxContractPropose required
 	// [3]: TxStoragePayment required
 	// [4]: TxPor required
 	for _, a := range bz.Roster().List {
-		if transactionQueue[a.Address.String()][2] == 1 {
-			newTransactionRow[0] = "TxEscrow"
-			newTransactionRow[1] = strconv.Itoa(EscrowTxSize)
-			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
-		} else if transactionQueue[a.Address.String()][3] == 1 {
+		if transactionQueue[a.Address.String()][2] == 1 { //TxContractPropose required
+			newTransactionRow[0] = "TxContractPropose"
+			newTransactionRow[1] = strconv.Itoa(ContractProposeTxSize)
+			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1]) // corresponding contract id
+			addCommitTx = true
+		} else if transactionQueue[a.Address.String()][3] == 1 { // TxStoragePayment required
 			newTransactionRow[0] = "TxStoragePayment"
-			newTransactionRow[1] = strconv.Itoa(PayTxSize) //ToDo: replace with storagePayment transaction size
+			newTransactionRow[1] = strconv.Itoa(StoragePayTxSize) //ToDo: replace with storagePayment transaction size
 			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
-		} else if transactionQueue[a.Address.String()][4] == 1 {
+		} else if transactionQueue[a.Address.String()][4] == 1 { // TxPor required
 			newTransactionRow[0] = "TxPor"
 			newTransactionRow[1] = strconv.Itoa(PorTxSize)
 			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
@@ -658,6 +674,31 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 			if err = f.SetSheetRow("TransactionQueue", "A2", &s); err != nil {
 				log.LLvl2("Panic Raised:\n\n")
 				panic(err)
+			}
+		}
+		/* second row added in case of having the first row to be contract propose tx which then we will add
+		contract commit tx right away
+		Just in one case it may cause irrational statistics which doesn’t worth taking care of!
+		when a propose contract tx is added to a block which causes the contract to become active but
+		the commit contract transaction is not yet! */
+		if addCommitTx == true {
+			newTransactionRow[0] = "TxContractCommit"
+			newTransactionRow[1] = strconv.Itoa(ContractCommitTxSize)
+			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1]) // corresponding contract id
+			//--
+			for i, v := range newTransactionRow {
+				s[i] = v
+			}
+			if err = f.InsertRow("TransactionQueue", 2); err != nil {
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			} else {
+				if err = f.SetSheetRow("TransactionQueue", "A2", &s); err != nil {
+					log.LLvl2("Panic Raised:\n\n")
+					panic(err)
+				} else {
+					addCommitTx = false
+				}
 			}
 		}
 	}
@@ -694,6 +735,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	var accumulatedTxSize, txsize int
 	var contractIdCellMarketMatching []string
 	blockSize, _ := strconv.Atoi(bz.BlockSize)
+	BlockSizeMinusTransactions := blockchain.BlockMeasurement()
 	blockIsFull := false
 
 	for i := len(rows); i > 1 && !blockIsFull; i-- {
@@ -709,37 +751,41 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 				if txsize, err = strconv.Atoi(colCell); err != nil {
 					log.LLvl2("Panic Raised:\n\n")
 					panic(err)
-				} else if accumulatedTxSize+txsize <= blockSize*1000 {
+				} else if accumulatedTxSize+txsize <= blockSize-BlockSizeMinusTransactions {
 					accumulatedTxSize = accumulatedTxSize + txsize
-					/* transaction name in transaction queue can be "TxEscrow", "TxStoragePayment", or "TxPor"
-					in case of "TxEscrow":
+					/* transaction name in transaction queue can be "TxContractPropose", "TxStoragePayment", or "TxPor"
+					in case of "TxContractPropose": //ToDo: change it to "TxContractCommit"
 					1) The corresponding contract in marketmatching should be updated to published
 					2) set start round number to current round
 					other transactions are just removed from queue and their size are added to included transactions' size in block */
-					if row[0] == "TxEscrow" {
+					if row[0] == "TxContractPropose" {
+						log.LLvl2("a TxContractPropose tx added to block number", bz.roundNumber, " from the queue")
+						/* when tx TxContractPropose left queue: //ToDo: change it to "ContractCommit"!!
+						1) set ContractPublished to True
+						2) set start round number to current round */
 						cid := row[4]
 						if contractIdCellMarketMatching, err = f.SearchSheet("MarketMatching", cid); err != nil {
 							log.LLvl2("Panic Raised:\n\n")
 							panic(err)
+						} else {
+							publishedCellMarketMatching := "F" + contractIdCellMarketMatching[0][1:]
+							err = f.SetCellValue("MarketMatching", publishedCellMarketMatching, 1)
+							if err != nil {
+								log.LLvl2("Panic Raised:\n\n")
+								panic(err)
+							} else {
+								startRoundCellMarketMatching := "D" + contractIdCellMarketMatching[0][1:]
+								err = f.SetCellValue("MarketMatching", startRoundCellMarketMatching, bz.roundNumber)
+								if err != nil {
+									log.LLvl2("Panic Raised:\n\n")
+									panic(err)
+								}
+							}
 						}
-						publishedCellMarketMatching := "G" + contractIdCellMarketMatching[0][1:]
-						err = f.SetCellValue("MarketMatching", publishedCellMarketMatching, 1)
-						if err != nil {
-							log.LLvl2("Panic Raised:\n\n")
-							panic(err)
-						}
-						startRoundCellMarketMatching := "D" + contractIdCellMarketMatching[0][1:]
-						err = f.SetCellValue("MarketMatching", startRoundCellMarketMatching, bz.roundNumber)
-						if err != nil {
-							log.LLvl2("Panic Raised:\n\n")
-							panic(err)
-						}
-					}
-					if row[0] == "TxStoragePayment" {
-						log.LLvl2("a TxStoragePayment tx added to block from the queue")
-					}
-					if row[0] == "TxPor" {
-						log.LLvl2("a por tx added to block from the queue")
+					} else if row[0] == "TxStoragePayment" {
+						log.LLvl2("a TxStoragePayment tx added to block number", bz.roundNumber, " from the queue")
+					} else if row[0] == "TxPor" {
+						log.LLvl2("a por tx added to block number", bz.roundNumber, " from the queue")
 					}
 					f.RemoveRow("TransactionQueue", i)
 				} else {
