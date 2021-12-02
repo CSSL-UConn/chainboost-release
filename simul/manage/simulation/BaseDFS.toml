@@ -7,17 +7,17 @@ Suite = "Ed25519"
 PreScript = "testPreScript.toml"
 RoundDuration = 15000000000
 timeout = 1000
-PercentageTxPoR = 40
-PercentageTxPay = 25
-PercentageTxEscrow = 35
+PercentageTxPay = 5
 DistributionMeanFileSize = 100
 DistributionVarianceFileSize = 5
 DistributionMeanContractDuration = 10
 DistributionVarianceContractDuration = 50
 DistributionMeanInitialPower = 9000000000000000000
 DistributionVarianceInitialPower = 9000000000000000
-Nodes = 15
+Nodes = 150
 BlockSize = 1000000
+SectorNumber = 1
+NumberOfPayTXsUpperBound = 10
 
 Hosts
-15
+150

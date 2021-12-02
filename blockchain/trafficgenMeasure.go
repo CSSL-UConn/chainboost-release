@@ -1,3 +1,7 @@
+// note that functions: ScalarLen(), PointLen() and size.Of() return the size in bytes
+// ScalarLength, for example is a suit function, which in turn calls a group function with the same name,
+// and thenreturns "mod.NewInt64(0, Order).MarshalSize()"
+
 package blockchain
 
 import (
@@ -7,6 +11,7 @@ import (
 
 	"github.com/DmitriyVTitov/size"
 	"github.com/basedfs/log"
+	"github.com/basedfs/vrf"
 
 	"github.com/basedfs/por"
 	"go.dedis.ch/kyber/v3"
@@ -102,8 +107,8 @@ type TransactionList struct {
 	TxPoRs   []*TxPoR
 	TxPoRCnt string //uint
 	//---
-	TxEscrows   []*TxContractPropose
-	TxEscrowCnt string //uint
+	TxContractProposes   []*TxContractPropose
+	TxContractProposeCnt string //uint
 	//---
 	TxContractCommits   []*TxContractCommit
 	TxContractCommitCnt string
@@ -113,8 +118,11 @@ type TransactionList struct {
 	Fees            string //float64
 }
 type BlockHeader struct {
-	RoundNumber       string //uint
-	RoundSeed         string //proposer’s VRF-based seed
+	RoundNumber string //uint
+	// next round's seed for VRF based leader election which is the output of this round's leader's proof verification: VerifyBytes
+	// _, (next round's seed)RoundSeed := (current round's leader)VrfPubkey.VerifyBytes((current round's leader)proof, (current round's seed)t)
+	RoundSeed         [64]byte
+	LeadershipProof   [80]byte
 	PreviousBlockHash string
 	Timestamp         time.Time
 	//--
@@ -133,12 +141,13 @@ type Block struct {
 /* -------------------------------------------------------------------- */
 //  ----------------  Block and Transactions size measurements -----
 /* -------------------------------------------------------------------- */
+// BlockMeasurement compute the size of meta data and every thing other than the transactions inside the block
 func BlockMeasurement() (BlockSizeMinusTransactions int) {
 	hash := "f3f6a909f8521adb57d898d2985834e632374e770fd9e2b98656f1bf1fdfd42701"
 	// ---------------- block sample ----------------
 	var TxPayArraySample []*TxPay
 	var TxPorArraySample []*TxPoR
-	var TxEscrowArraySample []*TxContractPropose
+	var TxContractProposeArraySample []*TxContractPropose
 	var TxContractCommitSample []*TxContractCommit
 	var TxStoragePaySample []*TxStoragePay
 
@@ -150,8 +159,8 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 		TxPoRs:   TxPorArraySample,
 		TxPoRCnt: "010",
 		//---
-		TxEscrows:   TxEscrowArraySample,
-		TxEscrowCnt: "03",
+		TxContractProposes:   TxContractProposeArraySample,
+		TxContractProposeCnt: "03",
 		//---
 		TxContractCommits:   TxContractCommitSample,
 		TxContractCommitCnt: "09",
@@ -162,9 +171,17 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 	}
 	// real! TransactionListSize = size.Of(x9) + sum of size of included transactions
 	// ---
+	t := []byte("first round's seed")
+	VrfPubkey, VrfPrivkey := vrf.VrfKeygen()
+	proof, _ := VrfPrivkey.ProveBytes(t)
+	_, vrfOutput := VrfPubkey.VerifyBytes(proof, t)
+	var nextroundseed [64]byte = vrfOutput
+	var VrfProof [80]byte = proof
+	// ---
 	x10 := &BlockHeader{
 		RoundNumber:         "10000000000",
-		RoundSeed:           hash,
+		RoundSeed:           nextroundseed,
+		LeadershipProof:     VrfProof,
 		PreviousBlockHash:   "9500c43a25c624520b5100adf82cb9f9da72fd2447a496bc600b000000000000",
 		Timestamp:           time.Now(),
 		MerkleRootHash:      "6cd862370395dedf1da2841ccda0fc489e3039de5f1ccddef0e834991a65600e",
@@ -184,8 +201,9 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 	return BlockSizeMinusTransactions
 }
 
-func TransactionMeasurement() (PorTxSize int, ContractProposeTxSize int, PayTxSize int, StoragePayTxSize int, ContractCommitTxSize int) {
-
+// TransactionMeasurement computes the size of 5 types of transactions we currently have in the system:
+// Por, ContractPropose, Pay, StoragePay, ContractCommit
+func TransactionMeasurement(SectorNumber int) (PorTxSize int, ContractProposeTxSize int, PayTxSize int, StoragePayTxSize int, ContractCommitTxSize int) {
 	// ---------------- payment transaction sample ----------------
 	hash := "f3f6a909f8521adb57d898d2985834e632374e770fd9e2b98656f1bf1fdfd42701"
 	r := rand.New(rand.NewSource(99))
@@ -224,7 +242,7 @@ func TransactionMeasurement() (PorTxSize int, ContractProposeTxSize int, PayTxSi
 		" bytes \n and ", TxOutCntInt, " number of output transaction, each ", size.Of(x3),
 		"\n plus size of payment transaction itself which is ", size.Of(x4))
 
-	// ---------------- escrow transaction sample ----------------
+	// ---------------- ContractPropose transaction sample ----------------
 	x5 := &Contract{
 		duration:      time.Now(),
 		fileSize:      "10000000000",
@@ -238,13 +256,13 @@ func TransactionMeasurement() (PorTxSize int, ContractProposeTxSize int, PayTxSi
 		clientCommitment: hash,
 	}
 	ContractProposeTxSize = size.Of(x7) + PayTxSize + size.Of(x5)
-	log.LLvl2("size of a escrow transaction (including contract creation tx) is: ", ContractProposeTxSize, "bytes \n with ",
+	log.LLvl2("size of a Contract Propose transaction (including contract creation tx) is: ", ContractProposeTxSize, "bytes \n with ",
 		size.Of(x5), " bytes for contract, \n and ", PayTxSize, " bytes for payment")
 
 	// ---------------- por transaction sample ----------------
 	var randombyte = make([]byte, 8)
 	rand := random.New()
-	var muArraySample [por.S]kyber.Scalar
+	var muArraySample []kyber.Scalar
 
 	for i := range muArraySample {
 		muArraySample[i] = por.Suite.Scalar().Pick(blake2xb.New(randombyte))
@@ -256,12 +274,12 @@ func TransactionMeasurement() (PorTxSize int, ContractProposeTxSize int, PayTxSi
 		Sigma: sigmaSample,
 	}
 
-	porSize := por.S*por.Suite.G1().ScalarLen() + por.Suite.G2().PointLen() + size.Of(x8)
+	porSize := SectorNumber*por.Suite.G1().ScalarLen() + por.Suite.G2().PointLen() + size.Of(x8)
 
 	sk, _ := por.RandomizedKeyGeneration()
 	//Tau, pf := por.RandomizedFileStoring(sk, por.GenerateFile())
-	_, pf := por.RandomizedFileStoring(sk, por.GenerateFile())
-	p := por.CreatePoR(pf)
+	_, pf := por.RandomizedFileStoring(sk, por.GenerateFile(SectorNumber), SectorNumber)
+	p := por.CreatePoR(pf, SectorNumber)
 
 	x6 := &TxPoR{
 		ContractID:  strconv.Itoa(r.Int()),
@@ -270,7 +288,7 @@ func TransactionMeasurement() (PorTxSize int, ContractProposeTxSize int, PayTxSi
 	}
 	PorTxSize = size.Of(x6) + porSize
 	log.LLvl2("size of a por transaction is: ", PorTxSize, " bytes \n with ",
-		size.Of(x8)+porSize, " bytes for pure por")
+		SectorNumber*por.Suite.G1().ScalarLen()+por.Suite.G2().PointLen(), " bytes for pure por")
 	// ---------------- TxStoragePay transaction sample ----------------
 	x9 := &TxStoragePay{
 		ContractID: strconv.Itoa(r.Int()),

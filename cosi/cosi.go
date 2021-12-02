@@ -730,7 +730,7 @@ func (c *CoSi) Signature() *Signature {
 // 	// T is the recreated V_hat
 // 	T := c.suite.Point().Null()
 // 	T = T.Add(T, commitment)
-// 	// TODO put that into exception mechanism later
+// 	//  put that into exception mechanism later
 // 	// T.Add(T, cosi.ExceptionV_hat)
 // 	if !T.Equal(c.aggregateCommitment) {
 // 		return errors.New("recreated commitment is not equal to one given")

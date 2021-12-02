@@ -35,12 +35,11 @@ func generateNormalValues(variance, mean, nodes int) []uint64 {
 
 // InitializeCentralBC function is called in simulation level
 // Nodes: # of nodes
-//ToDo: change percentage params appropriately!
-func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, PercentageTxEscrow,
+func InitializeCentralBC(RoundDuration,
 	DistributionMeanFileSize, DistributionVarianceFileSize,
 	DistributionMeanContractDuration, DistributionVarianceContractDuration,
 	DistributionMeanInitialPower, DistributionVarianceInitialPower,
-	Nodes, BlockSize string) {
+	Nodes string) {
 	// --------------------- generating normal distributed number based on config params ---------------------
 	intVar, _ := strconv.Atoi(Nodes)
 	numberOfNodes := intVar
@@ -180,54 +179,96 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 	// ---------------------------------------------------------------------------
 	// ------------------------- Transaction Queue sheet  ------------------
 	// ---------------------------------------------------------------------------
-	index = f.NewSheet("TransactionQueue")
-	if err = f.SetColWidth("TransactionQueue", "A", "AAA", 25); err != nil {
+	index = f.NewSheet("FirstQueue")
+	if err = f.SetColWidth("FirstQueue", "A", "AAA", 25); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// Set active sheet of the workbook.
 	f.SetActiveSheet(index)
-	if err := f.SetSheetPrOptions("TransactionQueue",
+	if err := f.SetSheetPrOptions("FirstQueue",
 		excelize.FitToPage(true),
 		excelize.TabColor("#8B0000"),
 		excelize.AutoPageBreaks(true),
 	); err != nil {
 		fmt.Println(err)
 	}
-	// --------------------------------------------------------------------
-	err = f.SetCellValue("TransactionQueue", "A1", "Name")
+	// ----------------------- Transaction Queue Header ------------------------------
+	err = f.SetCellValue("FirstQueue", "A1", "Name")
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 
-	err = f.SetCellValue("TransactionQueue", "B1", "Size")
+	err = f.SetCellValue("FirstQueue", "B1", "Size")
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	if err = f.SetColWidth("TransactionQueue", "B", "B", 10); err != nil {
+	if err = f.SetColWidth("FirstQueue", "B", "B", 10); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 
-	err = f.SetCellValue("TransactionQueue", "C1", "Time")
+	err = f.SetCellValue("FirstQueue", "C1", "Time")
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 
-	err = f.SetCellValue("TransactionQueue", "D1", "IssuedRoundNumber")
+	err = f.SetCellValue("FirstQueue", "D1", "IssuedRoundNumber")
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	if err = f.SetColWidth("TransactionQueue", "D", "D", 15); err != nil {
+	if err = f.SetColWidth("FirstQueue", "D", "D", 15); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	err = f.SetCellValue("TransactionQueue", "E1", "ContractId")
+	err = f.SetCellValue("FirstQueue", "E1", "ContractId")
 	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	// ---------------------------------------------------------------------------
+	// ------------------------- Second Queue sheet  ------------------
+	// ---------------------------------------------------------------------------
+	index = f.NewSheet("SecondQueue")
+	if err = f.SetColWidth("SecondQueue", "A", "AAA", 25); err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	// Set active sheet of the workbook.
+	f.SetActiveSheet(index)
+	if err := f.SetSheetPrOptions("SecondQueue",
+		excelize.FitToPage(true),
+		excelize.TabColor("#8B0999"),
+		excelize.AutoPageBreaks(true),
+	); err != nil {
+		fmt.Println(err)
+	}
+	// ----------------------- SecondQueue Header ------------------------------
+	err = f.SetCellValue("SecondQueue", "A1", "Size")
+	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err = f.SetColWidth("SecondQueue", "A", "A", 10); err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("SecondQueue", "B1", "Time")
+	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+
+	err = f.SetCellValue("SecondQueue", "C1", "IssuedRoundNumber")
+	if err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err = f.SetColWidth("SecondQueue", "C", "C", 15); err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	}
@@ -369,16 +410,12 @@ func InitializeCentralBC(RoundDuration, PercentageTxPoR, PercentageTxPay, Percen
 	}
 
 	log.LLvl2("Config params: \n RoundDuration: ", RoundDuration,
-		"\n PercentageTxPoR: ", PercentageTxPoR,
-		"\n PercentageTxPay: ", PercentageTxPay,
-		"\n PercentageTxEscrow: ", PercentageTxEscrow,
 		"\n DistributionMeanFileSize: ", DistributionMeanFileSize,
 		"\n DistributionVarianceFileSize: ", DistributionVarianceFileSize,
 		"\n DistributionMeanContractDuration: ", DistributionMeanContractDuration,
 		"\n DistributionVarianceContractDuration: ", DistributionVarianceContractDuration,
 		"\n DistributionMeanInitialPower: ", DistributionMeanInitialPower,
-		"\n DistributionVarianceInitialPower: ", DistributionVarianceInitialPower,
-		"\n BlockSize: ", BlockSize)
+		"\n DistributionVarianceInitialPower: ", DistributionVarianceInitialPower)
 }
 
 /*	// in case of initializing a column

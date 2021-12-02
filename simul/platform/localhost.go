@@ -75,11 +75,11 @@ type Localhost struct {
 	RunWait string
 
 	// raha: adding some other system-wide configurations
-	RoundDuration      string
-	PercentageTxPoR    string
-	PercentageTxPay    string
-	PercentageTxEscrow string
-	BlockSize string
+	RoundDuration            int
+	PercentageTxPay          int
+	BlockSize                int
+	SectorNumber             int
+	NumberOfPayTXsUpperBound int
 }
 
 // Configure various internal variables
@@ -91,13 +91,14 @@ func (d *Localhost) Configure(pc *Config) {
 	os.RemoveAll(d.runDir)
 	log.ErrFatal(os.Mkdir(d.runDir, 0770))
 	d.Suite = pc.Suite
+	// ------------------------------
 	// raha: adding some other system-wide configurations
 	d.RoundDuration = pc.RoundDuration
-	d.PercentageTxPoR = pc.PercentageTxPoR
 	d.PercentageTxPay = pc.PercentageTxPay
-	d.PercentageTxEscrow = pc.PercentageTxEscrow
 	d.BlockSize = pc.BlockSize
-	// raha
+	d.SectorNumber = pc.SectorNumber
+	d.NumberOfPayTXsUpperBound = pc.NumberOfPayTXsUpperBound
+	// ------------------------------
 	d.localDir = pwd
 	d.debug = pc.Debug
 	d.running = false
@@ -219,7 +220,8 @@ func (d *Localhost) Start(args ...string) error {
 		go func(i int, h string) {
 			log.Lvl3("Localhost: will start host", i, h)
 			// raha: adding some other system-wide configurations
-			err := Simulate(d.PercentageTxEscrow,d.PercentageTxPoR,d.PercentageTxPay,d.RoundDuration, d.BlockSize,
+
+			err := Simulate(d.PercentageTxPay, d.RoundDuration, d.BlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound,
 				d.Suite, host, d.Simulation, "")
 			if err != nil {
 				log.Error("Error running localhost", h, ":", err)

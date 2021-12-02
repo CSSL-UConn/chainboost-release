@@ -1,7 +1,6 @@
 package platform
 
 import (
-	"strconv"
 	"sync"
 	"time"
 
@@ -26,7 +25,7 @@ type simulInitDone struct{}
 // simul = localhost.simulation
 
 // raha: adding some other system-wide configurations
-func Simulate(PercentageTxEscrow, PercentageTxPoR, PercentageTxPay, RoundDuration, BlockSize string,
+func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfPayTXsUpperBound int,
 	suite, serverAddress, simul, monitorAddress string) error {
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 	if err != nil {
@@ -159,18 +158,18 @@ func Simulate(PercentageTxEscrow, PercentageTxPoR, PercentageTxPay, RoundDuratio
 			proto := p.(*BaseDFSProtocol.BaseDFS)
 			proto.SetTimeout(timeout)
 			// raha: finally passing our system-wide configurations to our protocol
-			proto.PercentageTxEscrow = PercentageTxEscrow
-			proto.PercentageTxPoR = PercentageTxPoR
 			proto.PercentageTxPay = PercentageTxPay
-			t, _ := strconv.Atoi(RoundDuration)
-			proto.RoundDuration = t
+			proto.RoundDuration = RoundDuration
 			proto.BlockSize = BlockSize
+			proto.SectorNumber = SectorNumber
+			proto.NumberOfPayTXsUpperBound = NumberOfPayTXsUpperBound
 			log.LLvl2("passing our system-wide configurations to the protocol",
-				"\n PercentageTxEscrow: ", PercentageTxEscrow,
-				"\n PercentageTxPoR: ", PercentageTxPoR,
 				"\n  PercentageTxPay: ", PercentageTxPay,
 				"\n  RoundDuration: ", RoundDuration,
-				"\n BlockSize: ", BlockSize)
+				"\n BlockSize: ", BlockSize,
+				"\n SectorNumber: ", SectorNumber,
+				"\n NumberOfPayTXsUpperBound: ", NumberOfPayTXsUpperBound,
+			)
 			// ---------------------------------------------------------------
 			proto.Start()
 			//log.Lvl1("Started counting children with timeout of", timeout)

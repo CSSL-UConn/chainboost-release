@@ -58,6 +58,7 @@ type Platform interface {
 	Wait() error
 }
 
+// Raha: passing system wide configuration: updated the structure
 // Config is passed to Platform.Config and prepares the platform for
 // specific system-wide configurations
 type Config struct {
@@ -66,12 +67,12 @@ type Config struct {
 	Suite       string
 	MonitorPort int
 	Debug       int
-	// raha: adding some other system-wide configurations
-	RoundDuration      string
-	PercentageTxPoR    string
-	PercentageTxPay    string
-	PercentageTxEscrow string
-	BlockSize string
+	// raha: adding some other system-wide configurations, these fields are those who are needed in the protocol
+	RoundDuration            int
+	PercentageTxPay          int
+	BlockSize                int
+	SectorNumber             int
+	NumberOfPayTXsUpperBound int
 }
 
 var deterlab = "deterlab"

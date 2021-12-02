@@ -65,16 +65,24 @@ func startBuild() {
 		if len(runconfigs) == 0 {
 			log.Fatal("No tests found in", simulation)
 		}
+		// raha: converting string values read from toml file to int values
+
+		RoundDuration, _ := strconv.Atoi(runconfigs[0].Get("RoundDuration"))
+		PercentageTxPay, _ := strconv.Atoi(runconfigs[0].Get("PercentageTxPay"))
+		BlockSize, _ := strconv.Atoi(runconfigs[0].Get("BlockSize"))
+		SectorNumber, _ := strconv.Atoi(runconfigs[0].Get("SectorNumber"))
+		NumberOfPayTXsUpperBound, _ := strconv.Atoi(runconfigs[0].Get("NumberOfPayTXsUpperBound"))
+
 		deployP.Configure(&platform.Config{
 			MonitorPort: monitorPort,
 			Debug:       log.DebugVisible(),
 			Suite:       runconfigs[0].Get("Suite"),
 			// raha: adding some other system-wide configurations
-			RoundDuration:      runconfigs[0].Get("RoundDuration"),
-			PercentageTxPoR:    runconfigs[0].Get("PercentageTxPoR"),
-			PercentageTxPay:    runconfigs[0].Get("PercentageTxPay"),
-			PercentageTxEscrow: runconfigs[0].Get("PercentageTxEscrow"),
-			BlockSize:          runconfigs[0].Get("BlockSize"),
+			RoundDuration:            RoundDuration,
+			PercentageTxPay:          PercentageTxPay,
+			BlockSize:                BlockSize,
+			SectorNumber:             SectorNumber,
+			NumberOfPayTXsUpperBound: NumberOfPayTXsUpperBound,
 		})
 
 		if clean {
@@ -246,12 +254,10 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 		err := deployP.Start()
 		// Raha: initializing central blockchain -------------------------
 		blockchain.InitializeCentralBC(rc.Get("RoundDuration"),
-			rc.Get("PercentageTxPoR"), rc.Get("PercentageTxPay"), rc.Get("PercentageTxEscrow"),
 			rc.Get("DistributionMeanFileSize"), rc.Get("DistributionVarianceFileSize"),
 			rc.Get("DistributionMeanContractDuration"), rc.Get("DistributionVarianceContractDuration"),
 			rc.Get("DistributionMeanInitialPower"), rc.Get("DistributionVarianceInitialPower"),
-			rc.Get("Nodes"),
-			rc.Get("BlockSize")) //ToDo: check if percentage params are needed here
+			rc.Get("Nodes"))
 		// --------------------------------------------
 		if err != nil {
 			done <- err

@@ -8,8 +8,6 @@
 //The list of transactions in a block logically translates to a set of weights for each user’s public key
 //(based on the balance of currency for that key), along with the total weight of all outstanding currency.
 
-
-
 package vrf
 
 import "github.com/basedfs/log"
@@ -22,7 +20,7 @@ func Testvrf() {
 	if !ok {
 		log.LLvl2("error while generating proof")
 	}
-	r,_ := VrfPubkey.VerifyBytes(proof, t)
+	r, _ := VrfPubkey.VerifyBytes(proof, t)
 	if r == true {
 		log.LLvl2("proof is approved")
 	} else {
@@ -36,12 +34,13 @@ func Testvrf() {
 // the selection seed is refreshed once every R rounds: at round r Algorand calls the sortition functions with seed r−1−(r mod R)
 // This seed (and the corresponding VRF proof π) is included in every proposed block,
 //so that once Algorand reaches agreement on the block for round r−1, everyone knows seed r at the start of round r."
-func NextRoundSeed(){
+func NextRoundSeed() {
 	// ⟨seed r,π⟩←VRF sku(seed r−1||r)
 }
+
 //Algorand: "The value of seed0, which bootstraps seed selection, can be chosen at random at the start of Algorand
 //by the initial participants (after their public keys are declared) using distributed random number generation"
-// todo :  raha: distributed random number generation
-func initialSeed() []byte{
-return []byte("hi")
+// todo: raha: distributed random number generation
+func initialSeed() []byte {
+	return []byte("hi")
 }

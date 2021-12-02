@@ -17,7 +17,7 @@ The information that a miner will need to verify a por:
 The round seed should generate identical query (with the one that storage server got its challenged)
 */
 
-//TODO: Random Query and File tag should be generated and parsed from the current round's seed as a source of randomness
+//todo: raha: Random Query and File tag should be generated and parsed from the current round's seed as a source of randomness
 package por
 
 import (
@@ -38,14 +38,26 @@ import (
 	"go.dedis.ch/kyber/v3/xof/blake2xb"
 )
 
-const S = 1 // number of sectors in eac block (sys. par.)
+//const S = 1 // number of sectors in eac block (sys. par.)
 // Each sector is one element of Zp, and there are s sectors per block.
 // If the processed file is b bits long,then there are n = [b/s lg p] blocks.
 const n = 1000 // number of blocks
 const l = 5    //size of query set (i<n)
 var Suite = pairing.NewSuiteBn256()
 
-//ToDo: find prime and let s make sense!
+/*
+At the 128-bit security level, a nearly optimal choice for
+a pairing-friendly curve is a Barreto-Naehrig (BN) curve over
+a prime field of size roughly 256 bits with embedding degree k= 12.
+bits of security: 128 bits / 124 bits.
+the bn256 implemented in kyber is from paper "ew software speed
+records for cryptographic pairings" which gives us:
+- BN curve over a prime field Fp of size 257 bits.
+- The prime p is given by the BN polynomial parametrization p = 36u4+36u3+24u2+6u+1,
+where u = v3 and v = 1966080.
+The curve equation is E : y2 = x3 +17.
+*/
+
 var TauSize int
 
 //-----------------------------------------------------------------------
@@ -54,20 +66,20 @@ type processedFile struct {
 	sigma [n]kyber.Point
 }
 type initialFile struct {
-	m [n][S]kyber.Scalar
+	m [n][]kyber.Scalar
 }
 type randomQuery struct {
 	i   [l]int
 	v_i [l]kyber.Scalar
 }
 type Por struct {
-	Mu    [S]kyber.Scalar
+	Mu    []kyber.Scalar
 	Sigma kyber.Point
 }
 
 type PrivateKey struct {
 	alpha kyber.Scalar
-	ssk   kyber.Scalar //Todo: these keys should be united if its possible!
+	ssk   kyber.Scalar //todo: raha:  these keys should be united if its possible!
 }
 type PublicKey struct {
 	v   kyber.Point
@@ -77,7 +89,7 @@ type PublicKey struct {
 // utility functions
 func RandomizedKeyGeneration() (PrivateKey, PublicKey) {
 	//randomizedKeyGeneration: pubK=(alpha,ssk),prK=(v,spk)
-	clientKeyPair := key.NewKeyPair(onet.Suite)
+	clientKeyPair := key.NewKeyPair(onet.Suite) // onet suit is "Ed25519"
 	ssk := clientKeyPair.Private
 	spk := clientKeyPair.Public
 	//BLS keyPair
@@ -98,14 +110,14 @@ func RandomizedKeyGeneration() (PrivateKey, PublicKey) {
 			v:   v,
 		}
 }
-func GenerateFile() initialFile {
+func GenerateFile(SectorNumber int) initialFile {
 	// first apply the erasure code to obtain M′; then split M′
 	// into n blocks (for some n), each s sectors long:
 	// {mij} 1≤i≤n 1≤j≤s
-	var m_ij [n][S]kyber.Scalar
+	var m_ij [n][]kyber.Scalar
 	for i := 0; i < n; i++ {
-		for j := 0; j < S; j++ {
-			m_ij[i][j] = Suite.Scalar().Pick(Suite.RandomStream())
+		for j := 0; j < SectorNumber; j++ {
+			m_ij[i] = append(m_ij[i], Suite.Scalar().Pick(Suite.RandomStream()))
 		}
 	}
 	return initialFile{m: m_ij}
@@ -136,16 +148,16 @@ func randomizedVerifyingQuery() *randomQuery {
 	// The file tag and the public key pair should be stored on the bc (to be verified along with por proof later)
 	// and the authentication values should be sent and stored on prover's server , he will need it to create por
 */
-func RandomizedFileStoring(sk PrivateKey, initialfile initialFile) ([]byte, processedFile) {
+func RandomizedFileStoring(sk PrivateKey, initialfile initialFile, SectorNumber int) ([]byte, processedFile) {
 	m_ij := initialfile.m
 	//u1,..,us random from G
-	var u [S]kyber.Scalar
-	var U [S]kyber.Point
+	var u []kyber.Scalar
+	var U []kyber.Point
 	var st1, st2 bytes.Buffer
-	for j := 0; j < S; j++ {
+	for j := 0; j < SectorNumber; j++ {
 		rand := random.New()
-		u[j] = Suite.G1().Scalar().Pick(rand)
-		U[j] = Suite.G1().Point().Mul(u[j], nil)
+		u = append(u, Suite.G1().Scalar().Pick(rand))
+		U = append(U, Suite.G1().Point().Mul(u[j], nil))
 		t, _ := u[j].MarshalBinary()
 		st1.Write(t)
 	}
@@ -179,7 +191,7 @@ func RandomizedFileStoring(sk PrivateKey, initialfile initialFile) ([]byte, proc
 	for i := 0; i < n; i++ {
 		h := hashable.Hash(append(aRandomFileName.Bytes(), byte(i)))
 		p := Suite.G1().Point().Null()
-		for j := 0; j < S; j++ {
+		for j := 0; j < SectorNumber; j++ {
 			p = Suite.G1().Point().Add(p, Suite.G1().Point().Mul(m_ij[i][j], U[j]))
 		}
 		b[i] = Suite.G1().Point().Mul(sk.alpha, p.Add(p, h))
@@ -193,7 +205,7 @@ func RandomizedFileStoring(sk PrivateKey, initialfile initialFile) ([]byte, proc
 // CreatePoR this function will be called by the server who wants to create a PoR
 // in the paper this function takes 3 inputs: public key , file tag , and processedFile -
 // I don't see why the first two parameters are needed!
-func CreatePoR(processedfile processedFile) Por {
+func CreatePoR(processedfile processedFile, SectorNumber int) Por {
 	// "the query can be generated from a short seed using a random oracle,
 	// and this short seed can be transmitted instead of the longer query."
 	// note: this function is called by the verifier in the paper but a prover who have access
@@ -201,14 +213,14 @@ func CreatePoR(processedfile processedFile) Por {
 	rq := randomizedVerifyingQuery()
 	m_ij := processedfile.m_ij.m
 	sigma := processedfile.sigma
-	var Mu [S]kyber.Scalar
-	for j := 0; j < S; j++ {
+	var Mu []kyber.Scalar
+	for j := 0; j < SectorNumber; j++ {
 		tv := Suite.Scalar().Zero()
 		for i := 0; i < l; i++ {
 			//Mu_j= S(Q)(v_i.m_ij)
 			tv = Suite.Scalar().Add(Suite.Scalar().Mul(rq.v_i[i], m_ij[rq.i[i]][j]), tv)
 		}
-		Mu[j] = tv
+		Mu = append(Mu, tv)
 	}
 	p := Suite.G1().Point().Null()
 	for i := 0; i < l; i++ {
@@ -225,16 +237,16 @@ func CreatePoR(processedfile processedFile) Por {
 // VerifyPoR servers will verify por tx.s when they receive it
 // in the paper this function takes 3 inputs: public key , private key, and file tag
 // I don't see why the private key is needed!
-func VerifyPoR(pk PublicKey, Tau []byte, p Por) (bool, error) {
+func VerifyPoR(pk PublicKey, Tau []byte, p Por, SectorNumber int) (bool, error) {
 	rq := randomizedVerifyingQuery()
 	//check the file tag (Tau) integrity
-	error := schnorr.Verify(onet.Suite, pk.spk, Tau[:32+len(strconv.Itoa(n))+S*32], Tau[32+len(strconv.Itoa(n))+S*32:])
+	error := schnorr.Verify(onet.Suite, pk.spk, Tau[:32+len(strconv.Itoa(n))+SectorNumber*32], Tau[32+len(strconv.Itoa(n))+SectorNumber*32:])
 	if error != nil {
 		log.LLvl2("issue in verifying the file tag signature:", error)
 	}
 	//extract the random selected points
 	rightTermPoint := Suite.G1().Point().Null() // pairing check: right term of right hand side
-	for j := 0; j < S; j++ {
+	for j := 0; j < SectorNumber; j++ {
 		//These numbers (length of components) can be extracted from calling
 		//some utility function in kyber. in case we wanted to customize stuff!
 		thisPoint := Tau[32+len(strconv.Itoa(n))+j*32 : 32+len(strconv.Itoa(n))+(j+1)*32]
@@ -266,14 +278,3 @@ func VerifyPoR(pk PublicKey, Tau []byte, p Por) (bool, error) {
 }
 
 // -------------------------------------------------------------//
-
-// Testpor //todo: move it to a seperate test file
-func Testpor() {
-	sk, pk := RandomizedKeyGeneration()
-	Tau, pf := RandomizedFileStoring(sk, GenerateFile())
-	p := CreatePoR(pf)
-	d, _ := VerifyPoR(pk, Tau, p)
-	if d == false {
-		log.LLvl2(d)
-	}
-}
