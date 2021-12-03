@@ -69,7 +69,19 @@ type HelloChan struct {
 	HelloBaseDFS
 }
 
-type NewRound struct{}
+type NewLeader struct {
+	Leaderinfo  string
+	RoundNumber int
+}
+type NewLeaderChan struct {
+	*onet.TreeNode
+	NewLeader
+}
+
+type NewRound struct {
+	Seed  string
+	Power uint64
+}
 type NewRoundChan struct {
 	*onet.TreeNode
 	NewRound
@@ -83,7 +95,9 @@ type BaseDFS struct {
 	// channel used to let all servers that the protocol has started
 	HelloChan chan HelloChan
 	// channel used by each round's leader to let all servers that a new round has come
-	newRoundChan chan NewRoundChan
+	NewRoundChan chan NewRoundChan
+	// channel to let nodes that the next round's leader has been specified
+	NewLeaderChan chan NewLeaderChan
 	// the suite we use
 	suite network.Suite
 	//startBCMeasure *monitor.TimeMeasure
@@ -92,7 +106,7 @@ type BaseDFS struct {
 	// channel to notify when we are done -- when a message is sent through this channel a dispatch function in .. file will catch it and finish the protocol.
 	DoneBaseDFS chan bool //it is not initiated in new proto!
 	// channel to notify leader elected
-	LeaderPropose chan bool
+	LeaderProposeChan chan bool
 	// ------------------------------------------------------------------------------------------------------------------
 	//  -----  system-wide configurations params from the config file
 	// ------------------------------------------------------------------
@@ -126,6 +140,7 @@ func init() {
 	//network.RegisterMessage(PreparedBlockChan{})
 	network.RegisterMessage(HelloBaseDFS{})
 	network.RegisterMessage(NewRound{})
+	network.RegisterMessage(NewLeader{})
 	onet.GlobalProtocolRegister("BaseDFS", NewBaseDFSProtocol)
 }
 
@@ -134,18 +149,24 @@ func init() {
 // NewBaseDFSProtocol returns a new BaseDFS struct
 func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error) {
 	bz := &BaseDFS{
-		TreeNodeInstance: n,
-		suite:            n.Suite(),
-		DoneBaseDFS:      make(chan bool, 1),
-		LeaderPropose:    make(chan bool, 1),
-		roundNumber:      1,
-		leaders:          make(map[int]string),
+		TreeNodeInstance:  n,
+		suite:             n.Suite(),
+		DoneBaseDFS:       make(chan bool, 1),
+		LeaderProposeChan: make(chan bool, 1),
+		roundNumber:       1,
+		leaders:           make(map[int]string),
 	}
 	if err := n.RegisterChannel(&bz.HelloChan); err != nil {
 		return bz, err
 	}
-	if err := n.RegisterChannel(&bz.newRoundChan); err != nil {
+	if err := n.RegisterChannel(&bz.NewRoundChan); err != nil {
 		return bz, err
+	}
+	// if err := n.RegisterChannel(&bz.NewLeaderChan); err != nil {
+	// 	return bz, err
+	// }
+	if err := n.RegisterChannelLength(&bz.NewLeaderChan, len(bz.Tree().List())); err != nil {
+		log.Error("Couldn't reister channel:", err)
 	}
 	// bls key pair for each node for VRF
 	_, bz.ECPrivateKey = vrf.VrfKeygen()
@@ -194,6 +215,8 @@ func (bz *BaseDFS) finalCentralBCInitialization() {
 	if err != nil {
 		log.LLvl2("Raha: ", err)
 		panic(err)
+	} else {
+		log.LLvl2("opening bc")
 	}
 	// ToDo: raha: a function in a seperate module which takes list of nodes as input
 	// and gives list of leaders as output
@@ -225,6 +248,8 @@ func (bz *BaseDFS) finalCentralBCInitialization() {
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
+	} else {
+		log.LLvl2("closing bc")
 	}
 }
 
@@ -235,6 +260,7 @@ func (bz *BaseDFS) Dispatch() error {
 	//var timeoutStarted bool
 	running := true
 	var err error
+
 	for running {
 		select {
 		case msg := <-bz.HelloChan:
@@ -245,27 +271,50 @@ func (bz *BaseDFS) Dispatch() error {
 			bz.SectorNumber = msg.SectorNumber
 			bz.NumberOfPayTXsUpperBound = msg.NumberOfPayTXsUpperBound
 			bz.helloBaseDFS()
+
 		// this msg is catched in simulation codes
 		case <-bz.DoneBaseDFS:
 			running = false
-		case <-bz.newRoundChan:
+		case msg := <-bz.NewRoundChan:
 			bz.roundNumber = bz.roundNumber + 1
 			log.LLvl2(bz.Name(), " round number ", bz.roundNumber, " started at ", time.Now())
-			//bz.checkLeadership()
-		case <-bz.LeaderPropose:
-			log.LLvl2(bz.Name(), "I am elected :)")
-			time.Sleep(time.Duration(bz.RoundDuration))
-			bz.updateBCPowerRound()
-			bz.updateBCTransactionQueueCollect()
-			bz.updateBCTransactionQueueTake()
-			var newround = new(NewRound)
-			newround = &NewRound{}
-			for _, b := range bz.Tree().List() {
-				err := bz.SendTo(b, newround)
-				if err != nil {
-					log.Lvl2(bz.Info(), "can't send new round msg to", b.Name())
-				}
+			var vrfOutput [64]byte
+			toBeHashed := []byte(msg.Seed)
+			proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
+			if !ok {
+				log.LLvl2("error while generating proof")
 			}
+			_, vrfOutput = bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
+			var vrfoutputInt64 uint64
+			buf := bytes.NewReader(vrfOutput[:])
+			err := binary.Read(buf, binary.LittleEndian, &vrfoutputInt64)
+			if err != nil {
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			}
+			if vrfoutputInt64 < msg.Power {
+				log.LLvl2(bz.Name(), "I may be elected for round number ", bz.roundNumber)
+				bz.isLeader = true
+				bz.SendTo(bz.Root(), &NewLeader{Leaderinfo: bz.Name(), RoundNumber: bz.roundNumber})
+			}
+		case msg := <-bz.NewLeaderChan: // just the root recieve this msg
+			if !bz.isLeader && msg.RoundNumber == bz.roundNumber {
+				// first validate the leadership proof
+				log.LLvl2(msg.Leaderinfo, "is the round leader for round number ", bz.roundNumber)
+				bz.isLeader = true // for the root node, is leader means the round has a leader
+				//waiting for the time of round duration
+				bz.updateBCPowerRound(msg.Leaderinfo)
+				bz.updateBCTransactionQueueCollect()
+				bz.updateBCTransactionQueueTake()
+			} else {
+				log.LLvl2("this round already has a leader!")
+			}
+			time.Sleep(time.Duration(bz.RoundDuration))
+			for len(bz.NewLeaderChan) > 0 {
+				<-bz.NewLeaderChan
+			}
+			bz.readBCAndSendtoOthers()
+			log.LLvl2("new round is announced")
 		}
 	}
 	// -------- cases used for communication ------------------
@@ -281,6 +330,132 @@ func (bz *BaseDFS) Dispatch() error {
 	}*/
 	// ------------------------------------------------------------------
 	return err
+}
+
+/*each round the leader send a msg to all nodes,
+let other nodes know that the new round has started and the information they need
+from blockchain to check if they are next round's leader*/
+func (bz *BaseDFS) readBCAndSendtoOthers() {
+
+	powers, seed := bz.readBCPowersAndSeed()
+	//log.Lvl2(powers, seed)
+	bz.roundNumber = bz.roundNumber + 1
+	bz.isLeader = false //for the root is leader means the round has a leader
+	for _, b := range bz.Tree().List() {
+		power, found := powers[b.ServerIdentity.String()]
+		if found && !b.IsRoot() {
+			err := bz.SendTo(b, &NewRound{
+				Seed:  seed,
+				Power: power})
+			if err != nil {
+				log.Lvl2(bz.Info(), "can't send new round msg to", b.Name())
+			}
+		}
+	}
+}
+
+/* ----------------------------------------------------------------------*/
+func (bz *BaseDFS) readBCPowersAndSeed() (powers map[string]uint64, seed string) {
+	minerspowers := make(map[string]uint64)
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	if err != nil {
+		log.LLvl2("Raha: ", err)
+		panic(err)
+	} else {
+		log.LLvl2("opening bc")
+	}
+	//var err error
+	var rows *excelize.Rows
+	var row []string
+	rowNumber := 0
+	// looking for last round's seed in the round table sheet in the centralbc file
+	if rows, err = f.Rows("RoundTable"); err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	for rows.Next() {
+		rowNumber++
+		if row, err = rows.Columns(); err != nil {
+			log.LLvl2("Panic Raised:\n\n")
+			panic(err)
+		}
+	}
+	// last row:
+	for i, colCell := range row {
+		// --- in RoundTable: i = 0 is (next) round number, i = 1 is (next) round seed, i=2 is blockchain size (empty now, will be updated by the leader)
+		// if i == 0 {
+		// 	if bz.roundNumber, err = strconv.Atoi(colCell); err != nil {
+		// 		log.LLvl2("Panic Raised:\n\n")
+		// 		panic(err)
+		// 	}
+		// }
+		if i == 1 {
+			seed = colCell // last round's seed
+		}
+	}
+	// looking for all nodes' power in the last round in the power table sheet in the centralbc file
+	rowNumber = 0 //ToDo: later it can go straight to last row based on the round number found in round table
+	if rows, err = f.Rows("PowerTable"); err != nil {
+		log.LLvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	for rows.Next() {
+		rowNumber++
+	}
+	// last row in power table:
+	// if row, err = rows.Columns(); err != nil {
+	// 	log.LLvl2("Panic Raised:\n\n")
+	// 	panic(err)
+	// }
+
+	for _, a := range bz.Roster().List {
+		var myColumnHeader []string
+		var myCell string
+		var myColumn string
+		myColumnHeader, err = f.SearchSheet("PowerTable", a.Address.String())
+		if err != nil {
+			log.LLvl2("Panic Raised:\n\n")
+			panic(err)
+		}
+		for _, character := range myColumnHeader[0] {
+			if character >= 'A' && character <= 'Z' { // a-z isn't needed! just to make sure
+				myColumn = myColumn + string(character)
+			}
+		}
+
+		myCell = myColumn + strconv.Itoa(rowNumber) //such as A2,B3,C3..
+		var p string
+		p, err = f.GetCellValue("PowerTable", myCell)
+		if err != nil {
+			log.LLvl2("Panic Raised:\n\n")
+			panic(err)
+		}
+		var t int
+		t, err = strconv.Atoi(p)
+		if err != nil {
+			log.LLvl2("Panic Raised:\n\n")
+			panic(err)
+		}
+		minerspowers[a.Address.String()] = uint64(t)
+		// add accumulated power to recently added power in last round
+		for i := 2; i < rowNumber; i++ {
+			upperPowerCell := myColumn + strconv.Itoa(i)
+			p, err = f.GetCellValue("PowerTable", upperPowerCell)
+			if err != nil {
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			}
+			t, er := strconv.Atoi(p)
+			if er != nil {
+				log.LLvl2("Panic Raised:\n\n")
+				panic(err)
+			}
+			upperPower := uint64(t)
+			minerspowers[a.Address.String()] = minerspowers[a.Address.String()] + upperPower
+		}
+	}
+
+	return minerspowers, seed
 }
 
 /* ----------------------------------------------------------------------
@@ -307,12 +482,14 @@ func (bz *BaseDFS) helloBaseDFS() {
 			}(child)
 		}
 	}
-	// keeping track of all nodes (future leaders)
-	for i, a := range bz.Roster().List {
-		bz.leaders[i] = a.String()
+	if bz.TreeNodeInstance.IsRoot() {
+		log.LLvl2(bz.Name(), "Filling round number ", bz.roundNumber)
+		// waiting for the time of round duration
+		bz.updateBCPowerRound(bz.Name())
+		bz.updateBCTransactionQueueCollect()
+		bz.updateBCTransactionQueueTake()
+		bz.readBCAndSendtoOthers()
 	}
-
-	bz.checkLeadership()
 }
 
 /* ----------------------------------------------------------------------
@@ -324,59 +501,74 @@ func (bz *BaseDFS) helloBaseDFS() {
 // 	}
 // }
 
-func (bz *BaseDFS) checkLeadership() {
-	power, seed := bz.readBCMyPowerNextSeed()
-	//power := 1
-	//var seed []byte
-	var vrfOutput [64]byte
+// func (bz *BaseDFS) checkLeadership(power uint64, seed string) {
+// 	for {
+// 		select {
+// 		case <-bz.NewLeaderChan:
+// 			return
+// 		default:
 
-	toBeHashed := []byte(seed)
-	proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
-	if !ok {
-		log.LLvl2("error while generating proof")
-	}
-	_, vrfOutput = bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
+// 			//power := 1
+// 			//var seed []byte
+// 			var vrfOutput [64]byte
 
-	//------------------------- working with big int ----------------------
-	//"math/big" imported
-	//func generateRandomValuesBigInt(nodes int) [] *big.Int {
-	//	var bigIntlist [] *big.Int
-	//	for i := 1; i<= nodes;i++{
-	//		bigIntlist = append(bigIntlist, new(big.Int).Rand(rand.New(rand.NewSource(time.Now().UnixNano())),<some big int value> ))
-	//	}
-	//	return bigIntlist
-	//}
-	// --------------------------------------------------------------------
-	//For future refrence: the next commented line is a wrong way to convert a big number to int - it wont raise overflow but the result is incorrect
-	//t := binary.BigEndian.Uint64(vrfOutput[:])
-	//--------------------------------------------------
-	//For future refrence: the next commented line is converting a big number to big int (built in type in go)
-	//var bi *big.Int
-	//bi = new(big.Int).SetBytes(vrfOutput[:])
-	//--------------------------------------------------
+// 			toBeHashed := []byte(seed)
+// 			proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
+// 			if !ok {
+// 				log.LLvl2("error while generating proof")
+// 			}
+// 			_, vrfOutput = bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
 
-	var vrfoutputInt64 uint64
-	buf := bytes.NewReader(vrfOutput[:])
-	err := binary.Read(buf, binary.LittleEndian, &vrfoutputInt64)
-	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
-		panic(err)
-	}
-	// I want to ask the previous leader to find next leader based on its output and announce it to her via next round msg
-	if vrfoutputInt64 < power {
-		bz.LeaderPropose <- true
-	} else {
-		log.LLvl2("my power:", power, "is", vrfoutputInt64-power, "less than my vrf output :| ")
-	}
-}
+// 			//------------------------- working with big int ----------------------
+// 			//"math/big" imported
+// 			//func generateRandomValuesBigInt(nodes int) [] *big.Int {
+// 			//	var bigIntlist [] *big.Int
+// 			//	for i := 1; i<= nodes;i++{
+// 			//		bigIntlist = append(bigIntlist, new(big.Int).Rand(rand.New(rand.NewSource(time.Now().UnixNano())),<some big int value> ))
+// 			//	}
+// 			//	return bigIntlist
+// 			//}
+// 			// --------------------------------------------------------------------
+// 			//For future refrence: the next commented line is a wrong way to convert a big number to int - it wont raise overflow but the result is incorrect
+// 			//t := binary.BigEndian.Uint64(vrfOutput[:])
+// 			//--------------------------------------------------
+// 			//For future refrence: the next commented line is converting a big number to big int (built in type in go)
+// 			//var bi *big.Int
+// 			//bi = new(big.Int).SetBytes(vrfOutput[:])
+// 			//--------------------------------------------------
 
-/* ----------------------------------------------------------------------
------------------------------------------------------------------------- */
+// 			var vrfoutputInt64 uint64
+// 			buf := bytes.NewReader(vrfOutput[:])
+// 			err := binary.Read(buf, binary.LittleEndian, &vrfoutputInt64)
+// 			if err != nil {
+// 				log.LLvl2("Panic Raised:\n\n")
+// 				panic(err)
+// 			}
+// 			// I want to ask the previous leader to find next leader based on its output and announce it to her via next round msg
+// 			if vrfoutputInt64 < power {
+// 				// let other know i am the leader
+// 				for _, b := range bz.Tree().List() {
+// 					err := bz.SendTo(b, &NewLeader{})
+// 					if err != nil {
+// 						log.Lvl2(bz.Info(), "can't send new round msg to", b.Name())
+// 					}
+// 				}
+// 				bz.LeaderProposeChan <- true
+// 			}
+// 			//else {
+// 			// 	log.LLvl2("my power:", power, "is", vrfoutputInt64-power, "less than my vrf output :| ")
+// 			// }
+// 		}
+// 	}
+// }
+
+/* ---------------------------------------------------------------------- */
 //updateBC: by leader
 // each round, adding one row in power table based on the information in market matching sheet,
 // assuming that servers are honest and have honestly publish por for their actice (not expired) contracts,
 // for each storage server and each of their active contract, add the stored file size to their current power
-func (bz *BaseDFS) updateBCPowerRound() {
+/* ----------------------------------------------------------------------*/
+func (bz *BaseDFS) updateBCPowerRound(Leaderinfo string) {
 	var err error
 	var rows *excelize.Rows
 	var row []string
@@ -387,6 +579,8 @@ func (bz *BaseDFS) updateBCPowerRound() {
 	if err != nil {
 		log.LLvl2("Raha: ", err)
 		panic(err)
+	} else {
+		log.LLvl2(bz.Name(), "opening bc")
 	}
 
 	// looking for last round's seed in the round table sheet in the centralbc file
@@ -424,7 +618,7 @@ func (bz *BaseDFS) updateBCPowerRound() {
 	// --------------------------------------------------------------------
 	// updating the current last row in the "miner" column
 	axisMiner := "D" + currentRow
-	err = f.SetCellValue("RoundTable", axisMiner, bz.TreeNode().Name())
+	err = f.SetCellValue("RoundTable", axisMiner, Leaderinfo)
 	if err != nil {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
@@ -537,104 +731,8 @@ func (bz *BaseDFS) updateBCPowerRound() {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl2(bz.Name(), "is the leader of round number ", bz.roundNumber)
-		bz.isLeader = false
+		log.LLvl2("closing bc")
 	}
-}
-
-func (bz *BaseDFS) readBCMyPowerNextSeed() (power uint64, seed string) {
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
-	if err != nil {
-		log.LLvl2("Raha: ", err)
-		panic(err)
-	}
-	//var err error
-	var rows *excelize.Rows
-	var row []string
-	rowNumber := 0
-	// looking for last round's seed in the round table sheet in the centralbc file
-	if rows, err = f.Rows("RoundTable"); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
-		panic(err)
-	}
-	for rows.Next() {
-		rowNumber++
-		if row, err = rows.Columns(); err != nil {
-			log.LLvl2("Panic Raised:\n\n")
-			panic(err)
-		}
-	}
-	for i, colCell := range row {
-		// --- in RoundTable: i = 0 is (next) round number, i = 1 is (next) round seed, i=2 is blockchain size (empty now, will be updated by the leader)
-		if i == 0 {
-			if bz.roundNumber, err = strconv.Atoi(colCell); err != nil {
-				log.LLvl2("Panic Raised:\n\n")
-				panic(err)
-			}
-		}
-		if i == 1 {
-			seed = colCell
-		}
-	}
-	// looking for my power in the last round in the power table sheet in the centralbc file
-	rowNumber = 0 //ToDo: later it can go straight to last row based on the round number found in round table
-	if rows, err = f.Rows("PowerTable"); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
-		panic(err)
-	}
-	for rows.Next() {
-		rowNumber++
-		if row, err = rows.Columns(); err != nil {
-			log.LLvl2("Panic Raised:\n\n")
-			panic(err)
-		}
-	}
-	var myColumnHeader []string
-	var myCell string
-	var myColumn string
-	myColumnHeader, err = f.SearchSheet("PowerTable", bz.ServerIdentity().String())
-	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
-		panic(err)
-	}
-	for _, character := range myColumnHeader[0] {
-		if character >= 'A' && character <= 'Z' { // a-z isn't needed! just to make sure
-			myColumn = myColumn + string(character)
-		}
-	}
-
-	myCell = myColumn + strconv.Itoa(rowNumber) //such as A2,B3,C3..
-	var p string
-	p, err = f.GetCellValue("PowerTable", myCell)
-	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
-		panic(err)
-	}
-	var t int
-	t, err = strconv.Atoi(p)
-	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
-		panic(err)
-	}
-	power = uint64(t)
-	// add accumulated power to recently added power in last round
-	for i := 2; i < rowNumber; i++ {
-		upperPowerCell := myColumn + strconv.Itoa(i)
-		p, err = f.GetCellValue("PowerTable", upperPowerCell)
-		if err != nil {
-			log.LLvl2("Panic Raised:\n\n")
-			panic(err)
-		}
-		t, er := strconv.Atoi(p)
-		if er != nil {
-			log.LLvl2("Panic Raised:\n\n")
-			panic(err)
-		}
-		upperPower := uint64(t)
-		power = power + upperPower
-	}
-
-	return power, seed
 }
 
 /* ----------------------------------------------------------------------
@@ -649,6 +747,8 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 	if err != nil {
 		log.LLvl2("Raha: ", err)
 		panic(err)
+	} else {
+		log.LLvl2("opening bc")
 	}
 
 	//	each round, adding one row in power table based on the information in market matching sheet,assuming that servers are honest  and have honestly publish por for their actice (not expired) contracts,for each storage server and each of their active contracst, add the stored file size to their current power
@@ -887,8 +987,8 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl2(bz.Name(), " Collected new transactions to queue in round number ", bz.roundNumber)
-		bz.isLeader = false
+		log.LLvl2("closing bc")
+		log.LLvl2(bz.Name(), " finished collecting new transactions to queue in round number ", bz.roundNumber)
 	}
 }
 
@@ -903,6 +1003,8 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	if err != nil {
 		log.LLvl2("Raha: ", err)
 		panic(err)
+	} else {
+		log.LLvl2("opening bc")
 	}
 	// -- take 5 types of transactions from sheet: FirstQueue
 	if rows, err = f.GetRows("FirstQueue"); err != nil {
@@ -1020,8 +1122,8 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 		log.LLvl2("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl2(bz.Name(), " Took transactions from queue (FIFO) into new block in round number ", bz.roundNumber)
-		bz.isLeader = false
+		log.LLvl2("closing bc")
+		log.LLvl2(bz.Name(), " Finished taking transactions from queue (FIFO) into new block in round number ", bz.roundNumber)
 	}
 }
 
