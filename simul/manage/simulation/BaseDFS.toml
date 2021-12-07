@@ -14,10 +14,10 @@ DistributionMeanContractDuration = 10
 DistributionVarianceContractDuration = 50
 DistributionMeanInitialPower = 9000000000000000000
 DistributionVarianceInitialPower = 9000000000000000
-Nodes = 1500
+Nodes = 15
 BlockSize = 1000000
 SectorNumber = 1
 NumberOfPayTXsUpperBound = 10
 
 Hosts
-1500
+15
