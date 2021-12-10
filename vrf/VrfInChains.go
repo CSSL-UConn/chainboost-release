@@ -18,13 +18,13 @@ func Testvrf() {
 	VrfPubkey, VrfPrivkey := VrfKeygen()
 	proof, ok := VrfPrivkey.ProveBytes(t)
 	if !ok {
-		log.LLvl2("error while generating proof")
+		log.Lvl2("error while generating proof")
 	}
 	r, _ := VrfPubkey.VerifyBytes(proof, t)
 	if r == true {
-		log.LLvl2("proof is approved")
+		log.Lvl2("proof is approved")
 	} else {
-		log.LLvl2("proof is rejected")
+		log.Lvl2("proof is rejected")
 	}
 }
 

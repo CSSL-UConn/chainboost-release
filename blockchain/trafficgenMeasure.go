@@ -147,7 +147,7 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 	sha := sha256.New()
 	if _, err := sha.Write([]byte("a sample seed")); err != nil {
 		log.Error("Couldn't hash header:", err)
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	hash := sha.Sum(nil)
@@ -219,7 +219,7 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 		len(roundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) + len(hashSample) + len(Version) + //x10
 		5*len(cnt) + len(feeSample) //x9
 	// ---
-	log.LLvl2("Block Size Minus Transactions is: ", BlockSizeMinusTransactions)
+	log.Lvl2("Block Size Minus Transactions is: ", BlockSizeMinusTransactions)
 
 	return BlockSizeMinusTransactions
 }
@@ -231,7 +231,7 @@ func TransactionMeasurement(SectorNumber int) (PorTxSize int, ContractProposeTxS
 	sha := sha256.New()
 	if _, err := sha.Write([]byte("a sample seed")); err != nil {
 		log.Error("Couldn't hash header:", err)
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	hash := sha.Sum(nil)
@@ -282,7 +282,7 @@ func TransactionMeasurement(SectorNumber int) (PorTxSize int, ContractProposeTxS
 		len(UnlockingScriptSize) + len(UnlockinScriptSample) + len(SequenceNumber) + //TxPayIn
 		len(Amount) + len(LockingScriptSample) + len(LockingScriptSize) + //TxPayOut
 		len(timeSample) + len(Version) + len(cnt) + len(cnt) //TxPay
-	log.LLvl2("size of a pay transaction is: ", PayTxSize, "bytes")
+	log.Lvl2("size of a pay transaction is: ", PayTxSize, "bytes")
 	// ---------------- por transaction sample  ----------------
 
 	sk, _ := por.RandomizedKeyGeneration()
@@ -303,13 +303,13 @@ func TransactionMeasurement(SectorNumber int) (PorTxSize int, ContractProposeTxS
 		clientCommitment: cmtSample,
 	}
 
-	log.LLvl5("x5 is:", x5, " and x7 is: ", x7)
+	log.Lvl5("x5 is:", x5, " and x7 is: ", x7)
 
 	ContractProposeTxSize = PayTxSize + //tx
 		len(duration) + len(fileSizeSample) + len(startRoundSample) + len(pricePerRoundSample) + len(Tau) + //contract tx
 		len(cmtSample) //clientCommitment
 
-	log.LLvl2("size of a Contract Propose transaction (including contract creation tx) is: ", ContractProposeTxSize,
+	log.Lvl2("size of a Contract Propose transaction (including contract creation tx) is: ", ContractProposeTxSize,
 		"bytes \n with ",
 		len(duration)+len(fileSizeSample)+len(startRoundSample)+len(pricePerRoundSample)+len(Tau), " bytes for contract, \n and ",
 		PayTxSize, " bytes for payment")
@@ -342,12 +342,12 @@ func TransactionMeasurement(SectorNumber int) (PorTxSize int, ContractProposeTxS
 		roundNumber: roundNumberSample,
 	}
 
-	log.LLvl5("tx por is: ", x6)
+	log.Lvl5("tx por is: ", x6)
 
 	PorTxSize = porSize /*size of pur por*/ +
 		8 /*len(contractIdSample)*/ + len(roundNumberSample) //TxPoR
 
-	log.LLvl2("size of a por transaction is: ", PorTxSize, " bytes \n with ",
+	log.Lvl2("size of a por transaction is: ", PorTxSize, " bytes \n with ",
 		SectorNumber*por.Suite.G1().ScalarLen()+por.Suite.G2().PointLen(), " bytes for pure por")
 	// ---------------- TxStoragePay transaction sample ----------------
 	x9 := &TxStoragePay{
@@ -355,20 +355,20 @@ func TransactionMeasurement(SectorNumber int) (PorTxSize int, ContractProposeTxS
 		tx:         x4,
 	}
 
-	log.LLvl5("tx StoragePay is: ", x9)
+	log.Lvl5("tx StoragePay is: ", x9)
 
 	StoragePayTxSize = 8 /*len(contractIdSample)*/ + PayTxSize
-	log.LLvl2("size of a StoragePay transaction is: ", StoragePayTxSize)
+	log.Lvl2("size of a StoragePay transaction is: ", StoragePayTxSize)
 	// ---------------- TxContractCommit transaction sample ----------------
 	x10 := TxContractCommit{
 		serverCommitment: cmtSample,
 		ContractID:       contractIdSample,
 	}
 
-	log.LLvl5("tx ContractCommit is: ", x10)
+	log.Lvl5("tx ContractCommit is: ", x10)
 
 	ContractCommitTxSize = len(cmtSample) + 8 /*len(contractIdSample)*/
-	log.LLvl2("size of a ContractCommit transaction is: ", ContractCommitTxSize)
+	log.Lvl2("size of a ContractCommit transaction is: ", ContractCommitTxSize)
 
 	return PorTxSize, ContractProposeTxSize, PayTxSize, StoragePayTxSize, ContractCommitTxSize
 }

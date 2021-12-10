@@ -182,7 +182,7 @@ func RandomizedFileStoring(sk PrivateKey, initialfile initialFile, SectorNumber 
 	}
 	hashable, ok := Suite.G1().Point().(hashablePoint)
 	if !ok {
-		log.LLvl2("err")
+		log.Lvl2("err")
 	}
 	// --------------------------------------------------------------------
 	//create "AuthValue" (Sigma_i) for block i
@@ -242,7 +242,7 @@ func VerifyPoR(pk PublicKey, Tau []byte, p Por, SectorNumber int) (bool, error) 
 	//check the file tag (Tau) integrity
 	error := schnorr.Verify(onet.Suite, pk.spk, Tau[:32+len(strconv.Itoa(n))+SectorNumber*32], Tau[32+len(strconv.Itoa(n))+SectorNumber*32:])
 	if error != nil {
-		log.LLvl2("issue in verifying the file tag signature:", error)
+		log.Lvl2("issue in verifying the file tag signature:", error)
 	}
 	//extract the random selected points
 	rightTermPoint := Suite.G1().Point().Null() // pairing check: right term of right hand side
@@ -258,7 +258,7 @@ func VerifyPoR(pk PublicKey, Tau []byte, p Por, SectorNumber int) (bool, error) 
 	type hashablePoint interface{ Hash([]byte) kyber.Point }
 	hashable, ok := Suite.G1().Point().(hashablePoint)
 	if !ok {
-		log.LLvl2("err")
+		log.Lvl2("err")
 	}
 	// --------------------------------------------------------------------
 	leftTermPoint := Suite.G1().Point().Null() // pairing check: left term of right hand side
@@ -271,7 +271,7 @@ func VerifyPoR(pk PublicKey, Tau []byte, p Por, SectorNumber int) (bool, error) 
 	right := Suite.Pair(Suite.G1().Point().Add(leftTermPoint, rightTermPoint), pk.v)
 	left := Suite.Pair(p.Sigma, Suite.G2().Point().Base())
 	if !left.Equal(right) {
-		log.LLvl2("err")
+		log.Lvl2("err")
 	}
 	var refuse = false
 	return refuse, error

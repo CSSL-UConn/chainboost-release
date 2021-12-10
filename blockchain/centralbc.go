@@ -63,7 +63,7 @@ func InitializeCentralBC(RoundDuration,
 	// ---------------------------------------------------------------------------
 	index = f.NewSheet("MarketMatching")
 	if err = f.SetColWidth("MarketMatching", "A", "AAA", 25); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// Set active sheet of the workbook.
@@ -78,17 +78,17 @@ func InitializeCentralBC(RoundDuration,
 	// --------------------------------------------------------------------
 	err = f.SetCellValue("MarketMatching", "A1", "Server's Info")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 
 	err = f.SetCellValue("MarketMatching", "B1", "FileSize")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	if err = f.SetColWidth("MarketMatching", "B", "B", 10); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	for i := 2; i <= len(FileSizeRow)+1; i++ {
@@ -97,17 +97,17 @@ func InitializeCentralBC(RoundDuration,
 		err = f.SetCellValue("MarketMatching", t, FileSizeRow[i-2])
 	}
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 
 	err = f.SetCellValue("MarketMatching", "C1", "ContractDuration")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	if err = f.SetColWidth("MarketMatching", "C", "C", 15); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	for i := 2; i <= len(ContractDurationRow)+1; i++ {
@@ -116,17 +116,17 @@ func InitializeCentralBC(RoundDuration,
 		err = f.SetCellValue("MarketMatching", t, ContractDurationRow[i-2])
 	}
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 
 	err = f.SetCellValue("MarketMatching", "D1", "StartedRoundNumber")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	if err = f.SetColWidth("MarketMatching", "D", "D", 15); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	for i := 2; i <= len(ContractDurationRow)+1; i++ {
@@ -135,14 +135,14 @@ func InitializeCentralBC(RoundDuration,
 		err = f.SetCellValue("MarketMatching", t, 0)
 	}
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 
 	// later we want to ad market matching transaction and compelete contract info in bc
 	err = f.SetCellValue("MarketMatching", "E1", "ContractID")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	r := rand.New(rand.NewSource(99))
@@ -150,29 +150,29 @@ func InitializeCentralBC(RoundDuration,
 		contractRow := strconv.Itoa(i)
 		t := "E" + contractRow
 		if err = f.SetCellValue("MarketMatching", t, r.Int()); err != nil {
-			log.LLvl2("Panic Raised:\n\n")
+			log.Lvl2("Panic Raised:\n\n")
 			panic(err)
 		}
 	}
 	// err = f.SetCellValue("MarketMatching", "F1", "Client'sPK")
 	// if err != nil {
-	// 	log.LLvl2("Panic Raised:\n\n")
+	// 	log.Lvl2("Panic Raised:\n\n")
 	// 	panic(err)
 	// }
 
 	if err = f.SetCellValue("MarketMatching", "F1", "Published"); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	if err = f.SetColWidth("MarketMatching", "F", "F", 10); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	for i := 2; i <= numberOfNodes+1; i++ {
 		contractRow := strconv.Itoa(i)
 		t := "F" + contractRow
 		if err = f.SetCellValue("MarketMatching", t, 0); err != nil {
-			log.LLvl2("Panic Raised:\n\n")
+			log.Lvl2("Panic Raised:\n\n")
 			panic(err)
 		}
 	}
@@ -181,7 +181,7 @@ func InitializeCentralBC(RoundDuration,
 	// ---------------------------------------------------------------------------
 	index = f.NewSheet("FirstQueue")
 	if err = f.SetColWidth("FirstQueue", "A", "AAA", 25); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// Set active sheet of the workbook.
@@ -196,38 +196,38 @@ func InitializeCentralBC(RoundDuration,
 	// ----------------------- Transaction Queue Header ------------------------------
 	err = f.SetCellValue("FirstQueue", "A1", "Name")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 
 	err = f.SetCellValue("FirstQueue", "B1", "Size")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	if err = f.SetColWidth("FirstQueue", "B", "B", 10); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 
 	err = f.SetCellValue("FirstQueue", "C1", "Time")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 
 	err = f.SetCellValue("FirstQueue", "D1", "IssuedRoundNumber")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	if err = f.SetColWidth("FirstQueue", "D", "D", 15); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	err = f.SetCellValue("FirstQueue", "E1", "ContractId")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// ---------------------------------------------------------------------------
@@ -235,7 +235,7 @@ func InitializeCentralBC(RoundDuration,
 	// ---------------------------------------------------------------------------
 	index = f.NewSheet("SecondQueue")
 	if err = f.SetColWidth("SecondQueue", "A", "AAA", 25); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// Set active sheet of the workbook.
@@ -250,26 +250,26 @@ func InitializeCentralBC(RoundDuration,
 	// ----------------------- SecondQueue Header ------------------------------
 	err = f.SetCellValue("SecondQueue", "A1", "Size")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	if err = f.SetColWidth("SecondQueue", "A", "A", 10); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	err = f.SetCellValue("SecondQueue", "B1", "Time")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 
 	err = f.SetCellValue("SecondQueue", "C1", "IssuedRoundNumber")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	if err = f.SetColWidth("SecondQueue", "C", "C", 15); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// ---------------------------------------------------------------------------
@@ -277,7 +277,7 @@ func InitializeCentralBC(RoundDuration,
 	// ---------------------------------------------------------------------------
 	index = f.NewSheet("PowerTable")
 	if err = f.SetColWidth("PowerTable", "A", "AAA", 30); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// Set active sheet of the workbook.
@@ -302,23 +302,23 @@ func InitializeCentralBC(RoundDuration,
 	// -----------------------    Filling Power Table's Headers   -----------
 	err = f.SetCellValue("PowerTable", "A1", "Round#/NodeInfo")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	if err = f.SetColWidth("PowerTable", "A", "A", 15); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// initial powers
 	err = f.SetCellValue("PowerTable", "A2", "1")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// -----------------------    Filling Power Table's first row ------------
 	err = f.SetSheetRow("PowerTable", "B2", &InitialPowerRow)
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// --------------------------------------------------------------------
@@ -326,7 +326,7 @@ func InitializeCentralBC(RoundDuration,
 	// --------------------------------------------------------------------
 	index = f.NewSheet("RoundTable")
 	if err = f.SetColWidth("RoundTable", "A", "AAA", 50); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// Set active sheet of the workbook.
@@ -341,54 +341,92 @@ func InitializeCentralBC(RoundDuration,
 	// -----------------------    Filling Round Table's Headers ------------
 	err = f.SetCellValue("RoundTable", "A1", "Round#")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	if err = f.SetColWidth("RoundTable", "A", "A", 10); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	err = f.SetCellValue("RoundTable", "B1", "Seed")
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	err = f.SetCellValue("RoundTable", "C1", "BCSize")
 	if err != nil {
-		log.LLvl2(err)
+		log.Lvl2(err)
 	}
 	if err = f.SetColWidth("RoundTable", "C", "C", 10); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	err = f.SetCellValue("RoundTable", "D1", "Round Leader")
 	if err != nil {
-		log.LLvl2(err)
+		log.Lvl2(err)
 	}
-	if err = f.SetColWidth("RoundTable", "D", "D", 15); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+	if err = f.SetColWidth("RoundTable", "D", "D", 20); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
+	// ---- throughput measurement
+	if err = f.SetColWidth("RoundTable", "E", "I", 15); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("RoundTable", "E1", "#RegPatTX")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "F1", "#PoRTx")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "G1", "#StPayTx")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "H1", "#CntPropTx")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "I1", "#CntCmtTx")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	if err = f.SetColWidth("RoundTable", "J", "J", 25); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("RoundTable", "J1", "StartTime")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "K1", "TotalTxs")
+	if err != nil {
+		log.Lvl2(err)
+	}
+
 	// -----------------------    Filling Round Table's first row +
 	err = f.SetCellValue("RoundTable", "A2", 1)
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	t := rand.Intn(100)
 	err = f.SetCellValue("RoundTable", "B2", t)
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	err = f.SetCellValue("RoundTable", "C2", 0)
 	if err != nil {
-		log.LLvl2(err)
+		log.Lvl2(err)
 	}
 	// -----------------------    Filling Round Table's second row: next round's seed
 	err = f.SetCellValue("RoundTable", "A3", 2)
 	if err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// ---  next round's seed is the hash of current seed
@@ -399,17 +437,17 @@ func InitializeCentralBC(RoundDuration,
 	}
 	hash := sha.Sum(nil)
 	if err = f.SetCellValue("RoundTable", "B3", hex.EncodeToString(hash)); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 
 	// --------------------------------------------------------------------
 	if err := f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"); err != nil {
-		log.LLvl2("Panic Raised:\n\n")
+		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 
-	log.LLvl2("Config params: \n RoundDuration: ", RoundDuration,
+	log.Lvl2("Config params: \n RoundDuration: ", RoundDuration,
 		"\n DistributionMeanFileSize: ", DistributionMeanFileSize,
 		"\n DistributionVarianceFileSize: ", DistributionVarianceFileSize,
 		"\n DistributionMeanContractDuration: ", DistributionMeanContractDuration,
