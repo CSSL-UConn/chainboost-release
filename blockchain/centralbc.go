@@ -398,7 +398,7 @@ func InitializeCentralBC(RoundDuration,
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	if err = f.SetColWidth("RoundTable", "K", "O", 10); err != nil {
+	if err = f.SetColWidth("RoundTable", "K", "O", 15); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}

@@ -319,10 +319,12 @@ func (bz *BaseDFS) Dispatch() error {
 
 			// ******* just the ROOT NODE (blockchain layer one) recieve this msg
 		case msg := <-bz.NewLeaderChan:
+
 			// -----------------------------------------------------
 			// rounds without a leader: in this case the leader info is filled with root node's info, transactions are going to be collected normally but
 			// since the block is empty, no transaction is going to be taken from queues => leader = false
 			// -----------------------------------------------------
+
 			if msg.Leaderinfo == bz.Name() && bz.roundNumber != 1 && !bz.hasLeader && msg.RoundNumber == bz.roundNumber {
 				bz.hasLeader = true
 				bz.updateBCPowerRound(msg.Leaderinfo, false)
@@ -333,9 +335,11 @@ func (bz *BaseDFS) Dispatch() error {
 				log.Lvl2("new round is announced")
 				continue
 			}
+
 			// -----------------------------------------------------
 			// normal rounds with a leader => leader = true
 			// -----------------------------------------------------
+
 			if !bz.hasLeader && msg.RoundNumber == bz.roundNumber {
 				// first validate the leadership proof
 				log.Lvl1("final round result: ", msg.Leaderinfo, "is the round leader for round number ", bz.roundNumber)
@@ -522,16 +526,19 @@ func (bz *BaseDFS) helloBaseDFS() {
 				}
 			}(child)
 		}
-	}
+	} //ToDo: later check what happens to these go routines!
+
 	// the root node is filling the first block in first round
 	if bz.TreeNodeInstance.IsRoot() {
-		// let other nodes join the protocol first
-		time.Sleep(time.Duration(2*bz.RoundDuration) * time.Second)
+		// let other nodes join the protocol first -
+		time.Sleep(time.Duration(len(bz.Roster().List)) * time.Second)
+
 		log.Lvl2(bz.Name(), "Filling round number ", bz.roundNumber)
 		// for the first round we have the root node set as a round leader, so  it is true! and he takes txs from the queue
 		bz.updateBCPowerRound(bz.Name(), true)
 		bz.updateBCTransactionQueueCollect()
 		bz.updateBCTransactionQueueTake()
+		time.Sleep(time.Duration(bz.RoundDuration) * time.Second)
 		bz.readBCAndSendtoOthers()
 		bz.StartTimeOut()
 	}

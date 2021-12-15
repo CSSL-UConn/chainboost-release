@@ -88,11 +88,14 @@ There are 5 sheets, namely MarketMatching, FirstQueue, SecondQueue, and RoundTab
         - the added block size
         - IP of the leader in each round
         - number of each transaction type that is submitted in each round
-        - total number of all submitted transactions in each round
+        - `TotalNumTxs`: total number of all submitted transactions in each round
         - the time that each round has started
-        - the average wait time on the first queue in each round (not done yet)
-        - the average wait time on the second queue in each round (not done yet)
+        - `AveWait-RegPay` and `AveWait-OtherTxs`: the average wait time in each round for regular payment and other types of transactions
+        - `RegPaySpaceFull` and `BlockSpaceFull`: 1 indicates the allocated space for regular payment is full /  the block space is full
 
-Note that there may be some rounds that there is no leader for them, an empty block will be added to the blockchain in those rounds and the information of the root node (blockchain layer 1) is added (it can be removed) as the round leader but all the other columns are empty. in these rounds transactions will be added normally to the queue but no transaction is removed bcz the block is empty.
+Note that:
+------------
+- there may be some rounds that there is no leader for them, an empty block will be added to the blockchain in those rounds and the information of the root node (blockchain layer 1) is added (it can be removed) as the round leader but all the other columns are empty. in these rounds transactions will be added normally to the queue but no transaction is removed bcz the block is empty.
+- when in a round, some transactions should wait in a queue (i.e. the allocated space for  that transaction is full) and are submitted in another round, the average wait of that queue in the round that those transactions get to be submitted increases.
 
 
