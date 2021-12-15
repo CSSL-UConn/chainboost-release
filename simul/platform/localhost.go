@@ -80,6 +80,7 @@ type Localhost struct {
 	BlockSize                int
 	SectorNumber             int
 	NumberOfPayTXsUpperBound int
+	ProtocolTimeout          int
 }
 
 // Configure various internal variables
@@ -98,6 +99,7 @@ func (d *Localhost) Configure(pc *Config) {
 	d.BlockSize = pc.BlockSize
 	d.SectorNumber = pc.SectorNumber
 	d.NumberOfPayTXsUpperBound = pc.NumberOfPayTXsUpperBound
+	d.ProtocolTimeout = pc.ProtocolTimeout
 	// ------------------------------
 	d.localDir = pwd
 	d.debug = pc.Debug
@@ -221,7 +223,7 @@ func (d *Localhost) Start(args ...string) error {
 			log.Lvl3("Localhost: will start host", i, h)
 			// raha: adding some other system-wide configurations
 
-			err := Simulate(d.PercentageTxPay, d.RoundDuration, d.BlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound,
+			err := Simulate(d.PercentageTxPay, d.RoundDuration, d.BlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.ProtocolTimeout,
 				d.Suite, host, d.Simulation, "")
 			if err != nil {
 				log.Error("Error running localhost", h, ":", err)

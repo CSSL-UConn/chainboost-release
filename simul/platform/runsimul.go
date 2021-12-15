@@ -25,7 +25,7 @@ type simulInitDone struct{}
 // simul = localhost.simulation
 
 // raha: adding some other system-wide configurations
-func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfPayTXsUpperBound int,
+func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfPayTXsUpperBound, ProtocolTimeout int,
 	suite, serverAddress, simul, monitorAddress string) error {
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 	if err != nil {
@@ -136,18 +136,13 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 		log.Lvl2("Starting protocol", simul, "on server", rootSC.Server.ServerIdentity.Address)
 		log.Lvl5("Tree is", rootSC.Tree.Dump())
 		// Raha: I want to see the tree!
-		log.Lvl1("Tree is", rootSC.Tree.Dump())
+		log.Lvl5("Tree is", rootSC.Tree.Dump())
 		// First count the number of available children
-		childrenWait := monitor.NewTimeMeasure("ChildrenWait")
+		//childrenWait := monitor.NewTimeMeasure("ChildrenWait")
 		wait := true
-		// The timeout starts with 1 second, which is the time of response between
-		// each level of the tree.
-		//timeout := 1 * time.Second
-		//Raha
-		timeout := 1000 * time.Second
 		for wait {
+			// Raha: the protocol is instanciated here:
 			//p, err := rootSC.Overlay.CreateProtocol("Count", rootSC.Tree, onet.NilServiceID)
-			//Raha
 			//p, err := rootSC.Overlay.CreateProtocol("OpinionGathering", rootSC.Tree, onet.NilServiceID)
 			p, err := rootSC.Overlay.CreateProtocol("BaseDFS", rootSC.Tree, onet.NilServiceID)
 			if err != nil {
@@ -156,25 +151,27 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 			//proto := p.(*manage.ProtocolCount)
 			//proto := p.(*manage.ProtocolOpinionGathering)
 			proto := p.(*BaseDFSProtocol.BaseDFS)
-			proto.SetTimeout(timeout)
+			//proto.SetTimeout(time.Duration(TimeOut) * time.Second)
 			// raha: finally passing our system-wide configurations to our protocol
 			proto.PercentageTxPay = PercentageTxPay
 			proto.RoundDuration = RoundDuration
 			proto.BlockSize = BlockSize
 			proto.SectorNumber = SectorNumber
 			proto.NumberOfPayTXsUpperBound = NumberOfPayTXsUpperBound
+			proto.ProtocolTimeout = time.Duration(ProtocolTimeout) * time.Second
 			log.LLvl2("passing our system-wide configurations to the protocol",
 				"\n  PercentageTxPay: ", PercentageTxPay,
 				"\n  RoundDuration: ", RoundDuration,
 				"\n BlockSize: ", BlockSize,
 				"\n SectorNumber: ", SectorNumber,
 				"\n NumberOfPayTXsUpperBound: ", NumberOfPayTXsUpperBound,
+				"\n With timeout of: ", ProtocolTimeout,
 			)
 			// ---------------------------------------------------------------
 			proto.Start()
 			//log.Lvl1("Started counting children with timeout of", timeout)
 			//Raha
-			log.Lvl1("Started protocol with timeout of", timeout)
+			//log.Lvl1("Started protocol with timeout of", TimeOut)
 			/*
 				select {
 				case count := <-proto.Count:
@@ -194,47 +191,47 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 				wait = false
 			}
 		}
-		childrenWait.Record()
-		log.Lvl2("Broadcasting start, (Raha: I think its about having mutiple servers",
-			" which doesnt apply to when we are running a localhost simulation)")
-		syncWait := monitor.NewTimeMeasure("SimulSyncWait")
-		wgSimulInit.Add(len(rootSC.Tree.Roster.List))
-		for _, conode := range rootSC.Tree.Roster.List {
-			go func(si *network.ServerIdentity) {
-				_, err := rootSC.Server.Send(si, &simulInit{})
-				log.ErrFatal(err, "Couldn't send to conode:")
-			}(conode)
-		}
-		wgSimulInit.Wait()
-		syncWait.Record()
-		log.Lvl1("Starting new node", simul)
+		// 	//childrenWait.Record()
+		// 	log.Lvl2("Broadcasting start, (Raha: I think its about having mutiple servers",
+		// 		" which doesnt apply to when we are running a localhost simulation)")
+		// 	syncWait := monitor.NewTimeMeasure("SimulSyncWait")
+		// 	wgSimulInit.Add(len(rootSC.Tree.Roster.List))
+		// 	for _, conode := range rootSC.Tree.Roster.List {
+		// 		go func(si *network.ServerIdentity) {
+		// 			_, err := rootSC.Server.Send(si, &simulInit{})
+		// 			log.ErrFatal(err, "Couldn't send to conode:")
+		// 		}(conode)
+		// 	}
+		// 	wgSimulInit.Wait()
+		// 	syncWait.Record()
+		// 	log.Lvl1("Starting new node", simul)
 
-		measureNet := monitor.NewCounterIOMeasure("bandwidth_root", rootSC.Server)
-		simError = rootSim.Run(rootSC)
-		measureNet.Record()
+		// 	measureNet := monitor.NewCounterIOMeasure("bandwidth_root", rootSC.Server)
+		// 	simError = rootSim.Run(rootSC)
+		// 	measureNet.Record()
 
-		// Test if all ServerIdentities are used in the tree, else we'll run into
-		// troubles with CloseAll
-		if !rootSC.Tree.UsesList() {
-			log.Error("The tree doesn't use all ServerIdentities from the list!\n" +
-				"This means that the CloseAll will fail and the experiment never ends!")
-		}
+		// 	// Test if all ServerIdentities are used in the tree, else we'll run into
+		// 	// troubles with CloseAll
+		// 	if !rootSC.Tree.UsesList() {
+		// 		log.Error("The tree doesn't use all ServerIdentities from the list!\n" +
+		// 			"This means that the CloseAll will fail and the experiment never ends!")
+		// 	}
 
-		// Recreate a tree out of the original roster, to be sure all nodes are included and
-		// that the tree is easy to close.
-		closeTree := rootSC.Roster.GenerateBinaryTree()
-		pi, err := rootSC.Overlay.CreateProtocol("CloseAll", closeTree, onet.NilServiceID)
-		if err != nil {
-			return xerrors.New("couldn't create closeAll protocol: " + err.Error())
-		}
-		pi.Start()
-	}
+		// 	// Recreate a tree out of the original roster, to be sure all nodes are included and
+		// 	// that the tree is easy to close.
+		// 	closeTree := rootSC.Roster.GenerateBinaryTree()
+		// 	pi, err := rootSC.Overlay.CreateProtocol("CloseAll", closeTree, onet.NilServiceID)
+		// 	if err != nil {
+		// 		return xerrors.New("couldn't create closeAll protocol: " + err.Error())
+		// 	}
+		// 	pi.Start()
+		// }
 
-	log.Lvl3(serverAddress, scs[0].Server.ServerIdentity, "is waiting for all servers to close")
-	wgServer.Wait()
-	log.Lvl2(serverAddress, "has all servers closed")
-	if monitorAddress != "" {
-		monitor.EndAndCleanup()
+		// log.Lvl3(serverAddress, scs[0].Server.ServerIdentity, "is waiting for all servers to close")
+		// wgServer.Wait()
+		// log.Lvl2(serverAddress, "has all servers closed")
+		// if monitorAddress != "" {
+		// 	monitor.EndAndCleanup()
 	}
 
 	// Give a chance to the simulation to stop the servers and clean up but returns the simulation error anyway.

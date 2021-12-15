@@ -72,6 +72,7 @@ func startBuild() {
 		BlockSize, _ := strconv.Atoi(runconfigs[0].Get("BlockSize"))
 		SectorNumber, _ := strconv.Atoi(runconfigs[0].Get("SectorNumber"))
 		NumberOfPayTXsUpperBound, _ := strconv.Atoi(runconfigs[0].Get("NumberOfPayTXsUpperBound"))
+		ProtocolTimeout, _ := strconv.Atoi(runconfigs[0].Get("ProtocolTimeout"))
 
 		deployP.Configure(&platform.Config{
 			MonitorPort: monitorPort,
@@ -83,6 +84,7 @@ func startBuild() {
 			BlockSize:                BlockSize,
 			SectorNumber:             SectorNumber,
 			NumberOfPayTXsUpperBound: NumberOfPayTXsUpperBound,
+			ProtocolTimeout:          ProtocolTimeout,
 		})
 
 		if clean {
@@ -111,7 +113,7 @@ func startBuild() {
 			select {
 			case <-testsDone:
 				log.Lvl3("Done with test", simulation)
-			case <-time.After(timeout):
+			case <-time.After(2 * timeout):
 				log.Fatal("Test failed to finish in", timeout)
 			}
 		}
@@ -287,7 +289,7 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 			return nil, xerrors.Errorf("simulation error: %v", err)
 		}
 		return stats, nil
-	case <-time.After(timeout):
+	case <-time.After(2 * timeout):
 		return nil, xerrors.New("simulation timeout")
 	}
 }

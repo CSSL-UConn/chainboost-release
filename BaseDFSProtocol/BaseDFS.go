@@ -22,7 +22,21 @@
 	1- por
 	2- proposed block
 	3- Hello (to notify start of protocol)
-	4- epoch timeOut
+
+
+	1- each server who is elected as leader (few servers in each round) send a msg of &NewLeader{Leaderinfo: bz.Name(), RoundNumber: bz.roundNumber} to root node.
+	2- each round, the root node send a msg of &NewRound{Seed:  seed, Power: power} to all servers including the target server's power
+	3- in the bootstrapping phase, the root node send a message to all servers containing protocol config parameters.
+	&HelloBaseDFS{
+					Timeout:                  bz.timeout,
+					PercentageTxPay:          bz.PercentageTxPay,
+					RoundDuration:            bz.RoundDuration,
+					BlockSize:                bz.BlockSize,
+					SectorNumber:             bz.SectorNumber,
+					NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
+				}
+	4- timeOut
+
 */
 package BaseDFSProtocol
 
@@ -56,7 +70,7 @@ import (
 // ------  types used for communication (msgs) -------------------------
 /*Hello is sent down the tree from the root node, every node who gets it starts the protocol and send it to its children*/
 type HelloBaseDFS struct {
-	Timeout time.Duration
+	ProtocolTimeout time.Duration
 	//---- ToDo: Do i need timeout?
 	PercentageTxPay          int
 	RoundDuration            int
@@ -118,16 +132,19 @@ type BaseDFS struct {
 	BlockSize                int
 	SectorNumber             int
 	NumberOfPayTXsUpperBound int
-	timeout                  time.Duration
-	//---
-	timeoutMu sync.Mutex
+	// ---
+	ProtocolTimeout time.Duration
+	timeoutMu       sync.Mutex
 	// ------------------------------------------------------------------
 	roundNumber int
 	hasLeader   bool
+	// --- just root node use these
+	FirstQueueWait  time.Duration
+	SecondQueueWait time.Duration
 	// ------------------------------------------------------------------------------------------------------------------
 	//ToDo: raha: dol I need these items?
 	//vcMeasure *monitor.TimeMeasure
-	// lock associated
+	//lock associated
 	//doneLock  sync.Mutex
 }
 
@@ -154,6 +171,9 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 		LeaderProposeChan: make(chan bool, 1),
 		roundNumber:       1,
 		hasLeader:         false,
+		FirstQueueWait:    0,
+		SecondQueueWait:   0,
+		ProtocolTimeout:   0,
 	}
 	if err := n.RegisterChannel(&bz.HelloChan); err != nil {
 		return bz, err
@@ -193,8 +213,10 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 func (bz *BaseDFS) Start() error {
 	// update the centralbc file with created nodes' information
 	bz.finalCentralBCInitialization()
+
 	//bz.Testpor()
 	//vrf.Testvrf()
+
 	// config params are sent from the leader to the other nodes in helloBasedDfs function
 	bz.helloBaseDFS()
 	return nil
@@ -253,7 +275,6 @@ func (bz *BaseDFS) finalCentralBCInitialization() {
 ------------------------------------------------------------------------ */
 // Dispatch listen on the different channels
 func (bz *BaseDFS) Dispatch() error {
-	//var timeoutStarted bool
 	running := true
 	var err error
 
@@ -271,7 +292,6 @@ func (bz *BaseDFS) Dispatch() error {
 		// this msg is catched in simulation codes
 		case <-bz.DoneBaseDFS:
 			running = false
-
 		case msg := <-bz.NewRoundChan:
 			bz.roundNumber = bz.roundNumber + 1
 			log.Lvl2(bz.Name(), " round number ", bz.roundNumber, " started at ", time.Now())
@@ -297,26 +317,29 @@ func (bz *BaseDFS) Dispatch() error {
 				go bz.SendTo(bz.Root(), &NewLeader{Leaderinfo: bz.Name(), RoundNumber: bz.roundNumber})
 			}
 
-			// ******* just the root node (blockchain layer one) recieve this msg
+			// ******* just the ROOT NODE (blockchain layer one) recieve this msg
 		case msg := <-bz.NewLeaderChan:
+			// -----------------------------------------------------
 			// rounds without a leader: in this case the leader info is filled with root node's info, transactions are going to be collected normally but
 			// since the block is empty, no transaction is going to be taken from queues => leader = false
+			// -----------------------------------------------------
 			if msg.Leaderinfo == bz.Name() && bz.roundNumber != 1 && !bz.hasLeader && msg.RoundNumber == bz.roundNumber {
 				bz.hasLeader = true
 				bz.updateBCPowerRound(msg.Leaderinfo, false)
 				// in the case of a leader-less round
 				log.Lvl1("final round result: ", msg.Leaderinfo, "(root node) filled round number", bz.roundNumber, "with empty block")
 				bz.updateBCTransactionQueueCollect()
-				//time.Sleep(time.Duration(bz.RoundDuration))
 				bz.readBCAndSendtoOthers()
 				log.Lvl2("new round is announced")
 				continue
 			}
+			// -----------------------------------------------------
 			// normal rounds with a leader => leader = true
+			// -----------------------------------------------------
 			if !bz.hasLeader && msg.RoundNumber == bz.roundNumber {
 				// first validate the leadership proof
 				log.Lvl1("final round result: ", msg.Leaderinfo, "is the round leader for round number ", bz.roundNumber)
-				bz.hasLeader = true // for the root node, is leader means the round has a leader
+				bz.hasLeader = true
 				bz.updateBCPowerRound(msg.Leaderinfo, true)
 				bz.updateBCTransactionQueueCollect()
 				bz.updateBCTransactionQueueTake()
@@ -324,7 +347,7 @@ func (bz *BaseDFS) Dispatch() error {
 				log.Lvl2("this round already has a leader!")
 			}
 			//waiting for the time of round duration
-			time.Sleep(time.Duration(bz.RoundDuration))
+			time.Sleep(time.Duration(bz.RoundDuration) * time.Second)
 			// empty list of elected leaders  in this round
 			for len(bz.NewLeaderChan) > 0 {
 				<-bz.NewLeaderChan
@@ -332,13 +355,6 @@ func (bz *BaseDFS) Dispatch() error {
 			// announce new round and give away required checkleadership info to nodes
 			bz.readBCAndSendtoOthers()
 			log.Lvl2("new round is announced")
-
-		case <-time.After(time.Duration(bz.Timeout())):
-			if bz.IsRoot() {
-				log.Lvl3(bz.Info(), "timed out while waiting for", bz.Timeout())
-				running = false
-				// bz.DoneBaseDFS <- true
-			}
 		}
 	}
 	// -------- cases used for communication ------------------
@@ -494,7 +510,7 @@ func (bz *BaseDFS) helloBaseDFS() {
 		for _, child := range bz.Children() {
 			go func(c *onet.TreeNode) {
 				err := bz.SendTo(c, &HelloBaseDFS{
-					Timeout:                  bz.timeout,
+					ProtocolTimeout:          bz.ProtocolTimeout,
 					PercentageTxPay:          bz.PercentageTxPay,
 					RoundDuration:            bz.RoundDuration,
 					BlockSize:                bz.BlockSize,
@@ -510,13 +526,23 @@ func (bz *BaseDFS) helloBaseDFS() {
 	// the root node is filling the first block in first round
 	if bz.TreeNodeInstance.IsRoot() {
 		// let other nodes join the protocol first
-		time.Sleep(time.Duration(2 * bz.RoundDuration))
+		time.Sleep(time.Duration(2*bz.RoundDuration) * time.Second)
 		log.Lvl2(bz.Name(), "Filling round number ", bz.roundNumber)
 		// for the first round we have the root node set as a round leader, so  it is true! and he takes txs from the queue
 		bz.updateBCPowerRound(bz.Name(), true)
 		bz.updateBCTransactionQueueCollect()
 		bz.updateBCTransactionQueueTake()
 		bz.readBCAndSendtoOthers()
+		bz.StartTimeOut()
+	}
+}
+
+// -- the time specified in config file for a protocol simulation run
+func (bz *BaseDFS) StartTimeOut() {
+	select {
+	case <-time.After(time.Duration(bz.ProtocolTimeout)):
+		log.Lvl1(bz.Info(), "protocol ends with timed out: ", bz.ProtocolTimeout)
+		bz.DoneBaseDFS <- true
 	}
 }
 
@@ -1023,7 +1049,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 			}
 		}
 	}
-	// ----
+	// ---
 	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
@@ -1055,6 +1081,8 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	axisNumRegPayTx := "E" + NextRow
 	numberOfRegPayTx := 0
 	BlockSizeMinusTransactions := blockchain.BlockMeasurement()
+	format := "01-02 15:04:05"
+	var TakeTime time.Time
 
 	/* -----------------------------------------------------------------------------
 		-- take regular payment transactions from sheet: SecondQueue
@@ -1082,6 +1110,12 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 					/* transaction name in transaction queue payment is just "TxPayment"
 					the transactions are just removed from queue and their size are added to included transactions' size in block */
 					log.Lvl2("a regular payment transaction added to block number", bz.roundNumber, " from the queue")
+					// row[1] is transaction's collected time
+					if TakeTime, err = time.Parse(format, row[1]); err != nil {
+						log.Lvl2("Panic Raised:\n\n")
+						panic(err)
+					}
+					bz.SecondQueueWait = bz.SecondQueueWait + time.Now().Sub(TakeTime)
 					f.RemoveRow("SecondQueue", i)
 				} else {
 					blockIsFull = true
@@ -1117,6 +1151,8 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	axisNumContractProposeTx := "H" + NextRow
 	axisNumContractCommitTx := "I" + NextRow
 	axisTotalTxsNum := "K" + NextRow
+	axisFirstQueueWait := "L" + NextRow
+	axisSecondQueueWait := "M" + NextRow
 
 	for i := len(rows); i > 1 && !blockIsFull; i-- {
 		row := rows[i-1][:]
@@ -1177,6 +1213,12 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 						log.Lvl2("Panic Raised:\n\n")
 						panic("the type of transaction in the queue is un-defined")
 					}
+					// row[2] is transaction's collected time
+					if TakeTime, err = time.Parse(format, row[2]); err != nil {
+						log.Lvl2("Panic Raised:\n\n")
+						panic(err)
+					}
+					bz.FirstQueueWait = bz.FirstQueueWait + time.Now().Sub(TakeTime)
 					f.RemoveRow("FirstQueue", i)
 				} else {
 					blockIsFull = true
@@ -1186,7 +1228,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 			}
 		}
 	}
-	// code gets here when the block is not fulled but the queue is empty
+
 	err = f.SetCellValue("RoundTable", axisNumPoRTx, numberOfPoRTx)
 	err = f.SetCellValue("RoundTable", axisNumStoragePayTx, numberOfStoragePayTx)
 	err = f.SetCellValue("RoundTable", axisNumContractProposeTx, numberOfContractProposeTx)
@@ -1205,6 +1247,10 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	err = f.SetCellValue("RoundTable", axisNumRegPayTx, numberOfRegPayTx)
 	err = f.SetCellValue("RoundTable", axisBlockSize, accumulatedTxSize+allocatedBlockSizeForRegPayTx)
 	err = f.SetCellValue("RoundTable", axisTotalTxsNum, x)
+
+	err = f.SetCellValue("RoundTable", axisFirstQueueWait, bz.FirstQueueWait.Seconds())
+	err = f.SetCellValue("RoundTable", axisSecondQueueWait, bz.SecondQueueWait.Seconds())
+
 	log.Lvl1("final: \n", allocatedBlockSizeForRegPayTx,
 		" for regular payment txs,\n and ", accumulatedTxSize, " for other types of txs")
 	if err != nil {
@@ -1231,7 +1277,7 @@ and publish an empty block in those rounds
 ------------------------------------------------------------------------ */
 func (bz *BaseDFS) startTimer(roundNumber int) {
 	select {
-	case <-time.After(time.Duration(bz.RoundDuration)):
+	case <-time.After(time.Duration(bz.RoundDuration) * time.Second):
 		if bz.IsRoot() && bz.roundNumber == roundNumber && !bz.hasLeader {
 			log.Lvl2("No leader for round number ", bz.roundNumber, "an empty block is added")
 			bz.NewLeaderChan <- NewLeaderChan{bz.TreeNode(), NewLeader{Leaderinfo: bz.Name(), RoundNumber: bz.roundNumber}}
@@ -1243,21 +1289,21 @@ func (bz *BaseDFS) startTimer(roundNumber int) {
 ------------------------------------------------------------------------ */
 // SetTimeout sets the new timeout
 //todo: raha:  do we need the following functions?
-func (bz *BaseDFS) SetTimeout(t time.Duration) {
-	bz.timeoutMu.Lock()
-	bz.timeout = t
-	bz.timeoutMu.Unlock()
-}
+// func (bz *BaseDFS) SetTimeout(t time.Duration) {
+// 	bz.timeoutMu.Lock()
+// 	bz.Timeout = t
+// 	bz.timeoutMu.Unlock()
+// }
 
 /* ----------------------------------------------------------------------
 -----------------
 ------------------------------------------------------------------------ */
 // Timeout returns the current timeout
-func (bz *BaseDFS) Timeout() time.Duration {
-	bz.timeoutMu.Lock()
-	defer bz.timeoutMu.Unlock()
-	return bz.timeout
-}
+// func (bz *BaseDFS) Timeout() time.Duration {
+// 	bz.timeoutMu.Lock()
+// 	defer bz.timeoutMu.Unlock()
+// 	return bz.timeout
+// }
 
 // ------------   Sortition Algorithm from ALgorand: ---------------------
 // ⟨hash,π⟩←VRFsk(seed||role)

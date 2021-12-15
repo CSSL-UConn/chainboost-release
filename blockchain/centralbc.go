@@ -394,7 +394,7 @@ func InitializeCentralBC(RoundDuration,
 	if err != nil {
 		log.Lvl2(err)
 	}
-	if err = f.SetColWidth("RoundTable", "J", "J", 25); err != nil {
+	if err = f.SetColWidth("RoundTable", "J", "N", 25); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
@@ -406,9 +406,17 @@ func InitializeCentralBC(RoundDuration,
 	if err != nil {
 		log.Lvl2(err)
 	}
+	err = f.SetCellValue("RoundTable", "L1", "TotalWaitQ1")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "M1", "TotalWaitQ2")
+	if err != nil {
+		log.Lvl2(err)
+	}
 
 	// -----------------------    Filling Round Table's first row +
-	err = f.SetCellValue("RoundTable", "A2", 1)
+	err = f.SetCellValue("RoundTable", "A2", 0)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -424,7 +432,7 @@ func InitializeCentralBC(RoundDuration,
 		log.Lvl2(err)
 	}
 	// -----------------------    Filling Round Table's second row: next round's seed
-	err = f.SetCellValue("RoundTable", "A3", 2)
+	err = f.SetCellValue("RoundTable", "A3", 1)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)

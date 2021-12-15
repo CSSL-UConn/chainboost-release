@@ -73,6 +73,7 @@ type Config struct {
 	BlockSize                int
 	SectorNumber             int
 	NumberOfPayTXsUpperBound int
+	ProtocolTimeout          int
 }
 
 var deterlab = "deterlab"
