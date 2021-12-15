@@ -1,7 +1,4 @@
 
-for now check <[ReadMeNow.MD](https://github.com/chainBstSc/basedfs/blob/master/ReadMeNow.MD) file.
-
-
 
 <!-- [![Build Status](https://travis-ci.org/dedis/onet.svg?branch=master)](https://travis-ci.org/dedis/onet)
 [![Go Report Card](https://goreportcard.com/badge/github.com/dedis/onet)](https://goreportcard.com/report/github.com/dedis/onet)
