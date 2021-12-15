@@ -97,8 +97,7 @@ The following packages provide core functionality to ..., as well as other tools
 # Base Distributed File System Network
 
 We used latest version of Onet (v.3.2.9) for network, simulation, and communication modules <https://github.com/dedis/onet/tree/v3.2.9>
-as well as blockchain module from the ByzCoin Ng-first branch of cothority <https://github.com/dedis/cothority/tree/byzcoin_ng_first/protocols/byzcoin/blockchain>
-and Cosi module from Cothority (it required some modification to work with Kyber and lastest Onet and with the blockchain module we used)
+as well as Cosi module from Cothority 
 
 Onet's documents can be find under following link:
 <https://github.com/dedis/onet/blob/master/README.md>
@@ -110,9 +109,3 @@ communications between thousands of nodes and it is used both in research for
 testing out new protocols and running simulations, as well as in production to
 deploy those protocols as a service in a distributed manner.
 
-**Onet** is developed by [DEDIS/EFPL](http://dedis.epfl.ch) as part of the
-[Cothority](https://github.com/dedis/cothority) project that aims to deploy a
-large number of nodes for distributed signing and related projects. In
-cothority, nodes are commonly named "conodes". A collective authority
-(cothority) is a set of conodes that work together to handle a distributed,
-decentralized task.
