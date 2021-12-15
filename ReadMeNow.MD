@@ -55,12 +55,13 @@ Hosts
 ----------------------------------------------------
 ## To Change the Configs ##
 - to change number of servers, change two values: 1- `Hosts` and 2- `Nodes` - with a same number :)
-- `BlockSize` is the maximum block size allowed in each round (the submitted block may be less than this size based on the available transactions in the queues)
+- `BlockSize` is the maximum block size (in Byte) allowed in each round (the submitted block may be less than this size based on the available transactions in the queues)
 - `DistributionMeanFileSize` and `DistributionVarianceFileSize` are specifying the mean and variance of the Normal distribution used to generate file-sizes in the contracts
 - `DistributionMeanContractDuration` and `DistributionVarianceContractDuration` is the same for contracts' duration
 - `DistributionMeanInitialPower` and DistributionVarianceInitialPower is the same for the intial power we assign to each server
 - `SectorNumber` is the number of sectors in each block of file with impact the por transaction size
-- `PercentageTxPay` is the upper bound for a random number of block size percentage allocated for regular payment transactions
+- `PercentageTxPay` the block size percentage allocated for regular payment transactions (if regular payment txs are less, other types of txs will take its space)
+- `NumberOfPayTXsUpperBound` the upper bound for a random number of regular payment transactions issued in each round
 - `ProtocolTimeout` is the time that we want the protocol to stop after it (in seconds)
 - `RoundDuration` the time interval between each round (in seconds)
 
