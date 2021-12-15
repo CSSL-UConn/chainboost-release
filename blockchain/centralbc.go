@@ -410,19 +410,19 @@ func InitializeCentralBC(RoundDuration,
 	if err != nil {
 		log.Lvl2(err)
 	}
-	err = f.SetCellValue("RoundTable", "L1", "AveWaitInQ1")
+	err = f.SetCellValue("RoundTable", "L1", "AveWait-OtherTxs")
 	if err != nil {
 		log.Lvl2(err)
 	}
-	err = f.SetCellValue("RoundTable", "M1", "AveWaitInQ2")
+	err = f.SetCellValue("RoundTable", "M1", "AveWait-RegPay")
 	if err != nil {
 		log.Lvl2(err)
 	}
-	err = f.SetCellValue("RoundTable", "N1", "Queue2Full")
+	err = f.SetCellValue("RoundTable", "N1", "RegPaySpaceFull")
 	if err != nil {
 		log.Lvl2(err)
 	}
-	err = f.SetCellValue("RoundTable", "O1", "Queue1Full")
+	err = f.SetCellValue("RoundTable", "O1", "BlockSpaceFull")
 	if err != nil {
 		log.Lvl2(err)
 	}
