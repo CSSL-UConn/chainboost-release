@@ -22,37 +22,6 @@ Config File "BaseDFS.toml" is located under the following directory:
 ([BaseDFS.toml](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/BaseDFS.toml))
 
 
-This is how config file looks like:
-----------------------------------------------------
-
-
-Servers = 1 
-Simulation = "BaseDFS"
-BF = 2
-Rounds = 0
-RunWait = "600000s"
-Suite = "Ed25519"
-PreScript = "testPreScript.toml"
-RoundDuration = 5
-ProtocolTimeout = 100
-timeout = 500
-PercentageTxPay = 30
-DistributionMeanFileSize = 100
-DistributionVarianceFileSize = 5
-DistributionMeanContractDuration = 10
-DistributionVarianceContractDuration = 50
-DistributionMeanInitialPower = 900000000000000000
-DistributionVarianceInitialPower = 9000000000000000
-Nodes = 50
-BlockSize = 100000
-SectorNumber = 1
-NumberOfPayTXsUpperBound = 100
-
-Hosts
-50
-
-
-----------------------------------------------------
 ## To Change the Configs ##
 - to change number of servers, change two values: 1- `Hosts` and 2- `Nodes` - with a same number :)
 - `BlockSize` is the maximum block size (in Byte) allowed in each round (the submitted block may be less than this size based on the available transactions in the queues)
