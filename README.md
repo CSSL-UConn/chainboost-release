@@ -1,4 +1,6 @@
 
+![ChainBoost](https://github.com/chainBstSc/basedfs/blob/master/BaseDFSProtocol/chainboost.jpeg)
+
 
 <!-- [![Build Status](https://travis-ci.org/dedis/onet.svg?branch=master)](https://travis-ci.org/dedis/onet)
 [![Go Report Card](https://goreportcard.com/badge/github.com/dedis/onet)](https://goreportcard.com/report/github.com/dedis/onet)
