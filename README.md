@@ -43,30 +43,26 @@ Config File "BaseDFS.toml" is located under the following directory:
 There are 5 sheets, namely MarketMatching, FirstQueue, SecondQueue, and RoundTable, and PowerTable
 
 
-- `MarketMatching`: the overall information about the market matching 
-    - about the servers: IP, about the contract: ID, duration, File size, and starting round#, isPublished (if a contract get expired, the column published is set to 0 until its poropose and commit transaction get submitted to the blockchain again)
-- `PowerTable`
-    - A matrix of each server's added power in each round
--`FirstQueue`
-    - there are 5 types of trransactions in there
-        - propose contract (including the information of teh contract and the client's payment for it)
-        - commit contract: in which the server commits to the contract id already published by the client
-        - por: for each active (not expired) contract each server issue ane por
-        - storage payment: after the contract duration pass and a contract expires, this transaction is assued to pay for the service
--`SecondQueue`
-    - the queue of regular payment transactions
--`RoundTable`
-    - the overall information of the blockchain including:
-        - each round's seed
-        - the added block size
-        - IP of the leader in each round
-        - number of each transaction type that is submitted in each round
-        - `TotalNumTxs`: total number of all submitted transactions in each round
-        - the time that each round has started
-        - `AveWait-RegPay` and `AveWait-OtherTxs`: the average wait time in each round for regular payment and other types of transactions[^2]
-        - `RegPaySpaceFull` and `BlockSpaceFull`: 1 indicates the allocated space for regular payment is full /  the block space is full
-
-
+- `MarketMatching`: the overall information about the market matching
+    - about the servers: IP, 
+    - about the contract: ID, duration, File size, and starting round#, isPublished (if a contract get expired, the column published is set to 0 until its poropose and commit transaction get submitted to the blockchain again)
+- `PowerTable`: A matrix of each server's added power in each round
+- `FirstQueue`: there are 5 types of trransactions in there
+    - `propose contract': including the information of teh contract and the client's payment for it
+    - `commit contract`: in which the server commits to the contract id already published by the client
+    - `por`: for each active (not expired) contract each server issue ane por
+    - `storage payment`: after the contract duration pass and a contract expires, this transaction is assued to pay for the service
+- `SecondQueue`: the queue of regular payment transactions
+- `RoundTable`: the overall information of the blockchain including:
+    - each round's seed
+    - the added block size
+    - IP of the leader in each round
+    - number of each transaction type that is submitted in each round
+    - `TotalNumTxs`: total number of all submitted transactions in each round
+    - the time that each round has started
+    - `AveWait-RegPay` and `AveWait-OtherTxs`: the average wait time in each round for regular payment and other types of transactions[^2]
+    - `RegPaySpaceFull` and `BlockSpaceFull`: 1 indicates the allocated space for regular payment is full /  the block space is full
+- `Overall Evaluation`: the overall results up until each round[^3]
 
 
 ## Project Layout ##
@@ -105,4 +101,5 @@ deploy those protocols as a service in a distributed manner.
 <!--FootNote-->
 [^1]: there may be some rounds that there is no leader for them, an empty block will be added to the blockchain in those rounds and the information of the root node (blockchain layer 1) is added (it can be removed) as the round leader but all the other columns are empty. in these rounds transactions will be added normally to the queue but no transaction is removed bcz the block is empty.
 [^2]: when in a round, some transactions should wait in a queue (i.e. the allocated space for  that transaction is full) and are submitted in another round, the average wait of that queue in the round that those transactions get to be submitted increases.
+[^3]: these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
 <!--FootNote-->
