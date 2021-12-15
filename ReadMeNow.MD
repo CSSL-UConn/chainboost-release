@@ -10,16 +10,15 @@ note: running on an OS other than IOS needs a change in c extention config code
 3- Open a terminal in the directory where the folder basedfs is located
 4- run the following command: 
     - "/usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/basedfs/simul/manage/simulation"
-    - this will call the TestSimulation function in the file: ([simul_test.go](.../basedfs/simul/manage/simulation/simul_test.go))
-5- the stored blockchain in Excel file "centralbc.xlsx"  can be found under the following directory: 
-    - .../basedfs/simul/manage/simulation/build/centralbc.xlsx
+    - this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/simul_test.go))
+5- the stored blockchain in Excel file "centralbc.xlsx"  can be found under the `build` directory that is going to be created after simulation run
 
 
 
 ## Config File ##
 
 Config File "BaseDFS.toml" is located under the following directory:
-([BaseDFS.toml](.../basedfs/simul/manage/simulation/BaseDFS.toml))
+([BaseDFS.toml](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/BaseDFS.toml))
 
 
 This is how config file looks like:
