@@ -26,6 +26,7 @@ Types of Messages:
 	BlockSize:                bz.BlockSize,
 	SectorNumber:             bz.SectorNumber,
 	NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
+	SimulationSeed:			  bz.SimulationSeed,
 }
 ```
 - timeOut: terminate the simulation

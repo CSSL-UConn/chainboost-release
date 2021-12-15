@@ -73,6 +73,7 @@ func startBuild() {
 		SectorNumber, _ := strconv.Atoi(runconfigs[0].Get("SectorNumber"))
 		NumberOfPayTXsUpperBound, _ := strconv.Atoi(runconfigs[0].Get("NumberOfPayTXsUpperBound"))
 		ProtocolTimeout, _ := strconv.Atoi(runconfigs[0].Get("ProtocolTimeout"))
+		SimulationSeed, _ := strconv.Atoi(runconfigs[0].Get("SimulationSeed"))
 
 		deployP.Configure(&platform.Config{
 			MonitorPort: monitorPort,
@@ -85,6 +86,7 @@ func startBuild() {
 			SectorNumber:             SectorNumber,
 			NumberOfPayTXsUpperBound: NumberOfPayTXsUpperBound,
 			ProtocolTimeout:          ProtocolTimeout,
+			SimulationSeed:           SimulationSeed,
 		})
 
 		if clean {
@@ -259,7 +261,7 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 			rc.Get("DistributionMeanFileSize"), rc.Get("DistributionVarianceFileSize"),
 			rc.Get("DistributionMeanContractDuration"), rc.Get("DistributionVarianceContractDuration"),
 			rc.Get("DistributionMeanInitialPower"), rc.Get("DistributionVarianceInitialPower"),
-			rc.Get("Nodes"))
+			rc.Get("Nodes"), rc.Get("SimulationSeed"))
 		// --------------------------------------------
 		if err != nil {
 			done <- err

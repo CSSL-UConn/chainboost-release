@@ -74,6 +74,7 @@ type Config struct {
 	SectorNumber             int
 	NumberOfPayTXsUpperBound int
 	ProtocolTimeout          int
+	SimulationSeed           int
 }
 
 var deterlab = "deterlab"

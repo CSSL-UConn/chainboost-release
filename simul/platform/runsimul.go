@@ -25,7 +25,7 @@ type simulInitDone struct{}
 // simul = localhost.simulation
 
 // raha: adding some other system-wide configurations
-func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfPayTXsUpperBound, ProtocolTimeout int,
+func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfPayTXsUpperBound, ProtocolTimeout, SimulationSeed int,
 	suite, serverAddress, simul, monitorAddress string) error {
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 	if err != nil {
@@ -159,6 +159,7 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 			proto.SectorNumber = SectorNumber
 			proto.NumberOfPayTXsUpperBound = NumberOfPayTXsUpperBound
 			proto.ProtocolTimeout = time.Duration(ProtocolTimeout) * time.Second
+			proto.SimulationSeed = SimulationSeed
 			log.LLvl2("passing our system-wide configurations to the protocol",
 				"\n  PercentageTxPay: ", PercentageTxPay,
 				"\n  RoundDuration: ", RoundDuration,
@@ -166,6 +167,7 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 				"\n SectorNumber: ", SectorNumber,
 				"\n NumberOfPayTXsUpperBound: ", NumberOfPayTXsUpperBound,
 				"\n With timeout of: ", ProtocolTimeout,
+				"\n and SimulationSeed of: ", SimulationSeed,
 			)
 			// ---------------------------------------------------------------
 			proto.Start()

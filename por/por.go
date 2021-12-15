@@ -122,12 +122,11 @@ func GenerateFile(SectorNumber int) initialFile {
 	}
 	return initialFile{m: m_ij}
 }
-func randomizedVerifyingQuery() *randomQuery {
-	//--------- randomness: initialize the seed base on a known blockchain related param
-	var blockchainRandomSeed = 3
-	rand.Seed(int64(blockchainRandomSeed))
+func randomizedVerifyingQuery(SimulationSeed int) *randomQuery {
+
+	rand.Seed(int64(SimulationSeed))
 	var randombyte = make([]byte, 8)
-	binary.LittleEndian.PutUint64(randombyte, uint64(blockchainRandomSeed))
+	binary.LittleEndian.PutUint64(randombyte, uint64(SimulationSeed))
 	var rng = blake2xb.New(randombyte)
 	//-----------------------
 	var b [l]int
@@ -205,12 +204,12 @@ func RandomizedFileStoring(sk PrivateKey, initialfile initialFile, SectorNumber 
 // CreatePoR this function will be called by the server who wants to create a PoR
 // in the paper this function takes 3 inputs: public key , file tag , and processedFile -
 // I don't see why the first two parameters are needed!
-func CreatePoR(processedfile processedFile, SectorNumber int) Por {
+func CreatePoR(processedfile processedFile, SectorNumber, SimulationSeed int) Por {
 	// "the query can be generated from a short seed using a random oracle,
 	// and this short seed can be transmitted instead of the longer query."
 	// note: this function is called by the verifier in the paper but a prover who have access
 	// to the random seed (from blockchain) can call this (and get the query) herself.
-	rq := randomizedVerifyingQuery()
+	rq := randomizedVerifyingQuery(SimulationSeed)
 	m_ij := processedfile.m_ij.m
 	sigma := processedfile.sigma
 	var Mu []kyber.Scalar
@@ -237,8 +236,8 @@ func CreatePoR(processedfile processedFile, SectorNumber int) Por {
 // VerifyPoR servers will verify por tx.s when they receive it
 // in the paper this function takes 3 inputs: public key , private key, and file tag
 // I don't see why the private key is needed!
-func VerifyPoR(pk PublicKey, Tau []byte, p Por, SectorNumber int) (bool, error) {
-	rq := randomizedVerifyingQuery()
+func VerifyPoR(pk PublicKey, Tau []byte, p Por, SectorNumber, SimulationSeed int) (bool, error) {
+	rq := randomizedVerifyingQuery(SimulationSeed)
 	//check the file tag (Tau) integrity
 	error := schnorr.Verify(onet.Suite, pk.spk, Tau[:32+len(strconv.Itoa(n))+SectorNumber*32], Tau[32+len(strconv.Itoa(n))+SectorNumber*32:])
 	if error != nil {

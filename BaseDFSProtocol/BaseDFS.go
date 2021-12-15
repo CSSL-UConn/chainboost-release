@@ -13,6 +13,7 @@
 					BlockSize:                bz.BlockSize,
 					SectorNumber:             bz.SectorNumber,
 					NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
+					SimulationSeed:			  bz.SimulationSeed,
 				}
 	4- timeOut
 
@@ -56,6 +57,7 @@ type HelloBaseDFS struct {
 	BlockSize                int
 	SectorNumber             int
 	NumberOfPayTXsUpperBound int
+	SimulationSeed           int
 }
 type HelloChan struct {
 	*onet.TreeNode
@@ -114,6 +116,7 @@ type BaseDFS struct {
 	// ---
 	ProtocolTimeout time.Duration
 	timeoutMu       sync.Mutex
+	SimulationSeed  int
 	// ------------------------------------------------------------------
 	roundNumber int
 	hasLeader   bool
@@ -266,6 +269,7 @@ func (bz *BaseDFS) Dispatch() error {
 			bz.BlockSize = msg.BlockSize
 			bz.SectorNumber = msg.SectorNumber
 			bz.NumberOfPayTXsUpperBound = msg.NumberOfPayTXsUpperBound
+			bz.SimulationSeed = msg.SimulationSeed
 			bz.helloBaseDFS()
 
 		// this msg is catched in simulation codes
@@ -360,7 +364,6 @@ let other nodes know that the new round has started and the information they nee
 from blockchain to check if they are next round's leader */
 func (bz *BaseDFS) readBCAndSendtoOthers() {
 	powers, seed := bz.readBCPowersAndSeed()
-	//log.Lvl2(powers, seed)
 	bz.roundNumber = bz.roundNumber + 1
 	bz.hasLeader = false
 	for _, b := range bz.Tree().List() {
@@ -499,6 +502,7 @@ func (bz *BaseDFS) helloBaseDFS() {
 					BlockSize:                bz.BlockSize,
 					SectorNumber:             bz.SectorNumber,
 					NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
+					SimulationSeed:           bz.SimulationSeed,
 				})
 				if err != nil {
 					log.Lvl2(bz.Info(), "couldn't send hello to child", c.Name())
@@ -862,7 +866,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 	newTransactionRow[3] = strconv.Itoa(bz.roundNumber)
 	// this part can be moved to protocol initialization
 	var PorTxSize, ContractProposeTxSize, PayTxSize, StoragePayTxSize, ContractCommitTxSize int
-	PorTxSize, ContractProposeTxSize, PayTxSize, StoragePayTxSize, ContractCommitTxSize = blockchain.TransactionMeasurement(bz.SectorNumber)
+	PorTxSize, ContractProposeTxSize, PayTxSize, StoragePayTxSize, ContractCommitTxSize = blockchain.TransactionMeasurement(bz.SectorNumber, bz.SimulationSeed)
 	// ---
 	addCommitTx := false
 	// map transactionQueue:
@@ -950,8 +954,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 	for i, v := range newTransactionRow {
 		s[i] = v
 	}
-	// ToDo: move this seed to config file
-	rand.Seed(time.Now().UnixNano())
+	rand.Seed(int64(bz.SimulationSeed))
 
 	// avoid having zero regular payment txs
 	var numberOfRegPay int
@@ -1690,8 +1693,8 @@ func (bz *BaseDFS) Testpor() {
 
 	sk, pk := por.RandomizedKeyGeneration()
 	Tau, pf := por.RandomizedFileStoring(sk, por.GenerateFile(bz.SectorNumber), bz.SectorNumber)
-	p := por.CreatePoR(pf, bz.SectorNumber)
-	d, _ := por.VerifyPoR(pk, Tau, p, bz.SectorNumber)
+	p := por.CreatePoR(pf, bz.SectorNumber, bz.SimulationSeed)
+	d, _ := por.VerifyPoR(pk, Tau, p, bz.SectorNumber, bz.SimulationSeed)
 	if d == false {
 		log.Lvl2(d)
 	}

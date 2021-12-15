@@ -226,7 +226,7 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 
 // TransactionMeasurement computes the size of 5 types of transactions we currently have in the system:
 // Por, ContractPropose, Pay, StoragePay, ContractCommit
-func TransactionMeasurement(SectorNumber int) (PorTxSize int, ContractProposeTxSize int, PayTxSize int, StoragePayTxSize int, ContractCommitTxSize int) {
+func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize int, ContractProposeTxSize int, PayTxSize int, StoragePayTxSize int, ContractCommitTxSize int) {
 	// -- Hash Sample ----
 	sha := sha256.New()
 	if _, err := sha.Write([]byte("a sample seed")); err != nil {
@@ -238,7 +238,7 @@ func TransactionMeasurement(SectorNumber int) (PorTxSize int, ContractProposeTxS
 	var hashSample [32]byte
 	copy(hashSample[:], hash[:])
 	// ---------------- payment transaction sample ----------------
-	r := rand.New(rand.NewSource(99))
+	r := rand.New(rand.NewSource(int64(SimulationSeed)))
 	var Version, SequenceNumber, index, LockingScriptSize, fileSizeSample, UnlockingScriptSize [4]byte
 	var Amount [8]byte
 	var startRoundSample, roundNumberSample, pricePerRoundSample [3]byte
@@ -334,7 +334,7 @@ func TransactionMeasurement(SectorNumber int) (PorTxSize int, ContractProposeTxS
 
 	//sk, _ := por.RandomizedKeyGeneration()
 	//_, pf := por.RandomizedFileStoring(sk, por.GenerateFile(SectorNumber), SectorNumber)
-	p := por.CreatePoR(pf, SectorNumber)
+	p := por.CreatePoR(pf, SectorNumber, SimulationSeed)
 
 	x6 := &TxPoR{
 		ContractID:  contractIdSample,

@@ -36,6 +36,7 @@ Config File "BaseDFS.toml" is located under the following directory:
 - `NumberOfPayTXsUpperBound` the upper bound for a random number of regular payment transactions issued in each round
 - `ProtocolTimeout` is the time that we want the protocol to stop after it (in seconds)
 - `RoundDuration` the time interval between each round (in seconds)
+- `SimulationSeed` 
 
 
 ## Blockcahin ##

@@ -7,18 +7,16 @@ import (
 	"math"
 	"math/rand"
 	"strconv"
-	"time"
 
 	log "github.com/basedfs/log"
 	"github.com/xuri/excelize/v2"
-	//"strings"
 )
 
 // generateNormalValues  generates values that follow a normal distribution with specified variance and mean
-func generateNormalValues(variance, mean, nodes int) []uint64 {
+func generateNormalValues(variance, mean, nodes, SimulationSeed int) []uint64 {
 	var list []float64
 	var intlist []uint64
-	rand.Seed(time.Now().UnixNano())
+	rand.Seed(int64(SimulationSeed))
 	for i := 1; i <= nodes; i++ {
 		list = append(list, float64(mean)+float64(variance)*rand.NormFloat64())
 	}
@@ -39,7 +37,7 @@ func InitializeCentralBC(RoundDuration,
 	DistributionMeanFileSize, DistributionVarianceFileSize,
 	DistributionMeanContractDuration, DistributionVarianceContractDuration,
 	DistributionMeanInitialPower, DistributionVarianceInitialPower,
-	Nodes string) {
+	Nodes, SimulationSeed string) {
 	// --------------------- generating normal distributed number based on config params ---------------------
 	intVar, _ := strconv.Atoi(Nodes)
 	numberOfNodes := intVar
@@ -48,12 +46,13 @@ func InitializeCentralBC(RoundDuration,
 	VarianceFileSize := intVar
 	intVar, _ = strconv.Atoi(DistributionMeanFileSize)
 	MeanFileSize := intVar
-	FileSizeRow := generateNormalValues(VarianceFileSize, MeanFileSize, numberOfNodes)
+	SimulationSeedInt, _ := strconv.Atoi(SimulationSeed)
+	FileSizeRow := generateNormalValues(VarianceFileSize, MeanFileSize, numberOfNodes, SimulationSeedInt)
 	intVar, _ = strconv.Atoi(DistributionVarianceContractDuration)
 	VarianceContractDuration := intVar
 	intVar, _ = strconv.Atoi(DistributionMeanContractDuration)
 	MeanContractDuration := intVar
-	ContractDurationRow := generateNormalValues(VarianceContractDuration, MeanContractDuration, numberOfNodes)
+	ContractDurationRow := generateNormalValues(VarianceContractDuration, MeanContractDuration, numberOfNodes, SimulationSeedInt)
 	//--------------------- fill the centralbc file with generated numbers  ---------------------
 	f := excelize.NewFile()
 	var index int
@@ -160,7 +159,7 @@ func InitializeCentralBC(RoundDuration,
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	r := rand.New(rand.NewSource(99))
+	r := rand.New(rand.NewSource(int64(SimulationSeedInt)))
 	for i := 2; i <= numberOfNodes+1; i++ {
 		contractRow := strconv.Itoa(i)
 		t := "E" + contractRow
@@ -327,7 +326,7 @@ func InitializeCentralBC(RoundDuration,
 	VarianceInitialPower := intVar
 	intVar, _ = strconv.Atoi(DistributionMeanInitialPower)
 	MeanInitialPower := intVar
-	InitialPowerRow := generateNormalValues(VarianceInitialPower, MeanInitialPower, numberOfNodes)
+	InitialPowerRow := generateNormalValues(VarianceInitialPower, MeanInitialPower, numberOfNodes, SimulationSeedInt)
 	/*var InitialPowerRowString []string
 	for i:=0;i<len(InitialPowerRow);i++{
 		InitialPowerRowString = append(InitialPowerRowString,InitialPowerRow[i])
@@ -473,7 +472,7 @@ func InitializeCentralBC(RoundDuration,
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	t := rand.Intn(100)
+	t := rand.Intn(SimulationSeedInt)
 	err = f.SetCellValue("RoundTable", "B2", t)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
