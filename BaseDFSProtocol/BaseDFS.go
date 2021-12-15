@@ -1,29 +1,8 @@
 /*
-	Base DFS protocol: The simple version:
+	Base DFS protocol:
 
-	we assume one server broadcast his por tx and all servers on recieving this tx will verify
-	and add it to their prepared block and then all server run leader election
-	to check if they are leader, then the leader add his proof and broadcast
-	his prepared block and all servers verify and append his block to their blockchain
-	---------------------------------------------
-	The BaseDFSProtocol goes as follows: it should change - its better now:)
-	1- a server broadcast a por tx
-	(chanllenge's randomness comes from hash of the latest mined block)
-	2) all miners (who recieve this tx) verify the por tx + add a fixed payment tx +
-			keep both in their current block
-	3) (each epoch) miners check the predefined leader election mechanism
-			 to see if they are the leader
-	4) the leader broadcast his block, consisting por and payment tx.s
-			and his election proof
-	5) all miners (who recieve this tx) verify proposed block and
-			add it to their chain
-	--------------------------------------------
 	Types of Messages:
-	1- por
-	2- proposed block
-	3- Hello (to notify start of protocol)
-
-
+	--------------------------------------------
 	1- each server who is elected as leader (few servers in each round) send a msg of &NewLeader{Leaderinfo: bz.Name(), RoundNumber: bz.roundNumber} to root node.
 	2- each round, the root node send a msg of &NewRound{Seed:  seed, Power: power} to all servers including the target server's power
 	3- in the bootstrapping phase, the root node send a message to all servers containing protocol config parameters.
