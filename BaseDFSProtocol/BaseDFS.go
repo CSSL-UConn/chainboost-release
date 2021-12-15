@@ -139,8 +139,8 @@ type BaseDFS struct {
 	roundNumber int
 	hasLeader   bool
 	// --- just root node use these
-	FirstQueueWait  time.Duration
-	SecondQueueWait time.Duration
+	FirstQueueWait  int
+	SecondQueueWait int
 	// ------------------------------------------------------------------------------------------------------------------
 	//ToDo: raha: dol I need these items?
 	//vcMeasure *monitor.TimeMeasure
@@ -294,7 +294,7 @@ func (bz *BaseDFS) Dispatch() error {
 			running = false
 		case msg := <-bz.NewRoundChan:
 			bz.roundNumber = bz.roundNumber + 1
-			log.Lvl2(bz.Name(), " round number ", bz.roundNumber, " started at ", time.Now())
+			log.Lvl2(bz.Name(), " round number ", bz.roundNumber, " started at ", time.Now().Format(time.RFC3339))
 			var vrfOutput [64]byte
 			toBeHashed := []byte(msg.Seed)
 			proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
@@ -674,9 +674,9 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo string, leader bool) {
 	// --------------------------------------------------------------------
 	cellStartTime := "J" + currentRow
 	if leader {
-		err = f.SetCellValue("RoundTable", cellStartTime, time.Now().Format("15:04:05"))
+		err = f.SetCellValue("RoundTable", cellStartTime, time.Now().Format(time.RFC3339))
 	} else {
-		err = f.SetCellValue("RoundTable", cellStartTime, time.Now().Format("15:04:05")+" - round duration")
+		err = f.SetCellValue("RoundTable", cellStartTime, time.Now().Format(time.RFC3339)+" - round duration")
 	}
 
 	if err != nil {
@@ -941,7 +941,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 	var newTransactionRow [5]string
 	s := make([]interface{}, len(newTransactionRow)) //todo: raha:  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
 
-	newTransactionRow[2] = time.Now().Format("01-02 15:04:05")
+	newTransactionRow[2] = time.Now().Format(time.RFC3339)
 	newTransactionRow[3] = strconv.Itoa(bz.roundNumber)
 	// this part can be moved to protocol initialization
 	var PorTxSize, ContractProposeTxSize, PayTxSize, StoragePayTxSize, ContractCommitTxSize int
@@ -1026,15 +1026,21 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 	2) issuedRoundNumber */
 
 	newTransactionRow[0] = strconv.Itoa(PayTxSize)
-	newTransactionRow[1] = time.Now().Format("01-02 15:04:05")
+	newTransactionRow[1] = time.Now().Format(time.RFC3339)
 	newTransactionRow[2] = strconv.Itoa(bz.roundNumber)
 	newTransactionRow[3] = ""
 	newTransactionRow[4] = ""
 	for i, v := range newTransactionRow {
 		s[i] = v
 	}
+	// ToDo: move this seed to config file
 	rand.Seed(time.Now().UnixNano())
-	numberOfRegPay := rand.Intn(bz.NumberOfPayTXsUpperBound)
+
+	// avoid having zero regular payment txs
+	var numberOfRegPay int
+	for numberOfRegPay == 0 {
+		numberOfRegPay = rand.Intn(bz.NumberOfPayTXsUpperBound)
+	}
 	log.Lvl2("Number of regular payment transactions in round number", bz.roundNumber, "is", numberOfRegPay)
 	for i := 1; i <= numberOfRegPay; i++ {
 		if err = f.InsertRow("SecondQueue", 2); err != nil {
@@ -1066,6 +1072,9 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	var err error
 	var rows [][]string
+	// --- reset
+	bz.FirstQueueWait = 0
+	bz.SecondQueueWait = 0
 
 	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
 	if err != nil {
@@ -1078,10 +1087,14 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	var accumulatedTxSize, txsize int
 	blockIsFull := false
 	NextRow := strconv.Itoa(bz.roundNumber + 2)
+
 	axisNumRegPayTx := "E" + NextRow
+
+	axisQueue2IsFull := "N" + NextRow
+	axisQueue1IsFull := "O" + NextRow
+
 	numberOfRegPayTx := 0
 	BlockSizeMinusTransactions := blockchain.BlockMeasurement()
-	format := "01-02 15:04:05"
 	var TakeTime time.Time
 
 	/* -----------------------------------------------------------------------------
@@ -1111,15 +1124,16 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 					the transactions are just removed from queue and their size are added to included transactions' size in block */
 					log.Lvl2("a regular payment transaction added to block number", bz.roundNumber, " from the queue")
 					// row[1] is transaction's collected time
-					if TakeTime, err = time.Parse(format, row[1]); err != nil {
+					if TakeTime, err = time.Parse(time.RFC3339, row[1]); err != nil {
 						log.Lvl2("Panic Raised:\n\n")
 						panic(err)
 					}
-					bz.SecondQueueWait = bz.SecondQueueWait + time.Now().Sub(TakeTime)
+					bz.SecondQueueWait = bz.SecondQueueWait + int(time.Now().Sub(TakeTime).Seconds())
 					f.RemoveRow("SecondQueue", i)
 				} else {
 					blockIsFull = true
 					log.Lvl1("final: regular  payment share is full!")
+					f.SetCellValue("RoundTable", axisQueue2IsFull, 1)
 					break
 				}
 			}
@@ -1140,19 +1154,22 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	accumulatedTxSize = 0
 	// new variables for first queue
 	var contractIdCellMarketMatching []string
+
 	numberOfPoRTx := 0
 	numberOfStoragePayTx := 0
 	numberOfContractProposeTx := 0
 	numberOfContractCommitTx := 0
 
-	axisNumPoRTx := "F" + NextRow
 	axisBlockSize := "C" + NextRow
+
+	axisNumPoRTx := "F" + NextRow
 	axisNumStoragePayTx := "G" + NextRow
 	axisNumContractProposeTx := "H" + NextRow
 	axisNumContractCommitTx := "I" + NextRow
+
 	axisTotalTxsNum := "K" + NextRow
-	axisFirstQueueWait := "L" + NextRow
-	axisSecondQueueWait := "M" + NextRow
+	axisAveFirstQueueWait := "L" + NextRow
+	axisAveSecondQueueWait := "M" + NextRow
 
 	for i := len(rows); i > 1 && !blockIsFull; i-- {
 		row := rows[i-1][:]
@@ -1214,25 +1231,26 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 						panic("the type of transaction in the queue is un-defined")
 					}
 					// row[2] is transaction's collected time
-					if TakeTime, err = time.Parse(format, row[2]); err != nil {
+					if TakeTime, err = time.Parse(time.RFC3339, row[2]); err != nil {
 						log.Lvl2("Panic Raised:\n\n")
 						panic(err)
 					}
-					bz.FirstQueueWait = bz.FirstQueueWait + time.Now().Sub(TakeTime)
+					bz.FirstQueueWait = bz.FirstQueueWait + int(time.Now().Sub(TakeTime).Seconds())
 					f.RemoveRow("FirstQueue", i)
 				} else {
 					blockIsFull = true
 					log.Lvl1("final: block is full! ")
+					f.SetCellValue("RoundTable", axisQueue1IsFull, 1)
 					break
 				}
 			}
 		}
 	}
 
-	err = f.SetCellValue("RoundTable", axisNumPoRTx, numberOfPoRTx)
-	err = f.SetCellValue("RoundTable", axisNumStoragePayTx, numberOfStoragePayTx)
-	err = f.SetCellValue("RoundTable", axisNumContractProposeTx, numberOfContractProposeTx)
-	err = f.SetCellValue("RoundTable", axisNumContractCommitTx, numberOfContractCommitTx)
+	f.SetCellValue("RoundTable", axisNumPoRTx, numberOfPoRTx)
+	f.SetCellValue("RoundTable", axisNumStoragePayTx, numberOfStoragePayTx)
+	f.SetCellValue("RoundTable", axisNumContractProposeTx, numberOfContractProposeTx)
+	f.SetCellValue("RoundTable", axisNumContractCommitTx, numberOfContractCommitTx)
 
 	log.Lvl1("In total in round number ", bz.roundNumber,
 		"\n number of published PoR transactions is", numberOfPoRTx,
@@ -1241,15 +1259,17 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 		"\n number of published Commit Contract transactions is", numberOfContractCommitTx,
 		"\n number of published regular payment transactions is", numberOfRegPayTx,
 	)
-	x := numberOfPoRTx + numberOfStoragePayTx + numberOfContractProposeTx + numberOfContractCommitTx + numberOfRegPayTx
+	TotalNumTxsInBothQueue := numberOfPoRTx + numberOfStoragePayTx + numberOfContractProposeTx + numberOfContractCommitTx + numberOfRegPayTx
+	TotalNumTxsInFirstQueue := numberOfPoRTx + numberOfStoragePayTx + numberOfContractProposeTx + numberOfContractCommitTx
+
 	//-- accumulated block size
 	// --- total throughput
-	err = f.SetCellValue("RoundTable", axisNumRegPayTx, numberOfRegPayTx)
-	err = f.SetCellValue("RoundTable", axisBlockSize, accumulatedTxSize+allocatedBlockSizeForRegPayTx)
-	err = f.SetCellValue("RoundTable", axisTotalTxsNum, x)
+	f.SetCellValue("RoundTable", axisNumRegPayTx, numberOfRegPayTx)
+	f.SetCellValue("RoundTable", axisBlockSize, accumulatedTxSize+allocatedBlockSizeForRegPayTx)
+	f.SetCellValue("RoundTable", axisTotalTxsNum, TotalNumTxsInBothQueue)
 
-	err = f.SetCellValue("RoundTable", axisFirstQueueWait, bz.FirstQueueWait.Seconds())
-	err = f.SetCellValue("RoundTable", axisSecondQueueWait, bz.SecondQueueWait.Seconds())
+	f.SetCellValue("RoundTable", axisAveFirstQueueWait, bz.FirstQueueWait/TotalNumTxsInFirstQueue)
+	f.SetCellValue("RoundTable", axisAveSecondQueueWait, bz.SecondQueueWait/numberOfRegPayTx)
 
 	log.Lvl1("final: \n", allocatedBlockSizeForRegPayTx,
 		" for regular payment txs,\n and ", accumulatedTxSize, " for other types of txs")
@@ -1259,7 +1279,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	}
 
 	log.Lvl1("In total in round number ", bz.roundNumber,
-		"\n number of all types of submitted txs is", x)
+		"\n number of all types of submitted txs is", TotalNumTxsInBothQueue)
 	// ----
 	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
 	if err != nil {

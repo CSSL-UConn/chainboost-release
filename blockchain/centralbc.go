@@ -370,31 +370,35 @@ func InitializeCentralBC(RoundDuration,
 		panic(err)
 	}
 	// ---- throughput measurement
-	if err = f.SetColWidth("RoundTable", "E", "I", 15); err != nil {
+	if err = f.SetColWidth("RoundTable", "E", "I", 10); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	err = f.SetCellValue("RoundTable", "E1", "#RegPatTX")
+	err = f.SetCellValue("RoundTable", "E1", "#RegPay-TX")
 	if err != nil {
 		log.Lvl2(err)
 	}
-	err = f.SetCellValue("RoundTable", "F1", "#PoRTx")
+	err = f.SetCellValue("RoundTable", "F1", "#PoR-Tx")
 	if err != nil {
 		log.Lvl2(err)
 	}
-	err = f.SetCellValue("RoundTable", "G1", "#StPayTx")
+	err = f.SetCellValue("RoundTable", "G1", "#StorjPay-Tx")
 	if err != nil {
 		log.Lvl2(err)
 	}
-	err = f.SetCellValue("RoundTable", "H1", "#CntPropTx")
+	err = f.SetCellValue("RoundTable", "H1", "#CntProp-Tx")
 	if err != nil {
 		log.Lvl2(err)
 	}
-	err = f.SetCellValue("RoundTable", "I1", "#CntCmtTx")
+	err = f.SetCellValue("RoundTable", "I1", "#CntCmt-Tx")
 	if err != nil {
 		log.Lvl2(err)
 	}
-	if err = f.SetColWidth("RoundTable", "J", "N", 25); err != nil {
+	if err = f.SetColWidth("RoundTable", "J", "J", 25); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err = f.SetColWidth("RoundTable", "K", "O", 10); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
@@ -402,15 +406,23 @@ func InitializeCentralBC(RoundDuration,
 	if err != nil {
 		log.Lvl2(err)
 	}
-	err = f.SetCellValue("RoundTable", "K1", "TotalTxs")
+	err = f.SetCellValue("RoundTable", "K1", "TotalNumTxs")
 	if err != nil {
 		log.Lvl2(err)
 	}
-	err = f.SetCellValue("RoundTable", "L1", "TotalWaitQ1")
+	err = f.SetCellValue("RoundTable", "L1", "AveWaitInQ1")
 	if err != nil {
 		log.Lvl2(err)
 	}
-	err = f.SetCellValue("RoundTable", "M1", "TotalWaitQ2")
+	err = f.SetCellValue("RoundTable", "M1", "AveWaitInQ2")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "N1", "Queue2Full")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "O1", "Queue1Full")
 	if err != nil {
 		log.Lvl2(err)
 	}

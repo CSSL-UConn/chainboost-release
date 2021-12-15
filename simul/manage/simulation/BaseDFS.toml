@@ -5,9 +5,9 @@ Rounds = 0
 RunWait = "600000s"
 Suite = "Ed25519"
 PreScript = "testPreScript.toml"
-RoundDuration = 5
-ProtocolTimeout = 50
-timeout = 500
+RoundDuration = 15
+ProtocolTimeout = 250
+timeout = 5000
 PercentageTxPay = 30
 DistributionMeanFileSize = 100
 DistributionVarianceFileSize = 5
@@ -15,10 +15,10 @@ DistributionMeanContractDuration = 10
 DistributionVarianceContractDuration = 50
 DistributionMeanInitialPower = 900000000000000000
 DistributionVarianceInitialPower = 9000000000000000
-Nodes = 50
-BlockSize = 100000
+Nodes = 100
+BlockSize = 1000000
 SectorNumber = 1
-NumberOfPayTXsUpperBound = 100
+NumberOfPayTXsUpperBound = 200
 
 Hosts
-50
+100
