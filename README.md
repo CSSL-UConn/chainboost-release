@@ -1,5 +1,5 @@
 
-for now check ([ReadMeNow.MD].../basedfs/ReadMeNow.MD) file.
+for now check <[ReadMeNow.MD](https://github.com/chainBstSc/basedfs/blob/master/ReadMeNow.MD) file.
 
 
 
