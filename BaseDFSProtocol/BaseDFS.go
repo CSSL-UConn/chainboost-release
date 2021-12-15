@@ -524,6 +524,7 @@ func (bz *BaseDFS) helloBaseDFS() {
 }
 
 // -- the time specified in config file for a protocol simulation run
+// --- this function will be called by root node at the end of timeout for a simulation run
 func (bz *BaseDFS) StartTimeOut() {
 	select {
 	case <-time.After(time.Duration(bz.ProtocolTimeout)):
@@ -531,76 +532,6 @@ func (bz *BaseDFS) StartTimeOut() {
 		bz.DoneBaseDFS <- true
 	}
 }
-
-/* ----------------------------------------------------------------------
------------------------------------------------------------------------- */
-//checkLeadership
-// func (bz *BaseDFS) checkLeadership() {
-// 	if bz.leaders[int(math.Mod(float64(bz.roundNumber), float64(len(bz.Roster().List))))] == bz.ServerIdentity().String() {
-// 		bz.LeaderPropose <- true
-// 	}
-// }
-
-// func (bz *BaseDFS) checkLeadership(power uint64, seed string) {
-// 	for {
-// 		select {
-// 		case <-bz.NewLeaderChan:
-// 			return
-// 		default:
-
-// 			//power := 1
-// 			//var seed []byte
-// 			var vrfOutput [64]byte
-
-// 			toBeHashed := []byte(seed)
-// 			proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
-// 			if !ok {
-// 				log.Lvl2("error while generating proof")
-// 			}
-// 			_, vrfOutput = bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
-
-// 			//------------------------- working with big int ----------------------
-// 			//"math/big" imported
-// 			//func generateRandomValuesBigInt(nodes int) [] *big.Int {
-// 			//	var bigIntlist [] *big.Int
-// 			//	for i := 1; i<= nodes;i++{
-// 			//		bigIntlist = append(bigIntlist, new(big.Int).Rand(rand.New(rand.NewSource(time.Now().UnixNano())),<some big int value> ))
-// 			//	}
-// 			//	return bigIntlist
-// 			//}
-// 			// --------------------------------------------------------------------
-// 			//For future refrence: the next commented line is a wrong way to convert a big number to int - it wont raise overflow but the result is incorrect
-// 			//t := binary.BigEndian.Uint64(vrfOutput[:])
-// 			//--------------------------------------------------
-// 			//For future refrence: the next commented line is converting a big number to big int (built in type in go)
-// 			//var bi *big.Int
-// 			//bi = new(big.Int).SetBytes(vrfOutput[:])
-// 			//--------------------------------------------------
-
-// 			var vrfoutputInt64 uint64
-// 			buf := bytes.NewReader(vrfOutput[:])
-// 			err := binary.Read(buf, binary.LittleEndian, &vrfoutputInt64)
-// 			if err != nil {
-// 				log.Lvl2("Panic Raised:\n\n")
-// 				panic(err)
-// 			}
-// 			// I want to ask the previous leader to find next leader based on its output and announce it to her via next round msg
-// 			if vrfoutputInt64 < power {
-// 				// let other know i am the leader
-// 				for _, b := range bz.Tree().List() {
-// 					err := bz.SendTo(b, &NewLeader{})
-// 					if err != nil {
-// 						log.Lvl2(bz.Info(), "can't send new round msg to", b.Name())
-// 					}
-// 				}
-// 				bz.LeaderProposeChan <- true
-// 			}
-// 			//else {
-// 			// 	log.Lvl2("my power:", power, "is", vrfoutputInt64-power, "less than my vrf output :| ")
-// 			// }
-// 		}
-// 	}
-// }
 
 /* ---------------------------------------------------------------------- */
 //updateBC: by leader
@@ -1266,6 +1197,72 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 
 	log.Lvl1("In total in round number ", bz.roundNumber,
 		"\n number of all types of submitted txs is", TotalNumTxsInBothQueue)
+
+	// ---- overall results
+	axisRound := "A" + NextRow
+	axisBCSize := "B" + NextRow
+	axisOverallRegPayTX := "C" + NextRow
+	axisOverallPoRTX := "D" + NextRow
+	axisOverallStorjPayTX := "E" + NextRow
+	axisOverallCntPropTX := "F" + NextRow
+	axisOverallCntComTX := "G" + NextRow
+	axisAveWaitOtherTx := "H" + NextRow
+	axisOveralAveWaitRegPay := "I" + NextRow
+	axisOverallBlockSpaceFull := "J" + NextRow
+	var FormulaString string
+
+	err = f.SetCellValue("OverallEvaluation", axisRound, bz.roundNumber)
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	FormulaString = "=SUM(RoundTable!C2:C" + NextRow + ")"
+	err = f.SetCellFormula("OverallEvaluation", axisBCSize, FormulaString)
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	FormulaString = "=SUM(RoundTable!E2:E" + NextRow + ")"
+	err = f.SetCellFormula("OverallEvaluation", axisOverallRegPayTX, FormulaString)
+	if err != nil {
+		log.Lvl2(err)
+	}
+	FormulaString = "=SUM(RoundTable!F2:F" + NextRow + ")"
+	err = f.SetCellFormula("OverallEvaluation", axisOverallPoRTX, FormulaString)
+	if err != nil {
+		log.Lvl2(err)
+	}
+	FormulaString = "=SUM(RoundTable!G2:G" + NextRow + ")"
+	err = f.SetCellFormula("OverallEvaluation", axisOverallStorjPayTX, FormulaString)
+	if err != nil {
+		log.Lvl2(err)
+	}
+	FormulaString = "=SUM(RoundTable!H2:H" + NextRow + ")"
+	err = f.SetCellFormula("OverallEvaluation", axisOverallCntPropTX, FormulaString)
+	if err != nil {
+		log.Lvl2(err)
+	}
+	FormulaString = "=SUM(RoundTable!I2:I" + NextRow + ")"
+	err = f.SetCellFormula("OverallEvaluation", axisOverallCntComTX, FormulaString)
+	if err != nil {
+		log.Lvl2(err)
+	}
+	FormulaString = "=AVERAGE(RoundTable!L2:L" + NextRow + ")"
+	err = f.SetCellFormula("OverallEvaluation", axisAveWaitOtherTx, FormulaString)
+	if err != nil {
+		log.Lvl2(err)
+	}
+	FormulaString = "=AVERAGE(RoundTable!M2:M" + NextRow + ")"
+	err = f.SetCellFormula("OverallEvaluation", axisOveralAveWaitRegPay, FormulaString)
+	if err != nil {
+		log.Lvl2(err)
+	}
+	FormulaString = "=SUM(RoundTable!O2:O" + NextRow + ")"
+	err = f.SetCellFormula("OverallEvaluation", axisOverallBlockSpaceFull, FormulaString)
+	if err != nil {
+		log.Lvl2(err)
+	}
+
 	// ----
 	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
 	if err != nil {
@@ -1594,6 +1591,7 @@ func (bz *BaseDFS) refreshBC() {
 		if bz.readBCForNewRound(bz.f) {
 			bz.checkLeadership()
 		}
+
 	} else {
 		if !bz.readBCForNewRound(f2) {
 			log.Lvl2(bz.Name(), "adding new block")
@@ -1616,6 +1614,76 @@ func (bz *BaseDFS) refreshBC() {
 	}
 	log.Lvl2(bz.Name(), "Un-Lock BC")
 } */
+/* ----------------------------------------------------------------------
+------------------------------------------------------------------------ */
+//checkLeadership
+// func (bz *BaseDFS) checkLeadership() {
+// 	if bz.leaders[int(math.Mod(float64(bz.roundNumber), float64(len(bz.Roster().List))))] == bz.ServerIdentity().String() {
+// 		bz.LeaderPropose <- true
+// 	}
+// }
+
+/* func (bz *BaseDFS) checkLeadership(power uint64, seed string) {
+	for {
+		select {
+		case <-bz.NewLeaderChan:
+			return
+		default:
+
+			//power := 1
+			//var seed []byte
+			var vrfOutput [64]byte
+
+			toBeHashed := []byte(seed)
+			proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
+			if !ok {
+				log.Lvl2("error while generating proof")
+			}
+			_, vrfOutput = bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
+
+			//------------------------- working with big int ----------------------
+			//"math/big" imported
+			//func generateRandomValuesBigInt(nodes int) [] *big.Int {
+			//	var bigIntlist [] *big.Int
+			//	for i := 1; i<= nodes;i++{
+			//		bigIntlist = append(bigIntlist, new(big.Int).Rand(rand.New(rand.NewSource(time.Now().UnixNano())),<some big int value> ))
+			//	}
+			//	return bigIntlist
+			//}
+			// --------------------------------------------------------------------
+			//For future refrence: the next commented line is a wrong way to convert a big number to int - it wont raise overflow but the result is incorrect
+			//t := binary.BigEndian.Uint64(vrfOutput[:])
+			//--------------------------------------------------
+			//For future refrence: the next commented line is converting a big number to big int (built in type in go)
+			//var bi *big.Int
+			//bi = new(big.Int).SetBytes(vrfOutput[:])
+			//--------------------------------------------------
+
+			var vrfoutputInt64 uint64
+// 			buf := bytes.NewReader(vrfOutput[:])
+// 			err := binary.Read(buf, binary.LittleEndian, &vrfoutputInt64)
+// 			if err != nil {
+// 				log.Lvl2("Panic Raised:\n\n")
+// 				panic(err)
+// 			}
+// 			// I want to ask the previous leader to find next leader based on its output and announce it to her via next round msg
+// 			if vrfoutputInt64 < power {
+// 				// let other know i am the leader
+// 				for _, b := range bz.Tree().List() {
+// 					err := bz.SendTo(b, &NewLeader{})
+// 					if err != nil {
+// 						log.Lvl2(bz.Info(), "can't send new round msg to", b.Name())
+// 					}
+// 				}
+// 				bz.LeaderProposeChan <- true
+// 			}
+// 			//else {
+// 			// 	log.Lvl2("my power:", power, "is", vrfoutputInt64-power, "less than my vrf output :| ")
+// 			// }
+// 		}
+// 	}
+// }
+*/
 
 // Testpor
 func (bz *BaseDFS) Testpor() {

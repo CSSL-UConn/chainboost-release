@@ -66,6 +66,15 @@ func InitializeCentralBC(RoundDuration,
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
+	style, errstyle := f.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{
+			WrapText: true,
+		},
+	})
+	if errstyle != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
 	// Set active sheet of the workbook.
 	f.SetActiveSheet(index)
 	if err := f.SetSheetPrOptions("MarketMatching",
@@ -75,6 +84,12 @@ func InitializeCentralBC(RoundDuration,
 	); err != nil {
 		fmt.Println(err)
 	}
+	err = f.SetRowHeight("MarketMatching", 1, 30)
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	f.SetCellStyle("MarketMatching", "A1", "AAA1", style)
 	// --------------------------------------------------------------------
 	err = f.SetCellValue("MarketMatching", "A1", "Server's Info")
 	if err != nil {
@@ -193,6 +208,12 @@ func InitializeCentralBC(RoundDuration,
 	); err != nil {
 		fmt.Println(err)
 	}
+	err = f.SetRowHeight("FirstQueue", 1, 30)
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	f.SetCellStyle("FirstQueue", "A1", "AAA1", style)
 	// ----------------------- Transaction Queue Header ------------------------------
 	err = f.SetCellValue("FirstQueue", "A1", "Name")
 	if err != nil {
@@ -247,6 +268,12 @@ func InitializeCentralBC(RoundDuration,
 	); err != nil {
 		fmt.Println(err)
 	}
+	err = f.SetRowHeight("SecondQueue", 1, 30)
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	f.SetCellStyle("SecondQueue", "A1", "AAA1", style)
 	// ----------------------- SecondQueue Header ------------------------------
 	err = f.SetCellValue("SecondQueue", "A1", "Size")
 	if err != nil {
@@ -289,6 +316,12 @@ func InitializeCentralBC(RoundDuration,
 	); err != nil {
 		fmt.Println(err)
 	}
+	err = f.SetRowHeight("PowerTable", 1, 30)
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	f.SetCellStyle("PowerTable", "A1", "AAA1", style)
 	// --------------------- distribution of initial power -------------------
 	intVar, _ = strconv.Atoi(DistributionVarianceInitialPower)
 	VarianceInitialPower := intVar
@@ -309,6 +342,7 @@ func InitializeCentralBC(RoundDuration,
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
+
 	// initial powers
 	err = f.SetCellValue("PowerTable", "A2", "1")
 	if err != nil {
@@ -338,6 +372,12 @@ func InitializeCentralBC(RoundDuration,
 	); err != nil {
 		fmt.Println(err)
 	}
+	err = f.SetRowHeight("RoundTable", 1, 30)
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	f.SetCellStyle("RoundTable", "A1", "AAA1", style)
 	// -----------------------    Filling Round Table's Headers ------------
 	err = f.SetCellValue("RoundTable", "A1", "Round#")
 	if err != nil {
@@ -427,7 +467,7 @@ func InitializeCentralBC(RoundDuration,
 		log.Lvl2(err)
 	}
 
-	// -----------------------    Filling Round Table's first row +
+	// -----------------------    Filling Round Table's first row  -------------------
 	err = f.SetCellValue("RoundTable", "A2", 0)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
@@ -460,7 +500,72 @@ func InitializeCentralBC(RoundDuration,
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-
+	// --------------------------------------------------------------------
+	// --------------------- Overall Evaluation Sheet ------------------
+	// --------------------------------------------------------------------
+	index = f.NewSheet("OverallEvaluation")
+	if err = f.SetColWidth("RoundTable", "A", "AAA", 10); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	// Set active sheet of the workbook.
+	f.SetActiveSheet(index)
+	if err := f.SetSheetPrOptions("OverallEvaluation",
+		excelize.FitToPage(true),
+		excelize.TabColor("#FE00FF"),
+		excelize.AutoPageBreaks(true),
+	); err != nil {
+		fmt.Println(err)
+	}
+	err = f.SetRowHeight("OverallEvaluation", 1, 30)
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	f.SetCellStyle("OverallEvaluation", "A1", "AAA1", style)
+	// -----------------------    Filling Round Table's Headers ------------
+	err = f.SetCellValue("OverallEvaluation", "A1", "Round#")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "B1", "BCSize")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "C1", "Overall#RegPay-TX")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "D1", "Overall#PoR-TX")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "E1", "Overall#StorjPay-TX")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "F1", "Overall#CntProp-TX")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "G1", "Overall#CntCmt-TX")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "H1", "OveralAveWait-OtherTxs")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "I1", "OveralAveWait-RegPay")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "J1", "OverallBlockSpaceFull")
+	if err != nil {
+		log.Lvl2(err)
+	}
 	// --------------------------------------------------------------------
 	if err := f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
