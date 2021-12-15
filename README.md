@@ -35,7 +35,7 @@ Config File "BaseDFS.toml" is located under the following directory:
 
 ## To Change the Configs ##
 - to change number of servers, change two values: 1- `Hosts` and 2- `Nodes` - with a same number :)
-- `BlockSize` is the maximum block size (in Byte) allowed in each round (the submitted block may be less than this size based on the available transactions in the queues) [^1]
+- `BlockSize` is the maximum block size (in Byte) allowed in each round (the submitted block may be less than this size based on the available transactions in the queues)[^1]
 - `DistributionMeanFileSize` and `DistributionVarianceFileSize` are specifying the mean and variance of the Normal distribution used to generate file-sizes in the contracts
 - `DistributionMeanContractDuration` and `DistributionVarianceContractDuration` is the same for contracts' duration
 - `DistributionMeanInitialPower` and DistributionVarianceInitialPower is the same for the intial power we assign to each server
@@ -70,12 +70,9 @@ There are 5 sheets, namely MarketMatching, FirstQueue, SecondQueue, and RoundTab
         - number of each transaction type that is submitted in each round
         - `TotalNumTxs`: total number of all submitted transactions in each round
         - the time that each round has started
-        - `AveWait-RegPay` and `AveWait-OtherTxs`: the average wait time in each round for regular payment and other types of transactions [^2]
+        - `AveWait-RegPay` and `AveWait-OtherTxs`: the average wait time in each round for regular payment and other types of transactions[^2]
         - `RegPaySpaceFull` and `BlockSpaceFull`: 1 indicates the allocated space for regular payment is full /  the block space is full
 
-<!--FootNote-->
-[^1] there may be some rounds that there is no leader for them, an empty block will be added to the blockchain in those rounds and the information of the root node (blockchain layer 1) is added (it can be removed) as the round leader but all the other columns are empty. in these rounds transactions will be added normally to the queue but no transaction is removed bcz the block is empty.
-[^2] when in a round, some transactions should wait in a queue (i.e. the allocated space for  that transaction is full) and are submitted in another round, the average wait of that queue in the round that those transactions get to be submitted increases.
 
 
 
@@ -100,6 +97,7 @@ as well as Cosi module from Cothority
 
 Onet's documents can be find under following link:
 <https://github.com/dedis/onet/blob/master/README.md>
+
 The Overlay-network (Onet) is a library for simulation and deployment of
 decentralized, distributed protocols. This library offers a framework for
 research, simulation, and deployment of crypto-related protocols with an emphasis
@@ -108,3 +106,10 @@ communications between thousands of nodes and it is used both in research for
 testing out new protocols and running simulations, as well as in production to
 deploy those protocols as a service in a distributed manner.
 
+
+
+
+<!--FootNote-->
+[^1]: there may be some rounds that there is no leader for them, an empty block will be added to the blockchain in those rounds and the information of the root node (blockchain layer 1) is added (it can be removed) as the round leader but all the other columns are empty. in these rounds transactions will be added normally to the queue but no transaction is removed bcz the block is empty.
+[^2]: when in a round, some transactions should wait in a queue (i.e. the allocated space for  that transaction is full) and are submitted in another round, the average wait of that queue in the round that those transactions get to be submitted increases.
+<!--FootNote-->
