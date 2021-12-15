@@ -17,10 +17,15 @@ note: running on an OS other than IOS needs a change in c extention config code
 
 
 ## Config File ##
+
 Config File "BaseDFS.toml" is located under the following directory:
 ([BaseDFS.toml](.../basedfs/simul/manage/simulation/BaseDFS.toml))
+
+
 This is how config file looks like:
 ----------------------------------------------------
+
+
 Servers = 1 
 Simulation = "BaseDFS"
 BF = 2
@@ -45,6 +50,8 @@ NumberOfPayTXsUpperBound = 100
 
 Hosts
 50
+
+
 ----------------------------------------------------
 ## To Change the Configs ##
 - to change number of servers, change two values: 1- `Hosts` and 2- `Nodes` - with a same number :)
