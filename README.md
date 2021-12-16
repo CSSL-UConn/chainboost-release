@@ -15,7 +15,14 @@ note: running on an OS other than IOS needs a change in c extention config code
 - run the following command: 
     - "/usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/basedfs/simul/manage/simulation"
     - this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/simul_test.go))
-- the stored blockchain in Excel file "centralbc.xlsx"  can be found under the `build` directory that is going to be created after simulation run
+- the stored blockchain in Excel file "centralbc.xlsx"  can be found under the `build` directory that is going to be created after simulation run[^3]
+- in the case of debugging the code
+
+```
+log.SetDebugVisible(1)
+```
+
+indicates the debug logging level, with 0 being the least logging and 5 being the most (every tiny detail is logged in this level)
 
 
 
