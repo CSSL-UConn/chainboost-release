@@ -82,7 +82,7 @@ The following packages provide core functionality to ..., as well as other tools
 # Base Distributed File System Network
 
 We used latest version of Onet (v.3.2.9) for network, simulation, and communication modules <https://github.com/dedis/onet/tree/v3.2.9>
-as well as Cosi module from Cothority 
+as well as [Cosi](https://github.com/dedis/cothority) module from Cothority 
 
 Onet's documents can be find under following link:
 <https://github.com/dedis/onet/blob/master/README.md>
