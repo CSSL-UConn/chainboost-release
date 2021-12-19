@@ -278,6 +278,7 @@ func (s *SimulationBFTree) CreateRoster(sc *SimulationConfig, addresses []string
 	}
 	entities := make([]*network.ServerIdentity, hosts)
 	log.Lvl1("Doing", hosts, "hosts")
+	// raha: here is where nodes' key-pair are generated
 	key := key.NewKeyPair(suite)
 	for c := 0; c < hosts; c++ {
 		key.Private.Add(key.Private, suite.Scalar().One())

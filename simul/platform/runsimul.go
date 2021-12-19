@@ -134,7 +134,6 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 	if rootSim != nil {
 		// If this cothority has the root-server, it will start the simulation
 		log.Lvl2("Starting protocol", simul, "on server", rootSC.Server.ServerIdentity.Address)
-		log.Lvl5("Tree is", rootSC.Tree.Dump())
 		// Raha: I want to see the tree!
 		log.Lvl5("Tree is", rootSC.Tree.Dump())
 		// First count the number of available children
@@ -186,12 +185,12 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 				}
 			*/
 			//Raha
-			select {
+			//select {
 			//case p := <-proto.FinalXor:
-			case p := <-proto.DoneBaseDFS:
-				log.Lvl1("Back to simulation module: Final result is", p)
-				wait = false
-			}
+			px := <-proto.DoneBaseDFS
+			log.Lvl1("Back to simulation module. Final result is", px)
+			wait = false
+			//}
 		}
 		// 	//childrenWait.Record()
 		// 	log.Lvl2("Broadcasting start, (Raha: I think its about having mutiple servers",
@@ -212,29 +211,29 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 		// 	simError = rootSim.Run(rootSC)
 		// 	measureNet.Record()
 
-		// 	// Test if all ServerIdentities are used in the tree, else we'll run into
-		// 	// troubles with CloseAll
-		// 	if !rootSC.Tree.UsesList() {
-		// 		log.Error("The tree doesn't use all ServerIdentities from the list!\n" +
-		// 			"This means that the CloseAll will fail and the experiment never ends!")
-		// 	}
+		// Test if all ServerIdentities are used in the tree, else we'll run into
+		// troubles with CloseAll
+		//if !rootSC.Tree.UsesList() {
+		//	log.Error("The tree doesn't use all ServerIdentities from the list!\n" +
+		//		"This means that the CloseAll will fail and the experiment never ends!")
+		//}
 
-		// 	// Recreate a tree out of the original roster, to be sure all nodes are included and
-		// 	// that the tree is easy to close.
-		// 	closeTree := rootSC.Roster.GenerateBinaryTree()
-		// 	pi, err := rootSC.Overlay.CreateProtocol("CloseAll", closeTree, onet.NilServiceID)
-		// 	if err != nil {
-		// 		return xerrors.New("couldn't create closeAll protocol: " + err.Error())
-		// 	}
-		// 	pi.Start()
-		// }
-
-		// log.Lvl3(serverAddress, scs[0].Server.ServerIdentity, "is waiting for all servers to close")
-		// wgServer.Wait()
-		// log.Lvl2(serverAddress, "has all servers closed")
-		// if monitorAddress != "" {
-		// 	monitor.EndAndCleanup()
+		// Recreate a tree out of the original roster, to be sure all nodes are included and
+		// that the tree is easy to close.
+		//closeTree := rootSC.Roster.GenerateBinaryTree()
+		//pi, err := rootSC.Overlay.CreateProtocol("CloseAll", closeTree, onet.NilServiceID)
+		//if err != nil {
+		//	return xerrors.New("couldn't create closeAll protocol: " + err.Error())
+		//}
+		//pi.Start()
 	}
+
+	//log.Lvl3(serverAddress, scs[0].Server.ServerIdentity, "is waiting for all servers to close")
+	//wgServer.Wait()
+	//log.Lvl2(serverAddress, "has all servers closed")
+	//if monitorAddress != "" {
+	//	monitor.EndAndCleanup()
+	//}
 
 	// Give a chance to the simulation to stop the servers and clean up but returns the simulation error anyway.
 	if simError != nil {

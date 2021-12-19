@@ -85,18 +85,12 @@ func (e *simulation) Run(config *onet.SimulationConfig) error {
 	for round := 0; round < e.Rounds; round++ {
 		log.Lvl1("Starting round", round)
 		round := monitor.NewTimeMeasure("round")
-		//p, err := config.Overlay.CreateProtocol("OpinionGathering", config.Tree, onet.NilServiceID)
 		p, err := config.Overlay.CreateProtocol("BaseDFS", config.Tree, onet.NilServiceID)
 		if err != nil {
 			return xerrors.Errorf("creating protocol: %v", err)
 		}
 		go p.Start()
-		//children := <-p.(*manage.ProtocolOpinionGathering).Count
 		round.Record()
-		//if children != size {
-		//	return xerrors.New("Didn't get " + strconv.Itoa(size) +
-		//		" children")
-		//}
 	}
 	return nil
 }

@@ -273,8 +273,8 @@ func (bz *BaseDFS) Dispatch() error {
 			bz.helloBaseDFS()
 
 		// this msg is catched in simulation codes
-		case <-bz.DoneBaseDFS:
-			running = false
+		//case <-bz.DoneBaseDFS:
+		//	running = false
 		case msg := <-bz.NewRoundChan:
 			bz.roundNumber = bz.roundNumber + 1
 			log.Lvl2(bz.Name(), " round number ", bz.roundNumber, " started at ", time.Now().Format(time.RFC3339))

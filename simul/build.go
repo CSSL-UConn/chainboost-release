@@ -102,21 +102,21 @@ func startBuild() {
 			testsDone := make(chan bool)
 			// Raha: set timeout for the experiment from the config file
 			//timeout, err := getExperimentWait(runconfigs)
-			t, err := strconv.Atoi(runconfigs[0].Get("timeout"))
-			timeout := time.Duration(int64(t)) * time.Second
-			if err != nil {
-				//log.Fatal("ExperimentWait:", err)
-				panic("Raha: set timeout for the experiment from the config file")
-			}
+			//t, err := strconv.Atoi(runconfigs[0].Get("timeout"))
+			//timeout := time.Duration(int64(t)) * time.Second
+			//if err != nil {
+			//log.Fatal("ExperimentWait:", err)
+			//	panic("Raha: set timeout for the experiment from the config file")
+			//}
 			go func() {
 				RunTests(deployP, logname, runconfigs)
 				testsDone <- true
 			}()
 			select {
 			case <-testsDone:
-				log.Lvl3("Done with test", simulation)
-			case <-time.After(2 * timeout):
-				log.Fatal("Test failed to finish in", timeout)
+				log.Lvl1("Done with test", simulation)
+				//case <-time.After(2 * timeout):
+				//log.Fatal("Test failed to finish in", timeout)
 			}
 		}
 	}
@@ -171,7 +171,7 @@ func RunTests(deployP platform.Platform, name string, runconfigs []*platform.Run
 			log.Error("Error running test:", err)
 			continue
 		}
-		log.Lvl1("Test results:", stats[0])
+		log.Lvl5("Test results:", stats[0])
 
 		for j, bucketStat := range stats {
 			if j >= len(files) {
