@@ -64,6 +64,7 @@ func TestMain(m *testing.M) {
 
 // Tests various trees configurations
 func TestProtocol_1_1(t *testing.T) {
+	log.SetDebugVisible(3)
 	_, _, err := runProtocol(1, 0, 1)
 	require.NoError(t, err)
 }

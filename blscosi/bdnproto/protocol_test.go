@@ -25,11 +25,12 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	// raha: how this service thing may affect simulation run?
 	testServiceID = id
 }
 
 func TestBdnProto_SimpleCase(t *testing.T) {
+	log.SetDebugVisible(3)
 	err := runProtocol(5, 1, 5)
 	require.NoError(t, err)
 
