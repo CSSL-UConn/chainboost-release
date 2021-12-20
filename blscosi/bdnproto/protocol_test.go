@@ -58,6 +58,7 @@ func runProtocol(nbrNodes, nbrSubTrees, threshold int) error {
 
 	cosiProtocol := pi.(*protocol.BlsCosi)
 	cosiProtocol.CreateProtocol = rootService.CreateProtocol
+	// message should be initialized with meta blocks
 	cosiProtocol.Msg = []byte{0xFF}
 	cosiProtocol.Timeout = 10 * time.Second
 	cosiProtocol.Threshold = threshold
