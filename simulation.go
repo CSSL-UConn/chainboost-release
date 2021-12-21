@@ -343,7 +343,7 @@ func (s *SimulationBFTree) CreateRoster(sc *SimulationConfig, addresses []string
 			}
 		}
 	}
-
+	// Raha: this is where the roster is ctrated for baseDFS module
 	sc.Roster = NewRoster(entities)
 	log.Lvl3("Creating entity List took: " + time.Now().Sub(start).String())
 }

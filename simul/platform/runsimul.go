@@ -25,7 +25,7 @@ type simulInitDone struct{}
 // simul = localhost.simulation
 
 // raha: adding some other system-wide configurations
-func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfPayTXsUpperBound, ProtocolTimeout, SimulationSeed int,
+func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfPayTXsUpperBound, ProtocolTimeout, SimulationSeed, NbrSubTrees, Threshold int,
 	suite, serverAddress, simul, monitorAddress string) error {
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 	if err != nil {
@@ -159,6 +159,8 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 			proto.NumberOfPayTXsUpperBound = NumberOfPayTXsUpperBound
 			proto.ProtocolTimeout = time.Duration(ProtocolTimeout) * time.Second
 			proto.SimulationSeed = SimulationSeed
+			proto.NbrSubTrees = NbrSubTrees
+			proto.Threshold = Threshold
 			log.LLvl2("passing our system-wide configurations to the protocol",
 				"\n  PercentageTxPay: ", PercentageTxPay,
 				"\n  RoundDuration: ", RoundDuration,
@@ -167,30 +169,40 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 				"\n NumberOfPayTXsUpperBound: ", NumberOfPayTXsUpperBound,
 				"\n With timeout of: ", ProtocolTimeout,
 				"\n and SimulationSeed of: ", SimulationSeed,
+				"\n and nbrSubTrees of: ", NbrSubTrees,
+				"\n and threshold of: ", Threshold,
 			)
 			// ---------------------------------------------------------------
-			proto.Start()
-			//log.Lvl1("Started counting children with timeout of", timeout)
-			//Raha
-			//log.Lvl1("Started protocol with timeout of", TimeOut)
-			/*
-				select {
-				case count := <-proto.Count:
-					if count == rootSC.Tree.Size() {
-						log.Lvl1("Found all", count, "children")
-						wait = false
-					} else {
-						log.Lvl1("Found only", count, "children, counting again")
-					}
+			//raha: new protocol: BLSCoSi
+			pi, err := rootSC.Overlay.CreateProtocol("bdnCoSiProto", rootSC.Tree, onet.NilServiceID)
+			if err != nil {
+				return xerrors.New("couldn't create protocol: " + err.Error())
+			}
+
+			cosiProtocol := pi.(*BaseDFSProtocol.BlsCosi)
+			//cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol
+			//cosiProtocol.CreateProtocol = rootService.CreateProtocol
+
+			// message should be initialized with meta blocks
+			cosiProtocol.Msg = []byte{0xFF}
+			cosiProtocol.Timeout = time.Duration(ProtocolTimeout) * time.Second
+			cosiProtocol.Threshold = Threshold
+			// raha: added. this way, the roster that runs this protocol is  initiated by the main roster, the one that runs the basedfs protocol
+			cosiProtocol.TreeNodeInstance = proto.TreeNodeInstance
+			//----
+			if NbrSubTrees > 0 {
+				err := cosiProtocol.SetNbrSubTree(NbrSubTrees)
+				if err != nil {
+					return err
 				}
-			*/
-			//Raha
-			//select {
-			//case p := <-proto.FinalXor:
+			}
+			proto.BlsCosi = cosiProtocol
+			// ---------------------------------------------------------------
+			proto.Start()
+
 			px := <-proto.DoneBaseDFS
 			log.Lvl1("Back to simulation module. Final result is", px)
 			wait = false
-			//}
 		}
 		// 	//childrenWait.Record()
 		// 	log.Lvl2("Broadcasting start, (Raha: I think its about having mutiple servers",

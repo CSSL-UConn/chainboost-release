@@ -1,4 +1,5 @@
-package BaseDFSProtocol
+package sample
+
 //from:  https://rosettacode.org/wiki/Statistics/Normal_distribution#Go
 import (
 	"math"

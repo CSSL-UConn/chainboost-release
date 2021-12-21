@@ -14,6 +14,8 @@
 					SectorNumber:             bz.SectorNumber,
 					NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
 					SimulationSeed:			  bz.SimulationSeed,
+					nbrSubTrees:			  bz.nbrSubTrees,
+					threshold:				  bz.threshold,
 				}
 	4- timeOut
 
@@ -34,6 +36,7 @@ import (
 
 	onet "github.com/basedfs"
 	"github.com/basedfs/blockchain"
+
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"github.com/basedfs/por"
@@ -58,6 +61,8 @@ type HelloBaseDFS struct {
 	SectorNumber             int
 	NumberOfPayTXsUpperBound int
 	SimulationSeed           int
+	nbrSubTrees              int
+	threshold                int
 }
 type HelloChan struct {
 	*onet.TreeNode
@@ -123,6 +128,10 @@ type BaseDFS struct {
 	// --- just root node use these
 	FirstQueueWait  int
 	SecondQueueWait int
+	//-- bls cosi protocol
+	BlsCosi     *BlsCosi
+	NbrSubTrees int
+	Threshold   int
 	// ------------------------------------------------------------------------------------------------------------------
 	//ToDo: raha: dol I need these items?
 	//vcMeasure *monitor.TimeMeasure
@@ -195,6 +204,8 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 func (bz *BaseDFS) Start() error {
 	// update the centralbc file with created nodes' information
 	bz.finalCentralBCInitialization()
+	// --- BLSCoSi
+	RunBLSCoSiProtocol(bz)
 
 	//bz.Testpor()
 	//vrf.Testvrf()
@@ -270,6 +281,8 @@ func (bz *BaseDFS) Dispatch() error {
 			bz.SectorNumber = msg.SectorNumber
 			bz.NumberOfPayTXsUpperBound = msg.NumberOfPayTXsUpperBound
 			bz.SimulationSeed = msg.SimulationSeed
+			bz.NbrSubTrees = msg.nbrSubTrees
+			bz.Threshold = msg.threshold
 			bz.helloBaseDFS()
 
 		// this msg is catched in simulation codes
@@ -503,6 +516,9 @@ func (bz *BaseDFS) helloBaseDFS() {
 					SectorNumber:             bz.SectorNumber,
 					NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
 					SimulationSeed:           bz.SimulationSeed,
+					// -- bls cosi
+					nbrSubTrees: bz.NbrSubTrees,
+					threshold:   bz.Threshold,
 				})
 				if err != nil {
 					log.Lvl2(bz.Info(), "couldn't send hello to child", c.Name())

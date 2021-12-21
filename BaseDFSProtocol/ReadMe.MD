@@ -27,6 +27,8 @@ Types of Messages:
 	SectorNumber:             bz.SectorNumber,
 	NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
 	SimulationSeed:			  bz.SimulationSeed,
+	nbrSubTrees:			  bz.nbrSubTrees,
+	threshold:				  bz.threshold,
 }
 ```
 - timeOut: terminate the simulation

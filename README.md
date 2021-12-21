@@ -40,6 +40,9 @@ Config File "BaseDFS.toml" is located under the following directory:
 - `RoundDuration` the time interval between each round (in seconds)
 - `SimulationSeed` 
 
+- `nbrSubTrees`
+- `threshold`
+
 
 ## Blockcahin ##
 There are 5 sheets, namely MarketMatching, FirstQueue, SecondQueue, and RoundTable, and PowerTable

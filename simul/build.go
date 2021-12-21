@@ -74,6 +74,8 @@ func startBuild() {
 		NumberOfPayTXsUpperBound, _ := strconv.Atoi(runconfigs[0].Get("NumberOfPayTXsUpperBound"))
 		ProtocolTimeout, _ := strconv.Atoi(runconfigs[0].Get("ProtocolTimeout"))
 		SimulationSeed, _ := strconv.Atoi(runconfigs[0].Get("SimulationSeed"))
+		NbrSubTrees, _ := strconv.Atoi(runconfigs[0].Get("NbrSubTrees"))
+		Threshold, _ := strconv.Atoi(runconfigs[0].Get("Threshold"))
 
 		deployP.Configure(&platform.Config{
 			MonitorPort: monitorPort,
@@ -87,6 +89,8 @@ func startBuild() {
 			NumberOfPayTXsUpperBound: NumberOfPayTXsUpperBound,
 			ProtocolTimeout:          ProtocolTimeout,
 			SimulationSeed:           SimulationSeed,
+			NbrSubTrees:              NbrSubTrees,
+			Threshold:                Threshold,
 		})
 
 		if clean {

@@ -31,19 +31,20 @@ func init() {
 
 func TestBdnProto_SimpleCase(t *testing.T) {
 	log.SetDebugVisible(3)
-	err := runProtocol(5, 1, 5)
+	//err := runProtocol(5, 1, 5)
+	//require.NoError(t, err)
+
+	//if !testing.Short() {
+	err := RunProtocol(10, 5, 10)
 	require.NoError(t, err)
 
-	if !testing.Short() {
-		err = runProtocol(10, 5, 10)
-		require.NoError(t, err)
-
-		err = runProtocol(20, 5, 15)
-		require.NoError(t, err)
-	}
+	//err = runProtocol(20, 5, 15)
+	//require.NoError(t, err)
+	//}
 }
 
-func runProtocol(nbrNodes, nbrSubTrees, threshold int) error {
+// raha: made the function exportable (uppercase)
+func RunProtocol(nbrNodes, nbrSubTrees, threshold int) error {
 	local := onet.NewLocalTest(onet.Suite)
 	defer local.CloseAll()
 	servers, roster, tree := local.GenTree(nbrNodes, false)
@@ -57,6 +58,8 @@ func runProtocol(nbrNodes, nbrSubTrees, threshold int) error {
 	}
 
 	cosiProtocol := pi.(*protocol.BlsCosi)
+	//raha: commented
+	// i changed the type of cosiProtocol.CreateProtocol
 	cosiProtocol.CreateProtocol = rootService.CreateProtocol
 	// message should be initialized with meta blocks
 	cosiProtocol.Msg = []byte{0xFF}

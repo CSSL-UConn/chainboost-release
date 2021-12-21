@@ -3,7 +3,7 @@
 //
 // Deprecated: use the bdnproto instead to be robust against the rogue public-key
 // attack described here: https://crypto.stanford.edu/~dabo/pubs/papers/BLSmultisig.html
-package protocol
+package BaseDFSProtocol
 
 import (
 	"fmt"
@@ -14,6 +14,7 @@ import (
 	"golang.org/x/xerrors"
 
 	onet "github.com/basedfs"
+	"github.com/basedfs/blscosi/protocol"
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"go.dedis.ch/kyber/v3"
@@ -73,14 +74,14 @@ type BlsCosi struct {
 	subProtocolName  string
 	verificationFn   VerificationFn
 	suite            *pairing.SuiteBn256
-	subTrees         BlsProtocolTree
+	subTrees         protocol.BlsProtocolTree
 }
 
 // CreateProtocolFunction is a function type which creates a new protocol
 // used in BlsCosi protocol for creating sub leader protocols.
 
 // raha: changed this from
-type CreateProtocolFunction func(name string, t *onet.Tree) (onet.ProtocolInstance, error)
+type CreateProtocolFunction func(name string, t *onet.Tree, sid onet.ServiceID) (onet.ProtocolInstance, error)
 
 // to:
 //type CreateProtocolFunction func(name string, t *onet.Tree, sid onet.ServiceID) (onet.ProtocolInstance, error)
@@ -139,7 +140,7 @@ func (p *BlsCosi) SetNbrSubTree(nbr int) error {
 	}
 
 	var err error
-	p.subTrees, err = NewBlsProtocolTree(p.Tree(), nbr)
+	p.subTrees, err = protocol.NewBlsProtocolTree(p.Tree(), nbr)
 	if err != nil {
 		return xerrors.Errorf("error in tree generation: %v", err)
 	}
@@ -284,7 +285,7 @@ func (p *BlsCosi) checkFailureThreshold(numFailure int) bool {
 // startSubProtocol creates, parametrize and starts a subprotocol on a given tree
 // and returns the started protocol.
 func (p *BlsCosi) startSubProtocol(tree *onet.Tree) (*SubBlsCosi, error) {
-	pi, err := p.CreateProtocol(p.subProtocolName, tree)
+	pi, err := p.CreateProtocol(p.subProtocolName, tree, onet.NilServiceID)
 	if err != nil {
 		return nil, err
 	}
@@ -348,7 +349,7 @@ func (p *BlsCosi) collectSignatures() (ResponseMap, error) {
 					nodes = append(nodes, subleaderID)
 
 					var err error
-					p.subTrees[i], err = GenSubtree(p.subTrees[i].Roster, nodes)
+					p.subTrees[i], err = protocol.GenSubtree(p.subTrees[i].Roster, nodes)
 					if err != nil {
 						errChan <- fmt.Errorf("(subprotocol %v) error in tree generation: %v", i, err)
 						return

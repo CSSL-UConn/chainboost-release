@@ -75,6 +75,9 @@ type Config struct {
 	NumberOfPayTXsUpperBound int
 	ProtocolTimeout          int
 	SimulationSeed           int
+	// bls cosi
+	NbrSubTrees int
+	Threshold   int
 }
 
 var deterlab = "deterlab"

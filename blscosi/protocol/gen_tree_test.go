@@ -238,7 +238,7 @@ func TestGenSubtreePutsCorrectSubleader(t *testing.T) {
 					nodeList = append(nodeList, i)
 				}
 			}
-			tree, err := genSubtree(roster, nodeList)
+			tree, err := GenSubtree(roster, nodeList)
 
 			if subleaderID >= nNodes { //should generate an error
 				if err == nil {
@@ -288,7 +288,7 @@ func TestGenSubtreeStructure(t *testing.T) {
 				nodeList = append(nodeList, i)
 			}
 		}
-		tree, err := genSubtree(roster, nodeList)
+		tree, err := GenSubtree(roster, nodeList)
 		if err != nil {
 			t.Fatal("error in subtree generation:", err)
 		}
@@ -328,31 +328,31 @@ func TestGenSubtreeErrors(t *testing.T) {
 		}
 
 		nodeList[1] = -5
-		_, err := genSubtree(roster, nodeList)
+		_, err := GenSubtree(roster, nodeList)
 		if err == nil {
 			t.Fatal("subtree generator should throw an error with a negative subleader id, but doesn't")
 		}
 
 		nodeList[1] = 0
-		_, err = genSubtree(roster, nodeList)
+		_, err = GenSubtree(roster, nodeList)
 		if err == nil {
 			t.Fatal("subtree generator should not allow leader and subleader being the same")
 		}
 
 		nodeList[1] = nNodes
-		_, err = genSubtree(roster, nodeList)
+		_, err = GenSubtree(roster, nodeList)
 		if err == nil {
 			t.Fatal("subtree generator should throw an error with a too big subleader id, but doesn't")
 		}
 
 		nodeList[1] = correctSubleaderID
-		_, err = genSubtree(nil, nodeList)
+		_, err = GenSubtree(nil, nodeList)
 		if err == nil {
 			t.Fatal("subtree generator should throw an error with a nil roster, but doesn't")
 		}
 
 		emptyRoster := local.GenRosterFromHost(make([]*onet.Server, 0)...)
-		_, err = genSubtree(emptyRoster, nodeList)
+		_, err = GenSubtree(emptyRoster, nodeList)
 		if err == nil {
 			t.Fatal("subtree generator should throw an error with a nil roster, but doesn't")
 		}

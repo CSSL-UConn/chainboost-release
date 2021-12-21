@@ -6,7 +6,7 @@ RunWait = "600000s"
 Suite = "Ed25519"
 PreScript = "testPreScript.toml"
 RoundDuration = 2
-ProtocolTimeout = 10
+ProtocolTimeout = 100
 timeout = 250
 PercentageTxPay = 30
 DistributionMeanFileSize = 100
@@ -20,6 +20,8 @@ BlockSize = 200000
 SectorNumber = 1
 NumberOfPayTXsUpperBound = 200
 SimulationSeed = 10
+nbrSubTrees = 2
+threshold = 5
 
 Hosts
 10

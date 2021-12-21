@@ -1,4 +1,4 @@
-package BaseDFSProtocol
+package sample
 
 import (
 	"math/rand"

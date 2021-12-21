@@ -224,12 +224,15 @@ func (l *LocalTest) GenBigTree(nbrTreeNodes, nbrServers, bf int, register bool) 
 
 // GenRosterFromHost takes a number of servers as arguments and creates
 // an Roster.
+
 func (l *LocalTest) GenRosterFromHost(servers ...*Server) *Roster {
 	l.panicClosed()
 	var entities []*network.ServerIdentity
 	for i := range servers {
 		entities = append(entities, servers[i].ServerIdentity)
 	}
+	log.LLvl1("wait!")
+	// Raha: this is where the roster is ctrated for BLSCoSi module
 	return NewRoster(entities)
 }
 

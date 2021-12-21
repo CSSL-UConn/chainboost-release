@@ -105,7 +105,7 @@ func genTrees(tree *onet.Tree, nSubtrees int) ([]*onet.Tree, error) {
 		}
 
 		var err error
-		trees[i], err = genSubtree(roster, nodes)
+		trees[i], err = GenSubtree(roster, nodes)
 		if err != nil {
 			return nil, err
 		}
@@ -118,7 +118,8 @@ func genTrees(tree *onet.Tree, nSubtrees int) ([]*onet.Tree, error) {
 // to the rootRoster.
 // The generated tree will have a root with one child (the subleader)
 // and all other nodes in the roster will be the subleader children.
-func genSubtree(roster *onet.Roster, nodes []int) (*onet.Tree, error) {
+// raha: changed it to exportable
+func GenSubtree(roster *onet.Roster, nodes []int) (*onet.Tree, error) {
 	if roster == nil {
 		return nil, fmt.Errorf("the roster should not be nil, but is")
 	}
