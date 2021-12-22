@@ -127,7 +127,7 @@ func (p *SubBlsCosi) HandleStop(stop StructStop) error {
 // Shutdown closes the different channel to stop the current work
 func (p *SubBlsCosi) Shutdown() error {
 	p.stoppedOnce.Do(func() {
-		log.Lvlf3("Subprotocol shut down on %v", p.ServerIdentity())
+		log.Lvlf2("Subprotocol shut down on %v", p.ServerIdentity())
 		// Only this channel is closed to cut off expensive operations
 		// and select statements but we let other channels be cleaned
 		// by the GC to avoid sending to closed channel
@@ -254,7 +254,7 @@ func (p *SubBlsCosi) dispatchSubLeader() error {
 
 	own, err := p.makeResponse()
 	if ok := p.verificationFn(p.Msg, p.Data); ok {
-		log.Lvlf3("Subleader %v signed", p.ServerIdentity())
+		log.Lvlf2("Subleader %v signed", p.ServerIdentity())
 		_, index := searchPublicKey(p.TreeNodeInstance, p.ServerIdentity())
 		if index != -1 {
 			responses[index] = own
@@ -306,7 +306,7 @@ func (p *SubBlsCosi) dispatchSubLeader() error {
 				log.Warnf("Duplicate refusal from %v", reply.ServerIdentity)
 			}
 		case <-timeout:
-			log.Lvlf3("Subleader reached timeout waiting for children"+
+			log.Lvlf2("Subleader reached timeout waiting for children"+
 				" responses: %v", p.ServerIdentity())
 			// Use whatever we received until then to try to finish
 			// the protocol
@@ -320,7 +320,7 @@ func (p *SubBlsCosi) dispatchSubLeader() error {
 		return err
 	}
 
-	log.Lvlf3("Subleader %v sent its reply with mask %b", p.ServerIdentity(), r.Mask)
+	log.Lvlf2("Subleader %v sent its reply with mask %b", p.ServerIdentity(), r.Mask)
 	return p.SendToParent(r)
 }
 
@@ -345,13 +345,13 @@ func (p *SubBlsCosi) dispatchLeaf() error {
 		var r interface{}
 		var err error
 		if ok {
-			log.Lvlf3("Leaf %v signed", p.ServerIdentity())
+			log.Lvlf2("Leaf %v signed", p.ServerIdentity())
 			r, err = p.makeResponse()
 			if err != nil {
 				return err
 			}
 		} else {
-			log.Lvlf3("Leaf %v refused to sign", p.ServerIdentity())
+			log.Lvlf2("Leaf %v refused to sign", p.ServerIdentity())
 			r, err = p.makeRefusal(a.Nonce)
 			if err != nil {
 				return err

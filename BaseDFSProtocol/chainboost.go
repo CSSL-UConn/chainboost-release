@@ -11,7 +11,6 @@ import (
 
 	onet "github.com/basedfs"
 	"github.com/basedfs/blscosi/bdnproto"
-	"github.com/basedfs/blscosi/protocol"
 	"github.com/basedfs/log"
 	"go.dedis.ch/kyber/v3/pairing"
 
@@ -39,13 +38,13 @@ func NewBdnProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error) {
 }
 
 // NewBdnCosi makes a protocol instance for the BDN CoSi protocol.
-func NewBdnCosi(n *onet.TreeNodeInstance, vf protocol.VerificationFn, subProtocolName string, suite *pairing.SuiteBn256) (onet.ProtocolInstance, error) {
-	c, err := protocol.NewBlsCosi(n, vf, subProtocolName, suite)
+func NewBdnCosi(n *onet.TreeNodeInstance, vf VerificationFn, subProtocolName string, suite *pairing.SuiteBn256) (onet.ProtocolInstance, error) {
+	c, err := NewBlsCosi(n, vf, subProtocolName, suite)
 	if err != nil {
 		return nil, err
 	}
 
-	mbc := c.(*protocol.BlsCosi)
+	mbc := c.(*BlsCosi)
 	mbc.Sign = bdn.Sign
 	mbc.Verify = bdn.Verify
 	mbc.Aggregate = aggregate
@@ -62,13 +61,13 @@ func NewSubBdnProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error) 
 
 // NewSubBdnCosi uses the default sub-protocol to make one compatible with
 // the robust scheme.
-func NewSubBdnCosi(n *onet.TreeNodeInstance, vf protocol.VerificationFn, suite *pairing.SuiteBn256) (onet.ProtocolInstance, error) {
-	pi, err := protocol.NewSubBlsCosi(n, vf, suite)
+func NewSubBdnCosi(n *onet.TreeNodeInstance, vf VerificationFn, suite *pairing.SuiteBn256) (onet.ProtocolInstance, error) {
+	pi, err := NewSubBlsCosi(n, vf, suite)
 	if err != nil {
 		return nil, err
 	}
 
-	subCosi := pi.(*protocol.SubBlsCosi)
+	subCosi := pi.(*SubBlsCosi)
 	subCosi.Sign = bdn.Sign
 	subCosi.Verify = bdn.Verify
 	subCosi.Aggregate = aggregate
@@ -96,9 +95,7 @@ const testServiceName = "TestServiceBdnCosi"
 
 func RunBLSCoSiProtocol(bz *BaseDFS) error {
 	var cosiProtocol *BlsCosi = bz.BlsCosi
-	roster := bz.Roster()
-	r1 := cosiProtocol.Roster()
-	log.LLvl1(r1, "\n VS \n", roster)
+	roster := cosiProtocol.Roster()
 	err := cosiProtocol.Start()
 	if err != nil {
 		return err
@@ -107,8 +104,10 @@ func RunBLSCoSiProtocol(bz *BaseDFS) error {
 	select {
 	case sig := <-cosiProtocol.FinalSignature:
 		pubs := roster.ServicePublics(testServiceName)
+		log.Lvl1("Raha: ", pubs, "\n vs :", bz.Roster().Publics())
 		return bdnproto.BdnSignature(sig).Verify(testSuite, cosiProtocol.Msg, pubs)
-	case <-time.After(2 * time.Hour):
+
+	case <-time.After(bz.ProtocolTimeout * time.Second):
 	}
 
 	return errors.New("timeout")

@@ -81,10 +81,9 @@ type BlsCosi struct {
 // used in BlsCosi protocol for creating sub leader protocols.
 
 // raha: changed this from
-type CreateProtocolFunction func(name string, t *onet.Tree, sid onet.ServiceID) (onet.ProtocolInstance, error)
-
-// to:
 //type CreateProtocolFunction func(name string, t *onet.Tree, sid onet.ServiceID) (onet.ProtocolInstance, error)
+// to:
+type CreateProtocolFunction func(name string, t *onet.Tree, sid onet.ServiceID) (onet.ProtocolInstance, error)
 
 // NewDefaultProtocol is the default protocol function used for registration
 // with an always-true verification.
@@ -195,7 +194,7 @@ func (p *BlsCosi) Start() error {
 		return xerrors.Errorf("integrity check failed: %v", err)
 	}
 
-	log.Lvlf3("Starting BLS CoSi on %v", p.ServerIdentity())
+	log.LLvl2("Starting BLS CoSi on %v", p.ServerIdentity())
 
 	go p.runSubProtocols()
 
@@ -217,7 +216,7 @@ func (p *BlsCosi) runSubProtocols() {
 	p.subProtocolsLock.Lock()
 	p.subProtocols = make([]*SubBlsCosi, len(p.subTrees))
 	for i, tree := range p.subTrees {
-		log.Lvlf3("Invoking start sub protocol on %v", tree.Root.ServerIdentity)
+		log.Lvlf2("Invoking start sub protocol on %v", tree.Root.ServerIdentity)
 		var err error
 		p.subProtocols[i], err = p.startSubProtocol(tree)
 		if err != nil {
@@ -300,7 +299,7 @@ func (p *BlsCosi) startSubProtocol(tree *onet.Tree) (*SubBlsCosi, error) {
 	// responses. The main protocol will deal with early answers.
 	cosiSubProtocol.Threshold = tree.Size() - 1
 
-	log.Lvlf3("Starting sub protocol with subleader %v", tree.Root.Children[0].ServerIdentity)
+	log.Lvlf2("Starting sub protocol with subleader %v", tree.Root.Children[0].ServerIdentity)
 	err = cosiSubProtocol.Start()
 	if err != nil {
 		return nil, err
@@ -458,7 +457,7 @@ func (p *BlsCosi) generateSignature(responses ResponseMap) (BlsSignature, error)
 	// Aggregate all signatures
 	sig, err := p.makeAggregateResponse(p.suite, publics, responses)
 	if err != nil {
-		log.Lvlf3("%v failed to create aggregate signature", p.ServerIdentity())
+		log.Lvlf2("%v failed to create aggregate signature", p.ServerIdentity())
 		return nil, err
 	}
 
@@ -508,7 +507,7 @@ func (p *BlsCosi) makeAggregateResponse(suite pairing.Suite, publics []kyber.Poi
 		return nil, err
 	}
 
-	log.Lvlf3("%v is done aggregating signatures with total of %d signatures", p.ServerIdentity(), finalMask.CountEnabled())
+	log.Lvlf2("%v is done aggregating signatures with total of %d signatures", p.ServerIdentity(), finalMask.CountEnabled())
 
 	return append(sig, finalMask.Mask()...), nil
 }

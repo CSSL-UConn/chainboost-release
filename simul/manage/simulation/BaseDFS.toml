@@ -3,7 +3,7 @@ Simulation = "BaseDFS"
 BF = 2
 Rounds = 0
 RunWait = "600000s"
-Suite = "Ed25519"
+Suite = "bn256.adapter"
 PreScript = "testPreScript.toml"
 RoundDuration = 2
 ProtocolTimeout = 100
@@ -15,13 +15,13 @@ DistributionMeanContractDuration = 10
 DistributionVarianceContractDuration = 50
 DistributionMeanInitialPower = 900000000000000000
 DistributionVarianceInitialPower = 9000000000000000
-Nodes = 10
+Nodes = 20
 BlockSize = 200000
 SectorNumber = 1
 NumberOfPayTXsUpperBound = 200
 SimulationSeed = 10
-nbrSubTrees = 2
-threshold = 5
+nbrSubTrees = 5
+threshold = 15
 
 Hosts
-10
+20

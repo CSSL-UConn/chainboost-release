@@ -180,7 +180,7 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 			}
 
 			cosiProtocol := pi.(*BaseDFSProtocol.BlsCosi)
-			//cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol
+			cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol
 			//cosiProtocol.CreateProtocol = rootService.CreateProtocol
 
 			// message should be initialized with meta blocks

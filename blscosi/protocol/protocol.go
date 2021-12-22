@@ -23,14 +23,15 @@ import (
 )
 
 // Register the protocols
-func init() {
-	_, err := onet.GlobalProtocolRegister(DefaultProtocolName,
-		NewDefaultProtocol)
-	log.ErrFatal(err)
-	_, err = onet.GlobalProtocolRegister(DefaultSubProtocolName,
-		NewDefaultSubProtocol)
-	log.ErrFatal(err)
-}
+// raha: commented
+// func init() {
+// 	_, err := onet.GlobalProtocolRegister(DefaultProtocolName,
+// 		NewDefaultProtocol)
+// 	log.ErrFatal(err)
+// 	_, err = onet.GlobalProtocolRegister(DefaultSubProtocolName,
+// 		NewDefaultSubProtocol)
+// 	log.ErrFatal(err)
+// }
 
 const defaultTimeout = 10 * time.Second
 const defaultSubleaderFailures = 2

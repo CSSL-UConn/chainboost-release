@@ -36,6 +36,7 @@ import (
 
 	onet "github.com/basedfs"
 	"github.com/basedfs/blockchain"
+	"go.dedis.ch/kyber/v3/pairing"
 
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
@@ -99,7 +100,9 @@ type BaseDFS struct {
 	// channel to let nodes that the next round's leader has been specified
 	NewLeaderChan chan NewLeaderChan
 	// the suite we use
-	suite network.Suite
+	//suite network.Suite
+	// to match the suit in blscosi
+	suite *pairing.SuiteBn256
 	//startBCMeasure *monitor.TimeMeasure
 	// onDoneCallback is the callback that will be called at the end of the protocol
 	//onDoneCallback func() //ToDo: raha: define this function and call it when you want to finish the protocol + check when should it be called
@@ -157,7 +160,7 @@ func init() {
 func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error) {
 	bz := &BaseDFS{
 		TreeNodeInstance:  n,
-		suite:             n.Suite(),
+		suite:             pairing.NewSuiteBn256(),
 		DoneBaseDFS:       make(chan bool, 1),
 		LeaderProposeChan: make(chan bool, 1),
 		roundNumber:       1,
@@ -205,7 +208,9 @@ func (bz *BaseDFS) Start() error {
 	// update the centralbc file with created nodes' information
 	bz.finalCentralBCInitialization()
 	// --- BLSCoSi
-	RunBLSCoSiProtocol(bz)
+	if err := RunBLSCoSiProtocol(bz); err != nil {
+		log.LLvl1("Raha:", err)
+	}
 
 	//bz.Testpor()
 	//vrf.Testvrf()

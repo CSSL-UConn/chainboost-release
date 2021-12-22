@@ -30,16 +30,16 @@ func init() {
 }
 
 func TestBdnProto_SimpleCase(t *testing.T) {
-	log.SetDebugVisible(3)
+	log.SetDebugVisible(4)
 	//err := runProtocol(5, 1, 5)
 	//require.NoError(t, err)
 
 	//if !testing.Short() {
-	err := RunProtocol(10, 5, 10)
-	require.NoError(t, err)
+	// err := RunProtocol(10, 5, 10)
+	// require.NoError(t, err)
 
-	//err = runProtocol(20, 5, 15)
-	//require.NoError(t, err)
+	err := RunProtocol(20, 5, 15)
+	require.NoError(t, err)
 	//}
 }
 
@@ -58,10 +58,7 @@ func RunProtocol(nbrNodes, nbrSubTrees, threshold int) error {
 	}
 
 	cosiProtocol := pi.(*protocol.BlsCosi)
-	//raha: commented
-	// i changed the type of cosiProtocol.CreateProtocol
 	cosiProtocol.CreateProtocol = rootService.CreateProtocol
-	// message should be initialized with meta blocks
 	cosiProtocol.Msg = []byte{0xFF}
 	cosiProtocol.Timeout = 10 * time.Second
 	cosiProtocol.Threshold = threshold
