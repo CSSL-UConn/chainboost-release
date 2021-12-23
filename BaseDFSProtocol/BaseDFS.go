@@ -183,7 +183,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	// 	return bz, err
 	// }
 	if err := n.RegisterChannelLength(&bz.NewLeaderChan, len(bz.Tree().List())); err != nil {
-		log.Error("Couldn't reister channel:", err)
+		log.Error("Couldn't reister channel:   ", err)
 	}
 	// bls key pair for each node for VRF
 	_, bz.ECPrivateKey = vrf.VrfKeygen()
