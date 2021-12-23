@@ -139,7 +139,7 @@ func (p *SubBlsCosi) Shutdown() error {
 
 // Start is done only by root and starts the subprotocol
 func (p *SubBlsCosi) Start() error {
-	log.Lvl3(p.ServerIdentity(), "Starting subCoSi")
+	log.Lvl2(p.ServerIdentity(), "Starting subCoSi")
 	if err := p.checkIntegrity(); err != nil {
 		p.startChan <- false
 		p.Done()
@@ -183,7 +183,7 @@ func (p *SubBlsCosi) dispatchRoot() error {
 			log.Error("error while broadcasting stopping message:", err)
 		}
 	}()
-
+	//ToDo: I should do the same for ensuring hello message recievied
 	// make sure we're ready to go
 	hasStarted := <-p.startChan
 	if !hasStarted {

@@ -5,7 +5,8 @@ import (
 	onet "github.com/basedfs"
 	"github.com/basedfs/log"
 	"github.com/basedfs/simul"
-	"github.com/basedfs/simul/monitor"
+
+	//"github.com/basedfs/simul/monitor"
 	"golang.org/x/xerrors"
 )
 
@@ -84,13 +85,13 @@ func (e *simulation) Run(config *onet.SimulationConfig) error {
 	log.Lvl2("Size is:", size, "rounds:", e.Rounds)
 	for round := 0; round < e.Rounds; round++ {
 		log.Lvl1("Starting round", round)
-		round := monitor.NewTimeMeasure("round")
+		//round := monitor.NewTimeMeasure("round")
 		p, err := config.Overlay.CreateProtocol("BaseDFS", config.Tree, onet.NilServiceID)
 		if err != nil {
 			return xerrors.Errorf("creating protocol: %v", err)
 		}
 		go p.Start()
-		round.Record()
+		//round.Record()
 	}
 	return nil
 }

@@ -15,13 +15,13 @@ DistributionMeanContractDuration = 10
 DistributionVarianceContractDuration = 50
 DistributionMeanInitialPower = 900000000000000000
 DistributionVarianceInitialPower = 9000000000000000
-Nodes = 20
+Nodes = 10
 BlockSize = 200000
 SectorNumber = 1
 NumberOfPayTXsUpperBound = 200
 SimulationSeed = 10
-nbrSubTrees = 5
-threshold = 15
+nbrSubTrees = 3
+threshold = 7
 
 Hosts
-20
+10

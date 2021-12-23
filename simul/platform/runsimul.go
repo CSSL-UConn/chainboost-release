@@ -140,7 +140,7 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 		//childrenWait := monitor.NewTimeMeasure("ChildrenWait")
 		wait := true
 		for wait {
-			// Raha: the protocol is instanciated here:
+			// Raha: the protocols are instanciated here:
 			//p, err := rootSC.Overlay.CreateProtocol("Count", rootSC.Tree, onet.NilServiceID)
 			//p, err := rootSC.Overlay.CreateProtocol("OpinionGathering", rootSC.Tree, onet.NilServiceID)
 			p, err := rootSC.Overlay.CreateProtocol("BaseDFS", rootSC.Tree, onet.NilServiceID)
@@ -149,18 +149,41 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 			}
 			//proto := p.(*manage.ProtocolCount)
 			//proto := p.(*manage.ProtocolOpinionGathering)
-			proto := p.(*BaseDFSProtocol.BaseDFS)
-			//proto.SetTimeout(time.Duration(TimeOut) * time.Second)
+			// ---------------------------------------------------------------
+			//raha: BLSCoSi protocol
+			// pi, err := rootSC.Overlay.CreateProtocol("bdnCoSiProto", rootSC.Tree, onet.NilServiceID)
+			// if err != nil {
+			// 	return xerrors.New("couldn't create protocol: " + err.Error())
+			// }
+
+			// cosiProtocol := pi.(*BaseDFSProtocol.BlsCosi)
+			// cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol
+			// //cosiProtocol.CreateProtocol = rootService.CreateProtocol
+
+			// // message should be initialized with meta blocks
+			// cosiProtocol.Msg = []byte{0xFF}
+			// // params from config file
+			// cosiProtocol.Timeout = time.Duration(ProtocolTimeout) * time.Second
+			// cosiProtocol.Threshold = Threshold
+			// if NbrSubTrees > 0 {
+			// 	err := cosiProtocol.SetNbrSubTree(NbrSubTrees)
+			// 	if err != nil {
+			// 		return err
+			// 	}
+			// }
+			// ---------------------------------------------------------------
+			basedfsprotocol := p.(*BaseDFSProtocol.BaseDFS)
+			//basedfsprotocol.SetTimeout(time.Duration(TimeOut) * time.Second)
 			// raha: finally passing our system-wide configurations to our protocol
-			proto.PercentageTxPay = PercentageTxPay
-			proto.RoundDuration = RoundDuration
-			proto.BlockSize = BlockSize
-			proto.SectorNumber = SectorNumber
-			proto.NumberOfPayTXsUpperBound = NumberOfPayTXsUpperBound
-			proto.ProtocolTimeout = time.Duration(ProtocolTimeout) * time.Second
-			proto.SimulationSeed = SimulationSeed
-			proto.NbrSubTrees = NbrSubTrees
-			proto.Threshold = Threshold
+			basedfsprotocol.PercentageTxPay = PercentageTxPay
+			basedfsprotocol.RoundDuration = RoundDuration
+			basedfsprotocol.BlockSize = BlockSize
+			basedfsprotocol.SectorNumber = SectorNumber
+			basedfsprotocol.NumberOfPayTXsUpperBound = NumberOfPayTXsUpperBound
+			basedfsprotocol.ProtocolTimeout = time.Duration(ProtocolTimeout) * time.Second
+			basedfsprotocol.SimulationSeed = SimulationSeed
+			basedfsprotocol.NbrSubTrees = NbrSubTrees
+			basedfsprotocol.Threshold = Threshold
 			log.LLvl2("passing our system-wide configurations to the protocol",
 				"\n  PercentageTxPay: ", PercentageTxPay,
 				"\n  RoundDuration: ", RoundDuration,
@@ -173,34 +196,14 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 				"\n and threshold of: ", Threshold,
 			)
 			// ---------------------------------------------------------------
-			//raha: new protocol: BLSCoSi
-			pi, err := rootSC.Overlay.CreateProtocol("bdnCoSiProto", rootSC.Tree, onet.NilServiceID)
-			if err != nil {
-				return xerrors.New("couldn't create protocol: " + err.Error())
-			}
-
-			cosiProtocol := pi.(*BaseDFSProtocol.BlsCosi)
-			cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol
-			//cosiProtocol.CreateProtocol = rootService.CreateProtocol
-
-			// message should be initialized with meta blocks
-			cosiProtocol.Msg = []byte{0xFF}
-			cosiProtocol.Timeout = time.Duration(ProtocolTimeout) * time.Second
-			cosiProtocol.Threshold = Threshold
-			// raha: added. this way, the roster that runs this protocol is  initiated by the main roster, the one that runs the basedfs protocol
-			cosiProtocol.TreeNodeInstance = proto.TreeNodeInstance
-			//----
-			if NbrSubTrees > 0 {
-				err := cosiProtocol.SetNbrSubTree(NbrSubTrees)
-				if err != nil {
-					return err
-				}
-			}
-			proto.BlsCosi = cosiProtocol
+			// raha: BLSCoSi protocol
+			// raha: added: this way, the roster that runs this protocol is  initiated by the main roster, the one that runs the basedfs protocol
+			// cosiProtocol.TreeNodeInstance = basedfsprotocol.TreeNodeInstance
+			// basedfsprotocol.BlsCosi = cosiProtocol
 			// ---------------------------------------------------------------
-			proto.Start()
+			basedfsprotocol.Start()
 
-			px := <-proto.DoneBaseDFS
+			px := <-basedfsprotocol.DoneBaseDFS
 			log.Lvl1("Back to simulation module. Final result is", px)
 			wait = false
 		}

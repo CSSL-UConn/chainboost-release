@@ -1,20 +1,15 @@
 package BaseDFSProtocol
 
-// Package bdnproto implements the Boneh-Drijvers-Neven signature scheme
-// to protect the aggregates against rogue public-key attacks.
-// This is a modified version of blscosi/protocol which is now deprecated.
-//package bdnproto
+/* raha: brought from Package bdnproto:
+Package bdnproto implements the Boneh-Drijvers-Neven signature scheme
+to protect the aggregates against rogue public-key attacks.
+This is a modified version of blscosi/protocol which is now deprecated.
+package bdnproto */
 
 import (
-	"errors"
-	"time"
-
 	onet "github.com/basedfs"
-	"github.com/basedfs/blscosi/bdnproto"
-	"github.com/basedfs/log"
 	"go.dedis.ch/kyber/v3/pairing"
-
-	//"go.dedis.ch/kyber/v3/sign"
+	"go.dedis.ch/kyber/v3/sign"
 	"go.dedis.ch/kyber/v3/sign/bdn"
 )
 
@@ -75,55 +70,11 @@ func NewSubBdnCosi(n *onet.TreeNodeInstance, vf VerificationFn, suite *pairing.S
 	return subCosi, nil
 }
 
-// // aggregate uses the robust aggregate algorithm to aggregate the signatures.
-// func aggregate(suite pairing.Suite, mask *sign.Mask, sigs [][]byte) ([]byte, error) {
-// 	sig, err := bdn.AggregateSignatures(suite, sigs, mask)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return sig.MarshalBinary()
-// }
-
-// raha: brough from bdnproto_test ---------------------------------
-// raha: made the function exportable (uppercase)
-var testSuite = pairing.NewSuiteBn256()
-
-const testServiceName = "TestServiceBdnCosi"
-
-//var testServiceID onet.ServiceID
-
-func RunBLSCoSiProtocol(bz *BaseDFS) error {
-	var cosiProtocol *BlsCosi = bz.BlsCosi
-	roster := cosiProtocol.Roster()
-	err := cosiProtocol.Start()
+// aggregate uses the robust aggregate algorithm to aggregate the signatures.
+func aggregate(suite pairing.Suite, mask *sign.Mask, sigs [][]byte) ([]byte, error) {
+	sig, err := bdn.AggregateSignatures(suite, sigs, mask)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	select {
-	case sig := <-cosiProtocol.FinalSignature:
-		pubs := roster.ServicePublics(testServiceName)
-		log.Lvl1("Raha: ", pubs, "\n vs :", bz.Roster().Publics())
-		return bdnproto.BdnSignature(sig).Verify(testSuite, cosiProtocol.Msg, pubs)
-
-	case <-time.After(bz.ProtocolTimeout * time.Second):
-	}
-
-	return errors.New("timeout")
-}
-
-// testService allows setting the pairing keys of the protocol.
-type testService struct {
-	// We need to embed the ServiceProcessor, so that incoming messages
-	// are correctly handled.
-	*onet.ServiceProcessor
-}
-
-// Starts a new service. No function needed.
-func NewService(c *onet.Context) (onet.Service, error) {
-	s := &testService{
-		ServiceProcessor: onet.NewServiceProcessor(c),
-	}
-	return s, nil
+	return sig.MarshalBinary()
 }

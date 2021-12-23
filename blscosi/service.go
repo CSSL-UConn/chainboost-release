@@ -70,7 +70,6 @@ func (s *Service) SignatureRequest(req *SignatureRequest) (network.Message, erro
 		return nil, errors.New("Couldn't make new protocol: " + err.Error())
 	}
 	p := pi.(*protocol.BlsCosi)
-	//raha: commented
 	p.CreateProtocol = s.CreateProtocol
 	p.Timeout = s.Timeout
 	p.Msg = req.Message

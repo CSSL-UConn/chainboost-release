@@ -194,7 +194,7 @@ func (p *BlsCosi) Start() error {
 		return xerrors.Errorf("integrity check failed: %v", err)
 	}
 
-	log.LLvl2("Starting BLS CoSi on %v", p.ServerIdentity())
+	log.Lvlf2("Starting BLS CoSi on %v", p.ServerIdentity())
 
 	go p.runSubProtocols()
 
@@ -203,7 +203,7 @@ func (p *BlsCosi) Start() error {
 
 func (p *BlsCosi) runSubProtocols() {
 	// raha: commented.  why is it here?!
-	//defer p.Done()
+	defer p.Done()
 
 	// Verification of the data is done before contacting the children
 	if ok := p.verificationFn(p.Msg, p.Data); !ok {
@@ -226,7 +226,7 @@ func (p *BlsCosi) runSubProtocols() {
 		}
 	}
 	p.subProtocolsLock.Unlock()
-	log.Lvl3(p.ServerIdentity().Address, "all protocols started")
+	log.Lvl2(p.ServerIdentity().Address, "all protocols started")
 
 	// Wait and collect all the signature responses
 	responses, err := p.collectSignatures()
@@ -512,6 +512,6 @@ func (p *BlsCosi) makeAggregateResponse(suite pairing.Suite, publics []kyber.Poi
 	return append(sig, finalMask.Mask()...), nil
 }
 
-func aggregate(suite pairing.Suite, mask *sign.Mask, sigs [][]byte) ([]byte, error) {
-	return bls.AggregateSignatures(suite, sigs...)
-}
+// func aggregate(suite pairing.Suite, mask *sign.Mask, sigs [][]byte) ([]byte, error) {
+// 	return bls.AggregateSignatures(suite, sigs...)
+// }

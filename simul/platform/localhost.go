@@ -15,7 +15,8 @@ import (
 	onet "github.com/basedfs"
 	"github.com/basedfs/app"
 	"github.com/basedfs/log"
-	"github.com/basedfs/simul/monitor"
+
+	//"github.com/basedfs/simul/monitor"
 	"golang.org/x/xerrors"
 )
 
@@ -208,7 +209,7 @@ func (d *Localhost) Start(args ...string) error {
 	log.Lvl1("Starting", d.servers, "applications of", ex)
 	time.Sleep(100 * time.Millisecond)
 
-	// If PreScript is defined, run the appropriate script _before_ the simulation.
+	log.Lvl2("If PreScript is defined, running the appropriate script_before_the simulation")
 	if d.PreScript != "" {
 		out, err := exec.Command("sh", "-c", "./"+d.PreScript+" localhost").CombinedOutput()
 		outStr := strings.TrimRight(string(out), "\n")
@@ -217,18 +218,18 @@ func (d *Localhost) Start(args ...string) error {
 		}
 		log.Lvl1(outStr)
 	}
-
-	err := monitor.ConnectSink("localhost:" + strconv.Itoa(d.monitorPort))
-	if err != nil {
-		return xerrors.Errorf("monitor: %v", err)
-	}
+	// raha: commented. can we uste monitor  or not?!
+	// err := monitor.ConnectSink("localhost:" + strconv.Itoa(d.monitorPort))
+	// if err != nil {
+	// 	return xerrors.Errorf("monitor: %v", err)
+	// }
 
 	for index := 0; index < d.servers; index++ {
-		log.Lvl3("Starting (Raha: server number):", index)
+		//log.Lvl2("Starting server number: ", index)
 		host := "127.0.0." + strconv.Itoa(index+1)
 		go func(i int, h string) {
-			log.Lvl3("Localhost: will start host", i, h)
-			// raha: adding some other system-wide configurations
+			log.Lvl2("Localhost: will start host", i, h)
+			log.Lvl2("raha: adding some other system-wide configurations")
 
 			err := Simulate(d.PercentageTxPay, d.RoundDuration, d.BlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.ProtocolTimeout, d.SimulationSeed, d.NbrSubTrees, d.Threshold,
 				d.Suite, host, d.Simulation, "")
@@ -237,7 +238,7 @@ func (d *Localhost) Start(args ...string) error {
 				d.errChan <- err
 			}
 			d.wgRun.Done()
-			log.Lvl3("host (index", i, ")", h, "done")
+			log.Lvl2("host (index", i, ")", h, "done")
 		}(index, host)
 	}
 	return nil
@@ -280,8 +281,8 @@ func (d *Localhost) Wait() error {
 	if errCleanup != nil {
 		log.Error("Fail to restore the cwd: " + errCleanup.Error())
 	}
-
-	monitor.EndAndCleanup()
+	// raha: commented
+	//monitor.EndAndCleanup()
 	log.Lvl2("Processes finished")
 	return err
 }
