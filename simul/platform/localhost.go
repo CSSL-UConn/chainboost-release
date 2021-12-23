@@ -84,8 +84,10 @@ type Localhost struct {
 	ProtocolTimeout          int
 	SimulationSeed           int
 	//-- bls cosi
-	NbrSubTrees int
-	Threshold   int
+	NbrSubTrees     int
+	Threshold       int
+	EpochDuration   int
+	CommitteeWindow int
 }
 
 // Configure various internal variables
@@ -108,6 +110,8 @@ func (d *Localhost) Configure(pc *Config) {
 	d.SimulationSeed = pc.SimulationSeed
 	d.NbrSubTrees = pc.NbrSubTrees
 	d.Threshold = pc.Threshold
+	d.EpochDuration = pc.EpochDuration
+	d.CommitteeWindow = pc.CommitteeWindow
 	// ------------------------------
 	d.localDir = pwd
 	d.debug = pc.Debug
@@ -231,7 +235,7 @@ func (d *Localhost) Start(args ...string) error {
 			log.Lvl2("Localhost: will start host", i, h)
 			log.Lvl2("raha: adding some other system-wide configurations")
 
-			err := Simulate(d.PercentageTxPay, d.RoundDuration, d.BlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.ProtocolTimeout, d.SimulationSeed, d.NbrSubTrees, d.Threshold,
+			err := Simulate(d.PercentageTxPay, d.RoundDuration, d.BlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.ProtocolTimeout, d.SimulationSeed, d.NbrSubTrees, d.Threshold, d.EpochDuration, d.CommitteeWindow,
 				d.Suite, host, d.Simulation, "")
 			if err != nil {
 				log.Error("Error running localhost", h, ":", err)

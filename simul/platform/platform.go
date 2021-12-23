@@ -76,8 +76,10 @@ type Config struct {
 	ProtocolTimeout          int
 	SimulationSeed           int
 	// bls cosi
-	NbrSubTrees int
-	Threshold   int
+	NbrSubTrees     int
+	Threshold       int
+	EpochDuration   int
+	CommitteeWindow int
 }
 
 var deterlab = "deterlab"

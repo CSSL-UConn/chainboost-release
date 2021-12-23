@@ -640,8 +640,6 @@ func (n *TreeNodeInstance) startProtocol() error {
 	return nil
 }
 
-// raha: this function can be called at the end to free the resources?
-
 // Done calls onDoneCallback if available and only finishes when the return-
 // value is true.
 func (n *TreeNodeInstance) Done() {

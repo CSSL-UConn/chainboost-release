@@ -31,9 +31,8 @@ func generateNormalValues(variance, mean, nodes, SimulationSeed int) []uint64 {
 	return intlist
 }
 
-// InitializeCentralBC function is called in simulation level
-// Nodes: # of nodes
-func InitializeCentralBC(RoundDuration,
+// InitializeMainChain function is called in simulation level
+func InitializeMainChainBC(
 	DistributionMeanFileSize, DistributionVarianceFileSize,
 	DistributionMeanContractDuration, DistributionVarianceContractDuration,
 	DistributionMeanInitialPower, DistributionVarianceInitialPower,
@@ -53,14 +52,13 @@ func InitializeCentralBC(RoundDuration,
 	intVar, _ = strconv.Atoi(DistributionMeanContractDuration)
 	MeanContractDuration := intVar
 	ContractDurationRow := generateNormalValues(VarianceContractDuration, MeanContractDuration, numberOfNodes, SimulationSeedInt)
-	//--------------------- fill the centralbc file with generated numbers  ---------------------
+	//--------------------- fill the mainchainbc file with generated numbers  ---------------------
 	f := excelize.NewFile()
-	var index int
 	var err error
 	// ---------------------------------------------------------------------------
 	// ------------------------- Market Matching sheet  ------------------
 	// ---------------------------------------------------------------------------
-	index = f.NewSheet("MarketMatching")
+	_ = f.NewSheet("MarketMatching")
 	if err = f.SetColWidth("MarketMatching", "A", "AAA", 25); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -74,8 +72,6 @@ func InitializeCentralBC(RoundDuration,
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	// Set active sheet of the workbook.
-	f.SetActiveSheet(index)
 	if err := f.SetSheetPrOptions("MarketMatching",
 		excelize.FitToPage(true),
 		excelize.TabColor("#FFFF00"),
@@ -193,13 +189,11 @@ func InitializeCentralBC(RoundDuration,
 	// ---------------------------------------------------------------------------
 	// ------------------------- Transaction Queue sheet  ------------------
 	// ---------------------------------------------------------------------------
-	index = f.NewSheet("FirstQueue")
+	_ = f.NewSheet("FirstQueue")
 	if err = f.SetColWidth("FirstQueue", "A", "AAA", 25); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	// Set active sheet of the workbook.
-	f.SetActiveSheet(index)
 	if err := f.SetSheetPrOptions("FirstQueue",
 		excelize.FitToPage(true),
 		excelize.TabColor("#8B0000"),
@@ -253,13 +247,11 @@ func InitializeCentralBC(RoundDuration,
 	// ---------------------------------------------------------------------------
 	// ------------------------- Second Queue sheet  ------------------
 	// ---------------------------------------------------------------------------
-	index = f.NewSheet("SecondQueue")
+	_ = f.NewSheet("SecondQueue")
 	if err = f.SetColWidth("SecondQueue", "A", "AAA", 25); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	// Set active sheet of the workbook.
-	f.SetActiveSheet(index)
 	if err := f.SetSheetPrOptions("SecondQueue",
 		excelize.FitToPage(true),
 		excelize.TabColor("#8B0999"),
@@ -301,13 +293,11 @@ func InitializeCentralBC(RoundDuration,
 	// ---------------------------------------------------------------------------
 	// ------------------------- power table sheet  -----------------------
 	// ---------------------------------------------------------------------------
-	index = f.NewSheet("PowerTable")
+	_ = f.NewSheet("PowerTable")
 	if err = f.SetColWidth("PowerTable", "A", "AAA", 30); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	// Set active sheet of the workbook.
-	f.SetActiveSheet(index)
 	if err := f.SetSheetPrOptions("PowerTable",
 		excelize.FitToPage(true),
 		excelize.TabColor("#B2FF66"),
@@ -357,13 +347,11 @@ func InitializeCentralBC(RoundDuration,
 	// --------------------------------------------------------------------
 	// --------------------- Round Table Sheet ---------------------------
 	// --------------------------------------------------------------------
-	index = f.NewSheet("RoundTable")
+	_ = f.NewSheet("RoundTable")
 	if err = f.SetColWidth("RoundTable", "A", "AAA", 50); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	// Set active sheet of the workbook.
-	f.SetActiveSheet(index)
 	if err := f.SetSheetPrOptions("RoundTable",
 		excelize.FitToPage(true),
 		excelize.TabColor("#FF66FF"),
@@ -502,13 +490,11 @@ func InitializeCentralBC(RoundDuration,
 	// --------------------------------------------------------------------
 	// --------------------- Overall Evaluation Sheet ------------------
 	// --------------------------------------------------------------------
-	index = f.NewSheet("OverallEvaluation")
+	_ = f.NewSheet("OverallEvaluation")
 	if err = f.SetColWidth("RoundTable", "A", "AAA", 10); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	// Set active sheet of the workbook.
-	f.SetActiveSheet(index)
 	if err := f.SetSheetPrOptions("OverallEvaluation",
 		excelize.FitToPage(true),
 		excelize.TabColor("#FE00FF"),
@@ -566,12 +552,12 @@ func InitializeCentralBC(RoundDuration,
 		log.Lvl2(err)
 	}
 	// --------------------------------------------------------------------
-	if err := f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx"); err != nil {
+	if err := f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx"); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 
-	log.Lvl2("Config params: \n RoundDuration: ", RoundDuration,
+	log.Lvl2("Config params used in initial initialization of main chain:",
 		"\n DistributionMeanFileSize: ", DistributionMeanFileSize,
 		"\n DistributionVarianceFileSize: ", DistributionVarianceFileSize,
 		"\n DistributionMeanContractDuration: ", DistributionMeanContractDuration,
@@ -590,3 +576,339 @@ for i := 1;i<=len(FileSizeColumn);i++ {
 	now := time.Now()
 	f2.SetCellValue("Sheet1", "A4", now.Format(time.ANSIC))
 */
+
+// InitializeSideChainBC function is called in simulation level
+func InitializeSideChainBC(Nodes, SimulationSeed string) {
+
+	intVar, _ := strconv.Atoi(Nodes)
+	numberOfNodes := intVar
+	SimulationSeedInt, _ := strconv.Atoi(SimulationSeed)
+	f := excelize.NewFile() //ToDO: we don't need to create a new file here!!!
+	var err error
+	style, _ := f.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{
+			WrapText: true,
+		},
+	})
+	// ---------------------------------------------------------------------------
+	// ------------------------- Transaction Queue sheet  ------------------
+	// ---------------------------------------------------------------------------
+	_ = f.NewSheet("FirstQueue")
+	if err = f.SetColWidth("FirstQueue", "A", "AAA", 25); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err := f.SetSheetPrOptions("FirstQueue",
+		excelize.FitToPage(true),
+		excelize.TabColor("#8B0000"),
+		excelize.AutoPageBreaks(true),
+	); err != nil {
+		fmt.Println(err)
+	}
+	err = f.SetRowHeight("FirstQueue", 1, 30)
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	f.SetCellStyle("FirstQueue", "A1", "AAA1", style)
+	// ----------------------- Transaction Queue Header ------------------------------
+	err = f.SetCellValue("FirstQueue", "A1", "Name")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+
+	err = f.SetCellValue("FirstQueue", "B1", "Size")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err = f.SetColWidth("FirstQueue", "B", "B", 10); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+
+	err = f.SetCellValue("FirstQueue", "C1", "Time")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+
+	err = f.SetCellValue("FirstQueue", "D1", "IssuedRoundNumber")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err = f.SetColWidth("FirstQueue", "D", "D", 15); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("FirstQueue", "E1", "ContractId")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	// ---------------------------------------------------------------------------
+	// ------------------------- Second Queue sheet  ------------------
+	// ---------------------------------------------------------------------------
+	_ = f.NewSheet("SecondQueue")
+	if err = f.SetColWidth("SecondQueue", "A", "AAA", 25); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err := f.SetSheetPrOptions("SecondQueue",
+		excelize.FitToPage(true),
+		excelize.TabColor("#8B0999"),
+		excelize.AutoPageBreaks(true),
+	); err != nil {
+		fmt.Println(err)
+	}
+	err = f.SetRowHeight("SecondQueue", 1, 30)
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	f.SetCellStyle("SecondQueue", "A1", "AAA1", style)
+	// ----------------------- SecondQueue Header ------------------------------
+	err = f.SetCellValue("SecondQueue", "A1", "Size")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err = f.SetColWidth("SecondQueue", "A", "A", 10); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("SecondQueue", "B1", "Time")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+
+	err = f.SetCellValue("SecondQueue", "C1", "IssuedRoundNumber")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err = f.SetColWidth("SecondQueue", "C", "C", 15); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+
+	// --------------------------------------------------------------------
+	// --------------------- Round Table Sheet ---------------------------
+	// --------------------------------------------------------------------
+	_ = f.NewSheet("RoundTable")
+	if err = f.SetColWidth("RoundTable", "A", "AAA", 50); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err := f.SetSheetPrOptions("RoundTable",
+		excelize.FitToPage(true),
+		excelize.TabColor("#FF66FF"),
+		excelize.AutoPageBreaks(true),
+	); err != nil {
+		fmt.Println(err)
+	}
+	err = f.SetRowHeight("RoundTable", 1, 30)
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	f.SetCellStyle("RoundTable", "A1", "AAA1", style)
+	// -----------------------    Filling Round Table's Headers ------------
+	err = f.SetCellValue("RoundTable", "A1", "Round#")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err = f.SetColWidth("RoundTable", "A", "A", 10); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("RoundTable", "B1", "Seed")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("RoundTable", "C1", "BCSize")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	if err = f.SetColWidth("RoundTable", "C", "C", 10); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("RoundTable", "D1", "Round Leader")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	if err = f.SetColWidth("RoundTable", "D", "D", 20); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	// ---- throughput measurement
+	if err = f.SetColWidth("RoundTable", "E", "I", 10); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("RoundTable", "E1", "#RegPay-TX")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "F1", "#PoR-Tx")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "G1", "#StorjPay-Tx")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "H1", "#CntProp-Tx")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "I1", "#CntCmt-Tx")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	if err = f.SetColWidth("RoundTable", "J", "J", 25); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err = f.SetColWidth("RoundTable", "K", "O", 15); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("RoundTable", "J1", "StartTime")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "K1", "TotalNumTxs")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "L1", "AveWait-OtherTxs")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "M1", "AveWait-RegPay")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "N1", "RegPaySpaceFull")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "O1", "BlockSpaceFull")
+	if err != nil {
+		log.Lvl2(err)
+	}
+
+	// -----------------------    Filling Round Table's first row  -------------------
+	err = f.SetCellValue("RoundTable", "A2", 0)
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	t := rand.Intn(SimulationSeedInt)
+	err = f.SetCellValue("RoundTable", "B2", t)
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("RoundTable", "C2", 0)
+	if err != nil {
+		log.Lvl2(err)
+	}
+	// -----------------------    Filling Round Table's second row: next round's seed
+	err = f.SetCellValue("RoundTable", "A3", 1)
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	// ---  next round's seed is the hash of current seed
+	data := fmt.Sprintf("%v", t)
+	sha := sha256.New()
+	if _, err := sha.Write([]byte(data)); err != nil {
+		log.Error("Couldn't hash header:", err)
+	}
+	hash := sha.Sum(nil)
+	if err = f.SetCellValue("RoundTable", "B3", hex.EncodeToString(hash)); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	// --------------------------------------------------------------------
+	// --------------------- Overall Evaluation Sheet ------------------
+	// --------------------------------------------------------------------
+	_ = f.NewSheet("OverallEvaluation")
+	if err = f.SetColWidth("RoundTable", "A", "AAA", 10); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err := f.SetSheetPrOptions("OverallEvaluation",
+		excelize.FitToPage(true),
+		excelize.TabColor("#FE00FF"),
+		excelize.AutoPageBreaks(true),
+	); err != nil {
+		fmt.Println(err)
+	}
+	err = f.SetRowHeight("OverallEvaluation", 1, 30)
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	f.SetCellStyle("OverallEvaluation", "A1", "AAA1", style)
+	// -----------------------    Filling Round Table's Headers ------------
+	err = f.SetCellValue("OverallEvaluation", "A1", "Round#")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "B1", "BCSize")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "C1", "Overall#RegPay-TX")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "D1", "Overall#PoR-TX")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "E1", "Overall#StorjPay-TX")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "F1", "Overall#CntProp-TX")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "G1", "Overall#CntCmt-TX")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "H1", "OveralAveWait-OtherTxs")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "I1", "OveralAveWait-RegPay")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("OverallEvaluation", "J1", "OverallBlockSpaceFull")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	// --------------------------------------------------------------------
+	if err := f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/sidechainbc.xlsx"); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+
+	log.Lvl2("Config params used in initial initialization of side chain:",
+		"\n numberOfNodes: ", numberOfNodes,
+		"\n SimulationSeedInt: ", SimulationSeedInt)
+}

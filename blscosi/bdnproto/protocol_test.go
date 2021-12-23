@@ -31,16 +31,16 @@ func init() {
 
 func TestBdnProto_SimpleCase(t *testing.T) {
 	log.SetDebugVisible(4)
-	//err := runProtocol(5, 1, 5)
-	//require.NoError(t, err)
-
-	//if !testing.Short() {
-	// err := RunProtocol(10, 5, 10)
-	// require.NoError(t, err)
-
-	err := RunProtocol(20, 5, 15)
+	err := RunProtocol(5, 1, 5)
 	require.NoError(t, err)
-	//}
+
+	if !testing.Short() {
+		err := RunProtocol(10, 5, 10)
+		require.NoError(t, err)
+
+		err = RunProtocol(20, 5, 15)
+		require.NoError(t, err)
+	}
 }
 
 // raha: made the function exportable (uppercase)

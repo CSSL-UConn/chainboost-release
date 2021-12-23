@@ -11,8 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/xerrors"
-
 	onet "github.com/basedfs"
 	"github.com/basedfs/blscosi/protocol"
 	"github.com/basedfs/log"
@@ -21,6 +19,7 @@ import (
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/sign"
 	"go.dedis.ch/kyber/v3/sign/bls"
+	"golang.org/x/xerrors"
 )
 
 // Register the protocols
@@ -75,6 +74,8 @@ type BlsCosi struct {
 	verificationFn   VerificationFn
 	suite            *pairing.SuiteBn256
 	subTrees         protocol.BlsProtocolTree
+	// raha added
+	blockType string // "metablock", "summeryblock"
 }
 
 // CreateProtocolFunction is a function type which creates a new protocol
@@ -104,6 +105,11 @@ func DefaultThreshold(n int) int {
 	return n - DefaultFaultyThreshold(n)
 }
 
+//raha added
+func DefaultBlockType() string {
+	return "metablock"
+}
+
 // NewBlsCosi method is used to define the blscosi protocol.
 func NewBlsCosi(n *onet.TreeNodeInstance, vf VerificationFn, subProtocolName string, suite *pairing.SuiteBn256) (onet.ProtocolInstance, error) {
 	nNodes := len(n.Roster().List)
@@ -119,6 +125,8 @@ func NewBlsCosi(n *onet.TreeNodeInstance, vf VerificationFn, subProtocolName str
 		verificationFn:    vf,
 		subProtocolName:   subProtocolName,
 		suite:             suite,
+		// raha added
+		blockType: DefaultBlockType(),
 	}
 
 	return c, nil
@@ -202,8 +210,8 @@ func (p *BlsCosi) Start() error {
 }
 
 func (p *BlsCosi) runSubProtocols() {
-	// raha: commented.  why is it here?!
-	defer p.Done()
+	// raha: commented. we don't want the nodes to be done after one round of protocol!
+	//defer p.Done()
 
 	// Verification of the data is done before contacting the children
 	if ok := p.verificationFn(p.Msg, p.Data); !ok {
@@ -216,7 +224,7 @@ func (p *BlsCosi) runSubProtocols() {
 	p.subProtocolsLock.Lock()
 	p.subProtocols = make([]*SubBlsCosi, len(p.subTrees))
 	for i, tree := range p.subTrees {
-		log.Lvlf2("Invoking start sub protocol on %v", tree.Root.ServerIdentity)
+		log.Lvlf3("Invoking start sub protocol on %v", tree.Root.ServerIdentity)
 		var err error
 		p.subProtocols[i], err = p.startSubProtocol(tree)
 		if err != nil {

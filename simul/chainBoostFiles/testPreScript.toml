@@ -1,1 +1,2 @@
-touch centralbc.xlsx
+touch mainchainbc.xlsx
+touch sidechainbc.xlsx

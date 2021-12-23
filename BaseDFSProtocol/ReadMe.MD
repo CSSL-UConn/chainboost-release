@@ -29,6 +29,8 @@ Types of Messages:
 	SimulationSeed:			  bz.SimulationSeed,
 	nbrSubTrees:			  bz.nbrSubTrees,
 	threshold:				  bz.threshold,
+	EpochDuration:			  bz.EpochDuration,
+	CommitteeWindow:		  bz.CommitteeWindow,
 }
 ```
 - timeOut: terminate the simulation

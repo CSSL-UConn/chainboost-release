@@ -76,6 +76,8 @@ func startBuild() {
 		SimulationSeed, _ := strconv.Atoi(runconfigs[0].Get("SimulationSeed"))
 		NbrSubTrees, _ := strconv.Atoi(runconfigs[0].Get("NbrSubTrees"))
 		Threshold, _ := strconv.Atoi(runconfigs[0].Get("Threshold"))
+		EpochDuration, _ := strconv.Atoi(runconfigs[0].Get("EpochDuration"))
+		CommitteeWindow, _ := strconv.Atoi(runconfigs[0].Get("CommitteeWindow"))
 
 		deployP.Configure(&platform.Config{
 			MonitorPort: monitorPort,
@@ -91,6 +93,8 @@ func startBuild() {
 			SimulationSeed:           SimulationSeed,
 			NbrSubTrees:              NbrSubTrees,
 			Threshold:                Threshold,
+			EpochDuration:            EpochDuration,
+			CommitteeWindow:          CommitteeWindow,
 		})
 
 		if clean {
@@ -260,12 +264,15 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 		// Start monitor before so ssh tunnel can connect to the monitor
 		// in case of deterlab.
 		err := deployP.Start()
-		// Raha: initializing central blockchain -------------------------
-		blockchain.InitializeCentralBC(rc.Get("RoundDuration"),
+		// Raha: initializing main chain's blockchain -------------------------
+		blockchain.InitializeMainChainBC(
 			rc.Get("DistributionMeanFileSize"), rc.Get("DistributionVarianceFileSize"),
 			rc.Get("DistributionMeanContractDuration"), rc.Get("DistributionVarianceContractDuration"),
 			rc.Get("DistributionMeanInitialPower"), rc.Get("DistributionVarianceInitialPower"),
 			rc.Get("Nodes"), rc.Get("SimulationSeed"))
+		// Raha: initializing side chain's blockchain -------------------------
+		blockchain.InitializeSideChainBC(rc.Get("Nodes"), rc.Get("SimulationSeed"))
+
 		// --------------------------------------------
 		if err != nil {
 			done <- err

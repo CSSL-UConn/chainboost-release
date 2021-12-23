@@ -25,7 +25,7 @@ type simulInitDone struct{}
 // simul = localhost.simulation
 
 // raha: adding some other system-wide configurations
-func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfPayTXsUpperBound, ProtocolTimeout, SimulationSeed, NbrSubTrees, Threshold int,
+func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfPayTXsUpperBound, ProtocolTimeout, SimulationSeed, NbrSubTrees, Threshold, EpochDuration, CommitteeWindow int,
 	suite, serverAddress, simul, monitorAddress string) error {
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 	if err != nil {
@@ -151,26 +151,23 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 			//proto := p.(*manage.ProtocolOpinionGathering)
 			// ---------------------------------------------------------------
 			//raha: BLSCoSi protocol
-			// pi, err := rootSC.Overlay.CreateProtocol("bdnCoSiProto", rootSC.Tree, onet.NilServiceID)
-			// if err != nil {
-			// 	return xerrors.New("couldn't create protocol: " + err.Error())
-			// }
+			pi, err := rootSC.Overlay.CreateProtocol("bdnCoSiProto", rootSC.Tree, onet.NilServiceID)
+			if err != nil {
+				return xerrors.New("couldn't create protocol: " + err.Error())
+			}
 
-			// cosiProtocol := pi.(*BaseDFSProtocol.BlsCosi)
-			// cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol
-			// //cosiProtocol.CreateProtocol = rootService.CreateProtocol
-
-			// // message should be initialized with meta blocks
-			// cosiProtocol.Msg = []byte{0xFF}
-			// // params from config file
-			// cosiProtocol.Timeout = time.Duration(ProtocolTimeout) * time.Second
-			// cosiProtocol.Threshold = Threshold
-			// if NbrSubTrees > 0 {
-			// 	err := cosiProtocol.SetNbrSubTree(NbrSubTrees)
-			// 	if err != nil {
-			// 		return err
-			// 	}
-			// }
+			cosiProtocol := pi.(*BaseDFSProtocol.BlsCosi)
+			cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol
+			//cosiProtocol.CreateProtocol = rootService.CreateProtocol //raha: it used to be initialized by this function call
+			// params from config file:
+			cosiProtocol.Timeout = time.Duration(ProtocolTimeout) * time.Second
+			cosiProtocol.Threshold = Threshold
+			if NbrSubTrees > 0 {
+				err := cosiProtocol.SetNbrSubTree(NbrSubTrees)
+				if err != nil {
+					return err
+				}
+			}
 			// ---------------------------------------------------------------
 			basedfsprotocol := p.(*BaseDFSProtocol.BaseDFS)
 			//basedfsprotocol.SetTimeout(time.Duration(TimeOut) * time.Second)
@@ -184,29 +181,47 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 			basedfsprotocol.SimulationSeed = SimulationSeed
 			basedfsprotocol.NbrSubTrees = NbrSubTrees
 			basedfsprotocol.Threshold = Threshold
+			basedfsprotocol.EpochDuration = EpochDuration
+			basedfsprotocol.CommitteeWindow = CommitteeWindow
 			log.LLvl2("passing our system-wide configurations to the protocol",
 				"\n  PercentageTxPay: ", PercentageTxPay,
 				"\n  RoundDuration: ", RoundDuration,
 				"\n BlockSize: ", BlockSize,
 				"\n SectorNumber: ", SectorNumber,
 				"\n NumberOfPayTXsUpperBound: ", NumberOfPayTXsUpperBound,
-				"\n With timeout of: ", ProtocolTimeout,
-				"\n and SimulationSeed of: ", SimulationSeed,
-				"\n and nbrSubTrees of: ", NbrSubTrees,
-				"\n and threshold of: ", Threshold,
+				"\n timeout: ", ProtocolTimeout,
+				"\n SimulationSeed of: ", SimulationSeed,
+				"\n nbrSubTrees of: ", NbrSubTrees,
+				"\n  threshold of: ", Threshold,
+				"\n EpochDuration: ", EpochDuration,
+				"\n CommitteeWindow: ", CommitteeWindow,
 			)
 			// ---------------------------------------------------------------
 			// raha: BLSCoSi protocol
 			// raha: added: this way, the roster that runs this protocol is  initiated by the main roster, the one that runs the basedfs protocol
 			// cosiProtocol.TreeNodeInstance = basedfsprotocol.TreeNodeInstance
-			// basedfsprotocol.BlsCosi = cosiProtocol
+			basedfsprotocol.BlsCosi = cosiProtocol
 			// ---------------------------------------------------------------
+			// raha: should be a single dispatch assigned for each node?!
+			go func() {
+				err := basedfsprotocol.DispatchProtocol()
+				if err != nil {
+					log.Lvl1("protocol dispatch calling error: " + err.Error())
+				}
+			}()
 			basedfsprotocol.Start()
+			// raha: bls cosi  start function is called inside basedfs start call
 
+			// when it finishes  is when:
+			// ToDo
+			// ---------------------------------------------------------------
 			px := <-basedfsprotocol.DoneBaseDFS
 			log.Lvl1("Back to simulation module. Final result is", px)
 			wait = false
 		}
+
+		//ToDo: clear this section
+
 		// 	//childrenWait.Record()
 		// 	log.Lvl2("Broadcasting start, (Raha: I think its about having mutiple servers",
 		// 		" which doesnt apply to when we are running a localhost simulation)")

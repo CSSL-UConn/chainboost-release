@@ -5,7 +5,7 @@ Rounds = 0
 RunWait = "600000s"
 Suite = "bn256.adapter"
 PreScript = "testPreScript.toml"
-RoundDuration = 2
+RoundDuration = 10
 ProtocolTimeout = 100
 timeout = 250
 PercentageTxPay = 30
@@ -15,13 +15,15 @@ DistributionMeanContractDuration = 10
 DistributionVarianceContractDuration = 50
 DistributionMeanInitialPower = 900000000000000000
 DistributionVarianceInitialPower = 9000000000000000
-Nodes = 10
+Nodes = 20
 BlockSize = 200000
 SectorNumber = 1
 NumberOfPayTXsUpperBound = 200
 SimulationSeed = 10
-nbrSubTrees = 3
-threshold = 7
+NbrSubTrees = 2
+Threshold = 15
+EpochDuration = 2
+CommitteeWindow = 10
 
 Hosts
-10
+20

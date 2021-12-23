@@ -16,6 +16,8 @@
 					SimulationSeed:			  bz.SimulationSeed,
 					nbrSubTrees:			  bz.nbrSubTrees,
 					threshold:				  bz.threshold,
+					EpochDuration:            bz.EpochDuration,
+					CommitteeWindow:          bz.CommitteeWindow,
 				}
 	4- timeOut
 
@@ -39,6 +41,7 @@ import (
 	"github.com/basedfs/blockchain"
 	"github.com/basedfs/blscosi/bdnproto"
 	"go.dedis.ch/kyber/v3/pairing"
+	"golang.org/x/xerrors"
 
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
@@ -66,6 +69,8 @@ type HelloBaseDFS struct {
 	SimulationSeed           int
 	nbrSubTrees              int
 	threshold                int
+	EpochDuration            int
+	CommitteeWindow          int
 }
 type HelloChan struct {
 	*onet.TreeNode
@@ -73,7 +78,7 @@ type HelloChan struct {
 }
 
 type NewLeader struct {
-	Leaderinfo  string
+	Leaderinfo  *onet.TreeNode
 	RoundNumber int
 }
 type NewLeaderChan struct {
@@ -127,17 +132,21 @@ type BaseDFS struct {
 	ProtocolTimeout time.Duration
 	//timeoutMu       sync.Mutex //TODO: why ?
 	SimulationSeed int
+	// -- blscosi related config params
+	NbrSubTrees     int
+	Threshold       int
+	EpochDuration   int
+	CommitteeWindow int
 	// ------------------------------------------------------------------
 	roundNumber int
 	epochNumber int
 	hasLeader   bool
-	// --- just root node use these
+	// --- just root node use these - these are used for delay evaluation
 	FirstQueueWait  int
 	SecondQueueWait int
 	//-- bls cosi protocol
-	BlsCosi     *BlsCosi
-	NbrSubTrees int
-	Threshold   int
+	BlsCosi   *BlsCosi
+	committee []*onet.TreeNode
 	// ------------------------------------------------------------------------------------------------------------------
 	//ToDo: raha: dol I need these items?
 	//vcMeasure *monitor.TimeMeasure
@@ -185,6 +194,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	if err := n.RegisterChannelLength(&bz.NewLeaderChan, len(bz.Tree().List())); err != nil {
 		log.Error("Couldn't reister channel:    ", err)
 	}
+	bz.committee = make([]*onet.TreeNode, bz.CommitteeWindow)
 	// bls key pair for each node for VRF
 	_, bz.ECPrivateKey = vrf.VrfKeygen()
 	//--------------- These msgs were used for communication-----------
@@ -209,80 +219,209 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 ------------------------------------------------------------------------ */
 //Start: starts the protocol by sending hello msg to all nodes
 func (bz *BaseDFS) Start() error {
-	// update the centralbc file with created nodes' information
-	bz.finalCentralBCInitialization()
+	var err error
+	// update the mainchainbc file with created nodes' information
+	bz.finalMainChainBCInitialization()
 
-	var rootSC *onet.SimulationConfig
-	scs, err := onet.LoadSimulationConfig(bz.suite.String(), ".", bz.ServerIdentity().Address.Host())
-	for _, sc := range scs {
-		rootSC = sc
-	}
-	// --- BLSCoSi
-	pi, err := rootSC.Overlay.CreateProtocol("bdnCoSiProto", rootSC.Tree, onet.NilServiceID)
-	if err != nil {
-		return err
-	}
-	cosiProtocol := pi.(*BlsCosi)
-	cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol
-	//cosiProtocol.CreateProtocol = rootService.CreateProtocol
-
-	// message should be initialized with meta blocks
-	cosiProtocol.Msg = []byte{0xFF}
-	// params from config file
-	cosiProtocol.Timeout = time.Duration(bz.ProtocolTimeout) * time.Second
-	cosiProtocol.Threshold = bz.Threshold
-	if bz.NbrSubTrees > 0 {
-		err := cosiProtocol.SetNbrSubTree(bz.NbrSubTrees)
-		if err != nil {
-			return err
-		}
-	}
-	cosiProtocol.TreeNodeInstance = bz.TreeNodeInstance
-	bz.BlsCosi = cosiProtocol
+	// -------------------------- BLS CoSi protocol ---------------------------------------
+	// message should be initialized with main chain's genesis block
+	bz.BlsCosi.Msg = []byte{0xFF}
+	// when the side chain should start to work? I need to initialize the committee,
+	// both protocols can't start at the same time if we want a similar committee
+	bz.BlsCosi.TreeNodeInstance = bz.TreeNodeInstance
 
 	err = bz.BlsCosi.Start()
 	if err != nil {
-		log.LLvl1(err)
+		return xerrors.New("problem in cosi protocol start (first run):   " + err.Error())
 	}
-	select {
-	// message recieved from BLSCoSi (SideChain)
-	// this message can't be catched in dispatch bcz it gives nil reference error in the very first call of Dispatch
-	case sig := <-bz.BlsCosi.FinalSignature:
-		if bdnproto.BdnSignature(sig).Verify(bz.BlsCosi.suite, bz.BlsCosi.Msg, bz.Roster().Publics()) != nil {
-			log.LLvl1("there is a problem in blscosi protocol")
-		} else {
-			log.LLvl2("The META-BLOCK is confirmed. \n",
-				"Here the ROOT NODE is taking care of final signature verification \n",
-				"(generated via CoSi in side chain's committee and sent to side chain's epoch leader) \n",
-				"Starting another epoch of BLSCOSI")
-			err := bz.BlsCosi.Start()
-			if err != nil {
-				log.LLvl1(err)
-			}
-		}
-	}
+	// ------------------------------------------------------------------------------
 	//bz.Testpor()
 	//vrf.Testvrf()
 
 	// config params are sent from the leader to the other nodes in helloBasedDfs function
-	//bz.helloBaseDFS()
+	bz.helloBaseDFS()
 	return nil
 }
 
 /* ----------------------------------------------------------------------
 ------------------------------------------------------------------------ */
-//finalCentralBCInitialization initialize the central bc file based on the config params defined in the config file (.toml file of the protocol)
-// the info we hadn't before and we have now is nodes' info that this function add to the centralbc file
-func (bz *BaseDFS) finalCentralBCInitialization() {
+func (bz *BaseDFS) DispatchProtocol() error {
+
+	running := true
+	var err error
+
+	for running {
+		select {
+		// ******** ALL nodes recieve this message to join the protocol and get the config values set
+		case msg := <-bz.HelloChan:
+			log.Lvl2(bz.TreeNode().Name(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
+			bz.PercentageTxPay = msg.PercentageTxPay
+			bz.RoundDuration = msg.RoundDuration
+			bz.BlockSize = msg.BlockSize
+			bz.SectorNumber = msg.SectorNumber
+			bz.NumberOfPayTXsUpperBound = msg.NumberOfPayTXsUpperBound
+			bz.SimulationSeed = msg.SimulationSeed
+			bz.NbrSubTrees = msg.nbrSubTrees
+			bz.Threshold = msg.threshold
+			bz.EpochDuration = msg.EpochDuration
+			bz.CommitteeWindow = msg.CommitteeWindow
+
+			bz.helloBaseDFS()
+
+		// this msg is catched in simulation codes
+		//case <-bz.DoneBaseDFS:
+		//	running = false //TODO: do something about running!
+
+		// ******** ALL nodes recieve this message to sync rounds
+		case msg := <-bz.NewRoundChan:
+			bz.roundNumber = bz.roundNumber + 1
+			log.Lvl2(bz.Name(), " round number ", bz.roundNumber, " started at ", time.Now().Format(time.RFC3339))
+			var vrfOutput [64]byte
+			toBeHashed := []byte(msg.Seed)
+			proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
+			if !ok {
+				log.Lvl2("error while generating proof")
+			}
+			_, vrfOutput = bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
+			var vrfoutputInt64 uint64
+			buf := bytes.NewReader(vrfOutput[:])
+			err := binary.Read(buf, binary.LittleEndian, &vrfoutputInt64)
+			if err != nil {
+				// log.Lvl2("Panic Raised:\n\n")
+				// panic(err)
+				return xerrors.New("problem creatde after recieving msg from NewRoundChan:   " + err.Error())
+			}
+			// -----------
+			// the criteria for selecting the leader
+			if vrfoutputInt64 < msg.Power {
+				// -----------
+				log.Lvl2(bz.Name(), "I may be elected for round number ", bz.roundNumber)
+				go bz.SendTo(bz.Root(), &NewLeader{Leaderinfo: bz.TreeNode(), RoundNumber: bz.roundNumber})
+			}
+
+		// ******* just the ROOT NODE (blockchain layer one) recieve this msg
+		case msg := <-bz.NewLeaderChan:
+
+			// -----------------------------------------------------
+			// rounds without a leader: in this case the leader info is filled with root node's info, transactions are going to be collected normally but
+			// since the block is empty, no transaction is going to be taken from queues => leader = false
+			// -----------------------------------------------------
+			if msg.Leaderinfo == bz.TreeNode() && bz.roundNumber != 1 && !bz.hasLeader && msg.RoundNumber == bz.roundNumber {
+				bz.hasLeader = true
+				bz.updateBCPowerRound(msg.Leaderinfo, false)
+				// in the case of a leader-less round
+				log.Lvl1("final round result: ", msg.Leaderinfo.Name(), "(root node) filled round number", bz.roundNumber, "with empty block")
+				bz.updateBCTransactionQueueCollect()
+				bz.readBCAndSendtoOthers()
+				log.Lvl2("new round is announced")
+				continue
+			}
+			// -----------------------------------------------------
+			// normal rounds with a leader => leader = true
+			// -----------------------------------------------------
+			if !bz.hasLeader && msg.RoundNumber == bz.roundNumber {
+				// TODO: first validate the leadership proof
+				log.Lvl1("final round result: ", msg.Leaderinfo.Name(), "is the round leader for round number ", bz.roundNumber)
+				// if x := len(bz.committee); x < cap(bz.committee) {
+				// 	bz.committee = append(bz.committee, msg.Leaderinfo)
+				// } else {
+				// 	bz.committee[bz.CommitteeWindow-1] = msg.Leaderinfo
+				// }
+
+				bz.hasLeader = true
+				bz.updateBCPowerRound(msg.Leaderinfo, true)
+				bz.updateBCTransactionQueueCollect()
+				bz.updateBCTransactionQueueTake()
+			} else {
+				log.Lvl2("this round already has a leader!")
+			}
+			//waiting for the time of round duration
+			time.Sleep(time.Duration(bz.RoundDuration) * time.Second)
+			// empty list of elected leaders  in this round
+			for len(bz.NewLeaderChan) > 0 {
+				<-bz.NewLeaderChan
+			}
+			// announce new round and give away required checkleadership info to nodes
+			bz.readBCAndSendtoOthers()
+			log.Lvl2("new round is announced")
+
+		// message recieved from BLSCoSi (SideChain):
+		// ******* just the ROOT NODE (blockchain layer one) recieve this msg
+		// --------------------------------------------------------
+		// --- BLSCoSi ---
+		// --------------------------------------------------------
+		case sig := <-bz.BlsCosi.FinalSignature:
+			if err := bdnproto.BdnSignature(sig).Verify(bz.BlsCosi.suite, bz.BlsCosi.Msg, bz.Roster().Publics()); err == nil {
+				log.LLvl2(bz.BlsCosi.blockType, "with epoch number", bz.epochNumber, "Confirmed in Side Chain")
+				if bz.RoundDuration/bz.EpochDuration == bz.epochNumber {
+					// generate and propose summery block (bz.BlsCosi.blockType = "summeryblock")
+					// reset epoch number
+					bz.epochNumber = 0 // in epoch number zero the summery blocks are published in side chain
+					// from bc: update msg size with the "summery block"'s block size on side chain
+					// call a function like collect and then take
+				} else {
+					if bz.epochNumber == 0 { // i.e. the current published block on side chain is summery block
+						// issue a sync transaction from last recent summery block to main chain
+						// change the committee based on last window of miners
+						// *** maybe use -> func NewTree(roster *Roster, root *TreeNode) *Tree
+						bz.BlsCosi.TreeNodeInstance = bz.TreeNodeInstance
+						// next meta block is going to be on top of last summery block (rather than last meta blocks!)
+					}
+					// increase epoch number
+					bz.epochNumber = bz.epochNumber + 1
+					// from bc: update msg size with next "meta block"'s block size on side chain
+					bz.BlsCosi.Msg = []byte{0xFF} // Msg is the meta block
+				}
+				// ----------- Next epoch run -------------------------------
+				time.Sleep(time.Duration(bz.EpochDuration) * time.Second)
+				// triggering next CoSi epoch on collected block/transactions
+				err = bz.BlsCosi.Start()
+				if err != nil {
+					return xerrors.New("Problem in cosi protocol run:   " + err.Error())
+				}
+			} else {
+				return xerrors.New("The recieved final signature is not accepted:  " + err.Error())
+			}
+		}
+	}
+	// -------- cases used for communication ------------------
+	/*		case msg := <-bz.ProofOfRetTxChan:
+			//log.Lvl2(bz.Info(), "received por", msg.Por.sigma, "tx from", msg.TreeNode.ServerIdentity.Address)
+			if !fail {
+				err = bz.handlePoRTx(msg)
+			}*/
+	/*		case msg := <-bz.PreparedBlockChan:
+			log.Lvl2(bz.Info(), "received block from", msg.TreeNode.ServerIdentity.Address)
+			if !fail {
+				_, err = bz.handleBlock(msg)
+	}*/
+	// ------------------------------------------------------------------
+	return err
+}
+
+/* ----------------------------------------------------------------------
+------------------------------------------------------------------------ */
+// Dispatch listen on the different channels
+func (bz *BaseDFS) Dispatch() error {
+	// another dispatch function (DispatchProtocol) is called in runsimul.go that takes care of both chain's protocols
+	return nil
+}
+
+/* ----------------------------------------------------------------------
+------------------------------------------------------------------------ */
+//finalMainChainBCInitialization initialize the mainchainbc file based on the config params defined in the config file (.toml file of the protocol)
+// the info we hadn't before and we have now is nodes' info that this function add to the mainchainbc file
+func (bz *BaseDFS) finalMainChainBCInitialization() {
 	var NodeInfoRow []string
 	for _, a := range bz.Roster().List {
 		NodeInfoRow = append(NodeInfoRow, a.String())
 	}
 	var err error
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
-		log.Lvl2("Raha: ", err)
-		panic(err)
+		// log.Lvl2("Raha: ", err)
+		// panic(err)
+		xerrors.New("problem creatde while opening bc:   " + err.Error())
 	} else {
 		log.Lvl2("opening bc")
 	}
@@ -309,7 +448,7 @@ func (bz *BaseDFS) finalCentralBCInitialization() {
 		panic(err)
 	}
 
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -318,124 +457,12 @@ func (bz *BaseDFS) finalCentralBCInitialization() {
 	}
 }
 
-/* ----------------------------------------------------------------------
------------------------------------------------------------------------- */
-// Dispatch listen on the different channels
-func (bz *BaseDFS) Dispatch() error {
-	running := true
-	var err error
-
-	for running {
-		select {
-		// ******** ALL nodes recieve this message to join the protocol and get the config values set
-		case msg := <-bz.HelloChan:
-			log.Lvl2(bz.TreeNode().Name(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
-			bz.PercentageTxPay = msg.PercentageTxPay
-			bz.RoundDuration = msg.RoundDuration
-			bz.BlockSize = msg.BlockSize
-			bz.SectorNumber = msg.SectorNumber
-			bz.NumberOfPayTXsUpperBound = msg.NumberOfPayTXsUpperBound
-			bz.SimulationSeed = msg.SimulationSeed
-			bz.NbrSubTrees = msg.nbrSubTrees
-			bz.Threshold = msg.threshold
-
-			bz.helloBaseDFS()
-
-		// this msg is catched in simulation codes
-		//case <-bz.DoneBaseDFS:
-		//	running = false //TODO: do something about running!
-
-		// ******** ALL nodes recieve this message to sync rounds
-		case msg := <-bz.NewRoundChan:
-			bz.roundNumber = bz.roundNumber + 1
-			// reset epoch
-			bz.epochNumber = 1
-			log.Lvl2(bz.Name(), " round number ", bz.roundNumber, " started at ", time.Now().Format(time.RFC3339))
-			var vrfOutput [64]byte
-			toBeHashed := []byte(msg.Seed)
-			proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
-			if !ok {
-				log.Lvl2("error while generating proof")
-			}
-			_, vrfOutput = bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
-			var vrfoutputInt64 uint64
-			buf := bytes.NewReader(vrfOutput[:])
-			err := binary.Read(buf, binary.LittleEndian, &vrfoutputInt64)
-			if err != nil {
-				log.Lvl2("Panic Raised:\n\n")
-				panic(err)
-			}
-			// -----------
-			// the criteria for selecting the leader
-			if vrfoutputInt64 < msg.Power {
-				// -----------
-				log.Lvl2(bz.Name(), "I may be elected for round number ", bz.roundNumber)
-				go bz.SendTo(bz.Root(), &NewLeader{Leaderinfo: bz.Name(), RoundNumber: bz.roundNumber})
-			}
-
-		// ******* just the ROOT NODE (blockchain layer one) recieve this msg
-		case msg := <-bz.NewLeaderChan:
-			// -----------------------------------------------------
-			// rounds without a leader: in this case the leader info is filled with root node's info, transactions are going to be collected normally but
-			// since the block is empty, no transaction is going to be taken from queues => leader = false
-			// -----------------------------------------------------
-			if msg.Leaderinfo == bz.Name() && bz.roundNumber != 1 && !bz.hasLeader && msg.RoundNumber == bz.roundNumber {
-				bz.hasLeader = true
-				bz.updateBCPowerRound(msg.Leaderinfo, false)
-				// in the case of a leader-less round
-				log.Lvl1("final round result: ", msg.Leaderinfo, "(root node) filled round number", bz.roundNumber, "with empty block")
-				bz.updateBCTransactionQueueCollect()
-				bz.readBCAndSendtoOthers()
-				log.Lvl2("new round is announced")
-				continue
-			}
-			// -----------------------------------------------------
-			// normal rounds with a leader => leader = true
-			// -----------------------------------------------------
-			if !bz.hasLeader && msg.RoundNumber == bz.roundNumber {
-				// TODO: first validate the leadership proof
-				log.Lvl1("final round result: ", msg.Leaderinfo, "is the round leader for round number ", bz.roundNumber)
-				bz.hasLeader = true
-				bz.updateBCPowerRound(msg.Leaderinfo, true)
-				bz.updateBCTransactionQueueCollect()
-				bz.updateBCTransactionQueueTake()
-			} else {
-				log.Lvl2("this round already has a leader!")
-			}
-			//waiting for the time of round duration
-			time.Sleep(time.Duration(bz.RoundDuration) * time.Second)
-			// empty list of elected leaders  in this round
-			for len(bz.NewLeaderChan) > 0 {
-				<-bz.NewLeaderChan
-			}
-			// announce new round and give away required checkleadership info to nodes
-			bz.readBCAndSendtoOthers()
-			log.Lvl2("new round is announced")
-		}
-	}
-	// -------- cases used for communication ------------------
-	/*		case msg := <-bz.ProofOfRetTxChan:
-			//log.Lvl2(bz.Info(), "received por", msg.Por.sigma, "tx from", msg.TreeNode.ServerIdentity.Address)
-			if !fail {
-				err = bz.handlePoRTx(msg)
-			}*/
-	/*		case msg := <-bz.PreparedBlockChan:
-			log.Lvl2(bz.Info(), "received block from", msg.TreeNode.ServerIdentity.Address)
-			if !fail {
-				_, err = bz.handleBlock(msg)
-	}*/
-	// ------------------------------------------------------------------
-	return err
-}
-
 /* each round THE ROOT NODE send a msg to all nodes,
 let other nodes know that the new round has started and the information they need
 from blockchain to check if they are next round's leader */
 func (bz *BaseDFS) readBCAndSendtoOthers() {
 	powers, seed := bz.readBCPowersAndSeed()
 	bz.roundNumber = bz.roundNumber + 1
-	// reset epoch
-	bz.epochNumber = 1
 	bz.hasLeader = false
 	for _, b := range bz.Tree().List() {
 		power, found := powers[b.ServerIdentity.String()]
@@ -455,7 +482,7 @@ func (bz *BaseDFS) readBCAndSendtoOthers() {
 /* ----------------------------------------------------------------------*/
 func (bz *BaseDFS) readBCPowersAndSeed() (powers map[string]uint64, seed string) {
 	minerspowers := make(map[string]uint64)
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -466,7 +493,7 @@ func (bz *BaseDFS) readBCPowersAndSeed() (powers map[string]uint64, seed string)
 	var rows *excelize.Rows
 	var row []string
 	rowNumber := 0
-	// looking for last round's seed in the round table sheet in the centralbc file
+	// looking for last round's seed in the round table sheet in the mainchainbc file
 	if rows, err = f.Rows("RoundTable"); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -491,7 +518,7 @@ func (bz *BaseDFS) readBCPowersAndSeed() (powers map[string]uint64, seed string)
 			seed = colCell // last round's seed
 		}
 	}
-	// looking for all nodes' power in the last round in the power table sheet in the centralbc file
+	// looking for all nodes' power in the last round in the power table sheet in the mainchainbc file
 	rowNumber = 0 //ToDo: later it can go straight to last row based on the round number found in round table
 	if rows, err = f.Rows("PowerTable"); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
@@ -592,7 +619,7 @@ func (bz *BaseDFS) helloBaseDFS() {
 
 		log.Lvl2(bz.Name(), "Filling round number ", bz.roundNumber)
 		// for the first round we have the root node set as a round leader, so  it is true! and he takes txs from the queue
-		bz.updateBCPowerRound(bz.Name(), true)
+		bz.updateBCPowerRound(bz.TreeNode(), true)
 		bz.updateBCTransactionQueueCollect()
 		bz.updateBCTransactionQueueTake()
 		time.Sleep(time.Duration(bz.RoundDuration) * time.Second)
@@ -617,14 +644,14 @@ func (bz *BaseDFS) StartTimeOut() {
 // assuming that servers are honest and have honestly publish por for their actice (not expired) contracts,
 // for each storage server and each of their active contract, add the stored file size to their current power
 /* ----------------------------------------------------------------------*/
-func (bz *BaseDFS) updateBCPowerRound(Leaderinfo string, leader bool) {
+func (bz *BaseDFS) updateBCPowerRound(Leaderinfo *onet.TreeNode, leader bool) {
 	var err error
 	var rows *excelize.Rows
 	var row []string
 	var seed string
 	rowNumber := 0
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -632,7 +659,7 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo string, leader bool) {
 		log.Lvl2(bz.Name(), "opening bc")
 	}
 
-	// looking for last round's seed in the round table sheet in the centralbc file
+	// looking for last round's seed in the round table sheet in the mainchainbc file
 	if rows, err = f.Rows("RoundTable"); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -654,7 +681,7 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo string, leader bool) {
 	// --------------------------------------------------------------------
 	// updating the current last row in the "BCsize" column
 
-	// no longer nodes read from centralbc file, instead the round are determined by their local round number variable
+	// no longer nodes read from mainchainbc file, instead the round are determined by their local round number variable
 	currentRow := strconv.Itoa(rowNumber)
 	nextRow := strconv.Itoa(rowNumber + 1) //ToDo: raha: remove these, use bz.roundnumber instead!
 	// ---
@@ -681,7 +708,7 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo string, leader bool) {
 	// --------------------------------------------------------------------
 	// updating the current last row in the "miner" column
 	axisMiner := "D" + currentRow
-	err = f.SetCellValue("RoundTable", axisMiner, Leaderinfo)
+	err = f.SetCellValue("RoundTable", axisMiner, Leaderinfo.Name())
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -789,7 +816,7 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo string, leader bool) {
 		panic(err)
 	}
 	// ----
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -799,22 +826,26 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo string, leader bool) {
 }
 
 /* ----------------------------------------------------------------------
+    updateBC: this is a connection between first layer of blockchain - ROOT NODE - on the second layer - xlsx file -
 ------------------------------------------------------------------------ */
-//updateBC: by leader
+
 func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 	var err error
 	var rows *excelize.Rows
 	var row []string
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
 	} else {
 		log.Lvl2("opening bc")
 	}
-
-	//	each round, adding one row in power table based on the information in market matching sheet,assuming that servers are honest  and have honestly publish por for their actice (not expired) contracts,for each storage server and each of their active contracst, add the stored file size to their current power
+	// -------------------------------------------------------------------------------
+	// each round, adding one row in power table based on the information in market matching sheet,
+	// assuming that servers are honest and have honestly publish por for their actice (not expired) contracts,
+	// for each storage server and each of their active contracst, add the stored file size to their current power
+	// -------------------------------------------------------------------------------
 	if rows, err = f.Rows("MarketMatching"); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -990,7 +1021,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 		warning: Just in one case it may cause irrational statistics which doesn’t worth taking care of!
 		when a propose contract tx is added to a block which causes the contract to become active but
 		the commit contract transaction is not yet! */
-		if addCommitTx == true {
+		if addCommitTx {
 			newTransactionRow[0] = "TxContractCommit"
 			newTransactionRow[1] = strconv.Itoa(ContractCommitTxSize)
 			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1]) // corresponding contract id
@@ -1012,9 +1043,9 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 			}
 		}
 	}
-	// ----------------------------------------------------------------------
+	// -------------------------------------------------------------------------------
 	// ------ add payment transactions into transaction queue payment sheet
-	// ----------------------------------------------------------------------
+	// -------------------------------------------------------------------------------
 	/* each transaction has the following column stored on the transaction queue payment sheet:
 	0) size
 	1) time
@@ -1028,6 +1059,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 	for i, v := range newTransactionRow {
 		s[i] = v
 	}
+
 	rand.Seed(int64(bz.SimulationSeed))
 
 	// avoid having zero regular payment txs
@@ -1049,8 +1081,10 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 			}
 		}
 	}
+	// -------------------------------------------------------------------------------
+
 	// ---
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -1061,8 +1095,8 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 }
 
 /* ----------------------------------------------------------------------
+    updateBC: this is a connection between first layer of blockchain - ROOT NODE - on the second layer - xlsx file -
 ------------------------------------------------------------------------ */
-//updateBC: by leader
 func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	var err error
 	var rows [][]string
@@ -1070,7 +1104,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	bz.FirstQueueWait = 0
 	bz.SecondQueueWait = 0
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -1341,7 +1375,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	}
 
 	// ----
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -1365,22 +1399,7 @@ func (bz *BaseDFS) startTimer(roundNumber int) {
 		// bz.hasLeader is for when the round number has'nt changed but the leader has been announced
 		if bz.IsRoot() && bz.roundNumber == roundNumber && !bz.hasLeader {
 			log.Lvl2("No leader for round number ", bz.roundNumber, "an empty block is added")
-			bz.NewLeaderChan <- NewLeaderChan{bz.TreeNode(), NewLeader{Leaderinfo: bz.Name(), RoundNumber: bz.roundNumber}}
-		}
-	// message recieved from BLSCoSi (SideChain)
-	// this message can't be catched in dispatch bcz it gives nil reference error in the very first call of Dispatch
-	case sig := <-bz.BlsCosi.FinalSignature:
-		if bdnproto.BdnSignature(sig).Verify(bz.BlsCosi.suite, bz.BlsCosi.Msg, bz.Roster().Publics()) != nil {
-			log.LLvl1("there is a problem in blscosi protocol")
-		} else {
-			log.LLvl2("The META-BLOCK is confirmed. \n",
-				"Here the ROOT NODE is taking care of final signature verification \n",
-				"(generated via CoSi in side chain's committee and sent to side chain's epoch leader) \n",
-				"Starting another epoch of BLSCOSI")
-			err := bz.BlsCosi.Start()
-			if err != nil {
-				log.LLvl1(err)
-			}
+			bz.NewLeaderChan <- NewLeaderChan{bz.TreeNode(), NewLeader{Leaderinfo: bz.TreeNode(), RoundNumber: bz.roundNumber}}
 		}
 	}
 }
@@ -1432,12 +1451,12 @@ type PreparedBlockChan struct {
 //Functions
 /* ----------------------------------------------------------------------
 ------------------------------------------------------------------------ */
-// test file access : central bc file from inside the protocol
+// test file access : mainchainbc file from inside the protocol
 /*func (bz *BaseDFS) readwriteBC() () {
 	//---- test file read / write access
-	data, err := ioutil.ReadFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	data, err := ioutil.ReadFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
-		log.Lvl2(bz.Info(), "error reading from centralbc", err)
+		log.Lvl2(bz.Info(), "error reading from mainchainbc", err)
 	} else {
 		log.Lvl2(bz.Info(), "This is the file content:", string(data))
 	}
@@ -1470,31 +1489,31 @@ type PreparedBlockChan struct {
 	log.Lvl2("wait")
 	// --------------------------- write -----
 	//---- test file read / write access
-	f, err := os.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx", os.O_APPEND|os.O_WRONLY, 0600)
+	f, err := os.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx", os.O_APPEND|os.O_WRONLY, 0600)
 	defer f.Close()
 	_, err = f.WriteString(bz.TreeNode().String() + "\n")
 	w := bufio.NewWriter(f)
 	_, err = fmt.Fprintf(w, "%v\n", 10)
 	_, err = fmt.Fprintf(w, "%v\n", "hi")
 	w.Flush()
-	data, err := ioutil.ReadFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	data, err := ioutil.ReadFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err!=nil{
-		log.Lvl2(bz.Info(), "error reading from centralbc", err)
+		log.Lvl2(bz.Info(), "error reading from mainchainbc", err)
 	} else {
 		log.Lvl2(bz.Info(), "This is the file content which leader see:" , string(data))
 	}
 	//----------------
-	_, err := ioutil.ReadFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.csv")
+	_, err := ioutil.ReadFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.csv")
 	check(err)
 	log.Lvl2(RoundDuration)
 	//assert.Equal(t, 7, len(strings.Split(string(csv), "\n")))
-	f, err := os.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.csv", os.O_APPEND|os.O_WRONLY, 0600)
+	f, err := os.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.csv", os.O_APPEND|os.O_WRONLY, 0600)
 	check(err)
 	defer f.Close()
 	_, err = f.WriteString("Header\n")
 	check(err)
 
-	data, err := ioutil.ReadFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.csv")
+	data, err := ioutil.ReadFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.csv")
 	check(err)
 	fmt.Print(string(data))
 	//--------------------
@@ -1626,7 +1645,7 @@ func (bz *BaseDFS) readBCForNewRound(f *excelize.File) bool {
 	var row []string
 	rowNumber := 0
 	var lastRound int
-	// looking for last round's seed in the round table sheet in the centralbc file
+	// looking for last round's seed in the round table sheet in the mainchainbc file
 	if rows, err = f.Rows("RoundTable"); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -1667,18 +1686,18 @@ func (bz *BaseDFS) refreshBC() {
 	//bz.fMu.Lock()
 	//defer bz.fMu.Unlock()
 	// ---
-	f2, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+	f2, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	failedAttempts := 0
 	if err != nil {
 		for err != nil {
 			if failedAttempts == 11 {
-				log.Lvl2("Can't open the centralbc file: 10 attempts!")
+				log.Lvl2("Can't open the mainchainbc file: 10 attempts!")
 			}
 			time.Sleep(1 * time.Second)
-			f2, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			f2, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 			failedAttempts = failedAttempts + 1
 		}
-		log.Lvl2("---------- Opened the centralbc file after ", failedAttempts, " attempts")
+		log.Lvl2("---------- Opened the mainchainbc file after ", failedAttempts, " attempts")
 	} else {
 		log.Lvl2(bz.Name(), "opened BC")
 	}
@@ -1692,7 +1711,7 @@ func (bz *BaseDFS) refreshBC() {
 	} else {
 		if !bz.readBCForNewRound(f2) {
 			log.Lvl2(bz.Name(), "adding new block")
-			err := bz.f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/centralbc.xlsx")
+			err := bz.f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 			if err != nil {
 				log.Lvl2("Panic Raised:\n\n")
 				panic(err)
