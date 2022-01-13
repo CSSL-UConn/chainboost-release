@@ -67,7 +67,7 @@ func startBuild() {
 		}
 		// raha: converting string values read from toml file to int values
 
-		RoundDuration, _ := strconv.Atoi(runconfigs[0].Get("RoundDuration"))
+		MCRoundDuration, _ := strconv.Atoi(runconfigs[0].Get("MCRoundDuration"))
 		PercentageTxPay, _ := strconv.Atoi(runconfigs[0].Get("PercentageTxPay"))
 		BlockSize, _ := strconv.Atoi(runconfigs[0].Get("BlockSize"))
 		SectorNumber, _ := strconv.Atoi(runconfigs[0].Get("SectorNumber"))
@@ -76,15 +76,16 @@ func startBuild() {
 		SimulationSeed, _ := strconv.Atoi(runconfigs[0].Get("SimulationSeed"))
 		NbrSubTrees, _ := strconv.Atoi(runconfigs[0].Get("NbrSubTrees"))
 		Threshold, _ := strconv.Atoi(runconfigs[0].Get("Threshold"))
-		EpochDuration, _ := strconv.Atoi(runconfigs[0].Get("EpochDuration"))
+		SCRoundDuration, _ := strconv.Atoi(runconfigs[0].Get("SCRoundDuration"))
 		CommitteeWindow, _ := strconv.Atoi(runconfigs[0].Get("CommitteeWindow"))
+		EpochCount, _ := strconv.Atoi(runconfigs[0].Get("EpochCount"))
 
 		deployP.Configure(&platform.Config{
 			MonitorPort: monitorPort,
 			Debug:       log.DebugVisible(),
 			Suite:       runconfigs[0].Get("Suite"),
 			// raha: adding some other system-wide configurations
-			RoundDuration:            RoundDuration,
+			MCRoundDuration:          MCRoundDuration,
 			PercentageTxPay:          PercentageTxPay,
 			BlockSize:                BlockSize,
 			SectorNumber:             SectorNumber,
@@ -93,8 +94,9 @@ func startBuild() {
 			SimulationSeed:           SimulationSeed,
 			NbrSubTrees:              NbrSubTrees,
 			Threshold:                Threshold,
-			EpochDuration:            EpochDuration,
+			SCRoundDuration:          SCRoundDuration,
 			CommitteeWindow:          CommitteeWindow,
+			EpochCount:               EpochCount,
 		})
 
 		if clean {

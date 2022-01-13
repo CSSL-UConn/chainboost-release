@@ -37,12 +37,12 @@ Config File "BaseDFS.toml" is located under the following directory:
 - `PercentageTxPay` the block size percentage allocated for regular payment transactions (if regular payment txs are less, other types of txs will take its space)
 - `NumberOfPayTXsUpperBound` the upper bound for a random number of regular payment transactions issued in each round
 - `ProtocolTimeout` is the time that we want the protocol to stop after it (in seconds)
-- `RoundDuration` the time interval between each round (in seconds)
+- `MCRoundDuration` the time interval between each round (in seconds)
 - `SimulationSeed` 
-
 - `nbrSubTrees`
 - `threshold`
-- `EpochDuration`
+- `SCRoundDuration`
+- `EpochCount`
 - `CommitteeWindow`
 
 

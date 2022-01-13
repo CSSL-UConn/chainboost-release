@@ -25,7 +25,7 @@ type simulInitDone struct{}
 // simul = localhost.simulation
 
 // raha: adding some other system-wide configurations
-func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfPayTXsUpperBound, ProtocolTimeout, SimulationSeed, NbrSubTrees, Threshold, EpochDuration, CommitteeWindow int,
+func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberOfPayTXsUpperBound, ProtocolTimeout, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, EpochCount int,
 	suite, serverAddress, simul, monitorAddress string) error {
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 	if err != nil {
@@ -134,8 +134,8 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 	if rootSim != nil {
 		// If this cothority has the root-server, it will start the simulation
 		log.Lvl2("Starting protocol", simul, "on server", rootSC.Server.ServerIdentity.Address)
-		// Raha: I want to see the tree!
-		log.Lvl5("Tree is", rootSC.Tree.Dump())
+		// Raha: I want to see the list of nodes!
+		log.Lvl2("Raha: Tree used in BaseDfs is", rootSC.Tree.Roster.List)
 		// First count the number of available children
 		//childrenWait := monitor.NewTimeMeasure("ChildrenWait")
 		wait := true
@@ -151,13 +151,15 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 			//proto := p.(*manage.ProtocolOpinionGathering)
 			// ---------------------------------------------------------------
 			//raha: BLSCoSi protocol
+			//ToDo: is the same tree of nodes being used for both protocols?
 			pi, err := rootSC.Overlay.CreateProtocol("bdnCoSiProto", rootSC.Tree, onet.NilServiceID)
 			if err != nil {
 				return xerrors.New("couldn't create protocol: " + err.Error())
 			}
-
+			// --------------------------------------------------------
+			// raha: BlsCosi protocol is created here => call to CreateProtocol() => call an empty Dispatch()
 			cosiProtocol := pi.(*BaseDFSProtocol.BlsCosi)
-			cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol
+			cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol // Raha: it doesn't call any fuunction! just initializtion of methods that is going to be used later
 			//cosiProtocol.CreateProtocol = rootService.CreateProtocol //raha: it used to be initialized by this function call
 			// params from config file:
 			cosiProtocol.Timeout = time.Duration(ProtocolTimeout) * time.Second
@@ -169,11 +171,12 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 				}
 			}
 			// ---------------------------------------------------------------
+			// raha: BaseDfs protocol is created here => call to CreateProtocol() => call an empty Dispatch()
 			basedfsprotocol := p.(*BaseDFSProtocol.BaseDFS)
 			//basedfsprotocol.SetTimeout(time.Duration(TimeOut) * time.Second)
 			// raha: finally passing our system-wide configurations to our protocol
 			basedfsprotocol.PercentageTxPay = PercentageTxPay
-			basedfsprotocol.RoundDuration = RoundDuration
+			basedfsprotocol.MCRoundDuration = MCRoundDuration
 			basedfsprotocol.BlockSize = BlockSize
 			basedfsprotocol.SectorNumber = SectorNumber
 			basedfsprotocol.NumberOfPayTXsUpperBound = NumberOfPayTXsUpperBound
@@ -181,11 +184,12 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 			basedfsprotocol.SimulationSeed = SimulationSeed
 			basedfsprotocol.NbrSubTrees = NbrSubTrees
 			basedfsprotocol.Threshold = Threshold
-			basedfsprotocol.EpochDuration = EpochDuration
+			basedfsprotocol.SCRoundDuration = SCRoundDuration
 			basedfsprotocol.CommitteeWindow = CommitteeWindow
+			basedfsprotocol.EpochCount = EpochCount
 			log.LLvl2("passing our system-wide configurations to the protocol",
 				"\n  PercentageTxPay: ", PercentageTxPay,
-				"\n  RoundDuration: ", RoundDuration,
+				"\n  MCRoundDuration: ", MCRoundDuration,
 				"\n BlockSize: ", BlockSize,
 				"\n SectorNumber: ", SectorNumber,
 				"\n NumberOfPayTXsUpperBound: ", NumberOfPayTXsUpperBound,
@@ -193,8 +197,9 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 				"\n SimulationSeed of: ", SimulationSeed,
 				"\n nbrSubTrees of: ", NbrSubTrees,
 				"\n  threshold of: ", Threshold,
-				"\n EpochDuration: ", EpochDuration,
+				"\n SCRoundDuration: ", SCRoundDuration,
 				"\n CommitteeWindow: ", CommitteeWindow,
+				"\n EpochCount: ", EpochCount,
 			)
 			// ---------------------------------------------------------------
 			// raha: BLSCoSi protocol
@@ -202,7 +207,15 @@ func Simulate(PercentageTxPay, RoundDuration, BlockSize, SectorNumber, NumberOfP
 			// cosiProtocol.TreeNodeInstance = basedfsprotocol.TreeNodeInstance
 			basedfsprotocol.BlsCosi = cosiProtocol
 			// ---------------------------------------------------------------
-			// raha: should be a single dispatch assigned for each node?!
+			/* Raha: note that in overlay.go the CreateProtocol function will call the Dispatch() function by creating a go routine
+			that's why I call it here in a go routine too.
+			ToDO: But I should check how this part will be doing when testing on multiple servers
+			raha: should be a single dispatch assigned for each node?!
+			here, we call the DispatchProtocol function which handles messages in baseDfs protocol + the finalSignature message in BlsCosi protocol
+			other messages communicated in BlsCosi protocol are handled by
+			func (p *SubBlsCosi) Dispatch() which is called when the startSubProtocol in Blscosi.go,
+			create subprotocols => hence calls func (p *SubBlsCosi) Dispatch() */
+			// ---------------------------------------------------------------
 			go func() {
 				err := basedfsprotocol.DispatchProtocol()
 				if err != nil {

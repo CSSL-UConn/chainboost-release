@@ -68,7 +68,7 @@ type Config struct {
 	MonitorPort int
 	Debug       int
 	// raha: adding some other system-wide configurations, these fields are those who are needed in the protocol
-	RoundDuration            int
+	MCRoundDuration          int
 	PercentageTxPay          int
 	BlockSize                int
 	SectorNumber             int
@@ -78,8 +78,9 @@ type Config struct {
 	// bls cosi
 	NbrSubTrees     int
 	Threshold       int
-	EpochDuration   int
+	SCRoundDuration int
 	CommitteeWindow int
+	EpochCount      int
 }
 
 var deterlab = "deterlab"

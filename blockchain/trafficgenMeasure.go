@@ -52,7 +52,7 @@ type Contract struct {
 	startRound    [3]byte
 	pricePerRound [3]byte
 	Tau           []byte
-	//roundNumber   [3]byte
+	//MCRoundNumber   [3]byte
 	/* later: Instead of the "file tag" (Tau []byte),
 	the round number is sent and stored on chain (later sent to sideChain in summery) and the verifiers
 	can reproduce the file tag (as well as random query)
@@ -77,9 +77,9 @@ type TxContractCommit struct {
 
 /* por txs are designed in away that the verifier (any miner) has sufficient information to verify it */
 type TxPoR struct {
-	ContractID  uint64
-	por         *por.Por
-	roundNumber [3]byte // to determine the random query used for it
+	ContractID    uint64
+	por           *por.Por
+	MCRoundNumber [3]byte // to determine the random query used for it
 }
 
 /* ---------------- transactions that will be issued after a contract is expired ---------------- */
@@ -120,7 +120,7 @@ type TransactionList struct {
 	Fees            [3]byte
 }
 type BlockHeader struct {
-	RoundNumber [3]byte
+	MCRoundNumber [3]byte
 	// next round's seed for VRF based leader election which is the output of this round's leader's proof verification: VerifyBytes
 	// _, (next round's seed)RoundSeed := (current round's leader)VrfPubkey.VerifyBytes((current round's leader)proof, (current round's seed)t)
 	RoundSeed         [64]byte
@@ -157,7 +157,7 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 	var Version [4]byte
 	var cnt [2]byte
 	var feeSample, BlockSizeSample [3]byte
-	var roundNumberSample [3]byte
+	var MCRoundNumberSample [3]byte
 	// ---------------- block sample ----------------
 	var TxPayArraySample []*TxPay
 	var TxPorArraySample []*TxPoR
@@ -199,7 +199,7 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 	// ---
 
 	x10 := &BlockHeader{
-		RoundNumber:       roundNumberSample,
+		MCRoundNumber:     MCRoundNumberSample,
 		RoundSeed:         nextroundseed,
 		LeadershipProof:   VrfProof,
 		PreviousBlockHash: hashSample,
@@ -216,7 +216,7 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 	log.Lvl5(x11)
 
 	BlockSizeMinusTransactions = len(BlockSizeSample) + //x11
-		len(roundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) + len(hashSample) + len(Version) + //x10
+		len(MCRoundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) + len(hashSample) + len(Version) + //x10
 		5*len(cnt) + len(feeSample) //x9
 	// ---
 	log.Lvl2("Block Size Minus Transactions is: ", BlockSizeMinusTransactions)
@@ -241,7 +241,7 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize int, Co
 	r := rand.New(rand.NewSource(int64(SimulationSeed)))
 	var Version, SequenceNumber, index, LockingScriptSize, fileSizeSample, UnlockingScriptSize [4]byte
 	var Amount [8]byte
-	var startRoundSample, roundNumberSample, pricePerRoundSample [3]byte
+	var startRoundSample, MCRoundNumberSample, pricePerRoundSample [3]byte
 	var duration [2]byte
 	var cmtSample [71]byte // see https://medium.com/coinmonks/on-bitcoin-transaction-sizes-97e31bc9d816
 	UnlockinScriptSample := []byte("48304502203a776322ebf8eb8b58cc6ced4f2574f4c73aa664edce0b0022690f2f6f47c521022100b82353305988cb0ebd443089a173ceec93fe4dbfe98d74419ecc84a6a698e31d012103c5c1bc61f60ce3d6223a63cedbece03b12ef9f0068f2f3c4a7e7f06c523c3664")
@@ -295,7 +295,7 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize int, Co
 		startRound:    startRoundSample,
 		pricePerRound: pricePerRoundSample,
 		Tau:           Tau,
-		//roundNumber:   roundNumberSample,
+		//MCRoundNumber:   MCRoundNumberSample,
 	}
 	x7 := &TxContractPropose{
 		tx:               x4,
@@ -337,15 +337,15 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize int, Co
 	p := por.CreatePoR(pf, SectorNumber, SimulationSeed)
 
 	x6 := &TxPoR{
-		ContractID:  contractIdSample,
-		por:         &p,
-		roundNumber: roundNumberSample,
+		ContractID:    contractIdSample,
+		por:           &p,
+		MCRoundNumber: MCRoundNumberSample,
 	}
 
 	log.Lvl5("tx por is: ", x6)
 
 	PorTxSize = porSize /*size of pur por*/ +
-		8 /*len(contractIdSample)*/ + len(roundNumberSample) //TxPoR
+		8 /*len(contractIdSample)*/ + len(MCRoundNumberSample) //TxPoR
 
 	log.Lvl2("size of a por transaction is: ", PorTxSize, " bytes \n with ",
 		SectorNumber*por.Suite.G1().ScalarLen()+por.Suite.G2().PointLen(), " bytes for pure por")

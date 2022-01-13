@@ -312,7 +312,8 @@ func (p *BlsCosi) startSubProtocol(tree *onet.Tree) (*SubBlsCosi, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	// Raha: I want to see the list of nodes!
+	log.Lvl2("Raha: Tree used in SubBlsCosi is", tree.Roster.List)
 	return cosiSubProtocol, err
 }
 

@@ -7,7 +7,7 @@ Types of Messages:
  ```
  &NewLeader{
 	 Leaderinfo: bz.Name(), 
-	 RoundNumber: bz.roundNumber
+	 MCRoundNumber: bz.MCRoundNumber
  } 
  ```
 - each round, the root node send the following msg to all servers including the target server's power
@@ -22,15 +22,16 @@ Types of Messages:
 &HelloBaseDFS{
 	Timeout:                  bz.timeout,
 	PercentageTxPay:          bz.PercentageTxPay,
-	RoundDuration:            bz.RoundDuration,
+	MCRoundDuration:            bz.MCRoundDuration,
 	BlockSize:                bz.BlockSize,
 	SectorNumber:             bz.SectorNumber,
 	NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
 	SimulationSeed:			  bz.SimulationSeed,
 	nbrSubTrees:			  bz.nbrSubTrees,
 	threshold:				  bz.threshold,
-	EpochDuration:			  bz.EpochDuration,
+	SCRoundDuration:			  bz.SCRoundDuration,
 	CommitteeWindow:		  bz.CommitteeWindow,
+	EpochCount:					bz.EpochCount,
 }
 ```
 - timeOut: terminate the simulation

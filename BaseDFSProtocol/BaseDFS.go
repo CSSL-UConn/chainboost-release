@@ -3,21 +3,22 @@
 
 	Types of Messages:
 	--------------------------------------------
-	1- each server who is elected as leader (few servers in each round) send a msg of &NewLeader{Leaderinfo: bz.Name(), RoundNumber: bz.roundNumber} to root node.
+	1- each server who is elected as leader (few servers in each ) send a msg of &NewLeader{Leaderinfo: bz.Name(), MCRoundNumber: bz.MCRoundNumber} to root node.
 	2- each round, the root node send a msg of &NewRound{Seed:  seed, Power: power} to all servers including the target server's power
 	3- in the bootstrapping phase, the root node send a message to all servers containing protocol config parameters.
 	&HelloBaseDFS{
 					Timeout:                  bz.timeout,
 					PercentageTxPay:          bz.PercentageTxPay,
-					RoundDuration:            bz.RoundDuration,
+					MCRoundDuration:            bz.MCRoundDuration,
 					BlockSize:                bz.BlockSize,
 					SectorNumber:             bz.SectorNumber,
 					NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
 					SimulationSeed:			  bz.SimulationSeed,
 					nbrSubTrees:			  bz.nbrSubTrees,
 					threshold:				  bz.threshold,
-					EpochDuration:            bz.EpochDuration,
+					SCRoundDuration:            bz.SCRoundDuration,
 					CommitteeWindow:          bz.CommitteeWindow,
+					EpochCount:					bz.EpochCount,
 				}
 	4- timeOut
 
@@ -40,6 +41,7 @@ import (
 	onet "github.com/basedfs"
 	"github.com/basedfs/blockchain"
 	"github.com/basedfs/blscosi/bdnproto"
+	"github.com/basedfs/blscosi/protocol"
 	"go.dedis.ch/kyber/v3/pairing"
 	"golang.org/x/xerrors"
 
@@ -62,15 +64,16 @@ type HelloBaseDFS struct {
 	ProtocolTimeout time.Duration
 	//---- ToDo: Do i need timeout?
 	PercentageTxPay          int
-	RoundDuration            int
+	MCRoundDuration          int
 	BlockSize                int
 	SectorNumber             int
 	NumberOfPayTXsUpperBound int
 	SimulationSeed           int
 	nbrSubTrees              int
 	threshold                int
-	EpochDuration            int
+	SCRoundDuration          int
 	CommitteeWindow          int
+	EpochCount               int
 }
 type HelloChan struct {
 	*onet.TreeNode
@@ -78,8 +81,8 @@ type HelloChan struct {
 }
 
 type NewLeader struct {
-	Leaderinfo  *onet.TreeNode
-	RoundNumber int
+	Leaderinfo    *onet.TreeNode
+	MCRoundNumber int
 }
 type NewLeaderChan struct {
 	*onet.TreeNode
@@ -124,7 +127,7 @@ type BaseDFS struct {
 	//for the root node: "after" NewBaseDFSProtocol call (in func: Simulate in file: runsimul.go)
 	//for the rest of nodes node: while joining protocol by the HelloBaseDFS message
 	PercentageTxPay          int
-	RoundDuration            int
+	MCRoundDuration          int
 	BlockSize                int
 	SectorNumber             int
 	NumberOfPayTXsUpperBound int
@@ -135,18 +138,20 @@ type BaseDFS struct {
 	// -- blscosi related config params
 	NbrSubTrees     int
 	Threshold       int
-	EpochDuration   int
-	CommitteeWindow int
+	SCRoundDuration int
+	CommitteeWindow int //ToDo: go down
 	// ------------------------------------------------------------------
-	roundNumber int
-	epochNumber int
-	hasLeader   bool
+	MCRoundNumber int
+	SCRoundNumber int
+	hasLeader     bool
 	// --- just root node use these - these are used for delay evaluation
 	FirstQueueWait  int
 	SecondQueueWait int
 	//-- bls cosi protocol
-	BlsCosi   *BlsCosi
-	committee []*onet.TreeNode
+	BlsCosi        *BlsCosi
+	committee      *onet.Roster
+	committeeNodes []*network.ServerIdentity
+	EpochCount     int
 	// ------------------------------------------------------------------------------------------------------------------
 	//ToDo: raha: dol I need these items?
 	//vcMeasure *monitor.TimeMeasure
@@ -175,8 +180,8 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 		suite:             pairing.NewSuiteBn256(),
 		DoneBaseDFS:       make(chan bool, 1),
 		LeaderProposeChan: make(chan bool, 1),
-		roundNumber:       1,
-		epochNumber:       1,
+		MCRoundNumber:     1,
+		SCRoundNumber:     1,
 		hasLeader:         false,
 		FirstQueueWait:    0,
 		SecondQueueWait:   0,
@@ -194,7 +199,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	if err := n.RegisterChannelLength(&bz.NewLeaderChan, len(bz.Tree().List())); err != nil {
 		log.Error("Couldn't reister channel:    ", err)
 	}
-	bz.committee = make([]*onet.TreeNode, bz.CommitteeWindow)
+	bz.committeeNodes = make([]*network.ServerIdentity, 0)
 	// bls key pair for each node for VRF
 	_, bz.ECPrivateKey = vrf.VrfKeygen()
 	//--------------- These msgs were used for communication-----------
@@ -222,7 +227,9 @@ func (bz *BaseDFS) Start() error {
 	var err error
 	// update the mainchainbc file with created nodes' information
 	bz.finalMainChainBCInitialization()
-
+	// initialization of committee members in side chain
+	//bz.committee = onet.NewRoster(bz.Roster().List[:bz.CommitteeWindow])
+	bz.committeeNodes = bz.Tree().Roster.List[:bz.CommitteeWindow]
 	// -------------------------- BLS CoSi protocol ---------------------------------------
 	// message should be initialized with main chain's genesis block
 	bz.BlsCosi.Msg = []byte{0xFF}
@@ -256,26 +263,27 @@ func (bz *BaseDFS) DispatchProtocol() error {
 		case msg := <-bz.HelloChan:
 			log.Lvl2(bz.TreeNode().Name(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
 			bz.PercentageTxPay = msg.PercentageTxPay
-			bz.RoundDuration = msg.RoundDuration
+			bz.MCRoundDuration = msg.MCRoundDuration
 			bz.BlockSize = msg.BlockSize
 			bz.SectorNumber = msg.SectorNumber
 			bz.NumberOfPayTXsUpperBound = msg.NumberOfPayTXsUpperBound
 			bz.SimulationSeed = msg.SimulationSeed
 			bz.NbrSubTrees = msg.nbrSubTrees
 			bz.Threshold = msg.threshold
-			bz.EpochDuration = msg.EpochDuration
+			bz.SCRoundDuration = msg.SCRoundDuration
 			bz.CommitteeWindow = msg.CommitteeWindow
+			bz.EpochCount = msg.EpochCount
 
 			bz.helloBaseDFS()
 
-		// this msg is catched in simulation codes
-		//case <-bz.DoneBaseDFS:
-		//	running = false //TODO: do something about running!
+		// this msg is catched in runsimul.go in func Simulate() function and means the baseddfs protocol has finished
+		// case <-bz.DoneBaseDFS:
+		// running = false //TODO: do something about running!
 
 		// ******** ALL nodes recieve this message to sync rounds
 		case msg := <-bz.NewRoundChan:
-			bz.roundNumber = bz.roundNumber + 1
-			log.Lvl2(bz.Name(), " round number ", bz.roundNumber, " started at ", time.Now().Format(time.RFC3339))
+			bz.MCRoundNumber = bz.MCRoundNumber + 1
+			log.Lvl2(bz.Name(), " round number ", bz.MCRoundNumber, " started at ", time.Now().Format(time.RFC3339))
 			var vrfOutput [64]byte
 			toBeHashed := []byte(msg.Seed)
 			proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
@@ -295,8 +303,8 @@ func (bz *BaseDFS) DispatchProtocol() error {
 			// the criteria for selecting the leader
 			if vrfoutputInt64 < msg.Power {
 				// -----------
-				log.Lvl2(bz.Name(), "I may be elected for round number ", bz.roundNumber)
-				go bz.SendTo(bz.Root(), &NewLeader{Leaderinfo: bz.TreeNode(), RoundNumber: bz.roundNumber})
+				log.Lvl2(bz.Name(), "I may be elected for round number ", bz.MCRoundNumber)
+				go bz.SendTo(bz.Root(), &NewLeader{Leaderinfo: bz.TreeNode(), MCRoundNumber: bz.MCRoundNumber})
 			}
 
 		// ******* just the ROOT NODE (blockchain layer one) recieve this msg
@@ -306,11 +314,11 @@ func (bz *BaseDFS) DispatchProtocol() error {
 			// rounds without a leader: in this case the leader info is filled with root node's info, transactions are going to be collected normally but
 			// since the block is empty, no transaction is going to be taken from queues => leader = false
 			// -----------------------------------------------------
-			if msg.Leaderinfo == bz.TreeNode() && bz.roundNumber != 1 && !bz.hasLeader && msg.RoundNumber == bz.roundNumber {
+			if msg.Leaderinfo == bz.TreeNode() && bz.MCRoundNumber != 1 && !bz.hasLeader && msg.MCRoundNumber == bz.MCRoundNumber {
 				bz.hasLeader = true
 				bz.updateBCPowerRound(msg.Leaderinfo, false)
 				// in the case of a leader-less round
-				log.Lvl1("final round result: ", msg.Leaderinfo.Name(), "(root node) filled round number", bz.roundNumber, "with empty block")
+				log.Lvl1("final round result: ", msg.Leaderinfo.Name(), "(root node) filled round number", bz.MCRoundNumber, "with empty block")
 				bz.updateBCTransactionQueueCollect()
 				bz.readBCAndSendtoOthers()
 				log.Lvl2("new round is announced")
@@ -319,14 +327,11 @@ func (bz *BaseDFS) DispatchProtocol() error {
 			// -----------------------------------------------------
 			// normal rounds with a leader => leader = true
 			// -----------------------------------------------------
-			if !bz.hasLeader && msg.RoundNumber == bz.roundNumber {
+			if !bz.hasLeader && msg.MCRoundNumber == bz.MCRoundNumber {
 				// TODO: first validate the leadership proof
-				log.Lvl1("final round result: ", msg.Leaderinfo.Name(), "is the round leader for round number ", bz.roundNumber)
-				// if x := len(bz.committee); x < cap(bz.committee) {
-				// 	bz.committee = append(bz.committee, msg.Leaderinfo)
-				// } else {
-				// 	bz.committee[bz.CommitteeWindow-1] = msg.Leaderinfo
-				// }
+				log.Lvl1("final round result: ", msg.Leaderinfo.Name(), "is the round leader for round number ", bz.MCRoundNumber)
+				// the committee nodes is shifted by one
+				bz.committeeNodes = append(bz.committeeNodes[1:len(bz.committeeNodes)-1], msg.Leaderinfo.ServerIdentity)
 
 				bz.hasLeader = true
 				bz.updateBCPowerRound(msg.Leaderinfo, true)
@@ -336,7 +341,7 @@ func (bz *BaseDFS) DispatchProtocol() error {
 				log.Lvl2("this round already has a leader!")
 			}
 			//waiting for the time of round duration
-			time.Sleep(time.Duration(bz.RoundDuration) * time.Second)
+			time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
 			// empty list of elected leaders  in this round
 			for len(bz.NewLeaderChan) > 0 {
 				<-bz.NewLeaderChan
@@ -345,36 +350,40 @@ func (bz *BaseDFS) DispatchProtocol() error {
 			bz.readBCAndSendtoOthers()
 			log.Lvl2("new round is announced")
 
+		// --------------------------------------------------------
 		// message recieved from BLSCoSi (SideChain):
 		// ******* just the ROOT NODE (blockchain layer one) recieve this msg
 		// --------------------------------------------------------
 		// --- BLSCoSi ---
 		// --------------------------------------------------------
+
 		case sig := <-bz.BlsCosi.FinalSignature:
 			if err := bdnproto.BdnSignature(sig).Verify(bz.BlsCosi.suite, bz.BlsCosi.Msg, bz.Roster().Publics()); err == nil {
-				log.LLvl2(bz.BlsCosi.blockType, "with epoch number", bz.epochNumber, "Confirmed in Side Chain")
-				if bz.RoundDuration/bz.EpochDuration == bz.epochNumber {
+				log.LLvl2(bz.BlsCosi.blockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
+				if bz.MCRoundDuration*bz.EpochCount/bz.SCRoundDuration == bz.SCRoundNumber {
 					// generate and propose summery block (bz.BlsCosi.blockType = "summeryblock")
-					// reset epoch number
-					bz.epochNumber = 0 // in epoch number zero the summery blocks are published in side chain
+					// reset side chain round number
+					bz.SCRoundNumber = 0 // in side chain round number zero the summery blocks are published in side chain
 					// from bc: update msg size with the "summery block"'s block size on side chain
 					// call a function like collect and then take
 				} else {
-					if bz.epochNumber == 0 { // i.e. the current published block on side chain is summery block
+					if bz.SCRoundNumber == 0 { // i.e. the current published block on side chain is summery block
 						// issue a sync transaction from last recent summery block to main chain
 						// change the committee based on last window of miners
-						// *** maybe use -> func NewTree(roster *Roster, root *TreeNode) *Tree
+						// *** use -> func NewTree(roster *Roster, root *TreeNode) *Tree
+						bz.committee = onet.NewRoster(bz.committeeNodes)
+						bz.BlsCosi.subTrees, _ = protocol.NewBlsProtocolTree(onet.NewTree(bz.committee, bz.Root()), bz.NbrSubTrees) //root should be replaced by sc's round leader
 						bz.BlsCosi.TreeNodeInstance = bz.TreeNodeInstance
 						// next meta block is going to be on top of last summery block (rather than last meta blocks!)
 					}
-					// increase epoch number
-					bz.epochNumber = bz.epochNumber + 1
+					// increase side chain round number
+					bz.SCRoundNumber = bz.SCRoundNumber + 1
 					// from bc: update msg size with next "meta block"'s block size on side chain
 					bz.BlsCosi.Msg = []byte{0xFF} // Msg is the meta block
 				}
-				// ----------- Next epoch run -------------------------------
-				time.Sleep(time.Duration(bz.EpochDuration) * time.Second)
-				// triggering next CoSi epoch on collected block/transactions
+				// ----------- Next side chain round run -------------------------------
+				time.Sleep(time.Duration(bz.SCRoundDuration) * time.Second)
+				// triggering next CoSi round on collected block/transactions
 				err = bz.BlsCosi.Start()
 				if err != nil {
 					return xerrors.New("Problem in cosi protocol run:   " + err.Error())
@@ -397,6 +406,10 @@ func (bz *BaseDFS) DispatchProtocol() error {
 	}*/
 	// ------------------------------------------------------------------
 	return err
+}
+
+func NewTree(treeNode1 []*onet.TreeNode, treeNode2 *onet.TreeNode) {
+	panic("unimplemented")
 }
 
 /* ----------------------------------------------------------------------
@@ -462,7 +475,7 @@ let other nodes know that the new round has started and the information they nee
 from blockchain to check if they are next round's leader */
 func (bz *BaseDFS) readBCAndSendtoOthers() {
 	powers, seed := bz.readBCPowersAndSeed()
-	bz.roundNumber = bz.roundNumber + 1
+	bz.MCRoundNumber = bz.MCRoundNumber + 1
 	bz.hasLeader = false
 	for _, b := range bz.Tree().List() {
 		power, found := powers[b.ServerIdentity.String()]
@@ -476,7 +489,7 @@ func (bz *BaseDFS) readBCAndSendtoOthers() {
 		}
 	}
 	// detecting leader-less in next round
-	go bz.startTimer(bz.roundNumber)
+	go bz.startTimer(bz.MCRoundNumber)
 }
 
 /* ----------------------------------------------------------------------*/
@@ -509,7 +522,7 @@ func (bz *BaseDFS) readBCPowersAndSeed() (powers map[string]uint64, seed string)
 	for i, colCell := range row {
 		// --- in RoundTable: i = 0 is (next) round number, i = 1 is (next) round seed, i=2 is blockchain size (empty now, will be updated by the leader)
 		// if i == 0 {
-		// 	if bz.roundNumber, err = strconv.Atoi(colCell); err != nil {
+		// 	if bz.MCRoundNumber, err = strconv.Atoi(colCell); err != nil {
 		// 		log.Lvl2("Panic Raised:\n\n")
 		// 		panic(err)
 		// 	}
@@ -596,7 +609,7 @@ func (bz *BaseDFS) helloBaseDFS() {
 					// TODO: do we need to send all of these to all nodes?  or it can be just stored on their blockchain layer 1 (ROOT NODE)
 					ProtocolTimeout:          bz.ProtocolTimeout,
 					PercentageTxPay:          bz.PercentageTxPay,
-					RoundDuration:            bz.RoundDuration,
+					MCRoundDuration:          bz.MCRoundDuration,
 					BlockSize:                bz.BlockSize,
 					SectorNumber:             bz.SectorNumber,
 					NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
@@ -617,12 +630,12 @@ func (bz *BaseDFS) helloBaseDFS() {
 		// let other nodes join the protocol first -
 		time.Sleep(time.Duration(len(bz.Roster().List)) * time.Second)
 
-		log.Lvl2(bz.Name(), "Filling round number ", bz.roundNumber)
+		log.Lvl2(bz.Name(), "Filling round number ", bz.MCRoundNumber)
 		// for the first round we have the root node set as a round leader, so  it is true! and he takes txs from the queue
 		bz.updateBCPowerRound(bz.TreeNode(), true)
 		bz.updateBCTransactionQueueCollect()
 		bz.updateBCTransactionQueueTake()
-		time.Sleep(time.Duration(bz.RoundDuration) * time.Second)
+		time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
 		bz.readBCAndSendtoOthers()
 		bz.StartTimeOut()
 	}
@@ -673,7 +686,7 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo *onet.TreeNode, leader bool) {
 	}
 	for i, colCell := range row {
 		// --- in RoundTable: i = 0 is (next) round number, i = 1 is (next) round seed, i=2 is blockchain size (empty now, will be updated by the leader)
-		//if i == 0 {if bz.roundNumber,err = strconv.Atoi(colCell); err!=nil {log.Lvl2(err)}}  // i dont want to change the round number now, even if it is changed, i will re-check it at the end!
+		//if i == 0 {if bz.MCRoundNumber,err = strconv.Atoi(colCell); err!=nil {log.Lvl2(err)}}  // i dont want to change the round number now, even if it is changed, i will re-check it at the end!
 		if i == 1 {
 			seed = colCell
 		} // next round's seed is the hash of this seed
@@ -683,7 +696,7 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo *onet.TreeNode, leader bool) {
 
 	// no longer nodes read from mainchainbc file, instead the round are determined by their local round number variable
 	currentRow := strconv.Itoa(rowNumber)
-	nextRow := strconv.Itoa(rowNumber + 1) //ToDo: raha: remove these, use bz.roundnumber instead!
+	nextRow := strconv.Itoa(rowNumber + 1) //ToDo: raha: remove these, use bz.MCRoundNumber instead!
 	// ---
 	axisBCSize := "C" + currentRow
 	err = f.SetCellValue("RoundTable", axisBCSize, bz.BlockSize)
@@ -715,8 +728,8 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo *onet.TreeNode, leader bool) {
 	}
 	// --------------------------------------------------------------------
 	// adding one row in round table (round number and seed columns)
-	axisRoundNumber := "A" + nextRow
-	err = f.SetCellValue("RoundTable", axisRoundNumber, bz.roundNumber+1)
+	axisMCRoundNumber := "A" + nextRow
+	err = f.SetCellValue("RoundTable", axisMCRoundNumber, bz.MCRoundNumber+1)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -742,7 +755,7 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo *onet.TreeNode, leader bool) {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	var ContractDuration, ContractStartedRoundNumber, FileSize int
+	var ContractDuration, ContractStartedMCRoundNumber, FileSize int
 	var MinerServer string
 	rowNum := 0
 	MinerServers := make(map[string]int)
@@ -759,7 +772,7 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo *onet.TreeNode, leader bool) {
 				for i, colCell := range row {
 					/* --- in MarketMatching: i = 0 is Server's Info,
 					i = 1 is FileSize, i=2 is ContractDuration,
-					i=3 is RoundNumber, i=4 is ContractID, i=5 is Client's PK,
+					i=3 is MCRoundNumber, i=4 is ContractID, i=5 is Client's PK,
 					i = 6 is ContractPublished */
 					if i == 0 {
 						MinerServer = colCell
@@ -779,7 +792,7 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo *onet.TreeNode, leader bool) {
 						}
 					}
 					if i == 3 {
-						ContractStartedRoundNumber, err = strconv.Atoi(colCell)
+						ContractStartedMCRoundNumber, err = strconv.Atoi(colCell)
 						if err != nil {
 							log.Lvl2("Panic Raised:\n\n")
 							panic(err)
@@ -787,7 +800,7 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo *onet.TreeNode, leader bool) {
 					}
 				}
 			}
-			if bz.roundNumber-ContractStartedRoundNumber <= ContractDuration {
+			if bz.MCRoundNumber-ContractStartedMCRoundNumber <= ContractDuration {
 				MinerServers[MinerServer] = FileSize //if each server one contract
 			} else {
 				MinerServers[MinerServer] = 0
@@ -801,16 +814,16 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo *onet.TreeNode, leader bool) {
 	for _, a := range bz.Roster().List {
 		PowerInfoRow = append(PowerInfoRow, MinerServers[a.Address.String()])
 	}
-	axisRoundNumber = "B" + currentRow
-	err = f.SetSheetRow("PowerTable", axisRoundNumber, &PowerInfoRow)
+	axisMCRoundNumber = "B" + currentRow
+	err = f.SetSheetRow("PowerTable", axisMCRoundNumber, &PowerInfoRow)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// --------------------------------------------------------------------
 	// adding current round's round number
-	axisRoundNumber = "A" + currentRow
-	err = f.SetCellValue("PowerTable", axisRoundNumber, bz.roundNumber)
+	axisMCRoundNumber = "A" + currentRow
+	err = f.SetCellValue("PowerTable", axisMCRoundNumber, bz.MCRoundNumber)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -850,7 +863,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	var ContractDuration, ContractStartedRoundNumber, FileSize, ContractPublished, ContractID int
+	var ContractDuration, ContractStartedMCRoundNumber, FileSize, ContractPublished, ContractID int
 	var MinerServer, ContractIDString string
 
 	rowNum := 0
@@ -874,7 +887,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 					i = 0 is Server's Info,
 					i = 1 is FileSize,
 					i=2 is ContractDuration,
-					i=3 is RoundNumber,
+					i=3 is MCRoundNumber,
 					i=4 is ContractID,
 					i=5 is Client's PK,
 					i = 6 is ContractPublished */
@@ -896,7 +909,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 						}
 					}
 					if i == 3 {
-						ContractStartedRoundNumber, err = strconv.Atoi(colCell)
+						ContractStartedMCRoundNumber, err = strconv.Atoi(colCell)
 						if err != nil {
 							log.Lvl2("Panic Raised:\n\n")
 							panic(err)
@@ -930,12 +943,12 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 				// Add TxContractPropose
 				t[2] = 1
 				transactionQueue[MinerServer] = t
-			} else if bz.roundNumber-ContractStartedRoundNumber <= ContractDuration { // contract is not expired
+			} else if bz.MCRoundNumber-ContractStartedMCRoundNumber <= ContractDuration { // contract is not expired
 				t[0] = FileSize //if each server one contract
 				// Add TxPor
 				t[4] = 1
 				transactionQueue[MinerServer] = t
-			} else if bz.roundNumber-ContractStartedRoundNumber > ContractDuration {
+			} else if bz.MCRoundNumber-ContractStartedMCRoundNumber > ContractDuration {
 				// Set ContractPublished to false
 				if contractIdCellMarketMatching, err := f.SearchSheet("MarketMatching", ContractIDString); err != nil {
 					log.Lvl2("Panic Raised:\n\n")
@@ -962,13 +975,13 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 	0) name
 	1) size
 	2) time
-	3) issuedRoundNumber
+	3) issuedMCRoundNumber
 	4) contractId */
 	var newTransactionRow [5]string
 	s := make([]interface{}, len(newTransactionRow)) //todo: raha:  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
 
 	newTransactionRow[2] = time.Now().Format(time.RFC3339)
-	newTransactionRow[3] = strconv.Itoa(bz.roundNumber)
+	newTransactionRow[3] = strconv.Itoa(bz.MCRoundNumber)
 	// this part can be moved to protocol initialization
 	var PorTxSize, ContractProposeTxSize, PayTxSize, StoragePayTxSize, ContractCommitTxSize int
 	PorTxSize, ContractProposeTxSize, PayTxSize, StoragePayTxSize, ContractCommitTxSize = blockchain.TransactionMeasurement(bz.SectorNumber, bz.SimulationSeed)
@@ -1008,11 +1021,11 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 				panic(err)
 			} else {
 				if newTransactionRow[0] == "TxPor" {
-					log.Lvl2("a TxPor added to queue in round number", bz.roundNumber)
+					log.Lvl2("a TxPor added to queue in round number", bz.MCRoundNumber)
 				} else if newTransactionRow[0] == "TxStoragePayment" {
-					log.Lvl2("a TxStoragePayment added to queue in round number", bz.roundNumber)
+					log.Lvl2("a TxStoragePayment added to queue in round number", bz.MCRoundNumber)
 				} else if newTransactionRow[0] == "TxContractPropose" {
-					log.Lvl2("a TxContractPropose added to queue in round number", bz.roundNumber)
+					log.Lvl2("a TxContractPropose added to queue in round number", bz.MCRoundNumber)
 				}
 			}
 		}
@@ -1038,7 +1051,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 					panic(err)
 				} else {
 					addCommitTx = false
-					log.Lvl2("a TxContractCommit added to queue in round number", bz.roundNumber)
+					log.Lvl3("a TxContractCommit added to queue in round number", bz.MCRoundNumber)
 				}
 			}
 		}
@@ -1049,11 +1062,11 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 	/* each transaction has the following column stored on the transaction queue payment sheet:
 	0) size
 	1) time
-	2) issuedRoundNumber */
+	2) issuedMCRoundNumber */
 
 	newTransactionRow[0] = strconv.Itoa(PayTxSize)
 	newTransactionRow[1] = time.Now().Format(time.RFC3339)
-	newTransactionRow[2] = strconv.Itoa(bz.roundNumber)
+	newTransactionRow[2] = strconv.Itoa(bz.MCRoundNumber)
 	newTransactionRow[3] = ""
 	newTransactionRow[4] = ""
 	for i, v := range newTransactionRow {
@@ -1067,7 +1080,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 	for numberOfRegPay == 0 {
 		numberOfRegPay = rand.Intn(bz.NumberOfPayTXsUpperBound)
 	}
-	log.Lvl2("Number of regular payment transactions in round number", bz.roundNumber, "is", numberOfRegPay)
+	log.Lvl2("Number of regular payment transactions in round number", bz.MCRoundNumber, "is", numberOfRegPay)
 	for i := 1; i <= numberOfRegPay; i++ {
 		if err = f.InsertRow("SecondQueue", 2); err != nil {
 			log.Lvl2("Panic Raised:\n\n")
@@ -1077,7 +1090,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 				log.Lvl2("Panic Raised:\n\n")
 				panic(err)
 			} else {
-				log.Lvl2("a regular payment transaction added to queue in round number", bz.roundNumber)
+				log.Lvl3("a regular payment transaction added to queue in round number", bz.MCRoundNumber)
 			}
 		}
 	}
@@ -1090,7 +1103,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 		panic(err)
 	} else {
 		log.Lvl2("closing bc")
-		log.Lvl2(bz.Name(), " finished collecting new transactions to queue in round number ", bz.roundNumber)
+		log.Lvl2(bz.Name(), " finished collecting new transactions to queue in round number ", bz.MCRoundNumber)
 	}
 }
 
@@ -1114,7 +1127,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 
 	var accumulatedTxSize, txsize int
 	blockIsFull := false
-	NextRow := strconv.Itoa(bz.roundNumber + 2)
+	NextRow := strconv.Itoa(bz.MCRoundNumber + 2)
 
 	axisNumRegPayTx := "E" + NextRow
 
@@ -1138,7 +1151,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 		/* each transaction has the following column stored on the Transaction Queue Payment sheet:
 		0) size
 		1) time
-		2) issuedRoundNumber */
+		2) issuedMCRoundNumber */
 
 		for j, colCell := range row {
 			if j == 0 {
@@ -1150,7 +1163,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 					numberOfRegPayTx++
 					/* transaction name in transaction queue payment is just "TxPayment"
 					the transactions are just removed from queue and their size are added to included transactions' size in block */
-					log.Lvl2("a regular payment transaction added to block number", bz.roundNumber, " from the queue")
+					log.Lvl2("a regular payment transaction added to block number", bz.MCRoundNumber, " from the queue")
 					// row[1] is transaction's collected time
 					if TakeTime, err = time.Parse(time.RFC3339, row[1]); err != nil {
 						log.Lvl2("Panic Raised:\n\n")
@@ -1205,7 +1218,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 		0) name
 		1) size
 		2) time
-		3) issuedRoundNumber
+		3) issuedMCRoundNumber
 		4) contractId */
 		for j, colCell := range row {
 			if j == 1 {
@@ -1235,24 +1248,24 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 								panic(err)
 							} else {
 								startRoundCellMarketMatching := "D" + contractIdCellMarketMatching[0][1:]
-								err = f.SetCellValue("MarketMatching", startRoundCellMarketMatching, bz.roundNumber)
+								err = f.SetCellValue("MarketMatching", startRoundCellMarketMatching, bz.MCRoundNumber)
 								if err != nil {
 									log.Lvl2("Panic Raised:\n\n")
 									panic(err)
 								} else {
-									log.Lvl2("a TxContractCommit tx added to block number", bz.roundNumber, " from the queue")
+									log.Lvl3("a TxContractCommit tx added to block number", bz.MCRoundNumber, " from the queue")
 									numberOfContractCommitTx++
 								}
 							}
 						}
 					} else if row[0] == "TxStoragePayment" {
-						log.Lvl2("a TxStoragePayment tx added to block number", bz.roundNumber, " from the queue")
+						log.Lvl3("a TxStoragePayment tx added to block number", bz.MCRoundNumber, " from the queue")
 						numberOfStoragePayTx++
 					} else if row[0] == "TxPor" {
-						log.Lvl2("a por tx added to block number", bz.roundNumber, " from the queue")
+						log.Lvl3("a por tx added to block number", bz.MCRoundNumber, " from the queue")
 						numberOfPoRTx++
 					} else if row[0] == "TxContractPropose" {
-						log.Lvl2("a TxContractPropose tx added to block number", bz.roundNumber, " from the queue")
+						log.Lvl3("a TxContractPropose tx added to block number", bz.MCRoundNumber, " from the queue")
 						numberOfContractProposeTx++
 					} else {
 						log.Lvl2("Panic Raised:\n\n")
@@ -1280,7 +1293,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	f.SetCellValue("RoundTable", axisNumContractProposeTx, numberOfContractProposeTx)
 	f.SetCellValue("RoundTable", axisNumContractCommitTx, numberOfContractCommitTx)
 
-	log.Lvl1("In total in round number ", bz.roundNumber,
+	log.Lvl1("In total in round number ", bz.MCRoundNumber,
 		"\n number of published PoR transactions is", numberOfPoRTx,
 		"\n number of published Storage payment transactions is", numberOfStoragePayTx,
 		"\n number of published Propose Contract transactions is", numberOfContractProposeTx,
@@ -1306,7 +1319,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 		panic(err)
 	}
 
-	log.Lvl1("In total in round number ", bz.roundNumber,
+	log.Lvl1("In total in round number ", bz.MCRoundNumber,
 		"\n number of all types of submitted txs is", TotalNumTxsInBothQueue)
 
 	// ---- overall results
@@ -1322,7 +1335,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	axisOverallBlockSpaceFull := "J" + NextRow
 	var FormulaString string
 
-	err = f.SetCellValue("OverallEvaluation", axisRound, bz.roundNumber)
+	err = f.SetCellValue("OverallEvaluation", axisRound, bz.MCRoundNumber)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -1381,7 +1394,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 		panic(err)
 	} else {
 		log.Lvl2("closing bc")
-		log.Lvl2(bz.Name(), " Finished taking transactions from queue (FIFO) into new block in round number ", bz.roundNumber)
+		log.Lvl2(bz.Name(), " Finished taking transactions from queue (FIFO) into new block in round number ", bz.MCRoundNumber)
 	}
 }
 
@@ -1391,15 +1404,15 @@ this function will be called just by ROOT NODE when:
 and publish an empty block in those rounds
 -
 ------------------------------------------------------------------------ */
-func (bz *BaseDFS) startTimer(roundNumber int) {
+func (bz *BaseDFS) startTimer(MCRoundNumber int) {
 	select {
-	case <-time.After(time.Duration(bz.RoundDuration) * time.Second):
+	case <-time.After(time.Duration(bz.MCRoundDuration) * time.Second):
 		// bz.IsRoot() is here just to make sure!,
-		// bz.roundNumber == roundNumber is for when the round number has changed!,
+		// bz.MCRoundNumber == MCRoundNumber is for when the round number has changed!,
 		// bz.hasLeader is for when the round number has'nt changed but the leader has been announced
-		if bz.IsRoot() && bz.roundNumber == roundNumber && !bz.hasLeader {
-			log.Lvl2("No leader for round number ", bz.roundNumber, "an empty block is added")
-			bz.NewLeaderChan <- NewLeaderChan{bz.TreeNode(), NewLeader{Leaderinfo: bz.TreeNode(), RoundNumber: bz.roundNumber}}
+		if bz.IsRoot() && bz.MCRoundNumber == MCRoundNumber && !bz.hasLeader {
+			log.Lvl2("No leader for round number ", bz.MCRoundNumber, "an empty block is added")
+			bz.NewLeaderChan <- NewLeaderChan{bz.TreeNode(), NewLeader{Leaderinfo: bz.TreeNode(), MCRoundNumber: bz.MCRoundNumber}}
 		}
 	}
 }
@@ -1505,7 +1518,7 @@ type PreparedBlockChan struct {
 	//----------------
 	_, err := ioutil.ReadFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.csv")
 	check(err)
-	log.Lvl2(RoundDuration)
+	log.Lvl2(MCRoundDuration)
 	//assert.Equal(t, 7, len(strings.Split(string(csv), "\n")))
 	f, err := os.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.csv", os.O_APPEND|os.O_WRONLY, 0600)
 	check(err)
@@ -1525,8 +1538,8 @@ type PreparedBlockChan struct {
 	//choose random number for recipe
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	i := r.Perm(5)
-	_, err = fmt.Fprintf(w, "%v\n", "RoundDuration")
-	_, err = fmt.Fprintf(w, "%v\n", RoundDuration)
+	_, err = fmt.Fprintf(w, "%v\n", "MCRoundDuration")
+	_, err = fmt.Fprintf(w, "%v\n", MCRoundDuration)
 
 	check(err)
 	w.Flush()
@@ -1626,7 +1639,7 @@ type PreparedBlockChan struct {
 			bz.transactions = append(bz.transactions, txs...)
 			return (bz.appendBlock(pb.PreparedBlock))
 			//-----
-			bz.roundNumber = bz.roundNumber + 1
+			bz.MCRoundNumber = bz.MCRoundNumber + 1
 			bz.blockChainSize = bz.blockChainSize + 1 //uint64(length(blockchain.Block))
 		} else {
 			log.Error(bz.Name(), "Error verying block", err)
@@ -1667,7 +1680,7 @@ func (bz *BaseDFS) readBCForNewRound(f *excelize.File) bool {
 			}
 		}
 	}
-	if lastRound != bz.roundNumber {
+	if lastRound != bz.MCRoundNumber {
 		return true // a new round has been started
 	} else {
 		return false
@@ -1716,13 +1729,13 @@ func (bz *BaseDFS) refreshBC() {
 				log.Lvl2("Panic Raised:\n\n")
 				panic(err)
 			} else {
-				log.Lvl2(bz.TreeNode().Name(), "is the final leader of round number ", bz.roundNumber, "$$$$$$$$$$$")
-				bz.roundNumber = bz.roundNumber + 1
+				log.Lvl2(bz.TreeNode().Name(), "is the final leader of round number ", bz.MCRoundNumber, "$$$$$$$$$$$")
+				bz.MCRoundNumber = bz.MCRoundNumber + 1
 				bz.isLeader = false
 			}
 		} else {
-			log.Lvl2("another leader has already published his block for round number", bz.roundNumber)
-			bz.roundNumber = bz.roundNumber + 1
+			log.Lvl2("another leader has already published his block for round number", bz.MCRoundNumber)
+			bz.MCRoundNumber = bz.MCRoundNumber + 1
 			bz.isLeader = false
 			bz.f = f2
 		}
@@ -1734,7 +1747,7 @@ func (bz *BaseDFS) refreshBC() {
 ------------------------------------------------------------------------ */
 //checkLeadership
 // func (bz *BaseDFS) checkLeadership() {
-// 	if bz.leaders[int(math.Mod(float64(bz.roundNumber), float64(len(bz.Roster().List))))] == bz.ServerIdentity().String() {
+// 	if bz.leaders[int(math.Mod(float64(bz.MCRoundNumber), float64(len(bz.Roster().List))))] == bz.ServerIdentity().String() {
 // 		bz.LeaderPropose <- true
 // 	}
 // }

@@ -130,7 +130,7 @@ func InitializeMainChainBC(
 		panic(err)
 	}
 
-	err = f.SetCellValue("MarketMatching", "D1", "StartedRoundNumber")
+	err = f.SetCellValue("MarketMatching", "D1", "StartedMCRoundNumber")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -230,7 +230,7 @@ func InitializeMainChainBC(
 		panic(err)
 	}
 
-	err = f.SetCellValue("FirstQueue", "D1", "IssuedRoundNumber")
+	err = f.SetCellValue("FirstQueue", "D1", "IssuedMCRoundNumber")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -281,7 +281,7 @@ func InitializeMainChainBC(
 		panic(err)
 	}
 
-	err = f.SetCellValue("SecondQueue", "C1", "IssuedRoundNumber")
+	err = f.SetCellValue("SecondQueue", "C1", "IssuedMCRoundNumber")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -634,7 +634,7 @@ func InitializeSideChainBC(Nodes, SimulationSeed string) {
 		panic(err)
 	}
 
-	err = f.SetCellValue("FirstQueue", "D1", "IssuedRoundNumber")
+	err = f.SetCellValue("FirstQueue", "D1", "IssuedMCRoundNumber")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -685,7 +685,7 @@ func InitializeSideChainBC(Nodes, SimulationSeed string) {
 		panic(err)
 	}
 
-	err = f.SetCellValue("SecondQueue", "C1", "IssuedRoundNumber")
+	err = f.SetCellValue("SecondQueue", "C1", "IssuedMCRoundNumber")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)

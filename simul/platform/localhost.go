@@ -76,7 +76,7 @@ type Localhost struct {
 	RunWait string
 
 	// raha: adding some other system-wide configurations
-	RoundDuration            int
+	MCRoundDuration          int
 	PercentageTxPay          int
 	BlockSize                int
 	SectorNumber             int
@@ -86,8 +86,9 @@ type Localhost struct {
 	//-- bls cosi
 	NbrSubTrees     int
 	Threshold       int
-	EpochDuration   int
+	SCRoundDuration int
 	CommitteeWindow int
+	EpochCount      int
 }
 
 // Configure various internal variables
@@ -101,7 +102,7 @@ func (d *Localhost) Configure(pc *Config) {
 	d.Suite = pc.Suite
 	// ------------------------------
 	// raha: adding some other system-wide configurations
-	d.RoundDuration = pc.RoundDuration
+	d.MCRoundDuration = pc.MCRoundDuration
 	d.PercentageTxPay = pc.PercentageTxPay
 	d.BlockSize = pc.BlockSize
 	d.SectorNumber = pc.SectorNumber
@@ -110,8 +111,9 @@ func (d *Localhost) Configure(pc *Config) {
 	d.SimulationSeed = pc.SimulationSeed
 	d.NbrSubTrees = pc.NbrSubTrees
 	d.Threshold = pc.Threshold
-	d.EpochDuration = pc.EpochDuration
+	d.SCRoundDuration = pc.SCRoundDuration
 	d.CommitteeWindow = pc.CommitteeWindow
+	d.EpochCount = pc.EpochCount
 	// ------------------------------
 	d.localDir = pwd
 	d.debug = pc.Debug
@@ -235,7 +237,7 @@ func (d *Localhost) Start(args ...string) error {
 			log.Lvl2("Localhost: will start host", i, h)
 			log.Lvl2("raha: adding some other system-wide configurations")
 
-			err := Simulate(d.PercentageTxPay, d.RoundDuration, d.BlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.ProtocolTimeout, d.SimulationSeed, d.NbrSubTrees, d.Threshold, d.EpochDuration, d.CommitteeWindow,
+			err := Simulate(d.PercentageTxPay, d.MCRoundDuration, d.BlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.ProtocolTimeout, d.SimulationSeed, d.NbrSubTrees, d.Threshold, d.SCRoundDuration, d.CommitteeWindow, d.EpochCount,
 				d.Suite, host, d.Simulation, "")
 			if err != nil {
 				log.Error("Error running localhost", h, ":", err)
