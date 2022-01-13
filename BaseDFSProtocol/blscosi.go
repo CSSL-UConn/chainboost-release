@@ -234,7 +234,7 @@ func (p *BlsCosi) runSubProtocols() {
 		}
 	}
 	p.subProtocolsLock.Unlock()
-	log.Lvl2(p.ServerIdentity().Address, "all protocols started")
+	log.Lvl3(p.ServerIdentity().Address, "all (raha: sub bls) protocols started")
 
 	// Wait and collect all the signature responses
 	responses, err := p.collectSignatures()
@@ -307,13 +307,13 @@ func (p *BlsCosi) startSubProtocol(tree *onet.Tree) (*SubBlsCosi, error) {
 	// responses. The main protocol will deal with early answers.
 	cosiSubProtocol.Threshold = tree.Size() - 1
 
-	log.Lvlf2("Starting sub protocol with subleader %v", tree.Root.Children[0].ServerIdentity)
+	log.Lvl4("Starting sub protocol with subleader %v", tree.Root.Children[0].ServerIdentity)
 	err = cosiSubProtocol.Start()
 	if err != nil {
 		return nil, err
 	}
 	// Raha: I want to see the list of nodes!
-	log.Lvl2("Raha: Tree used in SubBlsCosi is", tree.Roster.List)
+	log.Lvl4("Raha: Tree used in SubBlsCosi is", tree.Roster.List)
 	return cosiSubProtocol, err
 }
 
@@ -516,7 +516,7 @@ func (p *BlsCosi) makeAggregateResponse(suite pairing.Suite, publics []kyber.Poi
 		return nil, err
 	}
 
-	log.Lvlf2("%v is done aggregating signatures with total of %d signatures", p.ServerIdentity(), finalMask.CountEnabled())
+	log.Lvlf3("%v is done aggregating signatures with total of %d signatures", p.ServerIdentity(), finalMask.CountEnabled())
 
 	return append(sig, finalMask.Mask()...), nil
 }

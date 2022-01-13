@@ -52,9 +52,10 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-/* -------------------------------------------------------------------- */
-// ------- TYPES  --------------------------------------------
-/* -------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------------------------------
+				--------------------------   TYPES  --------------------------------
+------------------------------------------------------------------------------------------------  */
+
 //  -------------------  Transactions and Block Structurse -----------------
 /* -------------------------------------------------------------------- */
 
@@ -152,16 +153,16 @@ type BaseDFS struct {
 	committee      *onet.Roster
 	committeeNodes []*network.ServerIdentity
 	EpochCount     int
-	// ------------------------------------------------------------------------------------------------------------------
+	// ------------------------------------------------------------------
 	//ToDo: raha: dol I need these items?
 	//vcMeasure *monitor.TimeMeasure
 	//lock associated
 	//doneLock  sync.Mutex
 }
 
-/* -------------------------------------------------------------------- */
-// ------- FUNCTIONS  -------------------------------------------------
-/* -------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------------------------------
+				-------------------------- FUNCTIONS  -----------------------------
+------------------------------------------------------------------------------------------------  */
 func init() {
 	//network.RegisterMessage(ProofOfRetTxChan{})
 	//network.RegisterMessage(PreparedBlockChan{})
@@ -221,26 +222,23 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 }
 
 /* ----------------------------------------------------------------------
+	//Start: starts the protocol by sending hello msg to all nodes
 ------------------------------------------------------------------------ */
-//Start: starts the protocol by sending hello msg to all nodes
+
 func (bz *BaseDFS) Start() error {
-	var err error
 	// update the mainchainbc file with created nodes' information
 	bz.finalMainChainBCInitialization()
 	// initialization of committee members in side chain
 	//bz.committee = onet.NewRoster(bz.Roster().List[:bz.CommitteeWindow])
-	bz.committeeNodes = bz.Tree().Roster.List[:bz.CommitteeWindow]
-	// -------------------------- BLS CoSi protocol ---------------------------------------
-	// message should be initialized with main chain's genesis block
-	bz.BlsCosi.Msg = []byte{0xFF}
-	// when the side chain should start to work? I need to initialize the committee,
-	// both protocols can't start at the same time if we want a similar committee
-	bz.BlsCosi.TreeNodeInstance = bz.TreeNodeInstance
 
-	err = bz.BlsCosi.Start()
-	if err != nil {
-		return xerrors.New("problem in cosi protocol start (first run):   " + err.Error())
-	}
+	// bz.committeeNodes = bz.Tree().Roster.List[:bz.CommitteeWindow]
+	// // -------------------------- BLS CoSi protocol ---------------------------------------
+	// // message should be initialized with main chain's genesis block
+	// bz.BlsCosi.Msg = []byte{0xFF}
+	// // when the side chain should start to work? I need to initialize the committee,
+	// // both protocols can't start at the same time if we want a similar committee
+	// bz.BlsCosi.TreeNodeInstance = bz.TreeNodeInstance
+
 	// ------------------------------------------------------------------------------
 	//bz.Testpor()
 	//vrf.Testvrf()
@@ -275,10 +273,6 @@ func (bz *BaseDFS) DispatchProtocol() error {
 			bz.EpochCount = msg.EpochCount
 
 			bz.helloBaseDFS()
-
-		// this msg is catched in runsimul.go in func Simulate() function and means the baseddfs protocol has finished
-		// case <-bz.DoneBaseDFS:
-		// running = false //TODO: do something about running!
 
 		// ******** ALL nodes recieve this message to sync rounds
 		case msg := <-bz.NewRoundChan:
@@ -350,12 +344,10 @@ func (bz *BaseDFS) DispatchProtocol() error {
 			bz.readBCAndSendtoOthers()
 			log.Lvl2("new round is announced")
 
-		// --------------------------------------------------------
-		// message recieved from BLSCoSi (SideChain):
-		// ******* just the ROOT NODE (blockchain layer one) recieve this msg
-		// --------------------------------------------------------
-		// --- BLSCoSi ---
-		// --------------------------------------------------------
+			// --------------------------------------------------------
+			// message recieved from BLSCoSi (SideChain):
+			// ******* just the ROOT NODE (blockchain layer one) recieve this msg
+			// --------------------------------------------------------
 
 		case sig := <-bz.BlsCosi.FinalSignature:
 			if err := bdnproto.BdnSignature(sig).Verify(bz.BlsCosi.suite, bz.BlsCosi.Msg, bz.Roster().Publics()); err == nil {
@@ -375,6 +367,7 @@ func (bz *BaseDFS) DispatchProtocol() error {
 						bz.BlsCosi.subTrees, _ = protocol.NewBlsProtocolTree(onet.NewTree(bz.committee, bz.Root()), bz.NbrSubTrees) //root should be replaced by sc's round leader
 						bz.BlsCosi.TreeNodeInstance = bz.TreeNodeInstance
 						// next meta block is going to be on top of last summery block (rather than last meta blocks!)
+						log.LLvl2("a summery block Confirmed in Side Chain")
 					}
 					// increase side chain round number
 					bz.SCRoundNumber = bz.SCRoundNumber + 1
@@ -405,25 +398,35 @@ func (bz *BaseDFS) DispatchProtocol() error {
 				_, err = bz.handleBlock(msg)
 	}*/
 	// ------------------------------------------------------------------
+	// this msg is catched in runsimul.go in func Simulate() function and means the baseddfs protocol has finished
+	// case <-bz.DoneBaseDFS:
+	// running = false //TODO: do something about running!
 	return err
 }
 
-func NewTree(treeNode1 []*onet.TreeNode, treeNode2 *onet.TreeNode) {
-	panic("unimplemented")
+/* ------------------------------------------------------------------------
+this function will be called just by ROOT NODE when:
+- at the end of a round duration (when no "I am a leader message is recieved): startTimer starts the timer to detect the rounds that dont have any leader elected (if any)
+and publish an empty block in those rounds
+------------------------------------------------------------------------ */
+func (bz *BaseDFS) startTimer(MCRoundNumber int) {
+	select {
+	case <-time.After(time.Duration(bz.MCRoundDuration) * time.Second):
+		// bz.IsRoot() is here just to make sure!,
+		// bz.MCRoundNumber == MCRoundNumber is for when the round number has changed!,
+		// bz.hasLeader is for when the round number has'nt changed but the leader has been announced
+		if bz.IsRoot() && bz.MCRoundNumber == MCRoundNumber && !bz.hasLeader {
+			log.Lvl2("No leader for round number ", bz.MCRoundNumber, "an empty block is added")
+			bz.NewLeaderChan <- NewLeaderChan{bz.TreeNode(), NewLeader{Leaderinfo: bz.TreeNode(), MCRoundNumber: bz.MCRoundNumber}}
+		}
+	}
 }
 
 /* ----------------------------------------------------------------------
+	finalMainChainBCInitialization initialize the mainchainbc file based on the config params defined in the config file
+	(.toml file of the protocol) the info we hadn't before and we have now is nodes' info that this function add to the mainchainbc file
 ------------------------------------------------------------------------ */
-// Dispatch listen on the different channels
-func (bz *BaseDFS) Dispatch() error {
-	// another dispatch function (DispatchProtocol) is called in runsimul.go that takes care of both chain's protocols
-	return nil
-}
 
-/* ----------------------------------------------------------------------
------------------------------------------------------------------------- */
-//finalMainChainBCInitialization initialize the mainchainbc file based on the config params defined in the config file (.toml file of the protocol)
-// the info we hadn't before and we have now is nodes' info that this function add to the mainchainbc file
 func (bz *BaseDFS) finalMainChainBCInitialization() {
 	var NodeInfoRow []string
 	for _, a := range bz.Roster().List {
@@ -436,7 +439,7 @@ func (bz *BaseDFS) finalMainChainBCInitialization() {
 		// panic(err)
 		xerrors.New("problem creatde while opening bc:   " + err.Error())
 	} else {
-		log.Lvl2("opening bc")
+		log.Lvl3("opening bc")
 	}
 
 	// --- market matching sheet
@@ -466,7 +469,7 @@ func (bz *BaseDFS) finalMainChainBCInitialization() {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.Lvl2("closing bc")
+		log.Lvl3("closing bc")
 	}
 }
 
@@ -500,7 +503,7 @@ func (bz *BaseDFS) readBCPowersAndSeed() (powers map[string]uint64, seed string)
 		log.Lvl2("Raha: ", err)
 		panic(err)
 	} else {
-		log.Lvl2("opening bc")
+		log.Lvl3("opening bc")
 	}
 	//var err error
 	var rows *excelize.Rows
@@ -604,45 +607,54 @@ func (bz *BaseDFS) helloBaseDFS() {
 	// ----------------------------------------
 	if !bz.IsLeaf() {
 		for _, child := range bz.Children() {
-			go func(c *onet.TreeNode) {
-				err := bz.SendTo(c, &HelloBaseDFS{
-					// TODO: do we need to send all of these to all nodes?  or it can be just stored on their blockchain layer 1 (ROOT NODE)
-					ProtocolTimeout:          bz.ProtocolTimeout,
-					PercentageTxPay:          bz.PercentageTxPay,
-					MCRoundDuration:          bz.MCRoundDuration,
-					BlockSize:                bz.BlockSize,
-					SectorNumber:             bz.SectorNumber,
-					NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
-					SimulationSeed:           bz.SimulationSeed,
-					// -- bls cosi
-					nbrSubTrees: bz.NbrSubTrees,
-					threshold:   bz.Threshold,
-				})
-				if err != nil {
-					log.Lvl2(bz.Info(), "couldn't send hello to child", c.Name())
-				}
-			}(child)
+			err := bz.SendTo(child, &HelloBaseDFS{
+				
+				// TODO: do we need to send all of these to all nodes?  or it can be just stored on their blockchain layer 1 (ROOT NODE)
+				ProtocolTimeout:          bz.ProtocolTimeout,
+				PercentageTxPay:          bz.PercentageTxPay,
+				MCRoundDuration:          bz.MCRoundDuration,
+				BlockSize:                bz.BlockSize,
+				SectorNumber:             bz.SectorNumber,
+				NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
+				SimulationSeed:           bz.SimulationSeed,
+				// -- bls cosi
+				nbrSubTrees:     bz.NbrSubTrees,
+				threshold:       bz.Threshold,
+				CommitteeWindow: bz.CommitteeWindow,
+				EpochCount:      bz.EpochCount,
+			})
+			if err != nil {
+				log.Lvl1(bz.Info(), "couldn't send hello to child", child.Name())
+			}
 		}
 	} //ToDo: later check what happens to these go routines!
 
 	// the root node is filling the first block in first round
-	if bz.TreeNodeInstance.IsRoot() {
-		// let other nodes join the protocol first -
-		time.Sleep(time.Duration(len(bz.Roster().List)) * time.Second)
 
-		log.Lvl2(bz.Name(), "Filling round number ", bz.MCRoundNumber)
-		// for the first round we have the root node set as a round leader, so  it is true! and he takes txs from the queue
-		bz.updateBCPowerRound(bz.TreeNode(), true)
-		bz.updateBCTransactionQueueCollect()
-		bz.updateBCTransactionQueueTake()
-		time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
-		bz.readBCAndSendtoOthers()
-		bz.StartTimeOut()
-	}
+	// if bz.TreeNodeInstance.IsRoot() {
+	// 	// let other nodes join the protocol first -
+	// 	time.Sleep(time.Duration(len(bz.Roster().List)) * time.Second)
+
+	// 	log.Lvl2(bz.Name(), "Filling round number ", bz.MCRoundNumber)
+	// 	// for the first round we have the root node set as a round leader, so  it is true! and he takes txs from the queue
+	// 	bz.updateBCPowerRound(bz.TreeNode(), true)
+	// 	bz.updateBCTransactionQueueCollect()
+	// 	bz.updateBCTransactionQueueTake()
+	// 	time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
+	// 	bz.readBCAndSendtoOthers()
+	// 	bz.StartTimeOut()
+
+	// 	// err := bz.BlsCosi.Start()
+	// 	// if err != nil {
+	// 	// 	log.Lvl1(bz.Info(), "couldn't start side  chain")
+	// 	// }
+	// }
 }
 
-/*  this function will be called just by ROOT NODE at the end of timeout for a simulation run
-(the time specified in config file for a protocol simulation run)   */
+/* ----------------------------------------------------------------------
+	this function will be called just by ROOT NODE at the end of timeout for a simulation run
+	(the time specified in config file for a protocol simulation run)
+ ----------------------------------------------------------------------*/
 func (bz *BaseDFS) StartTimeOut() {
 	select {
 	case <-time.After(time.Duration(bz.ProtocolTimeout)):
@@ -651,12 +663,12 @@ func (bz *BaseDFS) StartTimeOut() {
 	}
 }
 
-/* ---------------------------------------------------------------------- */
-//updateBC: by leader
-// each round, adding one row in power table based on the information in market matching sheet,
-// assuming that servers are honest and have honestly publish por for their actice (not expired) contracts,
-// for each storage server and each of their active contract, add the stored file size to their current power
-/* ----------------------------------------------------------------------*/
+/* ----------------------------------------------------------------------
+	updateBC: by leader
+	each round, adding one row in power table based on the information in market matching sheet,
+	assuming that servers are honest and have honestly publish por for their actice (not expired) contracts,
+	for each storage server and each of their active contract, add the stored file size to their current power
+ ----------------------------------------------------------------------*/
 func (bz *BaseDFS) updateBCPowerRound(Leaderinfo *onet.TreeNode, leader bool) {
 	var err error
 	var rows *excelize.Rows
@@ -669,7 +681,7 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo *onet.TreeNode, leader bool) {
 		log.Lvl2("Raha: ", err)
 		panic(err)
 	} else {
-		log.Lvl2(bz.Name(), "opening bc")
+		log.Lvl3(bz.Name(), "opening bc")
 	}
 
 	// looking for last round's seed in the round table sheet in the mainchainbc file
@@ -762,7 +774,7 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo *onet.TreeNode, leader bool) {
 	for rows.Next() {
 		rowNum++
 		if rowNum == 1 {
-			row, err = rows.Columns()
+			row, _ = rows.Columns()
 		} else {
 			row, err = rows.Columns()
 			if err != nil {
@@ -834,7 +846,7 @@ func (bz *BaseDFS) updateBCPowerRound(Leaderinfo *onet.TreeNode, leader bool) {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.Lvl2("closing bc")
+		log.Lvl3("closing bc")
 	}
 }
 
@@ -852,7 +864,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 		log.Lvl2("Raha: ", err)
 		panic(err)
 	} else {
-		log.Lvl2("opening bc")
+		log.Lvl3("opening bc")
 	}
 	// -------------------------------------------------------------------------------
 	// each round, adding one row in power table based on the information in market matching sheet,
@@ -1021,11 +1033,11 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 				panic(err)
 			} else {
 				if newTransactionRow[0] == "TxPor" {
-					log.Lvl2("a TxPor added to queue in round number", bz.MCRoundNumber)
+					log.Lvl3("a TxPor added to queue in round number", bz.MCRoundNumber)
 				} else if newTransactionRow[0] == "TxStoragePayment" {
-					log.Lvl2("a TxStoragePayment added to queue in round number", bz.MCRoundNumber)
+					log.Lvl3("a TxStoragePayment added to queue in round number", bz.MCRoundNumber)
 				} else if newTransactionRow[0] == "TxContractPropose" {
-					log.Lvl2("a TxContractPropose added to queue in round number", bz.MCRoundNumber)
+					log.Lvl3("a TxContractPropose added to queue in round number", bz.MCRoundNumber)
 				}
 			}
 		}
@@ -1102,7 +1114,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.Lvl2("closing bc")
+		log.Lvl3("closing bc")
 		log.Lvl2(bz.Name(), " finished collecting new transactions to queue in round number ", bz.MCRoundNumber)
 	}
 }
@@ -1122,7 +1134,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 		log.Lvl2("Raha: ", err)
 		panic(err)
 	} else {
-		log.Lvl2("opening bc")
+		log.Lvl3("opening bc")
 	}
 
 	var accumulatedTxSize, txsize int
@@ -1393,28 +1405,18 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.Lvl2("closing bc")
+		log.Lvl3("closing bc")
 		log.Lvl2(bz.Name(), " Finished taking transactions from queue (FIFO) into new block in round number ", bz.MCRoundNumber)
 	}
 }
 
-/* ------------------------------------------------------------------------
-this function will be called just by ROOT NODE when:
-- at the end of a round duration (when no "I am a leader message is recieved): startTimer starts the timer to detect the rounds that dont have any leader elected (if any)
-and publish an empty block in those rounds
--
+/* ----------------------------------------------------------------------
+			 Dispatch listen on the different channels
 ------------------------------------------------------------------------ */
-func (bz *BaseDFS) startTimer(MCRoundNumber int) {
-	select {
-	case <-time.After(time.Duration(bz.MCRoundDuration) * time.Second):
-		// bz.IsRoot() is here just to make sure!,
-		// bz.MCRoundNumber == MCRoundNumber is for when the round number has changed!,
-		// bz.hasLeader is for when the round number has'nt changed but the leader has been announced
-		if bz.IsRoot() && bz.MCRoundNumber == MCRoundNumber && !bz.hasLeader {
-			log.Lvl2("No leader for round number ", bz.MCRoundNumber, "an empty block is added")
-			bz.NewLeaderChan <- NewLeaderChan{bz.TreeNode(), NewLeader{Leaderinfo: bz.TreeNode(), MCRoundNumber: bz.MCRoundNumber}}
-		}
-	}
+
+func (bz *BaseDFS) Dispatch() error {
+	// another dispatch function (DispatchProtocol) is called in runsimul.go that takes care of both chain's protocols
+	return nil
 }
 
 /* ----------------------------------------------------------------------
@@ -1821,7 +1823,7 @@ func (bz *BaseDFS) Testpor() {
 	Tau, pf := por.RandomizedFileStoring(sk, por.GenerateFile(bz.SectorNumber), bz.SectorNumber)
 	p := por.CreatePoR(pf, bz.SectorNumber, bz.SimulationSeed)
 	d, _ := por.VerifyPoR(pk, Tau, p, bz.SectorNumber, bz.SimulationSeed)
-	if d == false {
+	if !d {
 		log.Lvl2(d)
 	}
 }

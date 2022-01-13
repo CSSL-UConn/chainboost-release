@@ -124,7 +124,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberO
 			return nil
 		})
 		if server.ServerIdentity.ID.Equal(sc.Tree.Root.ServerIdentity.ID) {
-			log.Lvl2(serverAddress, "is root-node, will start protocol")
+			log.Lvl2(serverAddress, "will start protocol")
 			rootSim = sim
 			rootSC = sc
 		}
@@ -135,7 +135,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberO
 		// If this cothority has the root-server, it will start the simulation
 		log.Lvl2("Starting protocol", simul, "on server", rootSC.Server.ServerIdentity.Address)
 		// Raha: I want to see the list of nodes!
-		log.Lvl2("Raha: Tree used in BaseDfs is", rootSC.Tree.Roster.List)
+		log.Lvl4("Raha: Tree used in BaseDfs is", rootSC.Tree.Roster.List)
 		// First count the number of available children
 		//childrenWait := monitor.NewTimeMeasure("ChildrenWait")
 		wait := true
