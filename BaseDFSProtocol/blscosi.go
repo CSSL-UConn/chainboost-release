@@ -83,7 +83,7 @@ type BlsCosi struct {
 
 // raha: changed this from
 //type CreateProtocolFunction func(name string, t *onet.Tree, sid onet.ServiceID) (onet.ProtocolInstance, error)
-// to:
+// to: (what's the difference?!)
 type CreateProtocolFunction func(name string, t *onet.Tree, sid onet.ServiceID) (onet.ProtocolInstance, error)
 
 // NewDefaultProtocol is the default protocol function used for registration

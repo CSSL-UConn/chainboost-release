@@ -140,24 +140,27 @@ func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberO
 		//childrenWait := monitor.NewTimeMeasure("ChildrenWait")
 		wait := true
 		for wait {
-			// Raha: the protocols are instanciated here:
+			// Raha: the protocols are created and instanciated here:
 			//p, err := rootSC.Overlay.CreateProtocol("Count", rootSC.Tree, onet.NilServiceID)
 			//p, err := rootSC.Overlay.CreateProtocol("OpinionGathering", rootSC.Tree, onet.NilServiceID)
+
+			// raha: BaseDfs protocol is created here => call to CreateProtocol() => call an empty Dispatch()
 			p, err := rootSC.Overlay.CreateProtocol("BaseDFS", rootSC.Tree, onet.NilServiceID)
 			if err != nil {
 				return xerrors.New("couldn't create protocol: " + err.Error())
 			}
+
 			//proto := p.(*manage.ProtocolCount)
 			//proto := p.(*manage.ProtocolOpinionGathering)
 			// ---------------------------------------------------------------
-			//raha: BLSCoSi protocol
-			//ToDo: is the same tree of nodes being used for both protocols?
+			// raha: BLSCoSi protocol
+			// raha: BlsCosi protocol is created here => call to CreateProtocol() => call an empty Dispatch()
 			pi, err := rootSC.Overlay.CreateProtocol("bdnCoSiProto", rootSC.Tree, onet.NilServiceID)
 			if err != nil {
 				return xerrors.New("couldn't create protocol: " + err.Error())
 			}
 			// --------------------------------------------------------
-			// raha: BlsCosi protocol is created here => call to CreateProtocol() => call an empty Dispatch()
+
 			cosiProtocol := pi.(*BaseDFSProtocol.BlsCosi)
 			cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol // Raha: it doesn't call any fuunction! just initializtion of methods that is going to be used later
 			//cosiProtocol.CreateProtocol = rootService.CreateProtocol //raha: it used to be initialized by this function call
@@ -171,7 +174,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberO
 				}
 			}
 			// ---------------------------------------------------------------
-			// raha: BaseDfs protocol is created here => call to CreateProtocol() => call an empty Dispatch()
+
 			basedfsprotocol := p.(*BaseDFSProtocol.BaseDFS)
 			//basedfsprotocol.SetTimeout(time.Duration(TimeOut) * time.Second)
 			// raha: finally passing our system-wide configurations to our protocol
