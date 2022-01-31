@@ -42,7 +42,7 @@ func NewBdnCosi(n *onet.TreeNodeInstance, vf VerificationFn, subProtocolName str
 	mbc := c.(*BlsCosi)
 	mbc.Sign = bdn.Sign
 	mbc.Verify = bdn.Verify
-	mbc.Aggregate = aggregate
+	mbc.Aggregate = Aggregate
 
 	return mbc, nil
 }
@@ -65,13 +65,13 @@ func NewSubBdnCosi(n *onet.TreeNodeInstance, vf VerificationFn, suite *pairing.S
 	subCosi := pi.(*SubBlsCosi)
 	subCosi.Sign = bdn.Sign
 	subCosi.Verify = bdn.Verify
-	subCosi.Aggregate = aggregate
+	subCosi.Aggregate = Aggregate
 
 	return subCosi, nil
 }
 
 // aggregate uses the robust aggregate algorithm to aggregate the signatures.
-func aggregate(suite pairing.Suite, mask *sign.Mask, sigs [][]byte) ([]byte, error) {
+func Aggregate(suite pairing.Suite, mask *sign.Mask, sigs [][]byte) ([]byte, error) {
 	sig, err := bdn.AggregateSignatures(suite, sigs, mask)
 	if err != nil {
 		return nil, err

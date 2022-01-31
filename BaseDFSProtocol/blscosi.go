@@ -32,8 +32,8 @@ func init() {
 	log.ErrFatal(err)
 }
 
-const defaultTimeout = 10 * time.Second
-const defaultSubleaderFailures = 2
+const DefaultTimeout = 10 * time.Second
+const DefaultSubleaderFailures = 2
 
 // VerificationFn is called on every node. Where msg is the message that is
 // co-signed and the data is additional data for verification.
@@ -67,15 +67,15 @@ type BlsCosi struct {
 	Threshold         int
 	FinalSignature    chan []byte // final signature that is sent back to client
 
-	stoppedOnce      sync.Once
-	subProtocolsLock sync.Mutex
-	subProtocols     []*SubBlsCosi
-	subProtocolName  string
-	verificationFn   VerificationFn
-	suite            *pairing.SuiteBn256
-	subTrees         protocol.BlsProtocolTree
+	StoppedOnce      sync.Once
+	SubProtocolsLock sync.Mutex
+	SubProtocols     []*SubBlsCosi
+	SubProtocolName  string
+	VerificationFn   VerificationFn
+	Suite            *pairing.SuiteBn256
+	SubTrees         protocol.BlsProtocolTree
 	// raha added
-	blockType string // "metablock", "summeryblock"
+	BlockType string // "metablock", "summeryblock"
 }
 
 // CreateProtocolFunction is a function type which creates a new protocol
@@ -116,17 +116,17 @@ func NewBlsCosi(n *onet.TreeNodeInstance, vf VerificationFn, subProtocolName str
 	c := &BlsCosi{
 		TreeNodeInstance:  n,
 		FinalSignature:    make(chan []byte, 1),
-		Timeout:           defaultTimeout,
-		SubleaderFailures: defaultSubleaderFailures,
+		Timeout:           DefaultTimeout,
+		SubleaderFailures: DefaultSubleaderFailures,
 		Threshold:         DefaultThreshold(nNodes),
 		Sign:              bls.Sign,
 		Verify:            bls.Verify,
-		Aggregate:         aggregate,
-		verificationFn:    vf,
-		subProtocolName:   subProtocolName,
-		suite:             suite,
+		Aggregate:         Aggregate,
+		VerificationFn:    vf,
+		SubProtocolName:   subProtocolName,
+		Suite:             suite,
 		// raha added
-		blockType: DefaultBlockType(),
+		BlockType: DefaultBlockType(),
 	}
 
 	return c, nil
@@ -142,12 +142,12 @@ func (p *BlsCosi) SetNbrSubTree(nbr int) error {
 		return xerrors.New("cannot have more subtrees than nodes")
 	}
 	if p.Threshold == 1 || nbr <= 0 {
-		p.subTrees = []*onet.Tree{}
+		p.SubTrees = []*onet.Tree{}
 		return nil
 	}
 
 	var err error
-	p.subTrees, err = protocol.NewBlsProtocolTree(p.Tree(), nbr)
+	p.SubTrees, err = protocol.NewBlsProtocolTree(p.Tree(), nbr)
 	if err != nil {
 		return xerrors.Errorf("error in tree generation: %v", err)
 	}
@@ -157,14 +157,14 @@ func (p *BlsCosi) SetNbrSubTree(nbr int) error {
 
 // Shutdown stops the protocol
 func (p *BlsCosi) Shutdown() error {
-	p.stoppedOnce.Do(func() {
-		p.subProtocolsLock.Lock()
-		for _, subCosi := range p.subProtocols {
+	p.StoppedOnce.Do(func() {
+		p.SubProtocolsLock.Lock()
+		for _, subCosi := range p.SubProtocols {
 			// we're stopping the root thus it will stop the children
 			// by itself using a broadcasted message
 			subCosi.Shutdown()
 		}
-		p.subProtocolsLock.Unlock()
+		p.SubProtocolsLock.Unlock()
 		close(p.FinalSignature)
 	})
 
@@ -181,12 +181,13 @@ func (p *BlsCosi) Dispatch() error {
 // Start is done only by root and starts the protocol.
 // It also verifies that the protocol has been correctly parameterized.
 func (p *BlsCosi) Start() error {
-	if !p.IsRoot() {
+	//if !p.IsRoot() {
+	if !p.IsCommitteeRoot() {
 		p.Done()
 		return xerrors.New("node must be the root")
 	}
 
-	if p.subTrees == nil {
+	if p.SubTrees == nil {
 		// the default number of subtree is the square root to
 		// distribute the nodes evenly
 		if err := p.SetNbrSubTree(int(math.Sqrt(float64(len(p.Roster().
@@ -214,26 +215,26 @@ func (p *BlsCosi) runSubProtocols() {
 	//defer p.Done()
 
 	// Verification of the data is done before contacting the children
-	if ok := p.verificationFn(p.Msg, p.Data); !ok {
+	if ok := p.VerificationFn(p.Msg, p.Data); !ok {
 		// root should not fail the verification otherwise it would not have started the protocol
 		log.Errorf("verification failed on root node")
 		return
 	}
 
 	// start all subprotocols
-	p.subProtocolsLock.Lock()
-	p.subProtocols = make([]*SubBlsCosi, len(p.subTrees))
-	for i, tree := range p.subTrees {
+	p.SubProtocolsLock.Lock()
+	p.SubProtocols = make([]*SubBlsCosi, len(p.SubTrees))
+	for i, tree := range p.SubTrees {
 		log.Lvlf3("Invoking start sub protocol on %v", tree.Root.ServerIdentity)
 		var err error
-		p.subProtocols[i], err = p.startSubProtocol(tree)
+		p.SubProtocols[i], err = p.startSubProtocol(tree)
 		if err != nil {
-			p.subProtocolsLock.Unlock()
+			p.SubProtocolsLock.Unlock()
 			log.Error(err)
 			return
 		}
 	}
-	p.subProtocolsLock.Unlock()
+	p.SubProtocolsLock.Unlock()
 	log.Lvl3(p.ServerIdentity().Address, "all (raha: sub bls) protocols started")
 
 	// Wait and collect all the signature responses
@@ -264,10 +265,10 @@ func (p *BlsCosi) checkIntegrity() error {
 	if p.CreateProtocol == nil {
 		return fmt.Errorf("no create protocol function specified")
 	}
-	if p.verificationFn == nil {
+	if p.VerificationFn == nil {
 		return fmt.Errorf("verification function cannot be nil")
 	}
-	if p.subProtocolName == "" {
+	if p.SubProtocolName == "" {
 		return fmt.Errorf("sub-protocol name cannot be empty")
 	}
 	if p.Timeout < 500*time.Microsecond {
@@ -292,7 +293,7 @@ func (p *BlsCosi) checkFailureThreshold(numFailure int) bool {
 // startSubProtocol creates, parametrize and starts a subprotocol on a given tree
 // and returns the started protocol.
 func (p *BlsCosi) startSubProtocol(tree *onet.Tree) (*SubBlsCosi, error) {
-	pi, err := p.CreateProtocol(p.subProtocolName, tree, onet.NilServiceID)
+	pi, err := p.CreateProtocol(p.SubProtocolName, tree, onet.NilServiceID)
 	if err != nil {
 		return nil, err
 	}
@@ -320,15 +321,15 @@ func (p *BlsCosi) startSubProtocol(tree *onet.Tree) (*SubBlsCosi, error) {
 // Collect signatures from each sub-leader, restart whereever sub-leaders fail to respond.
 // The collected signatures are already aggregated for a particular group
 func (p *BlsCosi) collectSignatures() (ResponseMap, error) {
-	p.subProtocolsLock.Lock()
-	numSubProtocols := len(p.subProtocols)
+	p.SubProtocolsLock.Lock()
+	numSubProtocols := len(p.SubProtocols)
 	responsesChan := make(chan StructResponse, numSubProtocols)
 	errChan := make(chan error, numSubProtocols)
 	closeChan := make(chan bool)
 	// force to stop pending selects in case of timeout or quick answers
 	defer func() { close(closeChan) }()
 
-	for i, subProtocol := range p.subProtocols {
+	for i, subProtocol := range p.SubProtocols {
 		go func(i int, subProtocol *SubBlsCosi) {
 			for {
 				// this select doesn't have any timeout because a global is used
@@ -339,13 +340,18 @@ func (p *BlsCosi) collectSignatures() (ResponseMap, error) {
 					// quick answer/failure
 					return
 				case <-subProtocol.subleaderNotResponding:
-					subleaderID := p.subTrees[i].Root.Children[0].RosterIndex
+					x1 := p.SubTrees[i].Root
+					x2 := p.SubTrees[i].Root.Children[0]
+					x3 := p.SubTrees[i].Root.Children[0].RosterIndex
+					log.Lvl1(x1, ":", x2, ":", x3)
+
+					subleaderID := p.SubTrees[i].Root.Children[0].RosterIndex
 					log.Lvlf2("(subprotocol %v) subleader with id %d failed, restarting subprotocol", i, subleaderID)
 
 					// generate new tree by adding the current subleader to the end of the
 					// leafs and taking the first leaf for the new subleader.
-					nodes := []int{p.subTrees[i].Root.RosterIndex}
-					for _, child := range p.subTrees[i].Root.Children[0].Children {
+					nodes := []int{p.SubTrees[i].Root.RosterIndex}
+					for _, child := range p.SubTrees[i].Root.Children[0].Children {
 						nodes = append(nodes, child.RosterIndex)
 					}
 
@@ -357,7 +363,7 @@ func (p *BlsCosi) collectSignatures() (ResponseMap, error) {
 					nodes = append(nodes, subleaderID)
 
 					var err error
-					p.subTrees[i], err = protocol.GenSubtree(p.subTrees[i].Roster, nodes)
+					p.SubTrees[i], err = protocol.GenSubtree(p.SubTrees[i].Roster, nodes)
 					if err != nil {
 						errChan <- fmt.Errorf("(subprotocol %v) error in tree generation: %v", i, err)
 						return
@@ -366,15 +372,15 @@ func (p *BlsCosi) collectSignatures() (ResponseMap, error) {
 					// restart subprotocol
 					// send stop signal to old protocol
 					subProtocol.HandleStop(StructStop{subProtocol.TreeNode(), Stop{}})
-					subProtocol, err = p.startSubProtocol(p.subTrees[i])
+					subProtocol, err = p.startSubProtocol(p.SubTrees[i])
 					if err != nil {
 						errChan <- fmt.Errorf("(subprotocol %v) error in restarting of subprotocol: %s", i, err)
 						return
 					}
 
-					p.subProtocolsLock.Lock()
-					p.subProtocols[i] = subProtocol
-					p.subProtocolsLock.Unlock()
+					p.SubProtocolsLock.Lock()
+					p.SubProtocols[i] = subProtocol
+					p.SubProtocolsLock.Unlock()
 				case response := <-subProtocol.subResponse:
 					responsesChan <- response
 					return
@@ -382,7 +388,7 @@ func (p *BlsCosi) collectSignatures() (ResponseMap, error) {
 			}
 		}(i, subProtocol)
 	}
-	p.subProtocolsLock.Unlock()
+	p.SubProtocolsLock.Unlock()
 
 	// handle answers from all parallel threads
 	responseMap := make(ResponseMap)
@@ -392,8 +398,11 @@ func (p *BlsCosi) collectSignatures() (ResponseMap, error) {
 	for numSubProtocols > 0 && numSignature < p.Threshold-1 && !p.checkFailureThreshold(numFailure) {
 		select {
 		case res := <-responsesChan:
-			publics := p.Publics()
-			mask, err := sign.NewMask(p.suite, publics, nil)
+			// changed public from:
+			//publics := p.Publics()
+			// to:
+			publics := p.SubTrees[0].Roster.Publics()
+			mask, err := sign.NewMask(p.Suite, publics, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -435,23 +444,26 @@ func (p *BlsCosi) collectSignatures() (ResponseMap, error) {
 // Sign the message with this node and aggregates with all child signatures (in structResponses)
 // Also aggregates the child bitmasks
 func (p *BlsCosi) generateSignature(responses ResponseMap) (BlsSignature, error) {
-	publics := p.Publics()
+	// changed public from:
+	//publics := p.Publics()
+	// to:
+	publics := p.SubTrees[0].Roster.Publics()
 
 	//generate personal mask
-	personalMask, err := sign.NewMask(p.suite, publics, p.Public())
+	personalMask, err := sign.NewMask(p.Suite, publics, p.Public())
 	if err != nil {
 		return nil, err
 	}
 
 	// generate personal signature and append to other sigs
-	personalSig, err := p.Sign(p.suite, p.Private(), p.Msg)
+	personalSig, err := p.Sign(p.Suite, p.Private(), p.Msg)
 	if err != nil {
 		return nil, err
 	}
 
 	// even if there is only one, it is aggregated to include potential processing
 	// done during the aggregation
-	agg, err := p.Aggregate(p.suite, personalMask, [][]byte{personalSig})
+	agg, err := p.Aggregate(p.Suite, personalMask, [][]byte{personalSig})
 	if err != nil {
 		return nil, err
 	}
@@ -464,7 +476,7 @@ func (p *BlsCosi) generateSignature(responses ResponseMap) (BlsSignature, error)
 	}
 
 	// Aggregate all signatures
-	sig, err := p.makeAggregateResponse(p.suite, publics, responses)
+	sig, err := p.makeAggregateResponse(p.Suite, publics, responses)
 	if err != nil {
 		log.Lvlf2("%v failed to create aggregate signature", p.ServerIdentity())
 		return nil, err
@@ -524,3 +536,12 @@ func (p *BlsCosi) makeAggregateResponse(suite pairing.Suite, publics []kyber.Poi
 // func aggregate(suite pairing.Suite, mask *sign.Mask, sigs [][]byte) ([]byte, error) {
 // 	return bls.AggregateSignatures(suite, sigs...)
 // }
+
+// --------------------------------   raha: added   --------------------------------
+func (p *BlsCosi) IsCommitteeRoot() bool {
+	if p.TreeNode().Name() == p.SubTrees[0].Root.Name() {
+		return true
+	} else {
+		return false
+	}
+}

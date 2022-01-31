@@ -166,7 +166,7 @@ func (d *Localhost) Deploy(rc *RunConfig) error {
 	d.PreScript = rc.Get("PreScript")
 	if d.PreScript != "" {
 		//raha added next 2 line
-		pwd := "/Users/raha/Documents/GitHub/basedfs/simul/chainBoostFiles/"
+		pwd := "/Users/raha/Documents/GitHub/Basedfs-newBranch/basedfs/simul/chainBoostFiles/"
 		pwd = pwd + d.PreScript
 		_, err := os.Stat(pwd /*d.PreScript*/)
 		if !os.IsNotExist(err) {
@@ -222,7 +222,7 @@ func (d *Localhost) Start(args ...string) error {
 		if err != nil {
 			return xerrors.Errorf("error deploying PreScript: " + err.Error() + " " + outStr)
 		}
-		log.Lvl1(outStr)
+		//log.Lvl1(outStr)
 	}
 	// raha: commented. can we uste monitor  or not?!
 	// err := monitor.ConnectSink("localhost:" + strconv.Itoa(d.monitorPort))

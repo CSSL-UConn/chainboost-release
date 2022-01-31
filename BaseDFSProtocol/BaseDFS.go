@@ -39,9 +39,6 @@ import (
 	"github.com/basedfs/blockchain"
 	"github.com/basedfs/blscosi/bdnproto"
 	"github.com/basedfs/blscosi/protocol"
-
-	//"github.com/basedfs/blscosi/bdnproto"
-	//"github.com/basedfs/blscosi/protocol"
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"github.com/basedfs/por"
@@ -54,10 +51,6 @@ import (
 /* ------------------------------------------------------------------------------------------------
 				--------------------------   TYPES  --------------------------------
 ------------------------------------------------------------------------------------------------  */
-
-//  -------------------  Transactions and Block Structurse -----------------
-/* -------------------------------------------------------------------- */
-
 // ------  types used for communication (msgs) -------------------------
 /* Hello is sent down the tree from the root node, every node who gets it starts the protocol and send it to its children */
 type HelloBaseDFS struct {
@@ -69,11 +62,12 @@ type HelloBaseDFS struct {
 	SectorNumber             int
 	NumberOfPayTXsUpperBound int
 	SimulationSeed           int
-	nbrSubTrees              int
-	threshold                int
 	SCRoundDuration          int
 	CommitteeWindow          int
 	EpochCount               int
+	// bls cosi config
+	NbrSubTrees int
+	Threshold   int
 }
 type HelloChan struct {
 	*onet.TreeNode
@@ -81,8 +75,8 @@ type HelloChan struct {
 }
 
 type NewLeader struct {
-	LeaderName    string
-	MCRoundNumber int
+	LeaderRosterIndex int
+	MCRoundNumber     int
 }
 type NewLeaderChan struct {
 	*onet.TreeNode
@@ -98,6 +92,25 @@ type NewRoundChan struct {
 	NewRound
 }
 
+// ----------   side chain blscosi   ----------------------------------------------------------
+// channel used by side chain's leader in each side chain's round
+type RtLSideChainNewRound struct {
+	SCRoundNumber             int
+	CommitteeNodesRosterIndex []int
+}
+type RtLSideChainNewRoundChan struct {
+	*onet.TreeNode
+	RtLSideChainNewRound
+}
+type LtRSideChainNewRound struct { //fix this
+	NewRound      bool
+	SCRoundNumber int
+}
+type LtRSideChainNewRoundChan struct {
+	*onet.TreeNode
+	LtRSideChainNewRound
+}
+
 //  BaseDFS is the main struct for running the protocol ------------
 type BaseDFS struct {
 	// the node we are represented-in
@@ -110,24 +123,29 @@ type BaseDFS struct {
 	// channel to let nodes that the next round's leader has been specified
 	NewLeaderChan chan NewLeaderChan
 	// the suite we use
-	//suite network.Suite
+	//  suite network.Suite
 	// to match the suit in blscosi
-	suite *pairing.SuiteBn256
+	Suite *pairing.SuiteBn256
 	//startBCMeasure *monitor.TimeMeasure
 	// onDoneCallback is the callback that will be called at the end of the protocol
 	//onDoneCallback func() //ToDo: raha: define this function and call it when you want to finish the protocol + check when should it be called
 	// channel to notify when we are done -- when a message is sent through this channel the runsimul.go file will catch it and finish the protocol.
 	DoneBaseDFS chan bool
-	// it is initiated in the start function by root node
-	StartedBaseDFS bool
 	// channel to notify leader elected
 	LeaderProposeChan chan bool
-	// ------------------------------------------------------------------------------------------------------------------
-	//  -----  system-wide configurations params from the config file
-	// ------------------------------------------------------------------
-	//these  params get initialized
-	//for the root node: "after" NewBaseDFSProtocol call (in func: Simulate in file: runsimul.go)
-	//for the rest of nodes node: while joining protocol by the HelloBaseDFS message
+	MCRoundNumber     int
+	SCRoundNumber     int
+	HasLeader         bool
+	// --- just root node use these - these are used for delay evaluation
+	FirstQueueWait  int
+	SecondQueueWait int
+	/* ------------------------------------------------------------------
+	     -----  system-wide configurations params from the config file
+	   ------------------------------------------------------------------
+		these  params get initialized
+		for the root node: "after" NewBaseDFSProtocol call (in func: Simulate in file: runsimul.go)
+		for the rest of nodes node: while joining protocol by the HelloBaseDFS message
+	--------------------------------------------------------------------- */
 	PercentageTxPay          int
 	MCRoundDuration          int
 	BlockSize                int
@@ -135,133 +153,267 @@ type BaseDFS struct {
 	NumberOfPayTXsUpperBound int
 	// ---
 	ProtocolTimeout time.Duration
-	//timeoutMu       sync.Mutex //TODO: why ?
-	SimulationSeed int
+	SimulationSeed  int
 	// -- blscosi related config params
 	NbrSubTrees     int
 	Threshold       int
 	SCRoundDuration int
 	CommitteeWindow int //ToDo: go down
-	// ------------------------------------------------------------------
-	MCRoundNumber int
-	SCRoundNumber int
-	hasLeader     bool
-	// --- just root node use these - these are used for delay evaluation
-	FirstQueueWait  int
-	SecondQueueWait int
-	//-- bls cosi protocol
-	BlsCosi        *BlsCosi
-	committee      *onet.Roster
-	committeeNodes []*network.ServerIdentity
-	EpochCount     int
-	// ------------------------------------------------------------------
-	//ToDo: raha: dol I need these items?
-	//vcMeasure *monitor.TimeMeasure
-	//lock associated
-	//doneLock  sync.Mutex
+	/* ------------------------------------------------------------------
+	 ---------------------------  bls cosi protocol  ---------------
+	--------------------------------------------------------------------- */
+	BlsCosi                   *BlsCosi
+	CommitteeNodesRosterIndex []int
+	EpochCount                int
+	NextSideChainLeader       onet.TreeNodeID
+	// channel used by root node to trigger side chain's leader to run a new round of blscosi for side chain
+	RtLSideChainNewRoundChan chan RtLSideChainNewRoundChan
+	LtRSideChainNewRoundChan chan LtRSideChainNewRoundChan
+	// it is initiated in the start function by root node
+	BlsCosiStarted bool
 }
 
 /* ------------------------------------------------------------------------------------------------
 				-------------------------- FUNCTIONS  -----------------------------
 ------------------------------------------------------------------------------------------------  */
-func init() {
-	//network.RegisterMessage(ProofOfRetTxChan{})
-	//network.RegisterMessage(PreparedBlockChan{})
-	network.RegisterMessage(HelloBaseDFS{})
-	network.RegisterMessage(NewRound{})
-	network.RegisterMessage(NewLeader{})
-	onet.GlobalProtocolRegister("BaseDFS", NewBaseDFSProtocol)
-}
-
-/* ----------------------------------------------------------------------
------------------------------------------------------------------------- */
-// NewBaseDFSProtocol returns a new BaseDFS struct
-func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error) {
-	bz := &BaseDFS{
-		TreeNodeInstance:  n,
-		suite:             pairing.NewSuiteBn256(),
-		DoneBaseDFS:       make(chan bool, 1),
-		LeaderProposeChan: make(chan bool, 1),
-		MCRoundNumber:     1,
-		SCRoundNumber:     1,
-		hasLeader:         false,
-		FirstQueueWait:    0,
-		SecondQueueWait:   0,
-		ProtocolTimeout:   0,
-		StartedBaseDFS:    false,
-	}
-
-	if err := n.RegisterChannel(&bz.HelloChan); err != nil {
-		return bz, err
-	}
-	if err := n.RegisterChannel(&bz.NewRoundChan); err != nil {
-		return bz, err
-	}
-	if err := n.RegisterChannel(&bz.NewLeaderChan); err != nil {
-		return bz, err
-	}
-	// if err := n.RegisterChannelLength(&bz.NewLeaderChan, len(bz.Tree().List())); err != nil {
-	// 	log.Error("Couldn't register channel:    ", err)
-	// }
-
-	bz.committeeNodes = make([]*network.ServerIdentity, 0)
-	// bls key pair for each node for VRF
-	_, bz.ECPrivateKey = vrf.VrfKeygen()
-
-	//--------------- These msgs were used for communication-----------
-	/*
-		bz.viewChangeThreshold = int(math.Ceil(float64(len(bz.Tree().List())) * 2.0 / 3.0))
-		// --------   register channels
-		if err := n.RegisterChannel(&bz.PreparedBlockChan); err != nil {
-			return bz, err
-		}
-		if err := n.RegisterChannel(&bz.ProofOfRetTxChan); err != nil {
-			return bz, err
-		}
-		if err := n.RegisterChannel(&bz.viewchangeChan); err != nil {
-			return bz, err
-		}
-	*/
-	//---------------------------------------------------------------------
-	return bz, nil
-}
 
 /* ----------------------------------------------------------------------
 	//Start: starts the protocol by sending hello msg to all nodes
 ------------------------------------------------------------------------ */
-
 func (bz *BaseDFS) Start() error {
-	bz.StartedBaseDFS = true
 	// update the mainchainbc file with created nodes' information
 	bz.finalMainChainBCInitialization()
-	// initialization of committee members in side chain
-	bz.committee = onet.NewRoster(bz.Roster().List[:bz.CommitteeWindow])
-	bz.committeeNodes = bz.Tree().Roster.List[:bz.CommitteeWindow]
-	// -------------------------- BLS CoSi protocol ---------------------------------------
-	// message should be initialized with main chain's genesis block
-	bz.BlsCosi.Msg = []byte{0xFF}
-	// when the side chain should start to work? I need to initialize the committee,
-	// both protocols can't start at the same time if we want a similar committee
-	bz.BlsCosi.TreeNodeInstance = bz.TreeNodeInstance
+	bz.BlsCosiStarted = true
 	// ------------------------------------------------------------------------------
 	// config params are sent from the leader to the other nodes in helloBasedDfs function
 	bz.helloBaseDFS()
 
 	//------- testing message sending ------
 	// for _, child := range bz.Children() {
-	// 	err := bz.SendTo(child, &NewLeader{ /*Leaderinfo: bz.TreeNode(), */ MCRoundNumber: bz.MCRoundNumber})
+	// 	err := bz.SendTo(child, &HelloBaseDFS{
+	// 		EpochCount: 0,
+	// 	})
 	// 	if err != nil {
-	// 		log.Lvl1(err)
+	// 		return err
 	// 	}
 	// }
 
 	return nil
 }
 
-//ToDO: how defining function type can make a structure dynamic?
-//type DispatchProtocol func() error
+/* ----------------------------------------------------------------------
+			 Dispatch listen on the different channels in main chain protocol
+------------------------------------------------------------------------ */
+func (bz *BaseDFS) Dispatch() error {
+	// another dispatch function (DispatchProtocol) is called in runsimul.go that takes care of both chain's protocols
+	// if !bz.IsRoot() || (bz.IsRoot() && bz.StartedBaseDFS) {
+	// 	bz.DispatchProtocol()
+	// } else {
+	// 	return nil
+	// }
+	// return nil
+	running := true
+	var err error
+
+	for running {
+		select {
+		// -----------------------------------------------------------------------------
+		// ******** ALL nodes recieve this message to join the protocol and get the config values set
+		// -----------------------------------------------------------------------------
+		case msg := <-bz.HelloChan:
+			log.Lvl2(bz.TreeNode().Name(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
+			bz.PercentageTxPay = msg.PercentageTxPay
+			bz.MCRoundDuration = msg.MCRoundDuration
+			bz.BlockSize = msg.BlockSize
+			bz.SectorNumber = msg.SectorNumber
+			bz.NumberOfPayTXsUpperBound = msg.NumberOfPayTXsUpperBound
+			bz.SimulationSeed = msg.SimulationSeed
+			bz.SCRoundDuration = msg.SCRoundDuration
+			bz.CommitteeWindow = msg.CommitteeWindow
+			bz.EpochCount = msg.EpochCount
+			// bls cosi config
+			bz.NbrSubTrees = msg.NbrSubTrees
+			bz.BlsCosi.Threshold = msg.Threshold
+			bz.BlsCosi.Timeout = msg.ProtocolTimeout
+			if msg.NbrSubTrees > 0 {
+				err := bz.BlsCosi.SetNbrSubTree(msg.NbrSubTrees)
+				if err != nil {
+					return err
+				}
+			}
+			bz.helloBaseDFS()
+		// -----------------------------------------------------------------------------
+		// ******** ALL nodes recieve this message to sync rounds
+		// -----------------------------------------------------------------------------
+		case msg := <-bz.NewRoundChan:
+			bz.MCRoundNumber = bz.MCRoundNumber + 1
+			log.Lvl2(bz.Name(), " round number ", bz.MCRoundNumber, " started at ", time.Now().Format(time.RFC3339))
+			var vrfOutput [64]byte
+			toBeHashed := []byte(msg.Seed)
+			proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
+			if !ok {
+				log.Lvl2("error while generating proof")
+			}
+			_, vrfOutput = bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
+			var vrfoutputInt64 uint64
+			buf := bytes.NewReader(vrfOutput[:])
+			err := binary.Read(buf, binary.LittleEndian, &vrfoutputInt64)
+			if err != nil {
+				// log.Lvl2("Panic Raised:\n\n")
+				// panic(err)
+				return xerrors.New("problem creatde after recieving msg from NewRoundChan:   " + err.Error())
+			}
+			// -----------
+			// the criteria for selecting the leader
+			if vrfoutputInt64 < msg.Power {
+				// -----------
+				log.Lvl2(bz.Name(), "I may be elected for round number ", bz.MCRoundNumber)
+				bz.SendTo(bz.Root(), &NewLeader{LeaderRosterIndex: bz.TreeNode().RosterIndex, MCRoundNumber: bz.MCRoundNumber})
+			}
+		// -----------------------------------------------------------------------------
+		// ******* just the ROOT NODE (blockchain layer one) recieve this msg
+		// -----------------------------------------------------------------------------
+		case msg := <-bz.NewLeaderChan:
+			//log.LLvl1("raha test: ", msg.MCRoundNumber)
+			// -----------------------------------------------------
+			// rounds without a leader: in this case the leader info is filled with root node's info, transactions are going to be collected normally but
+			// since the block is empty, no transaction is going to be taken from queues => leader = false
+			// -----------------------------------------------------
+			if msg.LeaderRosterIndex == bz.TreeNode().RosterIndex && bz.MCRoundNumber != 1 && !bz.HasLeader && msg.MCRoundNumber == bz.MCRoundNumber {
+				bz.HasLeader = true
+				bz.updateBCPowerRound(strconv.Itoa(msg.LeaderRosterIndex), false)
+				// in the case of a leader-less round
+				log.Lvl1("final round result: leader roster index: ", msg.LeaderRosterIndex, "(root node) filled round number", bz.MCRoundNumber, "with empty block")
+				bz.updateBCTransactionQueueCollect()
+				bz.readBCAndSendtoOthers()
+				log.Lvl2("new round is announced")
+				continue
+			}
+			// -----------------------------------------------------
+			// normal rounds with a leader => leader = true
+			// -----------------------------------------------------
+			if !bz.HasLeader && msg.MCRoundNumber == bz.MCRoundNumber {
+				// TODO: first validate the leadership proof
+				log.Lvl1("final round result: leader roster index: ", msg.LeaderRosterIndex, " is the round leader for round number ", bz.MCRoundNumber)
+
+				// -----------------------------------------------
+				// dynamically change the side chain's committee with last main chain's leader
+				// the committee nodes is shifted by one and the new leader is added to be used for next epoch's side chain's committee
+				// -----------------------------------------------
+				// --- updating the CommitteeNodesRosterIndex
+				// -----------------------------------------------
+				NextSideChainLeaderRosterIndex := msg.LeaderRosterIndex
+				bz.CommitteeNodesRosterIndex = append([]int{NextSideChainLeaderRosterIndex}, bz.CommitteeNodesRosterIndex[0:bz.NbrSubTrees-2]...)
+				// -----------------------------------------------
+
+				bz.HasLeader = true
+				bz.updateBCPowerRound(strconv.Itoa(msg.LeaderRosterIndex), true)
+				bz.updateBCTransactionQueueCollect()
+				bz.updateBCTransactionQueueTake()
+			} else {
+				log.Lvl2("this round already has a leader!")
+			}
+			//waiting for the time of round duration
+			time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
+			// empty list of elected leaders  in this round
+			for len(bz.NewLeaderChan) > 0 {
+				<-bz.NewLeaderChan
+			}
+			// announce new round and give away required checkleadership info to nodes
+			bz.readBCAndSendtoOthers()
+			log.Lvl2("new round is announced")
+		// -----------------------------------------------------------------------------
+		// next side chain's leader recieves this message
+		// -----------------------------------------------------------------------------
+		case msg := <-bz.RtLSideChainNewRoundChan:
+			log.LLvl1("List of nodes (full tree is): \n")
+			for i, a := range bz.Tree().List() {
+				log.LLvl1(i, " :", a.Name(), ": ", a.RosterIndex, "\n")
+			}
+			bz.SCRoundNumber = msg.SCRoundNumber
+			bz.BlsCosi.Msg = []byte{0xFF}
+			// -----------------------------------------------
+			// --- updating the next side chain's leader
+			// -----------------------------------------------
+			bz.CommitteeNodesRosterIndex = msg.CommitteeNodesRosterIndex
+			var CommitteeNodesServerIdentity []*network.ServerIdentity
+			for _, a := range bz.CommitteeNodesRosterIndex {
+				CommitteeNodesServerIdentity = append(CommitteeNodesServerIdentity, bz.Roster().List[a])
+			}
+			committeeRoster := onet.NewRoster(CommitteeNodesServerIdentity)
+			// --- root should have root index of 0 (this is based on what happens in gen_tree.go)
+			var x = bz.TreeNode()
+			x.RosterIndex = 0 //ToDo: does it make problem for future runs?
+			// ---
+			bz.BlsCosi.SubTrees, err = protocol.NewBlsProtocolTree(onet.NewTree(committeeRoster, x), bz.NbrSubTrees)
+			if err == nil {
+				log.Lvl1("Next bls cosi tree is: ", bz.BlsCosi.SubTrees[0].Roster.List,
+					" with ", bz.Name(), " as Root \n running BlsCosi round number", bz.SCRoundNumber)
+			}
+			// ----
+			err = bz.BlsCosi.Start()
+			if err != nil {
+				return xerrors.New("Problem in cosi protocol run:   " + err.Error())
+			}
+		// -----------------------------------------------------------------------------
+		// ******* just the ROOT NODE (blockchain layer one) recieve this msg
+		// -----------------------------------------------------------------------------
+		case msg := <-bz.LtRSideChainNewRoundChan:
+			log.LLvl1("List of nodes (full tree is): \n")
+			for i, a := range bz.Tree().List() {
+				log.LLvl1(i, " :", a.Name(), ": ", a.RosterIndex, "\n")
+			}
+			bz.SCRoundNumber = msg.SCRoundNumber
+			if bz.MCRoundDuration*bz.EpochCount/bz.SCRoundDuration == bz.SCRoundNumber {
+				// generate and propose summery block (bz.BlsCosi.blockType = "summeryblock")
+				// reset side chain round number
+				bz.SCRoundNumber = 0 // in side chain round number zero the summery blocks are published in side chain
+				// from bc: update msg size with the "summery block"'s block size on side chain
+				// call a function like collect and then take
+			} else {
+				// ------------- Epoch changed -----------
+				if bz.SCRoundNumber == 0 { // i.e. the current published block on side chain is summery block
+					// issue a sync transaction from last recent summery block to main chain
+					// next meta block is going to be on top of last summery block (rather than last meta blocks!)
+					log.LLvl2("a summery block Confirmed in Side Chain")
+
+					if bz.NextSideChainLeader.IsNil() || bz.BlsCosi.SubTrees[0].Search(bz.NextSideChainLeader) != nil {
+						log.LLvl1("error: bz.NextSideChainLeader == nil or bz.NextSideChainLeader is already in the committee")
+					} else {
+						//ToDo: changing next side chain's leader for the next epoch rounds from the last miner in the main chain's window of miners
+						// (also for the next epoch, the side chain's committee has changed to last miners in the main chain's window of miners)
+						bz.NextSideChainLeader = bz.Tree().List()[bz.CommitteeNodesRosterIndex[0]].ID
+					}
+				}
+				// increase side chain round number
+				bz.SCRoundNumber = bz.SCRoundNumber + 1
+				// from bc: update msg size with next "meta block"'s block size on side chain
+				bz.BlsCosi.Msg = []byte{0xFF} // Msg is the meta block
+			}
+			// side chain round duration pause
+			time.Sleep(time.Duration(bz.SCRoundDuration) * time.Second)
+			// --------------------------------------------------------------------
+			//triggering next side chain round leader to run next round of blscosi
+			// --------------------------------------------------------------------
+			err = bz.SendTo(bz.Tree().Search(bz.NextSideChainLeader), &RtLSideChainNewRound{
+				SCRoundNumber:             bz.SCRoundNumber,
+				CommitteeNodesRosterIndex: bz.CommitteeNodesRosterIndex,
+			})
+			if err != nil {
+				log.Lvl2(bz.Name(), "can't send new side chain round msg to", bz.Tree().Search(bz.NextSideChainLeader).Name())
+			}
+			// ------------------------------------------------------------------
+			// this msg is catched in runsimul.go in func Simulate() function and means the baseddfs protocol has finished
+			// -----------------------------------------------------------------------------
+			// case <-bz.DoneBaseDFS:
+			// running = false //TODO: do something about running!
+		}
+	}
+	return err
+}
 
 /* ----------------------------------------------------------------------
+ DispatchProtocol listen on the different channels in side chain protocol
 ------------------------------------------------------------------------ */
 func (bz *BaseDFS) DispatchProtocol() error {
 
@@ -270,42 +422,21 @@ func (bz *BaseDFS) DispatchProtocol() error {
 
 	for running {
 		select {
+
 		// --------------------------------------------------------
 		// message recieved from BLSCoSi (SideChain):
-		// ******* just the ROOT NODE (blockchain layer one) recieve this msg
+		// ******* just the current side chain's leader on recieve this msg
 		// --------------------------------------------------------
 
 		case sig := <-bz.BlsCosi.FinalSignature:
-			if err := bdnproto.BdnSignature(sig).Verify(bz.BlsCosi.suite, bz.BlsCosi.Msg, bz.Roster().Publics()); err == nil {
-				log.LLvl2(bz.BlsCosi.blockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
-				if bz.MCRoundDuration*bz.EpochCount/bz.SCRoundDuration == bz.SCRoundNumber {
-					// generate and propose summery block (bz.BlsCosi.blockType = "summeryblock")
-					// reset side chain round number
-					bz.SCRoundNumber = 0 // in side chain round number zero the summery blocks are published in side chain
-					// from bc: update msg size with the "summery block"'s block size on side chain
-					// call a function like collect and then take
-				} else {
-					if bz.SCRoundNumber == 0 { // i.e. the current published block on side chain is summery block
-						// issue a sync transaction from last recent summery block to main chain
-						// change the committee based on last window of miners
-						// *** use -> func NewTree(roster *Roster, root *TreeNode) *Tree
-						bz.committee = onet.NewRoster(bz.committeeNodes)
-						bz.BlsCosi.subTrees, _ = protocol.NewBlsProtocolTree(onet.NewTree(bz.committee, bz.Root()), bz.NbrSubTrees) //root should be replaced by sc's round leader
-						bz.BlsCosi.TreeNodeInstance = bz.TreeNodeInstance
-						// next meta block is going to be on top of last summery block (rather than last meta blocks!)
-						log.LLvl2("a summery block Confirmed in Side Chain")
-					}
-					// increase side chain round number
-					bz.SCRoundNumber = bz.SCRoundNumber + 1
-					// from bc: update msg size with next "meta block"'s block size on side chain
-					bz.BlsCosi.Msg = []byte{0xFF} // Msg is the meta block
-				}
-				// ----------- Next side chain round run -------------------------------
-				time.Sleep(time.Duration(bz.SCRoundDuration) * time.Second)
-				// triggering next CoSi round on collected block/transactions
-				err = bz.BlsCosi.Start()
+			if err := bdnproto.BdnSignature(sig).Verify(bz.BlsCosi.Suite, bz.BlsCosi.Msg, bz.BlsCosi.SubTrees[0].Roster.Publics()); err == nil {
+				log.LLvl2(bz.Name(), " : ", bz.BlsCosi.BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
+				err := bz.SendTo(bz.Root(), &LtRSideChainNewRound{
+					NewRound:      true,
+					SCRoundNumber: bz.SCRoundNumber,
+				})
 				if err != nil {
-					return xerrors.New("Problem in cosi protocol run:   " + err.Error())
+					log.Lvl2(bz.Info(), "can't send new round msg to", bz.Root().Name())
 				}
 			} else {
 				return xerrors.New("The recieved final signature is not accepted:  " + err.Error())
@@ -326,7 +457,7 @@ func (bz *BaseDFS) startTimer(MCRoundNumber int) {
 		// bz.IsRoot() is here just to make sure!,
 		// bz.MCRoundNumber == MCRoundNumber is for when the round number has changed!,
 		// bz.hasLeader is for when the round number has'nt changed but the leader has been announced
-		if bz.IsRoot() && bz.MCRoundNumber == MCRoundNumber && !bz.hasLeader {
+		if bz.IsRoot() && bz.MCRoundNumber == MCRoundNumber && !bz.HasLeader {
 			log.Lvl2("No leader for round number ", bz.MCRoundNumber, "an empty block is added")
 			bz.NewLeaderChan <- NewLeaderChan{bz.TreeNode(), NewLeader{ /*Leaderinfo: bz.TreeNode(), */ MCRoundNumber: bz.MCRoundNumber}}
 		}
@@ -344,7 +475,7 @@ func (bz *BaseDFS) finalMainChainBCInitialization() {
 		NodeInfoRow = append(NodeInfoRow, a.String())
 	}
 	var err error
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/Basedfs-newBranch/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		// log.Lvl2("Raha: ", err)
 		// panic(err)
@@ -375,7 +506,7 @@ func (bz *BaseDFS) finalMainChainBCInitialization() {
 		panic(err)
 	}
 
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/Basedfs-newBranch/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -384,13 +515,15 @@ func (bz *BaseDFS) finalMainChainBCInitialization() {
 	}
 }
 
-/* each round THE ROOT NODE send a msg to all nodes,
+/* ----------------------------------------------------------------------
+each round THE ROOT NODE send a msg to all nodes,
 let other nodes know that the new round has started and the information they need
-from blockchain to check if they are next round's leader */
+from blockchain to check if they are next round's leader
+------------------------------------------------------------------------ */
 func (bz *BaseDFS) readBCAndSendtoOthers() {
 	powers, seed := bz.readBCPowersAndSeed()
 	bz.MCRoundNumber = bz.MCRoundNumber + 1
-	bz.hasLeader = false
+	bz.HasLeader = false
 	for _, b := range bz.Tree().List() {
 		power, found := powers[b.ServerIdentity.String()]
 		if found && !b.IsRoot() {
@@ -409,7 +542,7 @@ func (bz *BaseDFS) readBCAndSendtoOthers() {
 /* ----------------------------------------------------------------------*/
 func (bz *BaseDFS) readBCPowersAndSeed() (powers map[string]uint64, seed string) {
 	minerspowers := make(map[string]uint64)
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/Basedfs-newBranch/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -514,38 +647,15 @@ func (bz *BaseDFS) readBCPowersAndSeed() (powers map[string]uint64, seed string)
 ------------------------------------------------------------------------ */
 //helloBaseDFS
 func (bz *BaseDFS) helloBaseDFS() {
+	var err error
 	log.Lvl2(bz.TreeNode().Name(), " joined to the protocol")
-	// ----------------------------------------
-	if !bz.IsLeaf() {
-		for _, child := range bz.Children() {
-			err := bz.SendTo(child, &HelloBaseDFS{
-
-				//TODO: do we need to send all of these to all nodes?  or it can be just stored on their blockchain layer 1 (ROOT NODE)
-				ProtocolTimeout:          bz.ProtocolTimeout,
-				PercentageTxPay:          bz.PercentageTxPay,
-				MCRoundDuration:          bz.MCRoundDuration,
-				BlockSize:                bz.BlockSize,
-				SectorNumber:             bz.SectorNumber,
-				NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
-				SimulationSeed:           bz.SimulationSeed,
-				// -- bls cosi
-				nbrSubTrees:     bz.NbrSubTrees,
-				threshold:       bz.Threshold,
-				CommitteeWindow: bz.CommitteeWindow,
-				EpochCount:      bz.EpochCount,
-			})
-			if err != nil {
-				log.Lvl1(bz.Info(), "couldn't send hello to child", child.Name())
-			}
-		}
-	} //ToDo: later check what happens to these go routines!
-
-	// the root node is filling the first block in first round
-
-	if bz.IsRoot() {
+	// ----------------------------------------------------------------------------------------------
+	// -------------------------- main chain's protocol ---------------------------------------
+	// ----------------------------------------------------------------------------------------------
+	/* if bz.IsRoot() {
 		// let other nodes join the protocol first -
 		time.Sleep(time.Duration(len(bz.Roster().List)) * time.Second)
-
+		// the root node is filling the first block in first round
 		log.Lvl2(bz.Name(), "Filling round number ", bz.MCRoundNumber)
 		// for the first round we have the root node set as a round leader, so  it is true! and he takes txs from the queue
 		bz.updateBCPowerRound(bz.TreeNode().Name(), true)
@@ -553,11 +663,73 @@ func (bz *BaseDFS) helloBaseDFS() {
 		bz.updateBCTransactionQueueTake()
 		time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
 		bz.readBCAndSendtoOthers()
-		err := bz.BlsCosi.Start()
+	} */
+	// ----------------------------------------------------------------------------------------------
+	// -------------------------- BLS CoSi protocol ---------------------------------------
+	// ----------------------------------------------------------------------------------------------
+	// all nodes get here and start to listen for blscosi protocol messages
+	go func() {
+		err := bz.DispatchProtocol()
 		if err != nil {
-			log.Lvl1(bz.Info(), "couldn't start side  chain")
+			log.Lvl1("protocol dispatch calling error: " + err.Error())
 		}
+	}()
+
+	if bz.IsRoot() && bz.BlsCosiStarted {
+		log.LLvl1("List of nodes (full tree is): \n")
+		for i, a := range bz.Tree().List() {
+			log.LLvl1(i, " :", a.Name(), ": ", a.RosterIndex, "\n")
+		}
+		// -----------------------------------------------
+		// --- initializing side chain's msg and side chain's committee roster index for the second run and the next runs
+		// -----------------------------------------------
+		for i := 0; i < bz.CommitteeWindow; i++ {
+			bz.CommitteeNodesRosterIndex = append(bz.CommitteeNodesRosterIndex, i)
+		}
+		bz.BlsCosi.Msg = []byte{0xFF}
+		// -----------------------------------------------
+		// --- initializing next side chain's leader
+		// -----------------------------------------------
+		log.Lvl1(bz.Tree().List()[bz.CommitteeWindow+1].RosterIndex)
+		log.LLvl1(bz.CommitteeNodesRosterIndex[:bz.CommitteeWindow-2])
+		bz.CommitteeNodesRosterIndex = append([]int{bz.Tree().List()[bz.CommitteeWindow+1].RosterIndex}, bz.CommitteeNodesRosterIndex[:bz.CommitteeWindow-2]...)
+		bz.NextSideChainLeader = bz.Tree().List()[bz.CommitteeWindow+1].ID
+		// protocol timeout
 		bz.StartTimeOut()
+	}
+	// -----------------------------------------------
+	// run bls cosi for the very first time
+	// -----------------------------------------------
+	if bz.Tree().List()[bz.CommitteeWindow].ID == bz.TreeNode().ID {
+		// -----------------------------------------------
+		// --- initializing side chain's msg and side chain's committee roster index for the first run
+		// -----------------------------------------------
+		for i := 0; i < bz.CommitteeWindow; i++ {
+			bz.CommitteeNodesRosterIndex = append(bz.CommitteeNodesRosterIndex, i)
+		}
+		bz.BlsCosi.Msg = []byte{0xFF}
+		bz.CommitteeNodesRosterIndex = append([]int{bz.Tree().List()[bz.CommitteeWindow].RosterIndex}, bz.CommitteeNodesRosterIndex[:bz.CommitteeWindow-2]...)
+		var CommitteeNodesServerIdentity []*network.ServerIdentity
+		for _, a := range bz.CommitteeNodesRosterIndex {
+			CommitteeNodesServerIdentity = append(CommitteeNodesServerIdentity, bz.Roster().List[a])
+		}
+		committeeRoster := onet.NewRoster(CommitteeNodesServerIdentity)
+		// --- root should have root index of 0 (this is based on what happens in gen_tree.go)
+		var x = bz.Tree().List()[bz.CommitteeWindow]
+		x.RosterIndex = 0 // ToDo: how this will affect next runs?
+		// ---
+		bz.BlsCosi.SubTrees, err = protocol.NewBlsProtocolTree(onet.NewTree(committeeRoster, x), bz.NbrSubTrees)
+		if err == nil {
+			log.Lvl1("First bls cosi tree is: ", bz.BlsCosi.SubTrees[0].Roster.List,
+				" with ", bz.BlsCosi.Name(), " as Root \n starting BlsCosi")
+		} else {
+			log.LLvl1("Raha: error: ", err)
+		}
+		// ------------------------------------------
+		err = bz.BlsCosi.Start() // first leader in side chain is this node
+		if err != nil {
+			log.Lvl1(bz.Info(), "couldn't start side chain")
+		}
 	}
 }
 
@@ -586,7 +758,7 @@ func (bz *BaseDFS) updateBCPowerRound(LeaderName string, leader bool) {
 	var seed string
 	rowNumber := 0
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/Basedfs-newBranch/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -751,7 +923,7 @@ func (bz *BaseDFS) updateBCPowerRound(LeaderName string, leader bool) {
 		panic(err)
 	}
 	// ----
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/Basedfs-newBranch/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -763,13 +935,12 @@ func (bz *BaseDFS) updateBCPowerRound(LeaderName string, leader bool) {
 /* ----------------------------------------------------------------------
     updateBC: this is a connection between first layer of blockchain - ROOT NODE - on the second layer - xlsx file -
 ------------------------------------------------------------------------ */
-
 func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 	var err error
 	var rows *excelize.Rows
 	var row []string
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/Basedfs-newBranch/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -1019,7 +1190,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 	// -------------------------------------------------------------------------------
 
 	// ---
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/Basedfs-newBranch/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -1039,7 +1210,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	bz.FirstQueueWait = 0
 	bz.SecondQueueWait = 0
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/Basedfs-newBranch/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -1310,7 +1481,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	}
 
 	// ----
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/Basedfs-newBranch/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -1319,149 +1490,6 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 		log.Lvl2(bz.Name(), " Finished taking transactions from queue (FIFO) into new block in round number ", bz.MCRoundNumber)
 	}
 }
-
-/* ----------------------------------------------------------------------
-			 Dispatch listen on the different channels
------------------------------------------------------------------------- */
-
-func (bz *BaseDFS) Dispatch() error {
-	// another dispatch function (DispatchProtocol) is called in runsimul.go that takes care of both chain's protocols
-	// if !bz.IsRoot() || (bz.IsRoot() && bz.StartedBaseDFS) {
-	// 	bz.DispatchProtocol()
-	// } else {
-	// 	return nil
-	// }
-	// return nil
-	running := true
-	var err error
-
-	for running {
-		select {
-		// ******** ALL nodes recieve this message to join the protocol and get the config values set
-		case msg := <-bz.HelloChan:
-			log.Lvl2(bz.TreeNode().Name(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
-			bz.PercentageTxPay = msg.PercentageTxPay
-			bz.MCRoundDuration = msg.MCRoundDuration
-			bz.BlockSize = msg.BlockSize
-			bz.SectorNumber = msg.SectorNumber
-			bz.NumberOfPayTXsUpperBound = msg.NumberOfPayTXsUpperBound
-			bz.SimulationSeed = msg.SimulationSeed
-			bz.NbrSubTrees = msg.nbrSubTrees
-			bz.Threshold = msg.threshold
-			bz.SCRoundDuration = msg.SCRoundDuration
-			bz.CommitteeWindow = msg.CommitteeWindow
-			bz.EpochCount = msg.EpochCount
-			bz.helloBaseDFS()
-
-		// ******** ALL nodes recieve this message to sync rounds
-		case msg := <-bz.NewRoundChan:
-			bz.MCRoundNumber = bz.MCRoundNumber + 1
-			log.Lvl2(bz.Name(), " round number ", bz.MCRoundNumber, " started at ", time.Now().Format(time.RFC3339))
-			var vrfOutput [64]byte
-			toBeHashed := []byte(msg.Seed)
-			proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
-			if !ok {
-				log.Lvl2("error while generating proof")
-			}
-			_, vrfOutput = bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
-			var vrfoutputInt64 uint64
-			buf := bytes.NewReader(vrfOutput[:])
-			err := binary.Read(buf, binary.LittleEndian, &vrfoutputInt64)
-			if err != nil {
-				// log.Lvl2("Panic Raised:\n\n")
-				// panic(err)
-				return xerrors.New("problem creatde after recieving msg from NewRoundChan:   " + err.Error())
-			}
-			// -----------
-			// the criteria for selecting the leader
-			if vrfoutputInt64 < msg.Power {
-				// -----------
-				log.Lvl2(bz.Name(), "I may be elected for round number ", bz.MCRoundNumber)
-				bz.SendTo(bz.Root(), &NewLeader{LeaderName: bz.TreeNode().Name(), MCRoundNumber: bz.MCRoundNumber})
-			}
-
-		// ******* just the ROOT NODE (blockchain layer one) recieve this msg
-		case msg := <-bz.NewLeaderChan:
-			//log.LLvl1("raha test: ", msg.MCRoundNumber)
-			// -----------------------------------------------------
-			// rounds without a leader: in this case the leader info is filled with root node's info, transactions are going to be collected normally but
-			// since the block is empty, no transaction is going to be taken from queues => leader = false
-			// -----------------------------------------------------
-			if msg.LeaderName == bz.TreeNode().Name() && bz.MCRoundNumber != 1 && !bz.hasLeader && msg.MCRoundNumber == bz.MCRoundNumber {
-				bz.hasLeader = true
-				bz.updateBCPowerRound(msg.LeaderName, false)
-				// in the case of a leader-less round
-				log.Lvl1("final round result: ", msg.LeaderName, "(root node) filled round number", bz.MCRoundNumber, "with empty block")
-				bz.updateBCTransactionQueueCollect()
-				bz.readBCAndSendtoOthers()
-				log.Lvl2("new round is announced")
-				continue
-			}
-			// -----------------------------------------------------
-			// normal rounds with a leader => leader = true
-			// -----------------------------------------------------
-			if !bz.hasLeader && msg.MCRoundNumber == bz.MCRoundNumber {
-				// TODO: first validate the leadership proof
-				log.Lvl1("final round result: ", msg.LeaderName, "is the round leader for round number ", bz.MCRoundNumber)
-				// the committee nodes is shifted by one
-				//t := bz.Roster().List
-				//bz.committeeNodes = append(bz.committeeNodes[1:len(bz.committeeNodes)-1], t)
-
-				bz.hasLeader = true
-				bz.updateBCPowerRound(msg.LeaderName, true)
-				bz.updateBCTransactionQueueCollect()
-				bz.updateBCTransactionQueueTake()
-			} else {
-				log.Lvl2("this round already has a leader!")
-			}
-			//waiting for the time of round duration
-			time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
-			// empty list of elected leaders  in this round
-			for len(bz.NewLeaderChan) > 0 {
-				<-bz.NewLeaderChan
-			}
-			// announce new round and give away required checkleadership info to nodes
-			bz.readBCAndSendtoOthers()
-			log.Lvl2("new round is announced")
-			// -------- cases used for communication ------------------
-			/*		case msg := <-bz.ProofOfRetTxChan:
-					//log.Lvl2(bz.Info(), "received por", msg.Por.sigma, "tx from", msg.TreeNode.ServerIdentity.Address)
-					if !fail {
-						err = bz.handlePoRTx(msg)
-					}*/
-			/*		case msg := <-bz.PreparedBlockChan:
-					log.Lvl2(bz.Info(), "received block from", msg.TreeNode.ServerIdentity.Address)
-					if !fail {
-						_, err = bz.handleBlock(msg)
-			}*/
-			// ------------------------------------------------------------------
-			// this msg is catched in runsimul.go in func Simulate() function and means the baseddfs protocol has finished
-			// case <-bz.DoneBaseDFS:
-			// running = false //TODO: do something about running!
-		}
-	}
-	return err
-}
-
-/* ----------------------------------------------------------------------
------------------------------------------------------------------------- */
-// SetTimeout sets the new timeout
-//todo: raha:  do we need the following functions?
-// func (bz *BaseDFS) SetTimeout(t time.Duration) {
-// 	bz.timeoutMu.Lock()
-// 	bz.Timeout = t
-// 	bz.timeoutMu.Unlock()
-// }
-
-/* ----------------------------------------------------------------------
------------------
------------------------------------------------------------------------- */
-// Timeout returns the current timeout
-// func (bz *BaseDFS) Timeout() time.Duration {
-// 	bz.timeoutMu.Lock()
-// 	defer bz.timeoutMu.Unlock()
-// 	return bz.timeout
-// }
 
 // ------------   Sortition Algorithm from ALgorand: ---------------------
 // ⟨hash,π⟩←VRFsk(seed||role)
@@ -1472,312 +1500,15 @@ func (bz *BaseDFS) Dispatch() error {
 // return <hash,π, j>
 // ----------------------------------------------------------------------
 
-//structures
-/* ---------------------------------------------------------------------
----------------- these channel were used for communication----------
-   ---------------------------------------------------------------------
-type ProofOfRetTxChan struct {
-	*onet.TreeNode
-	por.Por
-}
-
-type PreparedBlockChan struct {
-	*onet.TreeNode
-	PreparedBlock
-}
--------------------------------------------------------------------- */
-
-//Functions
 /* ----------------------------------------------------------------------
------------------------------------------------------------------------- */
-// test file access : mainchainbc file from inside the protocol
-/*func (bz *BaseDFS) readwriteBC() () {
-	//---- test file read / write access
-	data, err := ioutil.ReadFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
-	if err != nil {
-		log.Lvl2(bz.Info(), "error reading from mainchainbc", err)
-	} else {
-		log.Lvl2(bz.Info(), "This is the file content:", string(data))
-	}
-	//----------------
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/simple.xlsx")
-	if err != nil {
-		log.Lvl2(err)
-	}
-	c1, err := f.GetCellValue("Sheet1", "A1")
-	if err != nil {
-		log.Lvl2(err)
-	}
-	log.Lvl2(c1)
-	c2, err := f.GetCellValue("Sheet1", "A4")
-	if err != nil {
-		log.Lvl2(err)
-	}
-	log.Lvl2(c2)
-	c3, err := f.GetCellValue("Sheet1", "B2")
-	result, err := f.SearchSheet("Sheet1", "100")
-	if err != nil {
-		log.Lvl2(err)
-	}
-	log.Lvl2(c3)
-	log.Lvl2(result)
-	f.SetCellValue("Sheet1", "A3", 42)
-	if err := f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/simple.xlsx"); err != nil {
-		log.Lvl2(err)
-	}
-	log.Lvl2("wait")
-	// --------------------------- write -----
-	//---- test file read / write access
-	f, err := os.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx", os.O_APPEND|os.O_WRONLY, 0600)
-	defer f.Close()
-	_, err = f.WriteString(bz.TreeNode().String() + "\n")
-	w := bufio.NewWriter(f)
-	_, err = fmt.Fprintf(w, "%v\n", 10)
-	_, err = fmt.Fprintf(w, "%v\n", "hi")
-	w.Flush()
-	data, err := ioutil.ReadFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
-	if err!=nil{
-		log.Lvl2(bz.Info(), "error reading from mainchainbc", err)
-	} else {
-		log.Lvl2(bz.Info(), "This is the file content which leader see:" , string(data))
-	}
-	//----------------
-	_, err := ioutil.ReadFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.csv")
-	check(err)
-	log.Lvl2(MCRoundDuration)
-	//assert.Equal(t, 7, len(strings.Split(string(csv), "\n")))
-	f, err := os.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.csv", os.O_APPEND|os.O_WRONLY, 0600)
-	check(err)
-	defer f.Close()
-	_, err = f.WriteString("Header\n")
-	check(err)
-
-	data, err := ioutil.ReadFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.csv")
-	check(err)
-	fmt.Print(string(data))
-	//--------------------
-	f, err = os.Create("/Users/raha/Documents/GitHub/basedfs/simul/platform/testfileaccess.csv")
-	check(err)
-	defer f.Close()
-	//--------------------
-	w := bufio.NewWriter(f)
-	//choose random number for recipe
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	i := r.Perm(5)
-	_, err = fmt.Fprintf(w, "%v\n", "MCRoundDuration")
-	_, err = fmt.Fprintf(w, "%v\n", MCRoundDuration)
-
-	check(err)
-	w.Flush()
-}*/
-//sendPoRTx send a por tx
-/*func (bz *BaseDFS) sendPoRTx() {
-	txs := bz.createPoRTx()
-	portx := &Por{*txs, uint32(bz.Index())}
-	log.Lvl2(bz.Name(), ": multicasting por tx")
-	bz.Multicast(portx, bz.List()...)
-
-	for _, child := range bz.Children() {
-		err := bz.SendTo(child, portx)
-		if err != nil {
-			log.Lvl1(bz.Info(), "couldn't send to child:", child.ServerIdentity.Address)
-		} else {
-			log.Lvl1(bz.Info(), "sent his PoR to his children:", child.ServerIdentity.Address)
-		}
-	}
-}*/
-// handleAnnouncement pass the announcement to the right CoSi struct.
-/*func (bz *BaseDFS) handlePoRTx(proofOfRet ProofOfRetTxChan) error {
-	if refuse, err := verifyPoR(proofOfRet); err == nil {
-		if refuse == true {
-			bz.porTxRefusal = true
-			return nil
-		} else {
-			e := bz.appendPoRTx(proofOfRet)
-			if e == nil {
-				log.Lvl2(bz.Info(), "PoR tx appended to current temp block")
-				//bz.DoneBaseDFS <- true
-			} else {
-				log.Lvl2(bz.TreeNode, "PoR tx appending error:", e)
-			}
-		}
-	} else {
-		log.Lvl2(bz.TreeNode, "verifying PoR tx error:", err)
-	}
-	return nil
-}*/
-//appendPoRTx: append the recieved tx to his current temporary block
-/*func (bz *BaseDFS) appendPoRTx(p ProofOfRetTxChan) error {
-	bz.transactions = append(bz.transactions, p.por.Tx)
-	for test creating block:
-	bz.createEpochBlock(&leadershipProof{1})
-	return nil
-}*/
-//SendFinalBlock   bz.SendFinalBlock(createEpochBlock)
-/*func (bz *BaseDFS) SendFinalBlock(fb *blockchain.TrBlock) {
-	if fb == nil {
-		return
-	} else { // it's the leader
-		var err error
-		for _, n := range bz.Tree().List() {
-			// don't send to ourself
-			if n.ID.Equal(bz.TreeNode().ID) {
-				continue
-			}
-			err = bz.SendTo(n, &PreparedBlock{fb.Block})
-			if err != nil {
-				log.Error(bz.Name(), "Error sending new block", err)
-			}
-		}
-	}
-	log.Lvl1("final block hash is:", fb.Block.HeaderHash)
-	return
-}*/
-// verifyBlock: servers will verify proposed block when they recieve it
-/*func verifyBlock(pb PreparedBlock) error {
-	return nil
-}*/
-//appendBlock:
-/*func (bz *BaseDFS) appendBlock(pb PreparedBlock) (*blockchain.TrBlock, error) {
-	//measure block's size
-	return nil, nil
-}*/
-// handle the arrival of a block
-/*func (bz *BaseDFS) handleBlock(pb PreparedBlockChan) (*blockchain.TrBlock, error) {
-	t, _ := bz.checkLeadership()
-	if t == false {
-		if err := verifyBlock(pb.PreparedBlock); err == nil {
-			//they eliminate existing tx.s in block from their current temp tx list
-			cap := cap(bz.transactions)
-			txs := bz.transactions
-			bz.transactions = nil
-			for _, tx1 := range pb.PreparedBlock.Block.Txs {
-				for index, tx2 := range txs {
-					if tx1.Hash == tx2.Hash {
-						if cap > index+1 {
-							txs = append(txs[:index], txs[index+1:]...)
-						} else {
-							txs = txs[:index]
-						}
-					}
-				}
-			}
-			bz.transactions = append(bz.transactions, txs...)
-			return (bz.appendBlock(pb.PreparedBlock))
-			//-----
-			bz.MCRoundNumber = bz.MCRoundNumber + 1
-			bz.blockChainSize = bz.blockChainSize + 1 //uint64(length(blockchain.Block))
-		} else {
-			log.Error(bz.Name(), "Error verying block", err)
-			return nil, nil
-		}
-	}
-	return nil, nil
-}*/
-
-/* ----------------------------------------------------------------------
------------------------------------------------------------------------- */
-/*
-func (bz *BaseDFS) readBCForNewRound(f *excelize.File) bool {
-	var err error
-	var rows *excelize.Rows
-	var row []string
-	rowNumber := 0
-	var lastRound int
-	// looking for last round's seed in the round table sheet in the mainchainbc file
-	if rows, err = f.Rows("RoundTable"); err != nil {
-		log.Lvl2("Panic Raised:\n\n")
-		panic(err)
-	}
-	for rows.Next() {
-		rowNumber++
-		if row, err = rows.Columns(); err != nil {
-			log.Lvl2("Panic Raised:\n\n")
-			panic(err)
-		}
-	}
-	for i, colCell := range row {
-		// --- in RoundTable: i = 0 is (next) round number, i = 1 is (next) round seed, i=2 is blockchain size (empty now, will be updated by the leader)
-		if i == 0 {
-			lastRound, err = strconv.Atoi(colCell)
-			if err != nil {
-				log.Lvl2("Panic Raised:\n\n")
-				panic(err)
-			}
-		}
-	}
-	if lastRound != bz.MCRoundNumber {
-		return true // a new round has been started
-	} else {
-		return false
-	}
-}
-*/
-
-/* ----------------------------------------------------------------------
------------------------------------------------------------------------- */
-
-/* ----------------------------------------------------------------------——
------------------------------------------------------------------------- */
-/*
-func (bz *BaseDFS) refreshBC() {
-	log.Lvl2(bz.Name(), "Lock: locked BC")
-	//bz.fMu.Lock()
-	//defer bz.fMu.Unlock()
-	// ---
-	f2, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
-	failedAttempts := 0
-	if err != nil {
-		for err != nil {
-			if failedAttempts == 11 {
-				log.Lvl2("Can't open the mainchainbc file: 10 attempts!")
-			}
-			time.Sleep(1 * time.Second)
-			f2, err = excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
-			failedAttempts = failedAttempts + 1
-		}
-		log.Lvl2("---------- Opened the mainchainbc file after ", failedAttempts, " attempts")
-	} else {
-		log.Lvl2(bz.Name(), "opened BC")
-	}
-
-	if !bz.isLeader {
-		bz.f = f2
-		if bz.readBCForNewRound(bz.f) {
-			bz.checkLeadership()
-		}
-
-	} else {
-		if !bz.readBCForNewRound(f2) {
-			log.Lvl2(bz.Name(), "adding new block")
-			err := bz.f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
-			if err != nil {
-				log.Lvl2("Panic Raised:\n\n")
-				panic(err)
-			} else {
-				log.Lvl2(bz.TreeNode().Name(), "is the final leader of round number ", bz.MCRoundNumber, "$$$$$$$$$$$")
-				bz.MCRoundNumber = bz.MCRoundNumber + 1
-				bz.isLeader = false
-			}
-		} else {
-			log.Lvl2("another leader has already published his block for round number", bz.MCRoundNumber)
-			bz.MCRoundNumber = bz.MCRoundNumber + 1
-			bz.isLeader = false
-			bz.f = f2
-		}
-		bz.checkLeadership()
-	}
-	log.Lvl2(bz.Name(), "Un-Lock BC")
-} */
-/* ----------------------------------------------------------------------
------------------------------------------------------------------------- */
 //checkLeadership
+------------------------------------------------------------------------ */
+
 // func (bz *BaseDFS) checkLeadership() {
 // 	if bz.leaders[int(math.Mod(float64(bz.MCRoundNumber), float64(len(bz.Roster().List))))] == bz.ServerIdentity().String() {
 // 		bz.LeaderPropose <- true
 // 	}
 // }
-
 /* func (bz *BaseDFS) checkLeadership(power uint64, seed string) {
 	for {
 		select {

@@ -437,7 +437,7 @@ func (l *LocalTest) sendTreeNode(proto string, from, to *TreeNodeInstance, msg n
 		To:      to.token,
 	}
 	io := l.Overlays[to.ServerIdentity().ID].protoIO.getByName(proto)
-	err := to.overlay.TransmitMsg(onetMsg, io)
+	err := to.Overlay.TransmitMsg(onetMsg, io)
 	if err != nil {
 		return xerrors.Errorf("transmitting message: %v", err)
 	}

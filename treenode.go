@@ -14,7 +14,7 @@ import (
 // TreeNodeInstance represents a protocol-instance in a given TreeNode. It embeds an
 // Overlay where all the tree-structures are stored.
 type TreeNodeInstance struct {
-	overlay *Overlay
+	Overlay *Overlay
 	token   *Token
 	// cache for the TreeNode this Node is representing
 	treeNode *TreeNode
@@ -91,7 +91,7 @@ type MsgHandler func([]*interface{})
 
 // NewNode creates a new node
 func newTreeNodeInstance(o *Overlay, tok *Token, tn *TreeNode, io MessageProxy) *TreeNodeInstance {
-	n := &TreeNodeInstance{overlay: o,
+	n := &TreeNodeInstance{Overlay: o,
 		token:                tok,
 		channels:             make(map[network.MessageTypeID]interface{}),
 		handlers:             make(map[network.MessageTypeID]interface{}),
@@ -167,7 +167,7 @@ func (n *TreeNodeInstance) SendTo(to *TreeNode, msg interface{}) error {
 	}
 	n.configMut.Unlock()
 
-	sentLen, err := n.overlay.SendToTreeNode(n.token, to, msg, n.protoIO, c)
+	sentLen, err := n.Overlay.SendToTreeNode(n.token, to, msg, n.protoIO, c)
 	n.tx.add(sentLen)
 	if err != nil {
 		return xerrors.Errorf("sending: %v", err)
@@ -179,7 +179,7 @@ func (n *TreeNodeInstance) SendTo(to *TreeNode, msg interface{}) error {
 // until the protocol is done, this will never return a nil value. It will panic
 // if the tree is nil.
 func (n *TreeNodeInstance) Tree() *Tree {
-	tree := n.overlay.treeStorage.Get(n.token.TreeID)
+	tree := n.Overlay.treeStorage.Get(n.token.TreeID)
 	if tree == nil {
 		panic("tree should never be nil when called during a protocol; " +
 			"it might be that Tree() has been called after Done() which " +
@@ -202,7 +202,7 @@ func (n *TreeNodeInstance) Suite() network.Suite {
 		return suite
 	}
 
-	return n.overlay.suite()
+	return n.Overlay.suite()
 }
 
 // RegisterChannel is a compatibility-method for RegisterChannelLength
@@ -381,7 +381,7 @@ func (n *TreeNodeInstance) closeDispatch() error {
 
 // ProtocolName will return the string representing that protocol
 func (n *TreeNodeInstance) ProtocolName() string {
-	return n.overlay.server.protocols.ProtocolIDToName(n.token.ProtoID)
+	return n.Overlay.server.protocols.ProtocolIDToName(n.token.ProtoID)
 }
 
 func (n *TreeNodeInstance) dispatchHandler(msgSlice []*ProtocolMsg) error {
@@ -650,7 +650,7 @@ func (n *TreeNodeInstance) Done() {
 		}
 	}
 	log.Lvl3(n.Info(), "has finished. Deleting its resources")
-	n.overlay.nodeDone(n.token)
+	n.Overlay.nodeDone(n.token)
 }
 
 // OnDoneCallback should be called if we want to control the Done() of the node.
@@ -729,7 +729,7 @@ func (n *TreeNodeInstance) Info() string {
 	tid := n.TokenID()
 	name := protocols.ProtocolIDToName(n.token.ProtoID)
 	if name == "" {
-		name = n.overlay.server.protocols.ProtocolIDToName(n.token.ProtoID)
+		name = n.Overlay.server.protocols.ProtocolIDToName(n.token.ProtoID)
 	}
 	return fmt.Sprintf("%s (%s): %s", n.ServerIdentity().Address, tid.String(), name)
 }
@@ -852,7 +852,7 @@ func (n *TreeNodeInstance) SendToChildrenInParallel(msg interface{}) []error {
 // will also be attached to this same service. Else the new protocol will only
 // be handled by onet.
 func (n *TreeNodeInstance) CreateProtocol(name string, t *Tree) (ProtocolInstance, error) {
-	pi, err := n.overlay.CreateProtocol(name, t, n.Token().ServiceID)
+	pi, err := n.Overlay.CreateProtocol(name, t, n.Token().ServiceID)
 	if err != nil {
 		return nil, xerrors.Errorf("creating protocol: %v", err)
 	}
@@ -865,7 +865,7 @@ func (n *TreeNodeInstance) CreateProtocol(name string, t *Tree) (ProtocolInstanc
 // doing. This feature is meant to access the low level parts of the API. For
 // example it is used to add a new tree config / new entity list to the Server.
 func (n *TreeNodeInstance) Host() *Server {
-	return n.overlay.server
+	return n.Overlay.server
 }
 
 // TreeNodeInstance returns itself (XXX quick hack for this services2 branch

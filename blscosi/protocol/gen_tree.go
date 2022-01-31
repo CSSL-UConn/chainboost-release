@@ -129,11 +129,11 @@ func GenSubtree(roster *onet.Roster, nodes []int) (*onet.Tree, error) {
 	if len(nodes) > len(roster.List) {
 		return nil, errors.New("nodes list is longer than roster list")
 	}
-	for _, i := range nodes {
-		if i < 0 || i >= len(roster.List) {
-			return nil, errors.New("element of nodes list is out of range")
-		}
-	}
+	/* 		for _, i := range nodes {
+	   		if i < 0 || i >= len(roster.List) {
+	   			return nil, errors.New("element of nodes list is out of range")
+	   		}
+	   	} */
 	if nodes[0] == nodes[1] {
 		return nil, errors.New("subleader and leader cannot be the same")
 	}
@@ -157,4 +157,16 @@ func GenSubtree(roster *onet.Roster, nodes []int) (*onet.Tree, error) {
 	}
 
 	return onet.NewTree(roster, rootNode), nil
+}
+
+// --------------------------------   raha: added   --------------------------------
+
+// GetRoot returns the server identities of the BlsProtocol SubTree Root
+func (pt BlsProtocolTree) GetRoot() *network.ServerIdentity {
+	for i, t := range pt {
+		if i == 0 {
+			return t.Root.ServerIdentity
+		}
+	}
+	return nil
 }

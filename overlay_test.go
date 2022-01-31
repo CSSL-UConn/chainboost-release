@@ -440,7 +440,7 @@ func TestOverlayRosterTreePropagation(t *testing.T) {
 		MsgType:        SendTreeMsgID,
 	}
 
-	h1.overlay.instances[TokenID{}] = &TreeNodeInstance{overlay: h1.overlay, token: &Token{TreeID: tree.ID}}
+	h1.overlay.instances[TokenID{}] = &TreeNodeInstance{Overlay: h1.overlay, token: &Token{TreeID: tree.ID}}
 	h1.overlay.treeStorage.Register(tree2.ID)
 	h1.overlay.Process(&packet)
 	if _, ok := h1.GetTree(tree2.ID); !ok {

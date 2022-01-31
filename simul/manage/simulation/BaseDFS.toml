@@ -18,13 +18,13 @@ BlockSize = 2000
 SectorNumber = 1
 NumberOfPayTXsUpperBound = 200
 SimulationSeed = 10
-SCRoundDuration = 5
-MCRoundDuration = 10
-CommitteeWindow = 10
-EpochCount = 10
+SCRoundDuration = 2
+MCRoundDuration = 4
+EpochCount = 2
 NbrSubTrees = 1
-Nodes = 10
+Nodes = 50
+CommitteeWindow = 10
 Threshold = 9
 
 Hosts
-10
+50
