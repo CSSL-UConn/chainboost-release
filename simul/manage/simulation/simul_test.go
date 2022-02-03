@@ -9,6 +9,8 @@ import (
 
 func TestSimulation(t *testing.T) {
 	log.SetDebugVisible(1)
+	//log.SetUseColors(true)
+	//log.SetPadding(true)
 	simul.Start("BaseDFS.toml")
 	//simul.Start("OpinionGathering.toml")
 }

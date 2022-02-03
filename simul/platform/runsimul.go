@@ -152,9 +152,9 @@ func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberO
 			committeeNodes := rootSC.Tree.Roster.List[:CommitteeWindow-1]
 			committeeNodes = append([]*network.ServerIdentity{rootSC.Tree.List()[CommitteeWindow].ServerIdentity}, committeeNodes...)
 			committee := onet.NewRoster(committeeNodes)
-			var x = rootSC.Tree.List()[CommitteeWindow]
+			var x = *rootSC.Tree.List()[CommitteeWindow]
 			x.RosterIndex = 0
-			BlsCosiSubTrees, _ := protocol.NewBlsProtocolTree(onet.NewTree(committee, x), NbrSubTrees)
+			BlsCosiSubTrees, _ := protocol.NewBlsProtocolTree(onet.NewTree(committee, &x), NbrSubTrees)
 			// raha: BLSCoSi protocol
 			// message should be initialized with main chain's genesis block
 			// raha: BlsCosi protocol is created here => call to CreateProtocol() => call an empty Dispatch()
@@ -384,7 +384,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	// }
 
 	//ToDo: what exactly does this sentence do?! do we need it?!
-	bz.CommitteeNodesRosterIndex = make([]int, bz.CommitteeWindow)
+	bz.CommitteeNodesTreeNodeID = make([]onet.TreeNodeID, bz.CommitteeWindow)
 
 	// bls key pair for each node for VRF
 	_, bz.ECPrivateKey = vrf.VrfKeygen()
