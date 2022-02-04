@@ -226,6 +226,10 @@ func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberO
 			func (p *SubBlsCosi) Dispatch() which is called when the startSubProtocol in Blscosi.go,
 			create subprotocols => hence calls func (p *SubBlsCosi) Dispatch() */
 			// ---------------------------------------------------------------
+			log.LLvl1("Starting nodes: List of nodes (full tree is): \n")
+			for i, a := range rootSC.Tree.List() {
+				log.LLvl1(i, " :", a.Name(), ": ", a.RosterIndex, "\n")
+			}
 			for _, child := range rootSC.Tree.List() {
 				if child != basedfsprotocol.TreeNode() {
 					err := basedfsprotocol.SendTo(child, &BaseDFSProtocol.HelloBaseDFS{
@@ -259,7 +263,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberO
 			// ---------------------------------------------------------------
 			// when it finishes  is when:
 			// ToDo
-			log.LLvl1("here")
+			log.LLvl1("Back to simulation module: waiting for DoneBaseDFS channel .......... ")
 			px := <-basedfsprotocol.DoneBaseDFS
 			log.Lvl1("Back to simulation module. Final result is", px)
 			wait = false

@@ -187,19 +187,16 @@ func (bz *BaseDFS) Start() error {
 	// ------------------------------------------------------------------------------
 	// config params are sent from the leader to the other nodes in helloBasedDfs function
 	bz.helloBaseDFS()
-
 	//------- testing message sending ------
-	// for _, child := range bz.Children() {
-	// 	err := bz.SendTo(child, &HelloBaseDFS{
-	// 		EpochCount: 0,
-	// 	})
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
 
+	// err := bz.SendTo(bz.Root(), &HelloBaseDFS{EpochCount: 0})
+	// if err != nil {
+	// 	return err
+	// }
 	return nil
 }
+
+// -------------------------------------- MC & SC protocols -------------------------------------- //
 
 /* ----------------------------------------------------------------------
 			 Dispatch listen on the different channels in main chain protocol
@@ -282,7 +279,7 @@ func (bz *BaseDFS) Dispatch() error {
 				bz.HasLeader = true
 				bz.updateBCPowerRound(bz.Tree().Search(msg.LeaderTreeNodeID).Name(), false)
 				// in the case of a leader-less round
-				log.Lvl1("final result: leader TreeNodeID: ", msg.LeaderTreeNodeID.String(), "(root node) filled round number", bz.MCRoundNumber, "with empty block")
+				log.Lvl1("final result MC: leader TreeNodeID: ", msg.LeaderTreeNodeID.String(), "(root node) filled round number", bz.MCRoundNumber, "with empty block")
 				bz.updateBCTransactionQueueCollect()
 				bz.readBCAndSendtoOthers()
 				log.Lvl2("new round is announced")
@@ -293,7 +290,7 @@ func (bz *BaseDFS) Dispatch() error {
 			// -----------------------------------------------------
 			if !bz.HasLeader && msg.MCRoundNumber == bz.MCRoundNumber {
 				// TODO: first validate the leadership proof
-				log.Lvl1("final round result: leader: ", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), " is the round leader for round number ", bz.MCRoundNumber)
+				log.Lvl1("final result MC: leader: ", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), " is the round leader for round number ", bz.MCRoundNumber)
 
 				// -----------------------------------------------
 				// dynamically change the side chain's committee with last main chain's leader
@@ -301,14 +298,29 @@ func (bz *BaseDFS) Dispatch() error {
 				// -----------------------------------------------
 				// --- updating the CommitteeNodesTreeNodeID
 				// -----------------------------------------------
-				if bz.BlsCosi.SubTrees[0].Search(msg.LeaderTreeNodeID) != nil {
-					log.Lvl1("final result: error: bz.NextSideChainLeader is already in the committee")
+				t := 0
+				for _, a := range bz.CommitteeNodesTreeNodeID {
+					if a != msg.LeaderTreeNodeID {
+						t = t + 1
+						continue
+					} else {
+						break
+					}
+				}
+				if t != len(bz.CommitteeNodesTreeNodeID) {
+					log.Lvl1("final result SC:", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), " is already in the committee")
+					for i, a := range bz.CommitteeNodesTreeNodeID {
+						log.Lvl1("final result SC: BlsCosi committee queue: ", i, ":", bz.Tree().Search(a).Name())
+					}
 				} else {
 					NextSideChainLeaderTreeNodeID := msg.LeaderTreeNodeID
 					bz.CommitteeNodesTreeNodeID = append([]onet.TreeNodeID{NextSideChainLeaderTreeNodeID}, bz.CommitteeNodesTreeNodeID...)
+					log.Lvl1("final result SC:", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), "is added to side chain for the next epoch's committee")
+					for i, a := range bz.CommitteeNodesTreeNodeID {
+						log.Lvl1("final result SC: BlsCosi committee queue: ", i, ":", bz.Tree().Search(a).Name())
+					}
 				}
 				// -----------------------------------------------
-
 				bz.HasLeader = true
 				bz.updateBCPowerRound(bz.Tree().Search(msg.LeaderTreeNodeID).Name(), true)
 				bz.updateBCTransactionQueueCollect()
@@ -340,16 +352,21 @@ func (bz *BaseDFS) Dispatch() error {
 				for _, a := range bz.CommitteeNodesTreeNodeID[0 : bz.CommitteeWindow-1] {
 					CommitteeNodesServerIdentity = append(CommitteeNodesServerIdentity, bz.Tree().Search(a).ServerIdentity)
 				}
-				log.Lvl1("final result: ", bz.Name(), " is running next side chain's round")
+				log.Lvl1("final result SC: ", bz.Name(), " is running next side chain's epoch with new committee")
 				for i, a := range bz.CommitteeNodesTreeNodeID {
-					log.Lvl1("final result: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
+					log.Lvl1("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
 				}
 				log.Lvl1("wait")
 			} else {
-				for _, a := range bz.CommitteeNodesTreeNodeID[len(bz.CommitteeNodesTreeNodeID)-(bz.CommitteeWindow-1):] {
+				log.LLvl1(len(bz.CommitteeNodesTreeNodeID))
+				log.LLvl1(bz.CommitteeNodesTreeNodeID[len(bz.CommitteeNodesTreeNodeID)-(bz.CommitteeWindow):])
+				for _, a := range bz.CommitteeNodesTreeNodeID[len(bz.CommitteeNodesTreeNodeID)-(bz.CommitteeWindow):] {
 					CommitteeNodesServerIdentity = append(CommitteeNodesServerIdentity, bz.Tree().Search(a).ServerIdentity)
 				}
-				log.Lvl1("final result: ", bz.Name(), " is running next side chain's round with the same committee members")
+				log.Lvl1("final result SC: ", bz.Name(), " is running next side chain's epoch with the same committee members:")
+				for i, a := range CommitteeNodesServerIdentity {
+					log.Lvl1("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", a.Address)
+				}
 				log.Lvl1("wait")
 			}
 			committeeRoster := onet.NewRoster(CommitteeNodesServerIdentity)
@@ -361,6 +378,8 @@ func (bz *BaseDFS) Dispatch() error {
 			if err == nil {
 				log.Lvl1("Next bls cosi tree is: ", bz.BlsCosi.SubTrees[0].Roster.List,
 					" with ", bz.Name(), " as Root \n running BlsCosi round number", bz.SCRoundNumber)
+			} else {
+				return xerrors.New("Problem in cosi protocol run:   " + err.Error())
 			}
 			// ----
 			err = bz.BlsCosi.Start()
@@ -372,10 +391,10 @@ func (bz *BaseDFS) Dispatch() error {
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.LtRSideChainNewRoundChan:
 			bz.SCRoundNumber = msg.SCRoundNumber
-			if bz.MCRoundDuration*bz.EpochCount/bz.SCRoundDuration == bz.SCRoundNumber {
+			if bz.MCRoundDuration*bz.EpochCount/bz.SCRoundDuration == bz.SCRoundNumber+1 {
 				// generate and propose summery block (bz.BlsCosi.blockType = "summeryblock")
 				// reset side chain round number
-				log.Lvl1("final result: BlsCosi: epoch number ", bz.MCRoundNumber/bz.EpochCount, " finished ..")
+				log.Lvl1("final result SC: BlsCosi: epoch number ", bz.MCRoundNumber/bz.EpochCount, " finished ..")
 				bz.SCRoundNumber = 0 // in side chain round number zero the summery blocks are published in side chain
 				// from bc: update msg size with the "summery block"'s block size on side chain
 				// call a function like collect and then take
@@ -384,14 +403,14 @@ func (bz *BaseDFS) Dispatch() error {
 				if bz.SCRoundNumber == 0 { // i.e. the current published block on side chain is summery block
 					// issue a sync transaction from last recent summery block to main chain
 					// next meta block is going to be on top of last summery block (rather than last meta blocks!)
-					log.LLvl2("final result: BlsCosi: a summery block Confirmed in Side Chain")
+					log.LLvl2("final result SC: BlsCosi: a summery block Confirmed in Side Chain")
 					//changing next side chain's leader for the next epoch rounds from the last miner in the main chain's window of miners
 					bz.NextSideChainLeader = bz.CommitteeNodesTreeNodeID[0]
 					// changing side chain's committee to last miners in the main chain's window of miners
-					bz.CommitteeNodesTreeNodeID = bz.CommitteeNodesTreeNodeID[:bz.CommitteeWindow-1]
-					log.Lvl1("final result: BlsCosi: next side chain's epoch leader is: ", bz.Tree().Search(bz.NextSideChainLeader).Name())
+					bz.CommitteeNodesTreeNodeID = bz.CommitteeNodesTreeNodeID[0:bz.CommitteeWindow]
+					log.Lvl1("final result SC: BlsCosi: next side chain's epoch leader is: ", bz.Tree().Search(bz.NextSideChainLeader).Name())
 					for i, a := range bz.CommitteeNodesTreeNodeID {
-						log.Lvl1("final result: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
+						log.Lvl1("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
 					}
 				}
 				// increase side chain round number
@@ -409,8 +428,8 @@ func (bz *BaseDFS) Dispatch() error {
 				CommitteeNodesTreeNodeID: bz.CommitteeNodesTreeNodeID,
 			})
 			if err != nil {
-				log.Lvl2(bz.Name(), "can't send new side chain round msg to", bz.NextSideChainLeader.String())
-				//Search(bz.NextSideChainLeader).Name())
+				log.Lvl2(bz.Name(), "can't send new side chain round msg to", bz.Tree().Search(bz.NextSideChainLeader).Name())
+				return xerrors.New("can't send new side chain round msg to next leader" + err.Error())
 			}
 			// ------------------------------------------------------------------
 			// this msg is catched in runsimul.go in func Simulate() function and means the baseddfs protocol has finished
@@ -439,13 +458,13 @@ func (bz *BaseDFS) DispatchProtocol() error {
 		// --------------------------------------------------------
 		case sig := <-bz.BlsCosi.FinalSignature:
 			if err := bdnproto.BdnSignature(sig).Verify(bz.BlsCosi.Suite, bz.BlsCosi.Msg, bz.BlsCosi.SubTrees[0].Roster.Publics()); err == nil {
-				log.LLvl2("final result: BlsCosi:", bz.Name(), " : ", bz.BlsCosi.BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
+				log.LLvl2("final result SC:", bz.Name(), " : ", bz.BlsCosi.BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
 				err := bz.SendTo(bz.Root(), &LtRSideChainNewRound{
 					NewRound:      true,
 					SCRoundNumber: bz.SCRoundNumber,
 				})
 				if err != nil {
-					log.Lvl2(bz.Info(), "can't send new round msg to", bz.Root().Name())
+					return xerrors.New("can't send new round msg to root" + err.Error())
 				}
 			} else {
 				return xerrors.New("The recieved final signature is not accepted:  " + err.Error())
@@ -455,29 +474,110 @@ func (bz *BaseDFS) DispatchProtocol() error {
 	return err
 }
 
-/* ------------------------------------------------------------------------
-this function will be called just by ROOT NODE when:
-- at the end of a round duration (when no "I am a leader message is recieved): startTimer starts the timer to detect the rounds that dont have any leader elected (if any)
-and publish an empty block in those rounds
+/* ----------------------------------------------------------------------
+ helloBaseDFS
 ------------------------------------------------------------------------ */
-func (bz *BaseDFS) startTimer(MCRoundNumber int) {
-	select {
-	case <-time.After(time.Duration(bz.MCRoundDuration) * time.Second):
-		// bz.IsRoot() is here just to make sure!,
-		// bz.MCRoundNumber == MCRoundNumber is for when the round number has changed!,
-		// bz.hasLeader is for when the round number has'nt changed but the leader has been announced
-		if bz.IsRoot() && bz.MCRoundNumber == MCRoundNumber && !bz.HasLeader {
-			log.Lvl2("No leader for round number ", bz.MCRoundNumber, "an empty block is added")
-			bz.NewLeaderChan <- NewLeaderChan{bz.TreeNode(), NewLeader{ /*Leaderinfo: bz.TreeNode(), */ MCRoundNumber: bz.MCRoundNumber}}
+
+func (bz *BaseDFS) helloBaseDFS() {
+	var err error
+	log.Lvl2(bz.TreeNode().Name(), " joined to the protocol")
+	// all nodes get here and start to listen for blscosi protocol messages
+	go func() {
+		err := bz.DispatchProtocol()
+		if err != nil {
+			log.Lvl1("protocol dispatch calling error: " + err.Error())
+			panic("protocol dispatch calling error")
 		}
+	}()
+
+	if bz.IsRoot() && bz.BlsCosiStarted {
+		// ----------------------------------------------------------------------------------------------
+		// ---------------- BLS CoSi protocol (Initialization for root node) --------
+		// ----------------------------------------------------------------------------------------------
+		// -----------------------------------------------
+		// --- initializing side chain's msg and side chain's committee roster index for the second run and the next runs
+		// -----------------------------------------------
+		for i := 0; i < bz.CommitteeWindow; i++ {
+			bz.CommitteeNodesTreeNodeID = append(bz.CommitteeNodesTreeNodeID, bz.Tree().List()[i].ID)
+		}
+		bz.BlsCosi.Msg = []byte{0xFF}
+		// -----------------------------------------------
+		// --- initializing next side chain's leader
+		// -----------------------------------------------
+		bz.CommitteeNodesTreeNodeID = append([]onet.TreeNodeID{bz.Tree().List()[bz.CommitteeWindow+1].ID}, bz.CommitteeNodesTreeNodeID[:bz.CommitteeWindow-1]...)
+		bz.NextSideChainLeader = bz.Tree().List()[bz.CommitteeWindow+1].ID
+		// --------------------------------------------------------------------
+		//triggering next side chain round leader to run next round of blscosi
+		// --------------------------------------------------------------------
+		err = bz.SendTo(bz.Tree().Search(bz.NextSideChainLeader), &RtLSideChainNewRound{
+			SCRoundNumber:            bz.SCRoundNumber,
+			CommitteeNodesTreeNodeID: bz.CommitteeNodesTreeNodeID,
+		})
+		if err != nil {
+			log.Lvl2(bz.Name(), "can't send new side chain round msg to", bz.Tree().Search(bz.NextSideChainLeader).Name())
+			panic("can't send new side chain round msg to the first leader")
+		}
+		// ----------------------------------------------------------------------------------------------
+		// -------------------------- main chain's protocol ---------------------------------------
+		// ----------------------------------------------------------------------------------------------
+		// let other nodes join the protocol first -
+		//time.Sleep(time.Duration(len(bz.Roster().List)) * time.Second)
+
+		// the root node is filling the first block in first round
+		log.Lvl2(bz.Name(), "Filling round number ", bz.MCRoundNumber)
+		// for the first round we have the root node set as a round leader, so  it is true! and he takes txs from the queue
+		bz.updateBCPowerRound(bz.TreeNode().Name(), true)
+		bz.updateBCTransactionQueueCollect()
+		bz.updateBCTransactionQueueTake()
+		time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
+		bz.readBCAndSendtoOthers()
+		// protocol timeout
+		go bz.StartTimeOut()
 	}
+	// ----------------------------------------------------------------------------------------------
+	// ---------------- BLS CoSi protocol (running for the very first time) --------
+	// ----------------------------------------------------------------------------------------------
+	// this node has been set to start running blscosi in simulation level. (runsimul.go):
+	/* 	if bz.Tree().List()[bz.CommitteeWindow] == bz.TreeNode() {
+		// -----------------------------------------------
+		// --- initializing side chain's msg and side chain's committee roster index for the first run
+		// -----------------------------------------------
+		for i := 0; i < bz.CommitteeWindow; i++ {
+			bz.CommitteeNodesTreeNodeID = append(bz.CommitteeNodesTreeNodeID, bz.Tree().List()[i].ID)
+		}
+		bz.BlsCosi.Msg = []byte{0xFF}
+
+		bz.CommitteeNodesTreeNodeID = append([]onet.TreeNodeID{bz.Tree().List()[bz.CommitteeWindow].ID}, bz.CommitteeNodesTreeNodeID[:bz.CommitteeWindow-1]...)
+		var CommitteeNodesServerIdentity []*network.ServerIdentity
+		for _, a := range bz.CommitteeNodesTreeNodeID {
+			CommitteeNodesServerIdentity = append(CommitteeNodesServerIdentity, bz.Tree().Search(a).ServerIdentity)
+		}
+		committeeRoster := onet.NewRoster(CommitteeNodesServerIdentity)
+		// --- root should have root index of 0 (this is based on what happens in gen_tree.go)
+		var x = *bz.Tree().List()[bz.CommitteeWindow]
+		x.RosterIndex = 0
+		// ---
+		bz.BlsCosi.SubTrees, err = protocol.NewBlsProtocolTree(onet.NewTree(committeeRoster, &x), bz.NbrSubTrees)
+		if err == nil {
+			log.Lvl1("final result: BlsCosi: First bls cosi tree is: ", bz.BlsCosi.SubTrees[0].Roster.List,
+				" with ", bz.BlsCosi.Name(), " as Root starting BlsCosi")
+		} else {
+			log.Lvl1("Raha: error: ", err)
+		}
+		// ------------------------------------------
+		err = bz.BlsCosi.Start() // first leader in side chain is this node
+		if err != nil {
+			log.Lvl1(bz.Info(), "couldn't start side chain")
+		}
+	} */
 }
+
+// -------------------------------------- MC Blockchain -------------------------------------- //
 
 /* ----------------------------------------------------------------------
 	finalMainChainBCInitialization initialize the mainchainbc file based on the config params defined in the config file
 	(.toml file of the protocol) the info we hadn't before and we have now is nodes' info that this function add to the mainchainbc file
 ------------------------------------------------------------------------ */
-
 func (bz *BaseDFS) finalMainChainBCInitialization() {
 	var NodeInfoRow []string
 	for _, a := range bz.Roster().List {
@@ -486,8 +586,6 @@ func (bz *BaseDFS) finalMainChainBCInitialization() {
 	var err error
 	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
-		// log.Lvl2("Raha: ", err)
-		// panic(err)
 		xerrors.New("problem creatde while opening bc:   " + err.Error())
 	} else {
 		log.Lvl3("opening bc")
@@ -541,6 +639,7 @@ func (bz *BaseDFS) readBCAndSendtoOthers() {
 				Power: power})
 			if err != nil {
 				log.Lvl2(bz.Info(), "can't send new round msg to", b.Name())
+				panic(err)
 			}
 		}
 	}
@@ -650,118 +749,6 @@ func (bz *BaseDFS) readBCPowersAndSeed() (powers map[string]uint64, seed string)
 	}
 
 	return minerspowers, seed
-}
-
-/* ----------------------------------------------------------------------
------------------------------------------------------------------------- */
-//helloBaseDFS
-func (bz *BaseDFS) helloBaseDFS() {
-	var err error
-	log.Lvl2(bz.TreeNode().Name(), " joined to the protocol")
-	// ----------------------------------------------------------------------------------------------
-	// -------------------------- main chain's protocol ---------------------------------------
-	// ----------------------------------------------------------------------------------------------
-	/* 	if bz.IsRoot() {
-		// let other nodes join the protocol first -
-		time.Sleep(time.Duration(len(bz.Roster().List)) * time.Second)
-		// the root node is filling the first block in first round
-		log.Lvl2(bz.Name(), "Filling round number ", bz.MCRoundNumber)
-		// for the first round we have the root node set as a round leader, so  it is true! and he takes txs from the queue
-		bz.updateBCPowerRound(bz.TreeNode().Name(), true)
-		bz.updateBCTransactionQueueCollect()
-		bz.updateBCTransactionQueueTake()
-		time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
-		bz.readBCAndSendtoOthers()
-	} */
-	// ----------------------------------------------------------------------------------------------
-	// -------------------------- BLS CoSi protocol ---------------------------------------
-	// ----------------------------------------------------------------------------------------------
-	// all nodes get here and start to listen for blscosi protocol messages
-	go func() {
-		err := bz.DispatchProtocol()
-		if err != nil {
-			log.Lvl1("protocol dispatch calling error: " + err.Error())
-		}
-	}()
-
-	if bz.IsRoot() && bz.BlsCosiStarted {
-		log.LLvl5("List of nodes (full tree is): \n")
-		for i, a := range bz.Tree().List() {
-			log.LLvl5(i, " :", a.Name(), ": ", a.RosterIndex, "\n")
-		}
-		// -----------------------------------------------
-		// --- initializing side chain's msg and side chain's committee roster index for the second run and the next runs
-		// -----------------------------------------------
-		for i := 0; i < bz.CommitteeWindow; i++ {
-			bz.CommitteeNodesTreeNodeID = append(bz.CommitteeNodesTreeNodeID, bz.Tree().List()[i].ID)
-		}
-		bz.BlsCosi.Msg = []byte{0xFF}
-		// -----------------------------------------------
-		// --- initializing next side chain's leader
-		// -----------------------------------------------
-		bz.CommitteeNodesTreeNodeID = append([]onet.TreeNodeID{bz.Tree().List()[bz.CommitteeWindow+1].ID}, bz.CommitteeNodesTreeNodeID[:bz.CommitteeWindow-1]...)
-		log.LLvl5(bz.CommitteeNodesTreeNodeID[:bz.CommitteeWindow])
-		bz.NextSideChainLeader = bz.Tree().List()[bz.CommitteeWindow+1].ID
-
-		// let other nodes join the protocol first -
-		//time.Sleep(time.Duration(len(bz.Roster().List)) * time.Second)
-		// the root node is filling the first block in first round
-		log.Lvl2(bz.Name(), "Filling round number ", bz.MCRoundNumber)
-		// for the first round we have the root node set as a round leader, so  it is true! and he takes txs from the queue
-		bz.updateBCPowerRound(bz.TreeNode().Name(), true)
-		bz.updateBCTransactionQueueCollect()
-		bz.updateBCTransactionQueueTake()
-		time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
-		bz.readBCAndSendtoOthers()
-		// protocol timeout
-		go bz.StartTimeOut()
-	}
-	// -----------------------------------------------
-	// run bls cosi for the very first time
-	// -----------------------------------------------
-	if bz.Tree().List()[bz.CommitteeWindow].ID == bz.TreeNode().ID {
-		// -----------------------------------------------
-		// --- initializing side chain's msg and side chain's committee roster index for the first run
-		// -----------------------------------------------
-		for i := 0; i < bz.CommitteeWindow; i++ {
-			bz.CommitteeNodesTreeNodeID = append(bz.CommitteeNodesTreeNodeID, bz.Tree().List()[i].ID)
-		}
-		bz.BlsCosi.Msg = []byte{0xFF}
-		bz.CommitteeNodesTreeNodeID = append([]onet.TreeNodeID{bz.Tree().List()[bz.CommitteeWindow].ID}, bz.CommitteeNodesTreeNodeID[:bz.CommitteeWindow-1]...)
-		var CommitteeNodesServerIdentity []*network.ServerIdentity
-		for _, a := range bz.CommitteeNodesTreeNodeID {
-			CommitteeNodesServerIdentity = append(CommitteeNodesServerIdentity, bz.Tree().Search(a).ServerIdentity)
-		}
-		committeeRoster := onet.NewRoster(CommitteeNodesServerIdentity)
-		// --- root should have root index of 0 (this is based on what happens in gen_tree.go)
-		var x = *bz.Tree().List()[bz.CommitteeWindow]
-		x.RosterIndex = 0
-		// ---
-		bz.BlsCosi.SubTrees, err = protocol.NewBlsProtocolTree(onet.NewTree(committeeRoster, &x), bz.NbrSubTrees)
-		if err == nil {
-			log.Lvl1("final result: BlsCosi: First bls cosi tree is: ", bz.BlsCosi.SubTrees[0].Roster.List,
-				" with ", bz.BlsCosi.Name(), " as Root starting BlsCosi")
-		} else {
-			log.Lvl1("Raha: error: ", err)
-		}
-		// ------------------------------------------
-		err = bz.BlsCosi.Start() // first leader in side chain is this node
-		if err != nil {
-			log.Lvl1(bz.Info(), "couldn't start side chain")
-		}
-	}
-}
-
-/* ----------------------------------------------------------------------
-	this function will be called just by ROOT NODE at the end of timeout for a simulation run
-	(the time specified in config file for a protocol simulation run)
- ----------------------------------------------------------------------*/
-func (bz *BaseDFS) StartTimeOut() {
-	select {
-	case <-time.After(time.Duration(bz.ProtocolTimeout)):
-		log.Lvl1(bz.Info(), "protocol ends with timed out: ", bz.ProtocolTimeout)
-		bz.DoneBaseDFS <- true
-	}
 }
 
 /* ----------------------------------------------------------------------
@@ -1285,7 +1272,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 					f.RemoveRow("SecondQueue", i)
 				} else {
 					blockIsFull = true
-					log.Lvl3("final result:: regular  payment share is full!")
+					log.Lvl3("final result MC: regular  payment share is full!")
 					f.SetCellValue("RoundTable", axisQueue2IsFull, 1)
 					break
 				}
@@ -1392,7 +1379,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 					f.RemoveRow("FirstQueue", i)
 				} else {
 					blockIsFull = true
-					log.Lvl3("final result:: block is full! ")
+					log.Lvl3("final result MC: block is full! ")
 					f.SetCellValue("RoundTable", axisQueue1IsFull, 1)
 					break
 				}
@@ -1424,7 +1411,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	f.SetCellValue("RoundTable", axisAveFirstQueueWait, bz.FirstQueueWait/TotalNumTxsInFirstQueue)
 	f.SetCellValue("RoundTable", axisAveSecondQueueWait, bz.SecondQueueWait/numberOfRegPayTx)
 
-	log.Lvl3("final result:: \n", allocatedBlockSizeForRegPayTx,
+	log.Lvl3("final result MC: \n", allocatedBlockSizeForRegPayTx,
 		" for regular payment txs,\n and ", accumulatedTxSize, " for other types of txs")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
@@ -1507,6 +1494,38 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	} else {
 		log.Lvl3("closing bc")
 		log.Lvl2(bz.Name(), " Finished taking transactions from queue (FIFO) into new block in round number ", bz.MCRoundNumber)
+	}
+}
+
+// -------------------------------------- timeouts -------------------------------------- //
+
+/* ------------------------------------------------------------------------
+this function will be called just by ROOT NODE when:
+- at the end of a round duration (when no "I am a leader message is recieved): startTimer starts the timer to detect the rounds that dont have any leader elected (if any)
+and publish an empty block in those rounds
+------------------------------------------------------------------------ */
+func (bz *BaseDFS) startTimer(MCRoundNumber int) {
+	select {
+	case <-time.After(time.Duration(bz.MCRoundDuration) * time.Second):
+		// bz.IsRoot() is here just to make sure!,
+		// bz.MCRoundNumber == MCRoundNumber is for when the round number has changed!,
+		// bz.hasLeader is for when the round number has'nt changed but the leader has been announced
+		if bz.IsRoot() && bz.MCRoundNumber == MCRoundNumber && !bz.HasLeader {
+			log.Lvl2("No leader for round number ", bz.MCRoundNumber, "an empty block is added")
+			bz.NewLeaderChan <- NewLeaderChan{bz.TreeNode(), NewLeader{ /*Leaderinfo: bz.TreeNode(), */ MCRoundNumber: bz.MCRoundNumber}}
+		}
+	}
+}
+
+/* ----------------------------------------------------------------------
+	this function will be called just by ROOT NODE at the end of timeout for a simulation run
+	(the time specified in config file for a protocol simulation run)
+ ----------------------------------------------------------------------*/
+func (bz *BaseDFS) StartTimeOut() {
+	select {
+	case <-time.After(time.Duration(bz.ProtocolTimeout)):
+		log.Lvl1(bz.Info(), "protocol ends with timed out: ", bz.ProtocolTimeout)
+		bz.DoneBaseDFS <- true
 	}
 }
 
