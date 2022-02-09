@@ -1,5 +1,5 @@
 // Bitcoin-blockchain specific functions.
-package blockchain
+package sample
 
 /*
 import (

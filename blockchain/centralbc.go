@@ -34,7 +34,7 @@ func generateNormalValues(variance, mean, nodes, SimulationSeed int) []uint64 {
 // InitializeMainChain function is called in simulation level
 func InitializeMainChainBC(
 	DistributionMeanFileSize, DistributionVarianceFileSize,
-	DistributionMeanContractDuration, DistributionVarianceContractDuration,
+	DistributionMeanServAgrDuration, DistributionVarianceServAgrDuration,
 	DistributionMeanInitialPower, DistributionVarianceInitialPower,
 	Nodes, SimulationSeed string) {
 	// --------------------- generating normal distributed number based on config params ---------------------
@@ -47,11 +47,11 @@ func InitializeMainChainBC(
 	MeanFileSize := intVar
 	SimulationSeedInt, _ := strconv.Atoi(SimulationSeed)
 	FileSizeRow := generateNormalValues(VarianceFileSize, MeanFileSize, numberOfNodes, SimulationSeedInt)
-	intVar, _ = strconv.Atoi(DistributionVarianceContractDuration)
-	VarianceContractDuration := intVar
-	intVar, _ = strconv.Atoi(DistributionMeanContractDuration)
-	MeanContractDuration := intVar
-	ContractDurationRow := generateNormalValues(VarianceContractDuration, MeanContractDuration, numberOfNodes, SimulationSeedInt)
+	intVar, _ = strconv.Atoi(DistributionVarianceServAgrDuration)
+	VarianceServAgrDuration := intVar
+	intVar, _ = strconv.Atoi(DistributionMeanServAgrDuration)
+	MeanServAgrDuration := intVar
+	ServAgrDurationRow := generateNormalValues(VarianceServAgrDuration, MeanServAgrDuration, numberOfNodes, SimulationSeedInt)
 	//--------------------- fill the mainchainbc file with generated numbers  ---------------------
 	f := excelize.NewFile()
 	var err error
@@ -102,8 +102,8 @@ func InitializeMainChainBC(
 		panic(err)
 	}
 	for i := 2; i <= len(FileSizeRow)+1; i++ {
-		contractRow := strconv.Itoa(i)
-		t := "B" + contractRow
+		ServAgrRow := strconv.Itoa(i)
+		t := "B" + ServAgrRow
 		err = f.SetCellValue("MarketMatching", t, FileSizeRow[i-2])
 	}
 	if err != nil {
@@ -111,7 +111,7 @@ func InitializeMainChainBC(
 		panic(err)
 	}
 
-	err = f.SetCellValue("MarketMatching", "C1", "ContractDuration")
+	err = f.SetCellValue("MarketMatching", "C1", "ServAgrDuration")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -120,10 +120,10 @@ func InitializeMainChainBC(
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	for i := 2; i <= len(ContractDurationRow)+1; i++ {
-		contractRow := strconv.Itoa(i)
-		t := "C" + contractRow
-		err = f.SetCellValue("MarketMatching", t, ContractDurationRow[i-2])
+	for i := 2; i <= len(ServAgrDurationRow)+1; i++ {
+		ServAgrRow := strconv.Itoa(i)
+		t := "C" + ServAgrRow
+		err = f.SetCellValue("MarketMatching", t, ServAgrDurationRow[i-2])
 	}
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
@@ -139,9 +139,9 @@ func InitializeMainChainBC(
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	for i := 2; i <= len(ContractDurationRow)+1; i++ {
-		contractRow := strconv.Itoa(i)
-		t := "D" + contractRow
+	for i := 2; i <= len(ServAgrDurationRow)+1; i++ {
+		ServAgrRow := strconv.Itoa(i)
+		t := "D" + ServAgrRow
 		err = f.SetCellValue("MarketMatching", t, 0)
 	}
 	if err != nil {
@@ -149,16 +149,16 @@ func InitializeMainChainBC(
 		panic(err)
 	}
 
-	// later we want to ad market matching transaction and compelete contract info in bc
-	err = f.SetCellValue("MarketMatching", "E1", "ContractID")
+	// later we want to ad market matching transaction and compelete ServAgr info in bc
+	err = f.SetCellValue("MarketMatching", "E1", "ServAgrID")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	r := rand.New(rand.NewSource(int64(SimulationSeedInt)))
 	for i := 2; i <= numberOfNodes+1; i++ {
-		contractRow := strconv.Itoa(i)
-		t := "E" + contractRow
+		ServAgrRow := strconv.Itoa(i)
+		t := "E" + ServAgrRow
 		if err = f.SetCellValue("MarketMatching", t, r.Int()); err != nil {
 			log.Lvl2("Panic Raised:\n\n")
 			panic(err)
@@ -179,8 +179,8 @@ func InitializeMainChainBC(
 		panic(err)
 	}
 	for i := 2; i <= numberOfNodes+1; i++ {
-		contractRow := strconv.Itoa(i)
-		t := "F" + contractRow
+		ServAgrRow := strconv.Itoa(i)
+		t := "F" + ServAgrRow
 		if err = f.SetCellValue("MarketMatching", t, 0); err != nil {
 			log.Lvl2("Panic Raised:\n\n")
 			panic(err)
@@ -239,7 +239,7 @@ func InitializeMainChainBC(
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	err = f.SetCellValue("FirstQueue", "E1", "ContractId")
+	err = f.SetCellValue("FirstQueue", "E1", "ServAgrId")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -560,8 +560,8 @@ func InitializeMainChainBC(
 	log.Lvl2("Config params used in initial initialization of main chain:",
 		"\n DistributionMeanFileSize: ", DistributionMeanFileSize,
 		"\n DistributionVarianceFileSize: ", DistributionVarianceFileSize,
-		"\n DistributionMeanContractDuration: ", DistributionMeanContractDuration,
-		"\n DistributionVarianceContractDuration: ", DistributionVarianceContractDuration,
+		"\n DistributionMeanServAgrDuration: ", DistributionMeanServAgrDuration,
+		"\n DistributionVarianceServAgrDuration: ", DistributionVarianceServAgrDuration,
 		"\n DistributionMeanInitialPower: ", DistributionMeanInitialPower,
 		"\n DistributionVarianceInitialPower: ", DistributionVarianceInitialPower)
 }
@@ -571,7 +571,7 @@ for i := 1;i<=len(FileSizeColumn);i++ {
 		axis = "B" + strconv.Itoa(i+1)
 		f.SetCellValue("MarketMatching", axis, FileSizeColumn[i-1])
 		axis = "C" + strconv.Itoa(i+1)
-		f.SetCellValue("MarketMatching", axis, ContractDurationColumn[i-1])
+		f.SetCellValue("MarketMatching", axis, ServAgrDurationColumn[i-1])
 	}
 	now := time.Now()
 	f2.SetCellValue("Sheet1", "A4", now.Format(time.ANSIC))
@@ -643,7 +643,7 @@ func InitializeSideChainBC(Nodes, SimulationSeed string) {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	err = f.SetCellValue("FirstQueue", "E1", "ContractId")
+	err = f.SetCellValue("FirstQueue", "E1", "ServAgrId")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)

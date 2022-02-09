@@ -30,8 +30,8 @@ Config File "BaseDFS.toml" is located under the following directory:
 ## To Change the Configs ##
 - to change number of servers, change two values: 1- `Hosts` and 2- `Nodes` - with a same number :)
 - `BlockSize` is the maximum block size (in Byte) allowed in each round (the submitted block may be less than this size based on the available transactions in the queues)[^1]
-- `DistributionMeanFileSize` and `DistributionVarianceFileSize` are specifying the mean and variance of the Normal distribution used to generate file-sizes in the contracts
-- `DistributionMeanContractDuration` and `DistributionVarianceContractDuration` is the same for contracts' duration
+- `DistributionMeanFileSize` and `DistributionVarianceFileSize` are specifying the mean and variance of the Normal distribution used to generate file-sizes in the ServAgrs
+- `DistributionMeanServAgrDuration` and `DistributionVarianceServAgrDuration` is the same for ServAgrs' duration
 - `DistributionMeanInitialPower` and DistributionVarianceInitialPower is the same for the intial power we assign to each server
 - `SectorNumber` is the number of sectors in each block of file with impact the por transaction size
 - `PercentageTxPay` the block size percentage allocated for regular payment transactions (if regular payment txs are less, other types of txs will take its space)
@@ -44,21 +44,26 @@ Config File "BaseDFS.toml" is located under the following directory:
 - `SCRoundDuration`
 - `EpochCount`
 - `CommitteeWindow`
+- `SimState`
 
 
 ## Blockcahin ##
+
+- ServAgr stands for `service agreement`
+- por stands for `proof of retrievibility`
+
 There are 5 sheets, namely MarketMatching, FirstQueue, SecondQueue, and RoundTable, and PowerTable
 
 
 - `MarketMatching`: the overall information about the market matching
     - about the servers: IP, 
-    - about the contract: ID, duration, File size, and starting round#, isPublished (if a contract get expired, the column published is set to 0 until its poropose and commit transaction get submitted to the blockchain again)
+    - about the ServAgr: ID, duration, File size, and starting round#, isPublished (if a ServAgr get expired, the column published is set to 0 until its poropose and commit transaction get submitted to the blockchain again)
 - `PowerTable`: A matrix of each server's added power in each round
 - `FirstQueue`: there are 5 types of trransactions in there
-    - `propose contract': including the information of teh contract and the client's payment for it
-    - `commit contract`: in which the server commits to the contract id already published by the client
-    - `por`: for each active (not expired) contract each server issue ane por
-    - `storage payment`: after the contract duration pass and a contract expires, this transaction is assued to pay for the service
+    - `propose ServAgr': including the information of teh ServAgr and the client's payment for it
+    - `commit ServAgr`: in which the server commits to the ServAgr id already published by the client
+    - `por`: for each active (not expired) ServAgr each server issue ane por
+    - `storage payment`: after the ServAgr duration pass and a ServAgr expires, this transaction is assued to pay for the service
 - `SecondQueue`: the queue of regular payment transactions
 - `RoundTable`: the overall information of the blockchain including:
     - each round's seed

@@ -1,4 +1,4 @@
-package blockchain
+package sample
 
 import (
 	"bytes"
@@ -23,10 +23,10 @@ type TransactionAnnouncment struct {
 // somehow. We could just simply add it as a field and not (un)marhsal it
 // We'd just make sure that the suite is setup before unmarshaling.
 type BlockReply struct {
-	SuiteStr   string
-	Timestamp  int64  // The timestamp requested for the block to prove its ordering
-	BlockLen   int    // Length of Block
-	Block      Block  // The Block including a number of transactions
+	SuiteStr  string
+	Timestamp int64 // The timestamp requested for the block to prove its ordering
+	BlockLen  int   // Length of Block
+	//Block      Block  // The Block including a number of transactions
 	MerkleRoot []byte // root of the merkle tree
 	PrfLen     int    // Length of proof
 	//	Prf           crypto.Proof    // Merkle proof of value

@@ -46,7 +46,7 @@ type TxPay struct {
 }
 
 /* ---------------- market matching transactions ---------------- */
-type Contract struct {
+type ServAgr struct {
 	duration      [2]byte
 	fileSize      [4]byte
 	startRound    [3]byte
@@ -59,34 +59,34 @@ type Contract struct {
 	from that round's seed as a source of randomness */
 }
 
-/* TxContractPropose: A client create a contract and add approprite (duration*price) escrow and sign it and issue a contract propose transaction
-which has the contract and payment (escrow) info in it */
-type TxContractPropose struct {
+/* TxServAgrPropose: A client create a ServAgr and add approprite (duration*price) escrow and sign it and issue a ServAgr propose transaction
+which has the ServAgr and payment (escrow) info in it */
+type TxServAgrPropose struct {
 	tx               *TxPay
-	ContractID       *Contract
+	ServAgrID        *ServAgr
 	clientCommitment [71]byte
 }
 
-//ToDo: ContractCommit
-type TxContractCommit struct {
+//ToDo: ServAgrCommit
+type TxServAgrCommit struct {
 	serverCommitment [71]byte
-	ContractID       uint64
+	ServAgrID        uint64
 }
 
-/* ---------------- transactions that will be issued until a contract is active ---------------- */
+/* ---------------- transactions that will be issued until a ServAgr is active ---------------- */
 
 /* por txs are designed in away that the verifier (any miner) has sufficient information to verify it */
 type TxPoR struct {
-	ContractID    uint64
+	ServAgrID     uint64
 	por           *por.Por
 	MCRoundNumber [3]byte // to determine the random query used for it
 }
 
-/* ---------------- transactions that will be issued after a contract is expired ---------------- */
+/* ---------------- transactions that will be issued after a ServAgr is expired ---------------- */
 
 type TxStoragePay struct {
-	ContractID uint64
-	tx         *TxPay
+	ServAgrID uint64
+	tx        *TxPay
 }
 
 /* ---------------- transactions that will be issued for each round ---------------- */
@@ -109,11 +109,11 @@ type TransactionList struct {
 	TxPoRs   []*TxPoR
 	TxPoRCnt [2]byte
 	//---
-	TxContractProposes   []*TxContractPropose
-	TxContractProposeCnt [2]byte
+	TxServAgrProposes   []*TxServAgrPropose
+	TxServAgrProposeCnt [2]byte
 	//---
-	TxContractCommits   []*TxContractCommit
-	TxContractCommitCnt [2]byte
+	TxServAgrCommits   []*TxServAgrCommit
+	TxServAgrCommitCnt [2]byte
 	//---
 	TxStoragePay    []*TxStoragePay
 	TxStoragePayCnt [2]byte
@@ -161,8 +161,8 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 	// ---------------- block sample ----------------
 	var TxPayArraySample []*TxPay
 	var TxPorArraySample []*TxPoR
-	var TxContractProposeArraySample []*TxContractPropose
-	var TxContractCommitSample []*TxContractCommit
+	var TxServAgrProposeArraySample []*TxServAgrPropose
+	var TxServAgrCommitSample []*TxServAgrCommit
 	var TxStoragePaySample []*TxStoragePay
 
 	x9 := &TransactionList{
@@ -173,11 +173,11 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 		TxPoRs:   TxPorArraySample,
 		TxPoRCnt: cnt,
 		//---
-		TxContractProposes:   TxContractProposeArraySample,
-		TxContractProposeCnt: cnt,
+		TxServAgrProposes:   TxServAgrProposeArraySample,
+		TxServAgrProposeCnt: cnt,
 		//---
-		TxContractCommits:   TxContractCommitSample,
-		TxContractCommitCnt: cnt,
+		TxServAgrCommits:   TxServAgrCommitSample,
+		TxServAgrCommitCnt: cnt,
 		//---
 		TxStoragePay:    TxStoragePaySample,
 		TxStoragePayCnt: cnt,
@@ -219,14 +219,14 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 		len(MCRoundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) + len(hashSample) + len(Version) + //x10
 		5*len(cnt) + len(feeSample) //x9
 	// ---
-	log.Lvl2("Block Size Minus Transactions is: ", BlockSizeMinusTransactions)
+	log.Lvl3("Block Size Minus Transactions is: ", BlockSizeMinusTransactions)
 
 	return BlockSizeMinusTransactions
 }
 
 // TransactionMeasurement computes the size of 5 types of transactions we currently have in the system:
-// Por, ContractPropose, Pay, StoragePay, ContractCommit
-func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize int, ContractProposeTxSize int, PayTxSize int, StoragePayTxSize int, ContractCommitTxSize int) {
+// Por, ServAgrPropose, Pay, StoragePay, ServAgrCommit
+func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize int, ServAgrProposeTxSize int, PayTxSize int, StoragePayTxSize int, ServAgrCommitTxSize int) {
 	// -- Hash Sample ----
 	sha := sha256.New()
 	if _, err := sha.Write([]byte("a sample seed")); err != nil {
@@ -282,14 +282,14 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize int, Co
 		len(UnlockingScriptSize) + len(UnlockinScriptSample) + len(SequenceNumber) + //TxPayIn
 		len(Amount) + len(LockingScriptSample) + len(LockingScriptSize) + //TxPayOut
 		len(timeSample) + len(Version) + len(cnt) + len(cnt) //TxPay
-	log.Lvl2("size of a pay transaction is: ", PayTxSize, "bytes")
+	log.Lvl3("size of a pay transaction is: ", PayTxSize, "bytes")
 	// ---------------- por transaction sample  ----------------
 
 	sk, _ := por.RandomizedKeyGeneration()
 	Tau, pf := por.RandomizedFileStoring(sk, por.GenerateFile(SectorNumber), SectorNumber)
 
-	// ---------------- ContractPropose transaction sample ----------------
-	x5 := &Contract{
+	// ---------------- ServAgrPropose transaction sample ----------------
+	x5 := &ServAgr{
 		duration:      duration,
 		fileSize:      fileSizeSample,
 		startRound:    startRoundSample,
@@ -297,28 +297,28 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize int, Co
 		Tau:           Tau,
 		//MCRoundNumber:   MCRoundNumberSample,
 	}
-	x7 := &TxContractPropose{
+	x7 := &TxServAgrPropose{
 		tx:               x4,
-		ContractID:       x5,
+		ServAgrID:        x5,
 		clientCommitment: cmtSample,
 	}
 
 	log.Lvl5("x5 is:", x5, " and x7 is: ", x7)
 
-	ContractProposeTxSize = PayTxSize + //tx
-		len(duration) + len(fileSizeSample) + len(startRoundSample) + len(pricePerRoundSample) + len(Tau) + //contract tx
+	ServAgrProposeTxSize = PayTxSize + //tx
+		len(duration) + len(fileSizeSample) + len(startRoundSample) + len(pricePerRoundSample) + len(Tau) + //ServAgr tx
 		len(cmtSample) //clientCommitment
 
-	log.Lvl2("size of a Contract Propose transaction (including contract creation tx) is: ", ContractProposeTxSize,
+	log.Lvl3("size of a ServAgr Propose transaction (including ServAgr creation tx) is: ", ServAgrProposeTxSize,
 		"bytes \n with ",
-		len(duration)+len(fileSizeSample)+len(startRoundSample)+len(pricePerRoundSample)+len(Tau), " bytes for contract, \n and ",
+		len(duration)+len(fileSizeSample)+len(startRoundSample)+len(pricePerRoundSample)+len(Tau), " bytes for ServAgr, \n and ",
 		PayTxSize, " bytes for payment")
 
 	// ---------------- por transaction sample ----------------
 	var randombyte = make([]byte, 8)
 	rand := random.New()
 	var muArraySample []kyber.Scalar
-	var contractIdSample = r.Uint64()
+	var ServAgrIdSample = r.Uint64()
 
 	for i := range muArraySample {
 		muArraySample[i] = por.Suite.Scalar().Pick(blake2xb.New(randombyte))
@@ -337,7 +337,7 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize int, Co
 	p := por.CreatePoR(pf, SectorNumber, SimulationSeed)
 
 	x6 := &TxPoR{
-		ContractID:    contractIdSample,
+		ServAgrID:     ServAgrIdSample,
 		por:           &p,
 		MCRoundNumber: MCRoundNumberSample,
 	}
@@ -345,30 +345,30 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize int, Co
 	log.Lvl5("tx por is: ", x6)
 
 	PorTxSize = porSize /*size of pur por*/ +
-		8 /*len(contractIdSample)*/ + len(MCRoundNumberSample) //TxPoR
+		8 /*len(ServAgrIdSample)*/ + len(MCRoundNumberSample) //TxPoR
 
-	log.Lvl2("size of a por transaction is: ", PorTxSize, " bytes \n with ",
+	log.Lvl3("size of a por transaction is: ", PorTxSize, " bytes \n with ",
 		SectorNumber*por.Suite.G1().ScalarLen()+por.Suite.G2().PointLen(), " bytes for pure por")
 	// ---------------- TxStoragePay transaction sample ----------------
 	x9 := &TxStoragePay{
-		ContractID: contractIdSample,
-		tx:         x4,
+		ServAgrID: ServAgrIdSample,
+		tx:        x4,
 	}
 
 	log.Lvl5("tx StoragePay is: ", x9)
 
-	StoragePayTxSize = 8 /*len(contractIdSample)*/ + PayTxSize
-	log.Lvl2("size of a StoragePay transaction is: ", StoragePayTxSize)
-	// ---------------- TxContractCommit transaction sample ----------------
-	x10 := TxContractCommit{
+	StoragePayTxSize = 8 /*len(ServAgrIdSample)*/ + PayTxSize
+	log.Lvl3("size of a StoragePay transaction is: ", StoragePayTxSize)
+	// ---------------- TxServAgrCommit transaction sample ----------------
+	x10 := TxServAgrCommit{
 		serverCommitment: cmtSample,
-		ContractID:       contractIdSample,
+		ServAgrID:        ServAgrIdSample,
 	}
 
-	log.Lvl5("tx ContractCommit is: ", x10)
+	log.Lvl5("tx ServAgrCommit is: ", x10)
 
-	ContractCommitTxSize = len(cmtSample) + 8 /*len(contractIdSample)*/
-	log.Lvl2("size of a ContractCommit transaction is: ", ContractCommitTxSize)
+	ServAgrCommitTxSize = len(cmtSample) + 8 /*len(ServAgrIdSample)*/
+	log.Lvl3("size of a ServAgrCommit transaction is: ", ServAgrCommitTxSize)
 
-	return PorTxSize, ContractProposeTxSize, PayTxSize, StoragePayTxSize, ContractCommitTxSize
+	return PorTxSize, ServAgrProposeTxSize, PayTxSize, StoragePayTxSize, ServAgrCommitTxSize
 }

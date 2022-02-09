@@ -30,7 +30,8 @@ type simulInitDone struct{}
 // simul = localhost.simulation
 
 // raha: adding some other system-wide configurations
-func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberOfPayTXsUpperBound, ProtocolTimeout, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, EpochCount int,
+func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberOfPayTXsUpperBound,
+	ProtocolTimeout, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, EpochCount, SimState int,
 	suite, serverAddress, simul, monitorAddress string) error {
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 	if err != nil {
@@ -197,6 +198,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberO
 			basedfsprotocol.SCRoundDuration = SCRoundDuration
 			basedfsprotocol.CommitteeWindow = CommitteeWindow
 			basedfsprotocol.EpochCount = EpochCount
+			basedfsprotocol.SimState = SimState
 			log.LLvl2("passing our system-wide configurations to the protocol",
 				"\n  PercentageTxPay: ", PercentageTxPay,
 				"\n  MCRoundDuration: ", MCRoundDuration,
@@ -210,6 +212,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberO
 				"\n SCRoundDuration: ", SCRoundDuration,
 				"\n CommitteeWindow: ", CommitteeWindow,
 				"\n EpochCount: ", EpochCount,
+				"\n SimState: ", SimState,
 			)
 			// ---------------------------------------------------------------
 			// raha: BLSCoSi protocol
@@ -246,6 +249,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberO
 						CommitteeWindow: basedfsprotocol.CommitteeWindow,
 						SCRoundDuration: basedfsprotocol.SCRoundDuration,
 						EpochCount:      basedfsprotocol.EpochCount,
+						SimState:        basedfsprotocol.SimState,
 					})
 					if err != nil {
 						log.Lvl1(basedfsprotocol.Info(), "couldn't send hello to child", child.Name())
@@ -371,6 +375,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 		ProtocolTimeout:   0,
 		BlsCosiStarted:    false,
 		BlsCosi:           cosiProtocol,
+		SimState:          1, // 1: just the main chain - 2: main chain plus side chain = chainBoost
 	}
 
 	if err := n.RegisterChannel(&bz.HelloChan); err != nil {
@@ -429,7 +434,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 // // simul = localhost.simulation
 
 // // raha: adding some other system-wide configurations
-// func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberOfPayTXsUpperBound, ProtocolTimeout, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, EpochCount int,
+// func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberOfPayTXsUpperBound, ProtocolTimeout, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, EpochCount, SimState int,
 // 	suite, serverAddress, simul, monitorAddress string) error {
 // 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 // 	if err != nil {
@@ -594,6 +599,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 // 			basedfsprotocol.SCRoundDuration = SCRoundDuration
 // 			basedfsprotocol.CommitteeWindow = CommitteeWindow
 // 			basedfsprotocol.EpochCount = EpochCount
+//			basedfsprotocol.SimState = SimState
 // 			log.LLvl2("passing our system-wide configurations to the protocol",
 // 				"\n  PercentageTxPay: ", PercentageTxPay,
 // 				"\n  MCRoundDuration: ", MCRoundDuration,
@@ -607,6 +613,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 // 				"\n SCRoundDuration: ", SCRoundDuration,
 // 				"\n CommitteeWindow: ", CommitteeWindow,
 // 				"\n EpochCount: ", EpochCount,
+//				"\n SimState: ", SimState,
 // 			)
 // 			// ---------------------------------------------------------------
 // 			// raha: BLSCoSi protocol

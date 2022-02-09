@@ -4,27 +4,28 @@ BF = 2
 Rounds = 0
 RunWait = "600000s"
 Suite = "bn256.adapter"
-PreScript = "testPreScript.toml"
+PreScript = "ChainBoostPreScript.toml"
 ProtocolTimeout = 1000
 timeout = 250
-PercentageTxPay = 30
 DistributionMeanFileSize = 100
 DistributionVarianceFileSize = 5
-DistributionMeanContractDuration = 10
-DistributionVarianceContractDuration = 50
+DistributionMeanServAgrDuration = 10
+DistributionVarianceServAgrDuration = 50
 DistributionMeanInitialPower = 9000000000000000000
 DistributionVarianceInitialPower = 9000000000000000
-BlockSize = 2000
+BlockSize = 25000
 SectorNumber = 1
 NumberOfPayTXsUpperBound = 200
+PercentageTxPay = 30
 SimulationSeed = 10
 SCRoundDuration = 2
 MCRoundDuration = 4
 EpochCount = 2
 NbrSubTrees = 1
-Nodes = 10
-CommitteeWindow = 3
-Threshold = 2
+Nodes = 32
+CommitteeWindow = 5
+Threshold = 4   
+SimState = 2
 
 Hosts
-10
+32

@@ -1,4 +1,4 @@
-package blockchain
+package sample
 
 /*
 import (

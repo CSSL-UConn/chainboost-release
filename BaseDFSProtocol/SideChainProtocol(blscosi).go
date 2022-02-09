@@ -107,7 +107,7 @@ func DefaultThreshold(n int) int {
 
 //raha added
 func DefaultBlockType() string {
-	return "metablock"
+	return "Meta Block"
 }
 
 // NewBlsCosi method is used to define the blscosi protocol.

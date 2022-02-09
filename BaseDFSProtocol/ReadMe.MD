@@ -32,6 +32,7 @@ Types of Messages:
 	SCRoundDuration:			  bz.SCRoundDuration,
 	CommitteeWindow:		  bz.CommitteeWindow,
 	EpochCount:					bz.EpochCount,
+	SimState:					bz.SimState,
 }
 ```
 - timeOut: terminate the simulation

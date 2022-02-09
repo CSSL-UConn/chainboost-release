@@ -81,6 +81,7 @@ type Config struct {
 	SCRoundDuration int
 	CommitteeWindow int
 	EpochCount      int
+	SimState        int
 }
 
 var deterlab = "deterlab"

@@ -79,6 +79,7 @@ func startBuild() {
 		SCRoundDuration, _ := strconv.Atoi(runconfigs[0].Get("SCRoundDuration"))
 		CommitteeWindow, _ := strconv.Atoi(runconfigs[0].Get("CommitteeWindow"))
 		EpochCount, _ := strconv.Atoi(runconfigs[0].Get("EpochCount"))
+		SimState, _ := strconv.Atoi(runconfigs[0].Get("SimState"))
 
 		deployP.Configure(&platform.Config{
 			MonitorPort: monitorPort,
@@ -97,6 +98,7 @@ func startBuild() {
 			SCRoundDuration:          SCRoundDuration,
 			CommitteeWindow:          CommitteeWindow,
 			EpochCount:               EpochCount,
+			SimState:                 SimState,
 		})
 
 		if clean {
@@ -269,7 +271,7 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 		// Raha: initializing main chain's blockchain -------------------------
 		blockchain.InitializeMainChainBC(
 			rc.Get("DistributionMeanFileSize"), rc.Get("DistributionVarianceFileSize"),
-			rc.Get("DistributionMeanContractDuration"), rc.Get("DistributionVarianceContractDuration"),
+			rc.Get("DistributionMeanServAgrDuration"), rc.Get("DistributionVarianceServAgrDuration"),
 			rc.Get("DistributionMeanInitialPower"), rc.Get("DistributionVarianceInitialPower"),
 			rc.Get("Nodes"), rc.Get("SimulationSeed"))
 		// Raha: initializing side chain's blockchain -------------------------
