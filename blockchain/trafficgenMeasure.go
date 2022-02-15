@@ -2,6 +2,12 @@
 // ScalarLength, for example is a suit function, which in turn calls a group function with the same name,
 // and thenreturns "mod.NewInt64(0, Order).MarshalSize()"
 // length of uint64: 8 byte
+
+/* Note that all nodes (same in mc. and sc.) can verify each epoch’s leader and committee from the mc.
+
+mc leader: verify the authenticity of: the leader and the involved committee of a proposed sync tx.
+leader and committee: verify the correctness of: POR tx.*/
+
 package blockchain
 
 import (
@@ -10,9 +16,12 @@ import (
 	"time"
 
 	"github.com/DmitriyVTitov/size"
+	"github.com/basedfs/blscosi/protocol"
 	"github.com/basedfs/log"
 	"github.com/basedfs/vrf"
 
+	// ToDo: later that I brought everything from blscosi package to basedfs package, I shoudl add another pacckage with
+	// some definitions in it to be imported/used in blockchain(here) and simulation package (instead of using blscosi/protocol)
 	"github.com/basedfs/por"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/util/random"
@@ -46,15 +55,17 @@ type TxPay struct {
 }
 
 /* ---------------- market matching transactions ---------------- */
+
+//server agreement
 type ServAgr struct {
 	duration      [2]byte
 	fileSize      [4]byte
 	startRound    [3]byte
 	pricePerRound [3]byte
 	Tau           []byte
-	//MCRoundNumber   [3]byte
+	//MCRoundNumber   [3]byte //ToDo: why MCRoundNumber is commented here?
 	/* later: Instead of the "file tag" (Tau []byte),
-	the round number is sent and stored on chain (later sent to sideChain in summery) and the verifiers
+	the round number is sent and stored on chain and the verifiers
 	can reproduce the file tag (as well as random query)
 	from that round's seed as a source of randomness */
 }
@@ -67,13 +78,12 @@ type TxServAgrPropose struct {
 	clientCommitment [71]byte
 }
 
-//ToDo: ServAgrCommit
 type TxServAgrCommit struct {
 	serverCommitment [71]byte
 	ServAgrID        uint64
 }
 
-/* ---------------- transactions that will be issued until a ServAgr is active ---------------- */
+/* ---------------- transactions that will be issued (with ChainBoost: each side chain's round / Pure MainChain: each main chain's round) until a ServAgr is active ---------------- */
 
 /* por txs are designed in away that the verifier (any miner) has sufficient information to verify it */
 type TxPoR struct {
@@ -82,8 +92,9 @@ type TxPoR struct {
 	MCRoundNumber [3]byte // to determine the random query used for it
 }
 
-/* ---------------- transactions that will be issued after a ServAgr is expired ---------------- */
-
+/* ---------------- transactions that will be issued after a ServAgr is expired(?) ---------------- */
+//ToDo: in the pure mainchain scenario: should I move the storage payment to happen after each round? (when some pors have been confirmed directly in main chain)
+// (with ChainBoost: after each sync tx has been confirmed in mainchain, i.e. each epoch)
 type TxStoragePay struct {
 	ServAgrID uint64
 	tx        *TxPay
@@ -117,8 +128,13 @@ type TransactionList struct {
 	//---
 	TxStoragePay    []*TxStoragePay
 	TxStoragePayCnt [2]byte
-	Fees            [3]byte
+	//--- tx from side chain
+	TxSCSync    []*TxSCSync
+	TxSCSyncCnt [2]byte
+	//---
+	Fees [3]byte
 }
+
 type BlockHeader struct {
 	MCRoundNumber [3]byte
 	// next round's seed for VRF based leader election which is the output of this round's leader's proof verification: VerifyBytes
@@ -132,10 +148,76 @@ type BlockHeader struct {
 	Version         [4]byte
 	LeaderPublicKey [33]byte // see https://medium.com/coinmonks/on-bitcoin-transaction-sizes-97e31bc9d816
 }
+
 type Block struct {
 	BlockSize       [3]byte
 	BlockHeader     *BlockHeader
 	TransactionList *TransactionList
+}
+
+/* ---------------- Side Chain ----------------------------------------------------------------
+---------------- transaction and block types used just in sidechain ----------------
+-------------------------------------------------------------------------------------------- */
+
+// ToDo: should sync tx include any proof? or all nodes already have the required information to validate it in the side chain?
+
+type SCMetaBlockTransactionList struct {
+	//---
+	TxPoRs   []*TxPoR
+	TxPoRCnt [2]byte
+	//---
+	Fees [3]byte
+}
+type SCSummeryBlockTransactionList struct {
+	//---
+	TxSummery    []*TxSummery
+	TxSummeryCnt [2]byte
+	//---
+	Fees [3]byte
+}
+type SCBlockHeader struct {
+	SCRoundNumber [3]byte
+	// next round's seed for VRF based leader election which is the output of this round's leader's proof verification: VerifyBytes
+	// _, (next round's seed)RoundSeed := (current round's leader)VrfPubkey.VerifyBytes((current round's leader)proof, (current round's seed)t)
+	RoundSeed         [64]byte
+	LeadershipProof   [80]byte
+	PreviousBlockHash [32]byte
+	Timestamp         [4]byte
+	//--
+	MerkleRootHash  [32]byte
+	Version         [4]byte
+	LeaderPublicKey [33]byte // see https://medium.com/coinmonks/on-bitcoin-transaction-sizes-97e31bc9d816
+	////ToDo:check: the combined signature of committee members for each meta/summery blocks should be
+	// included in their header `SCBlockHeader` which enables future validation
+	BlsSignature protocol.BlsSignature
+}
+type SCMetaBlock struct {
+	BlockSize         [3]byte
+	BlockHeader       *SCBlockHeader
+	SCTransactionList *SCMetaBlockTransactionList
+}
+type SCSummeryBlock struct {
+	BlockSize         [3]byte
+	BlockHeader       *SCBlockHeader
+	SCTransactionList *SCSummeryBlockTransactionList
+}
+type TxSummery struct {
+	//---
+	ServAgrID       uint64
+	ConfirmedPoRCnt [2]byte
+	//---
+}
+
+// side chain's Sync transaction is the result of summerizing the summery block of each epoch in side chain
+type TxSCSync struct {
+	//---
+	// ToDo: for a reason I don't truly remeber this information "should be kept in side chain" in `SCSummeryBlock` and
+	// ofcourse get sent to mainchain via `TxSCSync` to make it's effect on mainchain
+	// check if everything that is kept on summery block designed transaction type `TxSummery` should be sent to mainchain.
+	// if yes, there is no need to have an extra `TxSummery` when we have `TxSCSync`
+	ServAgrID       uint64
+	ConfirmedPoRCnt [2]byte
+	//---
 }
 
 /* -------------------------------------------------------------------- */

@@ -22,10 +22,10 @@ SCRoundDuration = 2
 MCRoundDuration = 4
 EpochCount = 2
 NbrSubTrees = 1
-Nodes = 32
+Nodes = 10
 CommitteeWindow = 5
 Threshold = 4   
 SimState = 2
 
 Hosts
-32
+10

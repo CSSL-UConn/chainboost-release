@@ -6,6 +6,9 @@ to protect the aggregates against rogue public-key attacks.
 This is a modified version of blscosi/protocol which is now deprecated.
 package bdnproto */
 
+// ToDo: these material should be put in a different package so that when simulation or
+// blockchain want to import ../prototocol, they can import that package (bc can't import basedfs)
+
 import (
 	onet "github.com/basedfs"
 	"go.dedis.ch/kyber/v3/pairing"

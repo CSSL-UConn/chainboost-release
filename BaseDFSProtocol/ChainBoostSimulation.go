@@ -93,6 +93,8 @@ type BaseDFS struct {
 	// --- just root node use these - these are used for delay evaluation
 	FirstQueueWait  int
 	SecondQueueWait int
+	// side chain queue wait
+	FirstSCQueueWait int
 	/* ------------------------------------------------------------------
 	     -----  system-wide configurations params from the config file
 	   ------------------------------------------------------------------

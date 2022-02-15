@@ -68,7 +68,7 @@ func (bz *BaseDFS) DispatchProtocol() error {
 	return err
 }
 
-//
+//SideChainLeaderPreNewRound:
 func (bz *BaseDFS) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) error {
 	var err error
 	bz.SCRoundNumber = msg.SCRoundNumber
@@ -141,6 +141,7 @@ func (bz *BaseDFS) RootPostNewRound(msg LtRSideChainNewRoundChan) error {
 		if bz.SCRoundNumber == 0 { // i.e. the current published block on side chain is summery block
 			// issue a sync transaction from last recent summery block to main chain
 			// next meta block is going to be on top of last summery block (rather than last meta blocks!)
+
 			log.LLvl1("final result SC: BlsCosi: the Summery Block was for epoch number: ", bz.MCRoundNumber/bz.EpochCount)
 			//changing next side chain's leader for the next epoch rounds from the last miner in the main chain's window of miners
 			bz.NextSideChainLeader = bz.CommitteeNodesTreeNodeID[0]
@@ -151,6 +152,12 @@ func (bz *BaseDFS) RootPostNewRound(msg LtRSideChainNewRoundChan) error {
 				log.Lvl2("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
 			}
 		}
+
+		// next meta block on side chain blockchian is added by the root node
+		bz.updateSideChainBCRound(msg.Name())
+		bz.updateSideChainBCTransactionQueueCollect()
+		bz.updateSideChainBCTransactionQueueTake()
+
 		// increase side chain round number
 		bz.SCRoundNumber = bz.SCRoundNumber + 1
 		// from bc: update msg size with next "meta block"'s block size on side chain

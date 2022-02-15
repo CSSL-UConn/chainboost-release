@@ -371,6 +371,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 		SCRoundNumber:     1,
 		HasLeader:         false,
 		FirstQueueWait:    0,
+		FirstSCQueueWait:  0,
 		SecondQueueWait:   0,
 		ProtocolTimeout:   0,
 		BlsCosiStarted:    false,

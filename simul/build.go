@@ -275,7 +275,7 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 			rc.Get("DistributionMeanInitialPower"), rc.Get("DistributionVarianceInitialPower"),
 			rc.Get("Nodes"), rc.Get("SimulationSeed"))
 		// Raha: initializing side chain's blockchain -------------------------
-		blockchain.InitializeSideChainBC(rc.Get("Nodes"), rc.Get("SimulationSeed"))
+		blockchain.InitializeSideChainBC()
 
 		// --------------------------------------------
 		if err != nil {
