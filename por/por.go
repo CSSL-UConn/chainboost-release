@@ -17,7 +17,7 @@ The information that a miner will need to verify a por:
 The round seed should generate identical query (with the one that storage server got its challenged)
 */
 
-//todo: raha: Random Query and File tag should be generated and parsed from the current round's seed as a source of randomness
+//ToDoRaha: Random Query and File tag should be generated and parsed from the current round's seed as a source of randomness
 package por
 
 import (
@@ -79,7 +79,7 @@ type Por struct {
 
 type PrivateKey struct {
 	alpha kyber.Scalar
-	ssk   kyber.Scalar //todo: raha:  these keys should be united if its possible!
+	ssk   kyber.Scalar //ToDoRaha:  these keys should be united if its possible!
 }
 type PublicKey struct {
 	v   kyber.Point

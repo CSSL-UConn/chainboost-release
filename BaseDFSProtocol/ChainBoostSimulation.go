@@ -24,7 +24,7 @@
 	4- timeOut
 
 */
-// ToDo: it seems that simstate + some other config params aren't required to be sent to all nodes
+// ToDoRaha: it seems that simstate + some other config params aren't required to be sent to all nodes
 
 package BaseDFSProtocol
 
@@ -44,7 +44,7 @@ import (
 // Hello is sent down the tree from the root node, every node who gets it starts the protocol and send it to its children
 type HelloBaseDFS struct {
 	ProtocolTimeout time.Duration
-	//---- ToDo: Do i need timeout?
+	//---- ToDoRaha: Do i need timeout?
 	PercentageTxPay          int
 	MCRoundDuration          int
 	BlockSize                int
@@ -82,7 +82,7 @@ type BaseDFS struct {
 	Suite *pairing.SuiteBn256
 	//startBCMeasure *monitor.TimeMeasure
 	// onDoneCallback is the callback that will be called at the end of the protocol
-	//onDoneCallback func() //ToDo: raha: define this function and call it when you want to finish the protocol + check when should it be called
+	//onDoneCallback func() //ToDoRaha: define this function and call it when you want to finish the protocol + check when should it be called
 	// channel to notify when we are done -- when a message is sent through this channel the runsimul.go file will catch it and finish the protocol.
 	DoneBaseDFS chan bool
 	// channel to notify leader elected
@@ -93,6 +93,8 @@ type BaseDFS struct {
 	// --- just root node use these - these are used for delay evaluation
 	FirstQueueWait  int
 	SecondQueueWait int
+	// sc
+	SideChainQueueWait int
 	// side chain queue wait
 	FirstSCQueueWait int
 	/* ------------------------------------------------------------------
@@ -115,7 +117,7 @@ type BaseDFS struct {
 	NbrSubTrees     int
 	Threshold       int
 	SCRoundDuration int
-	CommitteeWindow int //ToDo: go down
+	CommitteeWindow int //ToDoRaha: go down
 	/* ------------------------------------------------------------------
 	 ---------------------------  bls cosi protocol  ---------------
 	--------------------------------------------------------------------- */
@@ -128,6 +130,8 @@ type BaseDFS struct {
 	LtRSideChainNewRoundChan chan LtRSideChainNewRoundChan
 	// it is initiated in the start function by root node
 	BlsCosiStarted bool
+	// -- meta block temp summery
+	SummPoRTxs map[int]int // server agreement ID --> number of not summerized submitted PoRs in the meta blocks for this agreement
 }
 
 /* ----------------------------------- FUNCTIONS -------------------------------------------------
@@ -217,7 +221,7 @@ func (bz *BaseDFS) Dispatch() error {
 		case msg := <-bz.LtRSideChainNewRoundChan:
 			bz.RootPostNewRound(msg)
 		}
-		// running = false //TODO: do something about running!
+		// running = false //ToDoRaha: do something about running!
 	}
 	return err
 }

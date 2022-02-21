@@ -184,7 +184,7 @@ func (p *SubBlsCosi) dispatchRoot() error {
 			log.Error("error while broadcasting stopping message:", err)
 		}
 	}()
-	//ToDo: I should do the same for ensuring hello message recievied
+	//ToDoRaha: I should do the same for ensuring hello message recievied
 	// make sure we're ready to go
 	hasStarted := <-p.startChan
 	if !hasStarted {

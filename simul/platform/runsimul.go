@@ -222,7 +222,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberO
 			// ---------------------------------------------------------------
 			/* Raha: note that in overlay.go the CreateProtocol function will call the Dispatch() function by creating a go routine
 			that's why I call it here in a go routine too.
-			ToDO: But I should check how this part will be doing when testing on multiple servers
+			ToDoRaha: But I should check how this part will be doing when testing on multiple servers
 			raha: should be a single dispatch assigned for each node?! yes, it is in the basedfs start ..
 			here, we call the DispatchProtocol function which handles messages in baseDfs protocol + the finalSignature message in BlsCosi protocol
 			other messages communicated in BlsCosi protocol are handled by
@@ -266,14 +266,14 @@ func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberO
 			// raha: bls cosi  start function is called inside basedfs protocol
 			// ---------------------------------------------------------------
 			// when it finishes  is when:
-			// ToDo
+			// ToDoRaha
 			log.LLvl1("Back to simulation module: waiting for DoneBaseDFS channel .......... ")
 			px := <-basedfsprotocol.DoneBaseDFS
 			log.Lvl1("Back to simulation module. Final result is", px)
 			wait = false
 		}
 
-		//ToDo: clear this section
+		//ToDoRaha: clear this section
 
 		// 	//childrenWait.Record()
 		// 	log.Lvl2("Broadcasting start, (Raha: I think its about having mutiple servers",
@@ -363,20 +363,21 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	//cosiProtocol.BlockType = BaseDFSProtocol.DefaultBlockType()
 
 	bz := &BaseDFSProtocol.BaseDFS{
-		TreeNodeInstance:  n,
-		Suite:             pairing.NewSuiteBn256(),
-		DoneBaseDFS:       make(chan bool, 1),
-		LeaderProposeChan: make(chan bool, 1),
-		MCRoundNumber:     1,
-		SCRoundNumber:     1,
-		HasLeader:         false,
-		FirstQueueWait:    0,
-		FirstSCQueueWait:  0,
-		SecondQueueWait:   0,
-		ProtocolTimeout:   0,
-		BlsCosiStarted:    false,
-		BlsCosi:           cosiProtocol,
-		SimState:          1, // 1: just the main chain - 2: main chain plus side chain = chainBoost
+		TreeNodeInstance:   n,
+		Suite:              pairing.NewSuiteBn256(),
+		DoneBaseDFS:        make(chan bool, 1),
+		LeaderProposeChan:  make(chan bool, 1),
+		MCRoundNumber:      1,
+		SCRoundNumber:      1,
+		HasLeader:          false,
+		FirstQueueWait:     0,
+		SideChainQueueWait: 0,
+		FirstSCQueueWait:   0,
+		SecondQueueWait:    0,
+		ProtocolTimeout:    0,
+		BlsCosiStarted:     false,
+		BlsCosi:            cosiProtocol,
+		SimState:           1, // 1: just the main chain - 2: main chain plus side chain = chainBoost
 	}
 
 	if err := n.RegisterChannel(&bz.HelloChan); err != nil {
@@ -393,9 +394,9 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 	// 	log.Error("Couldn't register channel:    ", err)
 	// }
 
-	//ToDo: what exactly does this sentence do?! do we need it?!
+	//ToDoRaha: what exactly does this sentence do?! do we need it?!
 	bz.CommitteeNodesTreeNodeID = make([]onet.TreeNodeID, bz.CommitteeWindow)
-
+	bz.SummPoRTxs = make(map[int]int)
 	// bls key pair for each node for VRF
 	_, bz.ECPrivateKey = vrf.VrfKeygen()
 	// --------------------------------------- blscosi -------------------
@@ -624,7 +625,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 // 			// ---------------------------------------------------------------
 // 			/* Raha: note that in overlay.go the CreateProtocol function will call the Dispatch() function by creating a go routine
 // 			that's why I call it here in a go routine too.
-// 			ToDO: But I should check how this part will be doing when testing on multiple servers
+// 			ToDoRaha: But I should check how this part will be doing when testing on multiple servers
 // 			raha: should be a single dispatch assigned for each node?!
 // 			here, we call the DispatchProtocol function which handles messages in baseDfs protocol + the finalSignature message in BlsCosi protocol
 // 			other messages communicated in BlsCosi protocol are handled by
@@ -641,14 +642,14 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 // 			// raha: bls cosi  start function is called inside basedfs start call
 
 // 			// when it finishes  is when:
-// 			// ToDo
+// 			// ToDoRaha
 // 			// ---------------------------------------------------------------
 // 			px := <-basedfsprotocol.DoneBaseDFS
 // 			log.Lvl1("Back to simulation module. Final result is", px)
 // 			wait = false
 // 		}
 
-// 		//ToDo: clear this section
+// 		//ToDoRaha: clear this section
 
 // 		// 	//childrenWait.Record()
 // 		// 	log.Lvl2("Broadcasting start, (Raha: I think its about having mutiple servers",

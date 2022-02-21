@@ -86,7 +86,6 @@ func (bz *BaseDFS) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) erro
 		for i, a := range bz.CommitteeNodesTreeNodeID {
 			log.Lvl2("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
 		}
-		//log.Lvl1("wait")
 	} else {
 		//log.LLvl1(len(bz.CommitteeNodesTreeNodeID))
 		//log.LLvl1(bz.CommitteeNodesTreeNodeID[len(bz.CommitteeNodesTreeNodeID)-(bz.CommitteeWindow):])
@@ -97,7 +96,6 @@ func (bz *BaseDFS) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) erro
 		for i, a := range CommitteeNodesServerIdentity {
 			log.Lvl2("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", a.Address)
 		}
-		//log.Lvl1("wait")
 	}
 	if bz.SCRoundNumber == 0 {
 		bz.BlsCosi.BlockType = "Summery Block"
@@ -130,38 +128,46 @@ func (bz *BaseDFS) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) erro
 func (bz *BaseDFS) RootPostNewRound(msg LtRSideChainNewRoundChan) error {
 	var err error
 	bz.SCRoundNumber = msg.SCRoundNumber
-	if bz.MCRoundDuration*bz.EpochCount/bz.SCRoundDuration == bz.SCRoundNumber+1 {
-		// generate and propose summery block (bz.BlsCosi.blockType = "summeryblock")
-		// reset side chain round number
-		bz.SCRoundNumber = 0 // in side chain round number zero the summery blocks are published in side chain
+	if bz.MCRoundDuration*bz.EpochCount/bz.SCRoundDuration == bz.SCRoundNumber {
+
+		bz.BlsCosi.BlockType = "Summery Block"
 		// from bc: update msg size with the "summery block"'s block size on side chain
-		// call a function like collect and then take
-	} else {
+		//todonow: a function that measure summery block size //ToDoRaha: what is the limitation for the summery block capacity?
+		bz.BlsCosi.Msg = []byte{0xFF} // Msg is the summery block
+
+		// in this round in which a summery block will be generated, new transactions will be added to the queue but not taken
+		bz.updateSideChainBCRound(msg.Name())
+		bz.updateSideChainBCTransactionQueueCollect()
+		//todonow: add a take function that update the last row in round table with summery block's size ands total number of summerized (por) tx.s
+		//
+		// reset side chain round number
+		bz.SCRoundNumber = 1 // in side chain round number zero the summery blocks are published in side chain
 		// ------------- Epoch changed -----------
-		if bz.SCRoundNumber == 0 { // i.e. the current published block on side chain is summery block
-			// issue a sync transaction from last recent summery block to main chain
-			// next meta block is going to be on top of last summery block (rather than last meta blocks!)
-
-			log.LLvl1("final result SC: BlsCosi: the Summery Block was for epoch number: ", bz.MCRoundNumber/bz.EpochCount)
-			//changing next side chain's leader for the next epoch rounds from the last miner in the main chain's window of miners
-			bz.NextSideChainLeader = bz.CommitteeNodesTreeNodeID[0]
-			// changing side chain's committee to last miners in the main chain's window of miners
-			bz.CommitteeNodesTreeNodeID = bz.CommitteeNodesTreeNodeID[0:bz.CommitteeWindow]
-			log.Lvl1("final result SC: BlsCosi: next side chain's epoch leader is: ", bz.Tree().Search(bz.NextSideChainLeader).Name())
-			for i, a := range bz.CommitteeNodesTreeNodeID {
-				log.Lvl2("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
-			}
+		// i.e. the current published block on side chain is summery block
+		// change committee:
+		log.LLvl1("final result SC: BlsCosi: the Summery Block was for epoch number: ", bz.MCRoundNumber/bz.EpochCount)
+		// changing next side chain's leader for the next epoch rounds from the last miner in the main chain's window of miners
+		bz.NextSideChainLeader = bz.CommitteeNodesTreeNodeID[0]
+		// changing side chain's committee to last miners in the main chain's window of miners
+		bz.CommitteeNodesTreeNodeID = bz.CommitteeNodesTreeNodeID[0:bz.CommitteeWindow]
+		log.Lvl1("final result SC: BlsCosi: next side chain's epoch leader is: ", bz.Tree().Search(bz.NextSideChainLeader).Name())
+		for i, a := range bz.CommitteeNodesTreeNodeID {
+			log.Lvl2("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
 		}
-
+		// issueing a sync transaction from last submitted meta blocks (i.e. last submitted summery block) to the main chain
+		bz.syncMainChainBCTransactionQueueCollect()
+	} else {
 		// next meta block on side chain blockchian is added by the root node
 		bz.updateSideChainBCRound(msg.Name())
 		bz.updateSideChainBCTransactionQueueCollect()
 		bz.updateSideChainBCTransactionQueueTake()
+		// from bc: update msg size with next "meta block"'s block size on side chain
+		bz.BlsCosi.Msg = []byte{0xFF} // Msg is the meta block
+		bz.BlsCosi.BlockType = "Meta Block"
+		//todonow: fill the message with the actual taken size
 
 		// increase side chain round number
 		bz.SCRoundNumber = bz.SCRoundNumber + 1
-		// from bc: update msg size with next "meta block"'s block size on side chain
-		bz.BlsCosi.Msg = []byte{0xFF} // Msg is the meta block
 	}
 	// side chain round duration pause
 	time.Sleep(time.Duration(bz.SCRoundDuration) * time.Second)

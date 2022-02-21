@@ -14,6 +14,7 @@ import (
 	updated by the root node to reflelct an added meta-block
  ----------------------------------------------------------------------*/
 func (bz *BaseDFS) updateSideChainBCRound(LeaderName string) {
+	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.EpochCount)))
 	var err error
 	// var rows *excelize.Rows
 	// var row []string
@@ -25,39 +26,83 @@ func (bz *BaseDFS) updateSideChainBCRound(LeaderName string) {
 	} else {
 		log.Lvl3(bz.Name(), "opening side chain bc")
 	}
-	currentRow := strconv.Itoa(bz.SCRoundNumber + 1)
-	nextRow := strconv.Itoa(bz.SCRoundNumber + 2)
+
+	// --------------------------------------------------------------------
+	// looking for last round's number in the round table sheet in the sidechainbc file
+	// --------------------------------------------------------------------
+	// finding the last row in side chain bc file, in round table sheet
+	var rows1 *excelize.Rows
+	var row1 []string
+	rowNumber := 1
+	var RoundIntervalSec int
+	var roundNumber int
+	if rows1, err = f.Rows("RoundTable"); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	for rows1.Next() {
+		rowNumber++
+		if row1, err = rows1.Columns(); err != nil {
+			log.Lvl2("Panic Raised:\n\n")
+			panic(err)
+		}
+	}
+	for i, colCell := range row1 {
+		// --- in RoundTable: i = 0 is (next) round number, for i>=2 , the cells are empty now,
+		//will be updated by the root node in the rest of this (Take) function
+		if i == 0 {
+			roundNumber, _ = strconv.Atoi(colCell)
+		} else if i == 4 {
+			TakeTime, _ := time.Parse(time.RFC3339, colCell)
+			RoundIntervalSec = int(time.Now().Sub(TakeTime).Seconds())
+		}
+	}
+	log.LLvl1("round number: ", roundNumber, "took ", RoundIntervalSec, " seconds in total")
+	currentRow := strconv.Itoa(rowNumber)
+	//nextRow := strconv.Itoa(rowNumber + 1)
+	// ---
+	// this approach of calculating the current row / side chain round  number should rationally work but it didn't, maybe check later to find a solution
+	//CurrentRow := strconv.Itoa(epochNumber*bz.MCRoundDuration*bz.EpochCount/bz.SCRoundDuration + bz.SCRoundNumber + 1)
+	//nextRow := strconv.Itoa(epochNumber*bz.MCRoundDuration*bz.EpochCount/bz.SCRoundDuration + bz.SCRoundNumber + 2)
+	// --------------------------------------------------------------------
+	// --------------------------------------------------------------------
+
 	// --------------------------------------------------------------------
 	// updating the current last row in the "BCsize" column
-	axisBCSize := "C" + currentRow
-	err = f.SetCellValue("RoundTable", axisBCSize, bz.BlockSize)
-	// ToDo: this value of block size is not correct if the queue gets not full sometimes, but in the evaluation sheet the value is correct
+	// axisBCSize := "B" + currentRow
+	// err = f.SetCellValue("RoundTable", axisBCSize, bz.BlockSize)
+	// // this value of block size is not correct if the queue gets not full sometimes, but in the evaluation sheet the value is correct
+	// if err != nil {
+	// 	log.Lvl2("Panic Raised:\n\n")
+	// 	panic(err)
+	// }
+	// --------------------------------------------------------------------
+	// --- set starting round time
+	// --------------------------------------------------------------------
+	cellStartDate := "E" + currentRow
+	cellStartTime := "I" + currentRow
+	err = f.SetCellValue("RoundTable", cellStartDate, time.Now().Format(time.RFC3339))
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	// --------------------------------------------------------------------
-	// --- set starting round time
-	// --------------------------------------------------------------------
-	cellStartTime := "F" + currentRow
-	err = f.SetCellValue("RoundTable", cellStartTime, time.Now().Format(time.RFC3339))
 
+	err = f.SetCellValue("RoundTable", cellStartTime, RoundIntervalSec)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// --------------------------------------------------------------------
 	// updating the current last row in the "miner" column
-	axisMiner := "D" + currentRow
+	axisMiner := "C" + currentRow
 	err = f.SetCellValue("RoundTable", axisMiner, LeaderName)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 	// --------------------------------------------------------------------
-	// adding one row in round table (round number and seed columns)
-	axisSCRoundNumber := "A" + nextRow
-	err = f.SetCellValue("RoundTable", axisSCRoundNumber, bz.SCRoundNumber+1+10000*(bz.MCRoundNumber/bz.EpochCount))
+	axisSCRoundNumber := "A" + currentRow
+	err = f.SetCellValue("RoundTable", axisSCRoundNumber, bz.SCRoundNumber)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -79,6 +124,7 @@ func (bz *BaseDFS) updateSideChainBCRound(LeaderName string) {
 	the por tx.s are collected based on the service agreement status read from main chain blockchain
 ------------------------------------------------------------------------ */
 func (bz *BaseDFS) updateSideChainBCTransactionQueueCollect() {
+	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.EpochCount)))
 	var err error
 	var rows *excelize.Rows
 	var row []string
@@ -175,7 +221,7 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueCollect() {
 			// t[2]: TxServAgrPropose required
 			// t[3]: TxStoragePayment required
 			// t[4]: TxPor required
-			if ServAgrPublished == 0 && bz.MCRoundNumber-ServAgrStartedMCRoundNumber <= ServAgrDuration {
+			if ServAgrPublished == 1 && bz.MCRoundNumber-ServAgrStartedMCRoundNumber <= ServAgrDuration {
 				// ServAgr is not expired
 				t[0] = FileSize //if each server one ServAgr
 				// Add TxPor
@@ -203,11 +249,8 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueCollect() {
 	4) ServAgrId */
 
 	var newTransactionRow [5]string
-	s := make([]interface{}, len(newTransactionRow)) //todo: raha:  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
+	s := make([]interface{}, len(newTransactionRow)) //ToDoRaha:  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
 
-	newTransactionRow[2] = time.Now().Format(time.RFC3339)
-	// 50008 means 50000 + 8 which means epoch number 5 scround number 8
-	newTransactionRow[3] = strconv.Itoa(bz.SCRoundNumber + 10000*(bz.MCRoundNumber/bz.EpochCount))
 	// this part can be moved to protocol initialization
 	var PorTxSize int
 	PorTxSize, _, _, _, _ = blockchain.TransactionMeasurement(bz.SectorNumber, bz.SimulationSeed)
@@ -220,6 +263,9 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueCollect() {
 	// [4]: TxPor required
 	for _, a := range bz.Roster().List {
 		if transactionQueue[a.Address.String()][4] == 1 { // TxPor required
+			newTransactionRow[2] = time.Now().Format(time.RFC3339)
+			// 50008 means 50000 + 8 which means epoch number 5 scround number 8
+			newTransactionRow[3] = strconv.Itoa(bz.SCRoundNumber)
 			newTransactionRow[0] = "TxPor"
 			newTransactionRow[1] = strconv.Itoa(PorTxSize)
 			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
@@ -238,7 +284,7 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueCollect() {
 				panic(err)
 			} else {
 				if newTransactionRow[0] == "TxPor" {
-					log.Lvl3("a TxPor added to queue in sc round number: ", bz.SCRoundNumber, "in epoch number: ", bz.MCRoundNumber/bz.EpochCount)
+					log.Lvl3("a TxPor added to queue in sc round number: ", bz.SCRoundNumber)
 				}
 			}
 		}
@@ -250,7 +296,7 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueCollect() {
 		panic(err)
 	} else {
 		log.Lvl3("closing side bc")
-		log.Lvl2(bz.Name(), "Final result SC: finished collecting new transactions to side chain queue in round number ", bz.SCRoundNumber+10000*(bz.MCRoundNumber/bz.EpochCount))
+		log.Lvl2(bz.Name(), "Final result SC: finished collecting new transactions to side chain queue in round number ", bz.SCRoundNumber)
 	}
 }
 
@@ -260,8 +306,9 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueCollect() {
 func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
 	var err error
 	var rows [][]string
+	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.EpochCount)))
 	// --- reset
-	bz.FirstSCQueueWait = 0
+	bz.SideChainQueueWait = 0
 
 	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
@@ -273,15 +320,48 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
 
 	var accumulatedTxSize, txsize int
 	blockIsFull := false
-	BlockSizeMinusTransactions := blockchain.BlockMeasurement() // todo
+	BlockSizeMinusTransactions := blockchain.MetaBlockMeasurement()
 	var TakeTime time.Time
 
 	/* -----------------------------------------------------------------------------
 		 -- take por transactions from sheet: FirstQueue
 	----------------------------------------------------------------------------- */
-	// 50008 means 50000 + 8 which means epoch number 5 scround number 8
-	NextRow := strconv.Itoa(bz.SCRoundNumber + 2)
-	axisQueue1IsFull := "I" + NextRow
+	// --------------------------------------------------------------------
+	// looking for last round's number in the round table sheet in the sidechainbc file
+	// --------------------------------------------------------------------
+	// finding the last row in side chain bc file, in round table sheet
+	var rows1 *excelize.Rows
+	var row1 []string
+	rowNumber := 1
+	var roundNumber int
+	if rows1, err = f.Rows("RoundTable"); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	for rows1.Next() {
+		rowNumber++
+		if row1, err = rows1.Columns(); err != nil {
+			log.Lvl2("Panic Raised:\n\n")
+			panic(err)
+		}
+	}
+	for i, colCell := range row1 {
+		// --- in RoundTable: i = 0 is (next) round number, for i>=2 , the cells are empty now,
+		//will be updated by the root node in the rest of this (Take) function
+		if i == 0 {
+			roundNumber, _ = strconv.Atoi(colCell)
+		}
+	}
+	log.LLvl1(roundNumber)
+	CurrentRow := strconv.Itoa(rowNumber - 1) // last row that has some columns filled
+	//NextRow := strconv.Itoa(rowNumber + 1)
+	// ---
+	// this approach of calculating the current row / side chain round  number should rationally work but it didn't, maybe check later to find a solution
+	//CurrentRow := strconv.Itoa(epochNumber*bz.MCRoundDuration*bz.EpochCount/bz.SCRoundDuration + bz.SCRoundNumber + 1)
+	// --------------------------------------------------------------------
+	// --------------------------------------------------------------------
+
+	axisQueue1IsFull := "H" + CurrentRow
 
 	if rows, err = f.GetRows("FirstQueue"); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
@@ -293,9 +373,9 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
 	accumulatedTxSize = 0
 
 	numberOfPoRTx := 0
-	axisBlockSize := "C" + NextRow
-	axisNumPoRTx := "E" + NextRow
-	axisAveFirstQueueWait := "H" + NextRow
+	axisBlockSize := "B" + CurrentRow
+	axisNumPoRTx := "D" + CurrentRow
+	axisAveFirstQueueWait := "F" + CurrentRow
 
 	for i := len(rows); i > 1 && !blockIsFull; i-- {
 		row := rows[i-1][:]
@@ -324,7 +404,15 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
 						log.Lvl2("Panic Raised:\n\n")
 						panic(err)
 					}
-					bz.FirstQueueWait = bz.FirstQueueWait + int(time.Now().Sub(TakeTime).Seconds())
+					bz.SideChainQueueWait = bz.SideChainQueueWait + int(time.Now().Sub(TakeTime).Seconds())
+					// ---------- keep taken transaction's info summery --------------------
+					if serverAgrId, err := strconv.Atoi(row[4]); err != nil {
+						log.Lvl2("Panic Raised:\n\n")
+						panic(err)
+					} else {
+						bz.SummPoRTxs[serverAgrId] = bz.SummPoRTxs[serverAgrId] + 1
+					}
+					// remove the transaction row from the queue
 					f.RemoveRow("FirstQueue", i)
 				} else {
 					blockIsFull = true
@@ -338,15 +426,18 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
 
 	f.SetCellValue("RoundTable", axisNumPoRTx, numberOfPoRTx)
 
-	log.Lvl2("In total in round number ", bz.SCRoundNumber+10000*(bz.MCRoundNumber/bz.EpochCount),
+	log.Lvl2("In total in round number ", bz.SCRoundNumber,
 		"\n number of published PoR transactions is", numberOfPoRTx)
 	TotalNumTxsInFirstQueue := numberOfPoRTx
 
 	//-- accumulated block size
 	// --- total throughput
 	f.SetCellValue("RoundTable", axisBlockSize, accumulatedTxSize)
-
-	f.SetCellValue("RoundTable", axisAveFirstQueueWait, bz.FirstQueueWait/TotalNumTxsInFirstQueue)
+	if TotalNumTxsInFirstQueue != 0 {
+		f.SetCellValue("RoundTable", axisAveFirstQueueWait, bz.SideChainQueueWait/TotalNumTxsInFirstQueue)
+	} else {
+		f.SetCellValue("RoundTable", axisAveFirstQueueWait, 0)
+	}
 
 	log.Lvl3("final result SC: \n", " this round's block size: ", accumulatedTxSize)
 	if err != nil {
@@ -354,7 +445,7 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
 		panic(err)
 	}
 
-	//log.Lvl3("In total in round number ", bz.SCRoundNumber+10000*(bz.MCRoundNumber/bz.EpochCount),
+	//log.Lvl3("In total in round number ", bz.SCRoundNumber+10000 * epochNumber,
 	//	"\n number of all types of submitted txs is: ", TotalNumTxsInFirstQueue)
 
 	// --------------------------------------------------------------------------------
@@ -362,37 +453,37 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
 	// --------------------------------------------------------------------------------
 	// ---- overall results
 
-	axisRound := "A" + NextRow
-	axisBCSize := "B" + NextRow
-	axisOverallPoRTX := "C" + NextRow
-	axisAveWaitOtherTx := "D" + NextRow
-	axisOverallBlockSpaceFull := "E" + NextRow
+	axisRound := "A" + CurrentRow
+	axisBCSize := "B" + CurrentRow
+	axisOverallPoRTX := "C" + CurrentRow
+	axisAveWaitOtherTx := "D" + CurrentRow
+	axisOverallBlockSpaceFull := "E" + CurrentRow
 	var FormulaString string
 
-	err = f.SetCellValue("OverallEvaluation", axisRound, bz.SCRoundNumber+10000*(bz.MCRoundNumber/bz.EpochCount))
+	err = f.SetCellValue("OverallEvaluation", axisRound, bz.SCRoundNumber)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	FormulaString = "=SUM(RoundTable!B2:B" + NextRow + ")"
+	FormulaString = "=SUM(RoundTable!B2:B" + CurrentRow + ")"
 	err = f.SetCellFormula("OverallEvaluation", axisBCSize, FormulaString)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 
-	FormulaString = "=SUM(RoundTable!C2:C" + NextRow + ")"
+	FormulaString = "=SUM(RoundTable!D2:D" + CurrentRow + ")"
 	err = f.SetCellFormula("OverallEvaluation", axisOverallPoRTX, FormulaString)
 	if err != nil {
 		log.Lvl2(err)
 	}
 
-	FormulaString = "=AVERAGE(RoundTable!D2:D" + NextRow + ")"
+	FormulaString = "=AVERAGE(RoundTable!F2:F" + CurrentRow + ")"
 	err = f.SetCellFormula("OverallEvaluation", axisAveWaitOtherTx, FormulaString)
 	if err != nil {
 		log.Lvl2(err)
 	}
-	FormulaString = "=SUM(RoundTable!E2:E" + NextRow + ")"
+	FormulaString = "=SUM(RoundTable!H2:H" + CurrentRow + ")"
 	err = f.SetCellFormula("OverallEvaluation", axisOverallBlockSpaceFull, FormulaString)
 	if err != nil {
 		log.Lvl2(err)
@@ -405,6 +496,6 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
 		panic(err)
 	} else {
 		log.Lvl3("closing side bc")
-		log.Lvl2(bz.Name(), " Finished taking transactions from side chain queue (FIFO) into new block in round number ", bz.SCRoundNumber+10000*(bz.MCRoundNumber/bz.EpochCount))
+		log.Lvl2("Final result: Finished taking transactions from side chain queue (FIFO) into new block in round number ", bz.SCRoundNumber, "while main chain round number is: ", bz.MCRoundNumber)
 	}
 }

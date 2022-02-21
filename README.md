@@ -115,3 +115,7 @@ deploy those protocols as a service in a distributed manner.
 [^2]: when in a round, some transactions should wait in a queue (i.e. the allocated space for  that transaction is full) and are submitted in another round, the average wait of that queue in the round that those transactions get to be submitted increases.
 [^3]: these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
 <!--FootNote-->
+
+
+- we may need to say which model (account based or UTXO) are we adopting in the implmentation
+- a simplifying assumption we have for committee is that in each committee, we have one instance (one note) for each committee member and not more! even if they have been powerfuil and being selected as main chain's leader multiple time during last epoch

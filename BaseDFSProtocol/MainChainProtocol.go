@@ -43,8 +43,8 @@ func (bz *BaseDFS) StartMainChainProtocol() {
 	log.Lvl2(bz.Name(), "Filling round number ", bz.MCRoundNumber)
 	// for the first round we have the root node set as a round leader, so  it is true! and he takes txs from the queue
 	bz.updateBCPowerRound(bz.TreeNode().Name(), true)
-	bz.updateBCTransactionQueueCollect()
-	bz.updateBCTransactionQueueTake()
+	bz.updateMainChainBCTransactionQueueCollect()
+	bz.updateMainChainBCTransactionQueueTake()
 	time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
 	bz.readBCAndSendtoOthers()
 }
@@ -58,7 +58,7 @@ func (bz *BaseDFS) RootPreNewRound(msg NewLeaderChan) {
 		bz.updateBCPowerRound(bz.Tree().Search(msg.LeaderTreeNodeID).Name(), false)
 		// in the case of a leader-less round
 		log.Lvl1("final result MC: leader TreeNodeID: ", msg.LeaderTreeNodeID.String(), "(root node) filled round number", bz.MCRoundNumber, "with empty block")
-		bz.updateBCTransactionQueueCollect()
+		bz.updateMainChainBCTransactionQueueCollect()
 		bz.readBCAndSendtoOthers()
 		log.Lvl2("new round is announced")
 		return
@@ -67,7 +67,7 @@ func (bz *BaseDFS) RootPreNewRound(msg NewLeaderChan) {
 	// normal rounds with a leader => leader = true
 	// -----------------------------------------------------
 	if !bz.HasLeader && msg.MCRoundNumber == bz.MCRoundNumber {
-		// TODO: first validate the leadership proof
+		// ToDoRaha: first validate the leadership proof
 		log.Lvl1("final result MC: leader: ", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), " is the round leader for round number ", bz.MCRoundNumber)
 		// -----------------------------------------------
 		// dynamically change the side chain's committee with last main chain's leader
@@ -77,8 +77,8 @@ func (bz *BaseDFS) RootPreNewRound(msg NewLeaderChan) {
 		// -----------------------------------------------
 		bz.HasLeader = true
 		bz.updateBCPowerRound(bz.Tree().Search(msg.LeaderTreeNodeID).Name(), true)
-		bz.updateBCTransactionQueueCollect()
-		bz.updateBCTransactionQueueTake()
+		bz.updateMainChainBCTransactionQueueCollect()
+		bz.updateMainChainBCTransactionQueueTake()
 	} else {
 		log.Lvl2("this round already has a leader!")
 	}

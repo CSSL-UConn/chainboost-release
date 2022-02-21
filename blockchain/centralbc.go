@@ -149,27 +149,6 @@ func InitializeMainChainBC(
 		panic(err)
 	}
 
-	// later we want to ad market matching transaction and compelete ServAgr info in bc
-	err = f.SetCellValue("MarketMatching", "E1", "ServAgrID")
-	if err != nil {
-		log.Lvl2("Panic Raised:\n\n")
-		panic(err)
-	}
-	r := rand.New(rand.NewSource(int64(SimulationSeedInt)))
-	for i := 2; i <= numberOfNodes+1; i++ {
-		ServAgrRow := strconv.Itoa(i)
-		t := "E" + ServAgrRow
-		if err = f.SetCellValue("MarketMatching", t, r.Int()); err != nil {
-			log.Lvl2("Panic Raised:\n\n")
-			panic(err)
-		}
-	}
-	// err = f.SetCellValue("MarketMatching", "F1", "Client'sPK")
-	// if err != nil {
-	// 	log.Lvl2("Panic Raised:\n\n")
-	// 	panic(err)
-	// }
-
 	if err = f.SetCellValue("MarketMatching", "F1", "Published"); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -421,6 +400,11 @@ func InitializeMainChainBC(
 	if err != nil {
 		log.Lvl2(err)
 	}
+	err = f.SetCellValue("RoundTable", "P1", "#Sync-Tx")
+	if err != nil {
+		log.Lvl2(err)
+	}
+
 	if err = f.SetColWidth("RoundTable", "J", "J", 25); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -579,13 +563,20 @@ for i := 1;i<=len(FileSizeColumn);i++ {
 
 // InitializeSideChainBC function is called in simulation level (build.go)
 func InitializeSideChainBC() {
-	f := excelize.NewFile() //ToDO: we don't need to create a new file here!!! the file is created bt prescript
+	f := excelize.NewFile() //ToDoRaha: we don't need to create a new file here!!! the file is created bt prescript!! Has it?!
 	var err error
 	style, _ := f.NewStyle(&excelize.Style{
 		Alignment: &excelize.Alignment{
 			WrapText: true,
 		},
 	})
+	// f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/sidechainbc.xlsx")
+	// if err != nil {
+	// 	log.Lvl2("Raha: ", err)
+	// 	panic(err)
+	// } else {
+	// 	log.Lvl3("opening side chain bc")
+	// }
 	// ---------------------------------------------------------------------------
 	// ------------------------- Transaction Queue sheet  ------------------
 	// ---------------------------------------------------------------------------
@@ -649,7 +640,7 @@ func InitializeSideChainBC() {
 	// --------------------- Round Table Sheet ---------------------------
 	// --------------------------------------------------------------------
 	_ = f.NewSheet("RoundTable")
-	if err = f.SetColWidth("RoundTable", "A", "AAA", 50); err != nil {
+	if err = f.SetColWidth("RoundTable", "A", "AAA", 15); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
@@ -676,53 +667,61 @@ func InitializeSideChainBC() {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	err = f.SetCellValue("RoundTable", "B1", "Seed")
-	if err != nil {
-		log.Lvl2("Panic Raised:\n\n")
-		panic(err)
-	}
-	err = f.SetCellValue("RoundTable", "C1", "BCSize")
+	err = f.SetCellValue("RoundTable", "B1", "BCSize")
 	if err != nil {
 		log.Lvl2(err)
 	}
-	if err = f.SetColWidth("RoundTable", "C", "C", 10); err != nil {
+	if err = f.SetColWidth("RoundTable", "B", "B", 10); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	err = f.SetCellValue("RoundTable", "D1", "Round Leader")
+	err = f.SetCellValue("RoundTable", "C1", "Round Leader")
 	if err != nil {
 		log.Lvl2(err)
 	}
-	if err = f.SetColWidth("RoundTable", "D", "D", 20); err != nil {
+	if err = f.SetColWidth("RoundTable", "C", "C", 40); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	// ---- throughput measurement
-	if err = f.SetColWidth("RoundTable", "E", "I", 10); err != nil {
+	//---- throughput measurement
+	if err = f.SetColWidth("RoundTable", "D", "I", 10); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	err = f.SetCellValue("RoundTable", "E1", "#PoR-Tx")
+	err = f.SetCellValue("RoundTable", "D1", "#PoR-Tx")
 	if err != nil {
 		log.Lvl2(err)
 	}
-	if err = f.SetColWidth("RoundTable", "E", "E", 15); err != nil {
+	if err = f.SetColWidth("RoundTable", "D", "D", 15); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-	err = f.SetCellValue("RoundTable", "F1", "StartTime")
+	if err = f.SetColWidth("RoundTable", "I", "I", 20); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err = f.SetColWidth("RoundTable", "E", "E", 60); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("RoundTable", "E1", "StartTime")
 	if err != nil {
 		log.Lvl2(err)
 	}
+
 	err = f.SetCellValue("RoundTable", "G1", "TotalNumTxs")
 	if err != nil {
 		log.Lvl2(err)
 	}
-	err = f.SetCellValue("RoundTable", "H1", "AveWait")
+	if err = f.SetColWidth("RoundTable", "G", "G", 20); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	err = f.SetCellValue("RoundTable", "F1", "AveWait")
 	if err != nil {
 		log.Lvl2(err)
 	}
-	err = f.SetCellValue("RoundTable", "I1", "BlockSpaceFull")
+	err = f.SetCellValue("RoundTable", "H1", "BlockSpaceFull")
 	if err != nil {
 		log.Lvl2(err)
 	}
@@ -730,7 +729,7 @@ func InitializeSideChainBC() {
 	// --------------------- Overall Evaluation Sheet ------------------
 	// --------------------------------------------------------------------
 	_ = f.NewSheet("OverallEvaluation")
-	if err = f.SetColWidth("RoundTable", "A", "AAA", 10); err != nil {
+	if err = f.SetColWidth("OverallEvaluation", "A", "AAA", 10); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}

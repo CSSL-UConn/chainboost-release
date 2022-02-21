@@ -40,7 +40,7 @@ func NextRoundSeed() {
 
 //Algorand: "The value of seed0, which bootstraps seed selection, can be chosen at random at the start of Algorand
 //by the initial participants (after their public keys are declared) using distributed random number generation"
-// todo: raha: distributed random number generation
+// ToDoRaha: distributed random number generation
 func initialSeed() []byte {
 	return []byte("hi")
 }

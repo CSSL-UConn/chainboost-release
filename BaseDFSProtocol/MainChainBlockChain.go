@@ -34,7 +34,7 @@ func (bz *BaseDFS) finalMainChainBCInitialization() {
 	// --- market matching sheet
 	index := f.GetSheetIndex("MarketMatching")
 	f.SetActiveSheet(index)
-	// column format
+	// fill nodes info
 	for i := 2; i <= len(NodeInfoRow)+1; i++ {
 		ServAgrRow := strconv.Itoa(i)
 		t := "A" + ServAgrRow
@@ -43,6 +43,25 @@ func (bz *BaseDFS) finalMainChainBCInitialization() {
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
+	}
+	// fill server agreement ids
+	// later we want to ad market matching transaction and compelete ServAgr info in bc
+	err = f.SetCellValue("MarketMatching", "E1", "ServAgrID")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	r := rand.New(rand.NewSource(int64(bz.SimulationSeed)))
+	for i := 2; i <= len(NodeInfoRow)+1; i++ { // len(NodeInfoRow) has been used to reflecvt number of nodes 1<->1 number of agreemenets
+		ServAgrRow := strconv.Itoa(i)
+		cell := "E" + ServAgrRow
+		RandomServerAgreementID := r.Int()
+		if err = f.SetCellValue("MarketMatching", cell, RandomServerAgreementID); err != nil {
+			log.Lvl2("Panic Raised:\n\n")
+			panic(err)
+		} else {
+			bz.SummPoRTxs[RandomServerAgreementID] = 0
+		}
 	}
 	// --- power table sheet
 	index = f.GetSheetIndex("PowerTable")
@@ -127,7 +146,7 @@ func (bz *BaseDFS) readBCPowersAndSeed() (powers map[string]uint64, seed string)
 		}
 	}
 	// looking for all nodes' power in the last round in the power table sheet in the mainchainbc file
-	rowNumber = 0 //ToDo: later it can go straight to last row based on the round number found in round table
+	rowNumber = 0 //ToDoRaha: later it can go straight to last row based on the round number found in round table
 	if rows, err = f.Rows("PowerTable"); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -236,7 +255,7 @@ func (bz *BaseDFS) updateBCPowerRound(LeaderName string, leader bool) {
 
 	// no longer nodes read from mainchainbc file, instead the round are determined by their local round number variable
 	currentRow := strconv.Itoa(rowNumber)
-	nextRow := strconv.Itoa(rowNumber + 1) //ToDo: raha: remove these, use bz.MCRoundNumber instead!
+	nextRow := strconv.Itoa(rowNumber + 1) //ToDoRaha: remove these, use bz.MCRoundNumber instead!
 	// ---
 	axisBCSize := "C" + currentRow
 	err = f.SetCellValue("RoundTable", axisBCSize, bz.BlockSize)
@@ -381,7 +400,7 @@ func (bz *BaseDFS) updateBCPowerRound(LeaderName string, leader bool) {
 /* ----------------------------------------------------------------------
     updateBC: this is a connection between first layer of blockchain - ROOT NODE - on the second layer - xlsx file -
 ------------------------------------------------------------------------ */
-func (bz *BaseDFS) updateBCTransactionQueueCollect() {
+func (bz *BaseDFS) updateMainChainBCTransactionQueueCollect() {
 	var err error
 	var rows *excelize.Rows
 	var row []string
@@ -482,7 +501,11 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 				// Add TxServAgrPropose
 				t[2] = 1
 				transactionQueue[MinerServer] = t
-			} else if bz.MCRoundNumber-ServAgrStartedMCRoundNumber <= ServAgrDuration { // ServAgr is not expired
+				/* ------------------------------------------------------------
+				// when simStat == 2 it means that side chain is
+				running and por tx.s go to side chain queue
+				------------------------------------------------------------ */
+			} else if bz.MCRoundNumber-ServAgrStartedMCRoundNumber <= ServAgrDuration && bz.SimState == 1 { // ServAgr is not expired
 				t[0] = FileSize //if each server one ServAgr
 				// Add TxPor
 				t[4] = 1
@@ -517,10 +540,8 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 	3) issuedMCRoundNumber
 	4) ServAgrId */
 	var newTransactionRow [5]string
-	s := make([]interface{}, len(newTransactionRow)) //todo: raha:  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
+	s := make([]interface{}, len(newTransactionRow)) //ToDoRaha:  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
 
-	newTransactionRow[2] = time.Now().Format(time.RFC3339)
-	newTransactionRow[3] = strconv.Itoa(bz.MCRoundNumber)
 	// this part can be moved to protocol initialization
 	var PorTxSize, ServAgrProposeTxSize, PayTxSize, StoragePayTxSize, ServAgrCommitTxSize int
 	PorTxSize, ServAgrProposeTxSize, PayTxSize, StoragePayTxSize, ServAgrCommitTxSize = blockchain.TransactionMeasurement(bz.SectorNumber, bz.SimulationSeed)
@@ -534,15 +555,22 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 	// [4]: TxPor required
 	for _, a := range bz.Roster().List {
 		if transactionQueue[a.Address.String()][2] == 1 { //TxServAgrPropose required
+			newTransactionRow[2] = time.Now().Format(time.RFC3339)
+			newTransactionRow[3] = strconv.Itoa(bz.MCRoundNumber)
 			newTransactionRow[0] = "TxServAgrPropose"
 			newTransactionRow[1] = strconv.Itoa(ServAgrProposeTxSize)
 			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1]) // corresponding ServAgr id
 			addCommitTx = true                                                           // another row will be added containing "TxServAgrCommit"
 		} else if transactionQueue[a.Address.String()][3] == 1 { // TxStoragePayment required
+			newTransactionRow[2] = time.Now().Format(time.RFC3339)
+			newTransactionRow[3] = strconv.Itoa(bz.MCRoundNumber)
 			newTransactionRow[0] = "TxStoragePayment"
 			newTransactionRow[1] = strconv.Itoa(StoragePayTxSize)
 			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
-		} else if transactionQueue[a.Address.String()][4] == 1 { // TxPor required
+			// && bz.SimState == 1 is  for backup check-  the first condition should never be true when the second condition isn't!
+		} else if transactionQueue[a.Address.String()][4] == 1 && bz.SimState == 1 { // TxPor required
+			newTransactionRow[2] = time.Now().Format(time.RFC3339)
+			newTransactionRow[3] = strconv.Itoa(bz.MCRoundNumber)
 			newTransactionRow[0] = "TxPor"
 			newTransactionRow[1] = strconv.Itoa(PorTxSize)
 			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
@@ -649,7 +677,7 @@ func (bz *BaseDFS) updateBCTransactionQueueCollect() {
 /* ----------------------------------------------------------------------
     updateBC: this is a connection between first layer of blockchain - ROOT NODE - on the second layer - xlsx file -
 ------------------------------------------------------------------------ */
-func (bz *BaseDFS) updateBCTransactionQueueTake() {
+func (bz *BaseDFS) updateMainChainBCTransactionQueueTake() {
 	var err error
 	var rows [][]string
 	// --- reset
@@ -739,6 +767,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	numberOfStoragePayTx := 0
 	numberOfServAgrProposeTx := 0
 	numberOfServAgrCommitTx := 0
+	numberOfSyncTx := 0
 
 	axisBlockSize := "C" + NextRow
 
@@ -746,6 +775,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	axisNumStoragePayTx := "G" + NextRow
 	axisNumServAgrProposeTx := "H" + NextRow
 	axisNumServAgrCommitTx := "I" + NextRow
+	axisNumSyncTx := "P" + NextRow
 
 	axisTotalTxsNum := "K" + NextRow
 	axisAveFirstQueueWait := "L" + NextRow
@@ -768,7 +798,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 					accumulatedTxSize = accumulatedTxSize + txsize
 					/* transaction name in transaction queue can be "TxServAgrPropose", "TxStoragePayment", or "TxPor"
 					in case of "TxServAgrCommit":
-					1) The corresponding ServAgr in marketmatching should be updated to published //todo: raha: replace the word "published" with "active"
+					1) The corresponding ServAgr in marketmatching should be updated to published //ToDoRaha: replace the word "published" with "active"
 					2) set start round number to current round
 					other transactions are just removed from queue and their size are added to included transactions' size in block */
 					if row[0] == "TxServAgrCommit" {
@@ -800,12 +830,17 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 					} else if row[0] == "TxStoragePayment" {
 						log.Lvl3("a TxStoragePayment tx added to block number", bz.MCRoundNumber, " from the queue")
 						numberOfStoragePayTx++
-					} else if row[0] == "TxPor" {
+						// && bz.SimState == 1 is for backup check - the first condition shouldn't be true if the second one isn't
+					} else if row[0] == "TxPor" && bz.SimState == 1 {
 						log.Lvl3("a por tx added to block number", bz.MCRoundNumber, " from the queue")
 						numberOfPoRTx++
 					} else if row[0] == "TxServAgrPropose" {
 						log.Lvl3("a TxServAgrPropose tx added to block number", bz.MCRoundNumber, " from the queue")
 						numberOfServAgrProposeTx++
+					} else if row[0] == "TxSync" {
+						log.Lvl3("a sync tx added to block number", bz.MCRoundNumber, " from the queue")
+						numberOfSyncTx++
+						numberOfPoRTx, _ = strconv.Atoi(row[4])
 					} else {
 						log.Lvl2("Panic Raised:\n\n")
 						panic("the type of transaction in the queue is un-defined")
@@ -831,6 +866,7 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	f.SetCellValue("RoundTable", axisNumStoragePayTx, numberOfStoragePayTx)
 	f.SetCellValue("RoundTable", axisNumServAgrProposeTx, numberOfServAgrProposeTx)
 	f.SetCellValue("RoundTable", axisNumServAgrCommitTx, numberOfServAgrCommitTx)
+	f.SetCellValue("RoundTable", axisNumSyncTx, numberOfSyncTx)
 
 	log.Lvl3("In total in round number ", bz.MCRoundNumber,
 		"\n number of published PoR transactions is", numberOfPoRTx,
@@ -847,9 +883,12 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	f.SetCellValue("RoundTable", axisNumRegPayTx, numberOfRegPayTx)
 	f.SetCellValue("RoundTable", axisBlockSize, accumulatedTxSize+allocatedBlockSizeForRegPayTx)
 	f.SetCellValue("RoundTable", axisTotalTxsNum, TotalNumTxsInBothQueue)
-
-	f.SetCellValue("RoundTable", axisAveFirstQueueWait, bz.FirstQueueWait/TotalNumTxsInFirstQueue)
-	f.SetCellValue("RoundTable", axisAveSecondQueueWait, bz.SecondQueueWait/numberOfRegPayTx)
+	if TotalNumTxsInFirstQueue != 0 {
+		f.SetCellValue("RoundTable", axisAveFirstQueueWait, bz.FirstQueueWait/TotalNumTxsInFirstQueue)
+	}
+	if numberOfRegPayTx != 0 {
+		f.SetCellValue("RoundTable", axisAveSecondQueueWait, bz.SecondQueueWait/numberOfRegPayTx)
+	}
 
 	log.Lvl3("final result MC: \n", allocatedBlockSizeForRegPayTx,
 		" for regular payment txs,\n and ", accumulatedTxSize, " for other types of txs")
@@ -934,5 +973,69 @@ func (bz *BaseDFS) updateBCTransactionQueueTake() {
 	} else {
 		log.Lvl3("closing bc")
 		log.Lvl2(bz.Name(), " Finished taking transactions from queue (FIFO) into new block in round number ", bz.MCRoundNumber)
+	}
+}
+
+func ItoA(s string) {
+	panic("unimplemented")
+}
+
+func (bz *BaseDFS) syncMainChainBCTransactionQueueCollect() {
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
+	if err != nil {
+		log.Lvl2("Raha: ", err)
+		panic(err)
+	} else {
+		log.Lvl3("opening bc")
+	}
+	// ----------------------------------------------------------------------
+	// ------ adding sync transaction into transaction queue sheet -----
+	// ----------------------------------------------------------------------
+	/* each transaction has the following column stored on the transaction queue sheet:
+	0) name
+	1) size
+	2) time
+	3) issuedMCRoundNumber
+	4) ServAgrId */
+	var newTransactionRow [5]string
+	s := make([]interface{}, len(newTransactionRow)) //ToDoRaha: raha:  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
+	SyncTxSize := 2                                  //todonow: measure sync size
+
+	newTransactionRow[0] = "TxSync"
+	newTransactionRow[1] = strconv.Itoa(SyncTxSize)
+	newTransactionRow[2] = time.Now().Format(time.RFC3339)
+	newTransactionRow[3] = strconv.Itoa(bz.MCRoundNumber)
+	/* In case that the transaction type is a Sync transaction,
+	the 4th column will be the number of por transactions summerized in
+	the sync tx */
+	totalPoR := 0
+	for i, v := range bz.SummPoRTxs {
+		totalPoR = totalPoR + v
+		bz.SummPoRTxs[i] = 0
+	}
+	newTransactionRow[4] = strconv.Itoa(totalPoR)
+
+	for i, v := range newTransactionRow {
+		s[i] = v
+	}
+	if err = f.InsertRow("FirstQueue", 2); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	} else {
+		if err = f.SetSheetRow("FirstQueue", "A2", &s); err != nil {
+			log.Lvl2("Panic Raised:\n\n")
+			panic(err)
+		} else {
+			log.Lvl3("a Sync tx added to queue in round number", bz.MCRoundNumber)
+		}
+	}
+	// -------------------------------------------------------------------------------
+	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	} else {
+		log.Lvl3("closing mainchain bc")
+		log.Lvl2(bz.Name(), " finished collecting new sync transactions to queue in round number ", bz.MCRoundNumber)
 	}
 }
