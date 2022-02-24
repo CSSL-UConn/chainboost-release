@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	onet "github.com/basedfs"
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
+	"github.com/basedfs/onet"
 	"golang.org/x/xerrors"
 
 	//Raha

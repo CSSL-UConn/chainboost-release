@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	onet "github.com/basedfs"
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
+	"github.com/basedfs/onet"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/suites"

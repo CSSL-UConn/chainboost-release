@@ -73,7 +73,7 @@ type Config struct {
 	BlockSize                int
 	SectorNumber             int
 	NumberOfPayTXsUpperBound int
-	ProtocolTimeout          int
+	SimulationRounds         int
 	SimulationSeed           int
 	// bls cosi
 	NbrSubTrees     int

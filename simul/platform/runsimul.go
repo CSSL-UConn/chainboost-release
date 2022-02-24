@@ -2,14 +2,13 @@ package platform
 
 import (
 	"sync"
-	"time"
 
 	"github.com/BurntSushi/toml"
-	onet "github.com/basedfs"
-	"github.com/basedfs/BaseDFSProtocol"
+	"github.com/basedfs/MainAndSideChain"
 	"github.com/basedfs/blscosi/protocol"
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
+	"github.com/basedfs/onet"
 	"github.com/basedfs/simul/monitor"
 	"github.com/basedfs/vrf"
 	"go.dedis.ch/kyber/v3/pairing"
@@ -31,7 +30,7 @@ type simulInitDone struct{}
 
 // raha: adding some other system-wide configurations
 func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberOfPayTXsUpperBound,
-	ProtocolTimeout, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, EpochCount, SimState int,
+	SimulationRounds, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, EpochCount, SimState int,
 	suite, serverAddress, simul, monitorAddress string) error {
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 	if err != nil {
@@ -163,11 +162,11 @@ func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberO
 			if err != nil {
 				return xerrors.New("couldn't create protocol: " + err.Error())
 			}
-			cosiProtocol := pi.(*BaseDFSProtocol.BlsCosi)
+			cosiProtocol := pi.(*MainAndSideChain.BlsCosi)
 			cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol // Raha: it doesn't call any fuunction! just initializtion of methods that is going to be used later
 			//cosiProtocol.CreateProtocol = rootService.CreateProtocol //raha: it used to be initialized by this function call
 			// params from config file:
-			cosiProtocol.Timeout = time.Duration(ProtocolTimeout) * time.Second
+			//cosiProtocol.Timeout = time.Duration(ProtocolTimeout) * time.Second
 			cosiProtocol.Threshold = Threshold
 			if NbrSubTrees > 0 {
 				err := cosiProtocol.SetNbrSubTree(NbrSubTrees)
@@ -183,29 +182,29 @@ func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberO
 			if err != nil {
 				return xerrors.New("couldn't create protocol: " + err.Error())
 			}
-			basedfsprotocol := p.(*BaseDFSProtocol.BaseDFS)
-			//basedfsprotocol.SetTimeout(time.Duration(TimeOut) * time.Second)
+			ChainBoostProtocol := p.(*MainAndSideChain.BaseDFS)
+			//ChainBoostProtocol.SetTimeout(time.Duration(TimeOut) * time.Second)
 			// raha: finally passing our system-wide configurations to our protocol
-			basedfsprotocol.PercentageTxPay = PercentageTxPay
-			basedfsprotocol.MCRoundDuration = MCRoundDuration
-			basedfsprotocol.BlockSize = BlockSize
-			basedfsprotocol.SectorNumber = SectorNumber
-			basedfsprotocol.NumberOfPayTXsUpperBound = NumberOfPayTXsUpperBound
-			basedfsprotocol.ProtocolTimeout = time.Duration(ProtocolTimeout) * time.Second
-			basedfsprotocol.SimulationSeed = SimulationSeed
-			basedfsprotocol.NbrSubTrees = NbrSubTrees
-			basedfsprotocol.Threshold = Threshold
-			basedfsprotocol.SCRoundDuration = SCRoundDuration
-			basedfsprotocol.CommitteeWindow = CommitteeWindow
-			basedfsprotocol.EpochCount = EpochCount
-			basedfsprotocol.SimState = SimState
+			ChainBoostProtocol.PercentageTxPay = PercentageTxPay
+			ChainBoostProtocol.MCRoundDuration = MCRoundDuration
+			ChainBoostProtocol.BlockSize = BlockSize
+			ChainBoostProtocol.SectorNumber = SectorNumber
+			ChainBoostProtocol.NumberOfPayTXsUpperBound = NumberOfPayTXsUpperBound
+			ChainBoostProtocol.SimulationRounds = SimulationRounds
+			ChainBoostProtocol.SimulationSeed = SimulationSeed
+			ChainBoostProtocol.NbrSubTrees = NbrSubTrees
+			ChainBoostProtocol.Threshold = Threshold
+			ChainBoostProtocol.SCRoundDuration = SCRoundDuration
+			ChainBoostProtocol.CommitteeWindow = CommitteeWindow
+			ChainBoostProtocol.EpochCount = EpochCount
+			ChainBoostProtocol.SimState = SimState
 			log.LLvl2("passing our system-wide configurations to the protocol",
 				"\n  PercentageTxPay: ", PercentageTxPay,
 				"\n  MCRoundDuration: ", MCRoundDuration,
 				"\n BlockSize: ", BlockSize,
 				"\n SectorNumber: ", SectorNumber,
 				"\n NumberOfPayTXsUpperBound: ", NumberOfPayTXsUpperBound,
-				"\n timeout: ", ProtocolTimeout,
+				"\n SimulationRounds: ", SimulationRounds,
 				"\n SimulationSeed of: ", SimulationSeed,
 				"\n nbrSubTrees of: ", NbrSubTrees,
 				"\n  threshold of: ", Threshold,
@@ -217,8 +216,8 @@ func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberO
 			// ---------------------------------------------------------------
 			// raha: BLSCoSi protocol
 			// raha: added: this way, the roster that runs this protocol is  initiated by the main roster, the one that runs the basedfs protocol
-			// cosiProtocol.TreeNodeInstance = basedfsprotocol.TreeNodeInstance
-			basedfsprotocol.BlsCosi = cosiProtocol
+			// cosiProtocol.TreeNodeInstance = ChainBoostProtocol.TreeNodeInstance
+			ChainBoostProtocol.BlsCosi = cosiProtocol
 			// ---------------------------------------------------------------
 			/* Raha: note that in overlay.go the CreateProtocol function will call the Dispatch() function by creating a go routine
 			that's why I call it here in a go routine too.
@@ -234,41 +233,41 @@ func Simulate(PercentageTxPay, MCRoundDuration, BlockSize, SectorNumber, NumberO
 				log.LLvl1(i, " :", a.Name(), ": ", a.RosterIndex, "\n")
 			}
 			for _, child := range rootSC.Tree.List() {
-				if child != basedfsprotocol.TreeNode() {
-					err := basedfsprotocol.SendTo(child, &BaseDFSProtocol.HelloBaseDFS{
-						ProtocolTimeout:          basedfsprotocol.ProtocolTimeout,
-						PercentageTxPay:          basedfsprotocol.PercentageTxPay,
-						MCRoundDuration:          basedfsprotocol.MCRoundDuration,
-						BlockSize:                basedfsprotocol.BlockSize,
-						SectorNumber:             basedfsprotocol.SectorNumber,
-						NumberOfPayTXsUpperBound: basedfsprotocol.NumberOfPayTXsUpperBound,
-						SimulationSeed:           basedfsprotocol.SimulationSeed,
+				if child != ChainBoostProtocol.TreeNode() {
+					err := ChainBoostProtocol.SendTo(child, &MainAndSideChain.HelloBaseDFS{
+						SimulationRounds:         ChainBoostProtocol.SimulationRounds,
+						PercentageTxPay:          ChainBoostProtocol.PercentageTxPay,
+						MCRoundDuration:          ChainBoostProtocol.MCRoundDuration,
+						BlockSize:                ChainBoostProtocol.BlockSize,
+						SectorNumber:             ChainBoostProtocol.SectorNumber,
+						NumberOfPayTXsUpperBound: ChainBoostProtocol.NumberOfPayTXsUpperBound,
+						SimulationSeed:           ChainBoostProtocol.SimulationSeed,
 						// --------------------- bls cosi ------------------------
-						NbrSubTrees:     basedfsprotocol.NbrSubTrees,
-						Threshold:       basedfsprotocol.Threshold,
-						CommitteeWindow: basedfsprotocol.CommitteeWindow,
-						SCRoundDuration: basedfsprotocol.SCRoundDuration,
-						EpochCount:      basedfsprotocol.EpochCount,
-						SimState:        basedfsprotocol.SimState,
+						NbrSubTrees:     ChainBoostProtocol.NbrSubTrees,
+						Threshold:       ChainBoostProtocol.Threshold,
+						CommitteeWindow: ChainBoostProtocol.CommitteeWindow,
+						SCRoundDuration: ChainBoostProtocol.SCRoundDuration,
+						EpochCount:      ChainBoostProtocol.EpochCount,
+						SimState:        ChainBoostProtocol.SimState,
 					})
 					if err != nil {
-						log.Lvl1(basedfsprotocol.Info(), "couldn't send hello to child", child.Name())
+						log.Lvl1(ChainBoostProtocol.Info(), "couldn't send hello to child", child.Name())
 					}
 				}
 			}
 			go func() {
-				err := basedfsprotocol.DispatchProtocol()
+				err := ChainBoostProtocol.DispatchProtocol()
 				if err != nil {
 					log.Lvl1("protocol dispatch calling error: " + err.Error())
 				}
 			}()
-			basedfsprotocol.Start()
+			ChainBoostProtocol.Start()
 			// raha: bls cosi  start function is called inside basedfs protocol
 			// ---------------------------------------------------------------
 			// when it finishes  is when:
 			// ToDoRaha
 			log.LLvl1("Back to simulation module: waiting for DoneBaseDFS channel .......... ")
-			px := <-basedfsprotocol.DoneBaseDFS
+			px := <-ChainBoostProtocol.DoneBaseDFS
 			log.Lvl1("Back to simulation module. Final result is", px)
 			wait = false
 		}
@@ -334,35 +333,35 @@ type conf struct {
 func init() {
 	//network.RegisterMessage(ProofOfRetTxChan{})
 	//network.RegisterMessage(PreparedBlockChan{})
-	network.RegisterMessage(BaseDFSProtocol.HelloBaseDFS{})
-	network.RegisterMessage(BaseDFSProtocol.NewRound{})
-	network.RegisterMessage(BaseDFSProtocol.NewLeader{})
-	network.RegisterMessage(BaseDFSProtocol.LtRSideChainNewRound{})
-	network.RegisterMessage(BaseDFSProtocol.RtLSideChainNewRound{})
-	onet.GlobalProtocolRegister("BaseDFS", NewBaseDFSProtocol)
+	network.RegisterMessage(MainAndSideChain.HelloBaseDFS{})
+	network.RegisterMessage(MainAndSideChain.NewRound{})
+	network.RegisterMessage(MainAndSideChain.NewLeader{})
+	network.RegisterMessage(MainAndSideChain.LtRSideChainNewRound{})
+	network.RegisterMessage(MainAndSideChain.RtLSideChainNewRound{})
+	onet.GlobalProtocolRegister("BaseDFS", NewChainBoostProtocol)
 }
 
-func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error) {
+func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error) {
 
 	pi, err := n.Overlay.CreateProtocol("bdnCoSiProto", n.Tree(), onet.NilServiceID)
 	if err != nil {
 		log.LLvl1("couldn't create protocol: " + err.Error())
 	}
-	cosiProtocol := pi.(*BaseDFSProtocol.BlsCosi)
+	cosiProtocol := pi.(*MainAndSideChain.BlsCosi)
 	cosiProtocol.CreateProtocol = n.Overlay.CreateProtocol
 	cosiProtocol.TreeNodeInstance = n
-	//cosiProtocol.Timeout = BaseDFSProtocol.DefaultTimeout
-	//cosiProtocol.SubleaderFailures = BaseDFSProtocol.DefaultSubleaderFailures
-	//cosiProtocol.Threshold = BaseDFSProtocol.DefaultThreshold(0)
+	//cosiProtocol.Timeout = ChainBoostProtocol.DefaultTimeout
+	//cosiProtocol.SubleaderFailures = ChainBoostProtocol.DefaultSubleaderFailures
+	//cosiProtocol.Threshold = ChainBoostProtocol.DefaultThreshold(0)
 	//cosiProtocol.Sign = bls.Sign
 	//cosiProtocol.Verify = bls.Verify
-	//cosiProtocol.Aggregate = BaseDFSProtocol.Aggregate
+	//cosiProtocol.Aggregate = ChainBoostProtocol.Aggregate
 	//cosiProtocol.VerificationFn = func(a, b []byte) bool { return true }
 	//cosiProtocol.SubProtocolName = "blsSubCoSiProtoDefault"
 	//cosiProtocol.Suite = pairing.NewSuiteBn256()
-	//cosiProtocol.BlockType = BaseDFSProtocol.DefaultBlockType()
+	//cosiProtocol.BlockType = ChainBoostProtocol.DefaultBlockType()
 
-	bz := &BaseDFSProtocol.BaseDFS{
+	bz := &MainAndSideChain.BaseDFS{
 		TreeNodeInstance:   n,
 		Suite:              pairing.NewSuiteBn256(),
 		DoneBaseDFS:        make(chan bool, 1),
@@ -374,7 +373,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 		SideChainQueueWait: 0,
 		FirstSCQueueWait:   0,
 		SecondQueueWait:    0,
-		ProtocolTimeout:    0,
+		SimulationRounds:   0,
 		BlsCosiStarted:     false,
 		BlsCosi:            cosiProtocol,
 		SimState:           1, // 1: just the main chain - 2: main chain plus side chain = chainBoost
@@ -416,8 +415,8 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 // 	"time"
 
 // 	"github.com/BurntSushi/toml"
-// 	onet "github.com/basedfs"
-// 	"github.com/basedfs/BaseDFSProtocol"
+// 	"github.com/basedfs/onet"
+// 	"github.com/basedfs/ChainBoostProtocol"
 // 	"github.com/basedfs/log"
 // 	"github.com/basedfs/network"
 // 	"github.com/basedfs/simul/monitor"
@@ -572,7 +571,7 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 // 			}
 // 			// --------------------------------------------------------
 
-// 			cosiProtocol := pi.(*BaseDFSProtocol.BlsCosi)
+// 			cosiProtocol := pi.(*ChainBoostProtocol.BlsCosi)
 // 			cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol // Raha: it doesn't call any fuunction! just initializtion of methods that is going to be used later
 // 			//cosiProtocol.CreateProtocol = rootService.CreateProtocol //raha: it used to be initialized by this function call
 // 			// params from config file:
@@ -586,22 +585,22 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 // 			}
 // 			// ---------------------------------------------------------------
 
-// 			basedfsprotocol := p.(*BaseDFSProtocol.BaseDFS)
-// 			//basedfsprotocol.SetTimeout(time.Duration(TimeOut) * time.Second)
+// 			ChainBoostProtocol := p.(*ChainBoostProtocol.BaseDFS)
+// 			//ChainBoostProtocol.SetTimeout(time.Duration(TimeOut) * time.Second)
 // 			// raha: finally passing our system-wide configurations to our protocol
-// 			basedfsprotocol.PercentageTxPay = PercentageTxPay
-// 			basedfsprotocol.MCRoundDuration = MCRoundDuration
-// 			basedfsprotocol.BlockSize = BlockSize
-// 			basedfsprotocol.SectorNumber = SectorNumber
-// 			basedfsprotocol.NumberOfPayTXsUpperBound = NumberOfPayTXsUpperBound
-// 			basedfsprotocol.ProtocolTimeout = time.Duration(ProtocolTimeout) * time.Second
-// 			basedfsprotocol.SimulationSeed = SimulationSeed
-// 			basedfsprotocol.NbrSubTrees = NbrSubTrees
-// 			basedfsprotocol.Threshold = Threshold
-// 			basedfsprotocol.SCRoundDuration = SCRoundDuration
-// 			basedfsprotocol.CommitteeWindow = CommitteeWindow
-// 			basedfsprotocol.EpochCount = EpochCount
-//			basedfsprotocol.SimState = SimState
+// 			ChainBoostProtocol.PercentageTxPay = PercentageTxPay
+// 			ChainBoostProtocol.MCRoundDuration = MCRoundDuration
+// 			ChainBoostProtocol.BlockSize = BlockSize
+// 			ChainBoostProtocol.SectorNumber = SectorNumber
+// 			ChainBoostProtocol.NumberOfPayTXsUpperBound = NumberOfPayTXsUpperBound
+// 			ChainBoostProtocol.SimulationRounds = time.Duration(SimulationRounds) * time.Second
+// 			ChainBoostProtocol.SimulationSeed = SimulationSeed
+// 			ChainBoostProtocol.NbrSubTrees = NbrSubTrees
+// 			ChainBoostProtocol.Threshold = Threshold
+// 			ChainBoostProtocol.SCRoundDuration = SCRoundDuration
+// 			ChainBoostProtocol.CommitteeWindow = CommitteeWindow
+// 			ChainBoostProtocol.EpochCount = EpochCount
+//			ChainBoostProtocol.SimState = SimState
 // 			log.LLvl2("passing our system-wide configurations to the protocol",
 // 				"\n  PercentageTxPay: ", PercentageTxPay,
 // 				"\n  MCRoundDuration: ", MCRoundDuration,
@@ -620,8 +619,8 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 // 			// ---------------------------------------------------------------
 // 			// raha: BLSCoSi protocol
 // 			// raha: added: this way, the roster that runs this protocol is  initiated by the main roster, the one that runs the basedfs protocol
-// 			// cosiProtocol.TreeNodeInstance = basedfsprotocol.TreeNodeInstance
-// 			basedfsprotocol.BlsCosi = cosiProtocol
+// 			// cosiProtocol.TreeNodeInstance = ChainBoostProtocol.TreeNodeInstance
+// 			ChainBoostProtocol.BlsCosi = cosiProtocol
 // 			// ---------------------------------------------------------------
 // 			/* Raha: note that in overlay.go the CreateProtocol function will call the Dispatch() function by creating a go routine
 // 			that's why I call it here in a go routine too.
@@ -633,18 +632,18 @@ func NewBaseDFSProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error)
 // 			create subprotocols => hence calls func (p *SubBlsCosi) Dispatch() */
 // 			// ---------------------------------------------------------------
 // 			go func() {
-// 				err := basedfsprotocol.DispatchProtocol()
+// 				err := ChainBoostProtocol.DispatchProtocol()
 // 				if err != nil {
 // 					log.Lvl1("protocol dispatch calling error: " + err.Error())
 // 				}
 // 			}()
-// 			basedfsprotocol.Start()
+// 			ChainBoostProtocol.Start()
 // 			// raha: bls cosi  start function is called inside basedfs start call
 
 // 			// when it finishes  is when:
 // 			// ToDoRaha
 // 			// ---------------------------------------------------------------
-// 			px := <-basedfsprotocol.DoneBaseDFS
+// 			px := <-ChainBoostProtocol.DoneBaseDFS
 // 			log.Lvl1("Back to simulation module. Final result is", px)
 // 			wait = false
 // 		}

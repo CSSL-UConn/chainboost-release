@@ -12,9 +12,9 @@ import (
 
 	"time"
 
-	onet "github.com/basedfs"
-	"github.com/basedfs/app"
+	//"github.com/basedfs/app"
 	"github.com/basedfs/log"
+	"github.com/basedfs/onet"
 
 	//"github.com/basedfs/simul/monitor"
 	"golang.org/x/xerrors"
@@ -81,7 +81,7 @@ type Localhost struct {
 	BlockSize                int
 	SectorNumber             int
 	NumberOfPayTXsUpperBound int
-	ProtocolTimeout          int
+	SimulationRounds         int
 	SimulationSeed           int
 	//-- bls cosi
 	NbrSubTrees     int
@@ -108,7 +108,7 @@ func (d *Localhost) Configure(pc *Config) {
 	d.BlockSize = pc.BlockSize
 	d.SectorNumber = pc.SectorNumber
 	d.NumberOfPayTXsUpperBound = pc.NumberOfPayTXsUpperBound
-	d.ProtocolTimeout = pc.ProtocolTimeout
+	d.SimulationRounds = pc.SimulationRounds
 	d.SimulationSeed = pc.SimulationSeed
 	d.NbrSubTrees = pc.NbrSubTrees
 	d.Threshold = pc.Threshold
@@ -172,9 +172,10 @@ func (d *Localhost) Deploy(rc *RunConfig) error {
 		pwd = pwd + d.PreScript
 		_, err := os.Stat(pwd /*d.PreScript*/)
 		if !os.IsNotExist(err) {
-			if err := app.Copy(d.runDir, pwd /*d.PreScript*/); err != nil {
-				return xerrors.Errorf("copying: %v", err)
-			}
+			//raha commented
+			//if err := app.Copy(d.runDir, pwd /*d.PreScript*/); err != nil {
+			//	return xerrors.Errorf("copying: %v", err)
+			//}
 		}
 	}
 
@@ -239,7 +240,7 @@ func (d *Localhost) Start(args ...string) error {
 			log.Lvl2("Localhost: will start host", i, h)
 			log.Lvl2("raha: adding some other system-wide configurations")
 
-			err := Simulate(d.PercentageTxPay, d.MCRoundDuration, d.BlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.ProtocolTimeout,
+			err := Simulate(d.PercentageTxPay, d.MCRoundDuration, d.BlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.SimulationRounds,
 				d.SimulationSeed, d.NbrSubTrees, d.Threshold, d.SCRoundDuration, d.CommitteeWindow, d.EpochCount, d.SimState,
 				d.Suite, host, d.Simulation, "")
 			if err != nil {

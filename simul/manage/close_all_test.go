@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	onet "github.com/basedfs"
 	"github.com/basedfs/log"
+	"github.com/basedfs/onet"
 	"go.dedis.ch/kyber/v3/suites"
 )
 

@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/BurntSushi/toml"
-	onet "github.com/basedfs"
 	"github.com/basedfs/log"
+	"github.com/basedfs/onet"
 	"github.com/basedfs/simul"
 
 	//"github.com/basedfs/simul/monitor"

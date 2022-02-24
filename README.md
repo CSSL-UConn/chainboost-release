@@ -1,6 +1,6 @@
 
 # ChainBoost #
-<p align="center"><img width="650" height="200" src="./BaseDFSProtocol/chainboost.png" alt="ChainBoost logo"></p>
+<p align="center"><img width="650" height="200" src="./MainAndSideChain/chainboost.png" alt="ChainBoost logo"></p>
 
 ChainBoost's official implementation in Go.
 
@@ -15,6 +15,11 @@ note: running on an OS other than IOS needs a change in c extention config code
 - run the following command: 
     - "/usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/basedfs/simul/manage/simulation"
     - this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/simul_test.go))
+
+
+raha@R-MacBook-Pro basedfs % /usr/local/go/bin/go test -timeout 300000s -run ^TestSimulation$ github.com/basedfs/simul/manage/simulation
+
+
 - the stored blockchain in Excel file "mainchainbc.xlsx"  can be found under the `build` directory that is going to be created after simulation run[^3]
 - in the case of debugging the following code in ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/simul_test.go)) indicates the debug logging level, with 0 being the least logging and 5 being the most (every tiny detail is logged in this level)
 ```
@@ -25,56 +30,6 @@ log.SetDebugVisible(1)
 
 Config File "BaseDFS.toml" is located under the following directory:
 ([BaseDFS.toml](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/BaseDFS.toml))
-
-
-## To Change the Configs ##
-- to change number of servers, change two values: 1- `Hosts` and 2- `Nodes` - with a same number :)
-- `BlockSize` is the maximum block size (in Byte) allowed in each round (the submitted block may be less than this size based on the available transactions in the queues)[^1]
-- `DistributionMeanFileSize` and `DistributionVarianceFileSize` are specifying the mean and variance of the Normal distribution used to generate file-sizes in the ServAgrs
-- `DistributionMeanServAgrDuration` and `DistributionVarianceServAgrDuration` is the same for ServAgrs' duration
-- `DistributionMeanInitialPower` and DistributionVarianceInitialPower is the same for the intial power we assign to each server
-- `SectorNumber` is the number of sectors in each block of file with impact the por transaction size
-- `PercentageTxPay` the block size percentage allocated for regular payment transactions (if regular payment txs are less, other types of txs will take its space)
-- `NumberOfPayTXsUpperBound` the upper bound for a random number of regular payment transactions issued in each round
-- `ProtocolTimeout` is the time that we want the protocol to stop after it (in seconds)
-- `MCRoundDuration` the time interval between each round (in seconds)
-- `SimulationSeed` 
-- `nbrSubTrees`
-- `threshold`
-- `SCRoundDuration`
-- `EpochCount`
-- `CommitteeWindow`
-- `SimState`
-
-
-## Blockcahin ##
-
-- ServAgr stands for `service agreement`
-- por stands for `proof of retrievibility`
-
-There are 5 sheets, namely MarketMatching, FirstQueue, SecondQueue, and RoundTable, and PowerTable
-
-
-- `MarketMatching`: the overall information about the market matching
-    - about the servers: IP, 
-    - about the ServAgr: ID, duration, File size, and starting round#, isPublished (if a ServAgr get expired, the column published is set to 0 until its poropose and commit transaction get submitted to the blockchain again)
-- `PowerTable`: A matrix of each server's added power in each round
-- `FirstQueue`: there are 5 types of trransactions in there
-    - `propose ServAgr': including the information of teh ServAgr and the client's payment for it
-    - `commit ServAgr`: in which the server commits to the ServAgr id already published by the client
-    - `por`: for each active (not expired) ServAgr each server issue ane por
-    - `storage payment`: after the ServAgr duration pass and a ServAgr expires, this transaction is assued to pay for the service
-- `SecondQueue`: the queue of regular payment transactions
-- `RoundTable`: the overall information of the blockchain including:
-    - each round's seed
-    - the added block size
-    - IP of the leader in each round
-    - number of each transaction type that is submitted in each round
-    - `TotalNumTxs`: total number of all submitted transactions in each round
-    - the time that each round has started
-    - `AveWait-RegPay` and `AveWait-OtherTxs`: the average wait time in each round for regular payment and other types of transactions[^2]
-    - `RegPaySpaceFull` and `BlockSpaceFull`: 1 indicates the allocated space for regular payment is full /  the block space is full
-- `Overall Evaluation`: the overall results up until each round[^3]
 
 
 ## Project Layout ##
@@ -113,7 +68,6 @@ deploy those protocols as a service in a distributed manner.
 <!--FootNote-->
 [^1]: there may be some rounds that there is no leader for them, an empty block will be added to the blockchain in those rounds and the information of the root node (blockchain layer 1) is added (it can be removed) as the round leader but all the other columns are empty. in these rounds transactions will be added normally to the queue but no transaction is removed bcz the block is empty.
 [^2]: when in a round, some transactions should wait in a queue (i.e. the allocated space for  that transaction is full) and are submitted in another round, the average wait of that queue in the round that those transactions get to be submitted increases.
-[^3]: these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
 <!--FootNote-->
 
 

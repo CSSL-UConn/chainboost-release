@@ -7,7 +7,7 @@ import (
 	"os"
 	"path"
 
-	onet "github.com/basedfs"
+	"github.com/basedfs/onet"
 	"github.com/urfave/cli"
 
 	//"go.dedis.ch/cothority/v3"

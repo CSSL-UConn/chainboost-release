@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	onet "github.com/basedfs"
 	"github.com/basedfs/log"
+	"github.com/basedfs/onet"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/sign"
 	"go.dedis.ch/kyber/v3/sign/bls"

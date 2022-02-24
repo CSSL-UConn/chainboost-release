@@ -23,11 +23,11 @@ import (
 	"fmt"
 
 	"github.com/BurntSushi/toml"
-	onet "github.com/basedfs"
 	"github.com/basedfs/blscosi"
 	"github.com/basedfs/blscosi/protocol"
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
+	"github.com/basedfs/onet"
 	"github.com/basedfs/simul/monitor"
 	"go.dedis.ch/kyber/v3/pairing"
 )

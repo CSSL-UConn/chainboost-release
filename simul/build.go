@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/basedfs/blockchain"
+	"github.com/basedfs/MainAndSideChain/blockchain"
 
 	"math"
 	"time"
@@ -72,7 +72,7 @@ func startBuild() {
 		BlockSize, _ := strconv.Atoi(runconfigs[0].Get("BlockSize"))
 		SectorNumber, _ := strconv.Atoi(runconfigs[0].Get("SectorNumber"))
 		NumberOfPayTXsUpperBound, _ := strconv.Atoi(runconfigs[0].Get("NumberOfPayTXsUpperBound"))
-		ProtocolTimeout, _ := strconv.Atoi(runconfigs[0].Get("ProtocolTimeout"))
+		SimulationRounds, _ := strconv.Atoi(runconfigs[0].Get("SimulationRounds"))
 		SimulationSeed, _ := strconv.Atoi(runconfigs[0].Get("SimulationSeed"))
 		NbrSubTrees, _ := strconv.Atoi(runconfigs[0].Get("NbrSubTrees"))
 		Threshold, _ := strconv.Atoi(runconfigs[0].Get("Threshold"))
@@ -91,7 +91,7 @@ func startBuild() {
 			BlockSize:                BlockSize,
 			SectorNumber:             SectorNumber,
 			NumberOfPayTXsUpperBound: NumberOfPayTXsUpperBound,
-			ProtocolTimeout:          ProtocolTimeout,
+			SimulationRounds:         SimulationRounds,
 			SimulationSeed:           SimulationSeed,
 			NbrSubTrees:              NbrSubTrees,
 			Threshold:                Threshold,
@@ -270,9 +270,9 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 		err := deployP.Start()
 		// Raha: initializing main chain's blockchain -------------------------
 		blockchain.InitializeMainChainBC(
-			rc.Get("DistributionMeanFileSize"), rc.Get("DistributionVarianceFileSize"),
-			rc.Get("DistributionMeanServAgrDuration"), rc.Get("DistributionVarianceServAgrDuration"),
-			rc.Get("DistributionMeanInitialPower"), rc.Get("DistributionVarianceInitialPower"),
+			rc.Get("FileSizeDistributionMean"), rc.Get("FileSizeDistributionVariance"),
+			rc.Get("ServAgrDurationDistributionMean"), rc.Get("ServAgrDurationDistributionVariance"),
+			rc.Get("InitialPowerDistributionMean"), rc.Get("InitialPowerDistributionVariance"),
 			rc.Get("Nodes"), rc.Get("SimulationSeed"))
 		// Raha: initializing side chain's blockchain -------------------------
 		blockchain.InitializeSideChainBC()

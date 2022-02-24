@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	onet "github.com/basedfs"
+	"github.com/basedfs/onet"
 	"github.com/basedfs/blockchain"
 	"github.com/basedfs/blockchain/blkparser"
 	"github.com/basedfs/cosi"

@@ -52,8 +52,8 @@ import (
 	"go.dedis.ch/kyber/v3/util/key"
 	//"github.com/dedis/crypto/abstract"
 	"go.dedis.ch/kyber/v3"
-	//"github.com/basedfs/BaseDFSProtocol"
-	onet "github.com/basedfs"
+	//"github.com/basedfs/MainAndSideChain"
+	"github.com/basedfs/onet"
 )
 
 // CoSi is the struct that implements one round of a CoSi protocol.
