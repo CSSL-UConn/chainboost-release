@@ -1,3 +1,5 @@
+# VRF #
+
 The VRF module is brought from [Algorand](https://github.com/algorand/go-algorand)
 and more specifically from the implemented VRF located in the following branch:
 <https://github.com/algorand/go-algorand/tree/1504f5f39ec2893d2b0ac9b60d1b87f6e7d4e2fc/crypto>
