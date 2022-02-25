@@ -60,7 +60,3 @@ The following packages provide core functionality to ..., as well as other tools
 [^1]: there may be some rounds that there is no leader for them, an empty block will be added to the blockchain in those rounds and the information of the root node (blockchain layer 1) is added (it can be removed) as the round leader but all the other columns are empty. in these rounds transactions will be added normally to the queue but no transaction is removed bcz the block is empty.
 [^2]: when in a round, some transactions should wait in a queue (i.e. the allocated space for  that transaction is full) and are submitted in another round, the average wait of that queue in the round that those transactions get to be submitted increases.
 <!--FootNote-->
-
-
-- we may need to say which model (account based or UTXO) are we adopting in the implmentation
-- a simplifying assumption we have for committee is that in each committee, we have one instance (one note) for each committee member and not more! even if they have been powerfuil and being selected as main chain's leader multiple time during last epoch
