@@ -1,3 +1,5 @@
+# PoR #
+
 Scalar represents a scalar value by which a Point (group element) may be encrypted to produce another Point. => a scalar multiplier in elliptic curve group
 
 Parameter Selection:
