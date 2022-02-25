@@ -1,5 +1,20 @@
 ## Main Chain protocol ##
 
+Main Chain consensus:
+--------------------------
+All nodes have a same view of the blockchain 
+
+Blockchain is stored in two layers: in a file on hardware and in the storage of a root node in the protocol. So when each node sends and receives a message from the root node, it is equal to accessing the blockchain, reading from it or writing in it (the next block, if having a valid leadership proof).
+
+(step 3) Each round, all nodes check for their leadership by comparing their current power with the vrf output and if it was bigger than the random output they send a message to bc-layer1 announcing their leadership.
+
+bc-layer 1 can verify their leadership argument (verify vrf is implemented but it is not added here) and the first leader that has announced her leadership will get to be the round’s leader. 
+
+Bc-layer1 update the bc-layer2 using the config params, the selected leader’s info Etc.
+
+And once the round duration is finished, it announces the next round’s start by directly sending a message to all nodes. This is equal to having all nodes observe bc and once the new block is added (after round duration) they start the next round
+
+All nodes repeat from step 3
 
 Types of Messages:
 --------------------------------------------
