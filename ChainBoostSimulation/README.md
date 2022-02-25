@@ -19,6 +19,24 @@ log.SetDebugVisible(1)
 Config File "BaseDFS.toml" is located under the following directory:
 ([BaseDFS.toml](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/BaseDFS.toml))
 
+Decode Config File:
+--------------------
+```
+// ReadRunFile reads from a configuration-file for a run. The configuration-file has the
+// following syntax:
+// Name1 = value1
+// Name2 = value2
+// [empty line]
+// n1, n2, n3, n4
+// v11, v12, v13, v14
+// v21, v22, v23, v24
+//
+// The Name1...Namen are global configuration-options.
+// n1..nn are configuration-options for one run
+// Both the global and the run-configuration are copied to both
+// the platform and the app-configuration.
+```
+
 ## To Change the Configs ##
 - to change number of servers, change two values: 1- `Hosts` and 2- `Nodes` - with a same number :)
 - `BlockSize` is the maximum block size (in Byte) allowed in each round (the submitted block may be less than this size based on the available transactions in the queues)[^1]
