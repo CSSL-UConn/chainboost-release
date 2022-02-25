@@ -37,11 +37,20 @@ Types of Messages:
 ```
 
 ## Side Chain protocol ## 
-Side chain protocol is a BlS protocol that its code is brought from BLSCOSI[^4]
+Side chain protocol is a BlS protocol that its code is brought from Cosi module from Cothority. [^4]
 
 Types of Messages:
 --------------------------------------------
+Other than the internal messages that are sent through a round of CoSi (signs, announcments, final signature, etc.) , we have added 2 more messages in side chain protocol:
 
+- after each full run of blscosi by a leader node, that node send a message to the root node announcing a successful completion of one round of side chain.
+```
+&LtRSideChainNewRound
+```
+- after finishing the prosseccing of each side chain's round completion by root node (such as updating blockchains or increasing round number or checking for next leader and committee), the root node send a message to next side chain's round, triggering him to run the next round.
+```
+&RtLSideChainNewRound
+```
 
 
 ## Main Chain Blockcahin ##
