@@ -13,7 +13,7 @@ note: running on an OS other than IOS needs a change in c extention config code
 - Clone or Downloade the ChainBoost's source code from Git <https://github.com/chainBstSc/basedfs>
 - Open a terminal in the directory where the folder basedfs is located
 - run the following command: 
-- ```
+```
 /usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/basedfs/simul/manage/simulation
 ```
 
