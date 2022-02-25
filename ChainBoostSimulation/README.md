@@ -88,7 +88,7 @@ touch mainbchainbc.csv
 This file will be created in the deploy-dir
 
 To write/read/update this file:
-
+------------------------------
 In the initialization phase, the data comes from the simulation “config file”
 In build.go, after deploy.start() (which is where the prescript is decoded and runned and the centralbc file is generated and its directory is deploy-dir which is “/simul/manage/simulation/build/”) we have:
 ```
@@ -202,6 +202,27 @@ So, what we have at the end is:
 7- in function simulate(), after creating an instance of our BasedDFSProtocol, the passed params are sent to the protocol structure (our protocol has these params in its structure and get initialized here) 
 
 8- but note that just the first node who run the protocol has these params in the protocol structure initialized, so in order to have other nodes start running the protocol (and get initialized with these params) we sent a message to all nodes and use a HelloBaseDFS structure that carries these params in it in the function HelloBaseDFS() which is called in the Start() function by the first node. So, when each node receives the message, in the Dispatch() function, the passed params are sent to their protocol structure and their protocol gets initialized too.
+
+
+##How Transactions are Generated in Queue##
+
+in sheet “market matching”, the ContractPublished == 1 means that:
+a “TxEscrow” transaction (this should be modified later) has been submitted (added to a block) for this contract. the column “started round number” says on what round this transaction has been submitted (i.e. the contract has started being active)
+in sheet “market matching”, the ContractPublished == 0 means that:
+The contract is expired (or just in first round not started yet)
+when this happens, a “TxStoragePayment” transaction will be sent to the transaction queue
+on the next round, with ContractPublished == 0, a “TxEscrow” transaction will be sent to the transactions queue
+and again, when the “TxEscrow” transaction leave the queue, the ContractPublished will be set to 1
+in sheet “market matching”, for each server (/contract) that the column ContractPublished == 1 a “TxPor” transaction will be sent to the transactions queue
+Note: for now, we are assuming that regardless of file size, each server have one client and will issue one por transaction each round
+Note: regular payment transactions have the priority to take the specified percentage of block size (specified in config file) and they will. So if based on the number of regular payment transactions in their queue, they take less than their allocated size, the rest of block size is going to be spent on other types of transactions.
+
+##“propose contract” & “Commit Contract” transactions##
+“escrow creation” transaction is referencing a “contract” transaction (including a payment) and is being considered to be issued by the client .
+In the “contract” transaction I had considered commitment from both side, client and server.
+The point is that we can imagine two scenario:
+1- they have generated a “contract” transaction together, in a sense that the client has provided some part of its information (price, duration, file tag, commitment) and have passed it to the server and then the server has signed it (commitment) and then the transaction has been issued and submitted or
+2- a client issue a “propose contract” transaction including all the mentioned information, plus the escrow payment. and then the server issue a “commit contract” transaction, referencing the “propose contract” transaction. (the escrow is not locked until a “commit transaction” is submitted on top of it)
 
 -------------
 - [ ] Note that the cpu time of blockchain’s two layer (RAM and Storage) communication is not counted/ eliminated from the protocol’s latency.
