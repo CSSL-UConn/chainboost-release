@@ -37,7 +37,7 @@ Types of Messages:
 ```
 
 ## Side Chain protocol ## 
-Side chain protocol is a BlS protocol that its code is brought from Cosi module from Cothority. [^4]
+Side chain protocol is a BlS protocol that its code is brought from Cosi module from Cothority. [^1]
 
 Types of Messages:
 --------------------------------------------
@@ -79,12 +79,12 @@ There are 6 sheets, namely MarketMatching, FirstQueue, SecondQueue, RoundTable, 
     - the time that each round has started
     - `AveWait-RegPay` and `AveWait-OtherTxs`: the average wait time in each round for regular payment and other types of transactions[^2]
     - `RegPaySpaceFull` and `BlockSpaceFull`: 1 indicates the allocated space for regular payment is full /  the block space is full
-- `Overall Evaluation`: the overall results up until each round [^3]
+- `Overall Evaluation`: the overall results up until each round [^2]
 
 
 ## Side Chain Blockcahin ##
 
-There are 3 sheets, namely FirstQueue, RoundTable, and Overall Evaluation.[^4]
+There are 3 sheets, namely FirstQueue, RoundTable, and Overall Evaluation.[^3]
 
 ### Assumptions, Simplifications ###
 - [ ] we may need to say which model (account based or UTXO) are we adopting in the implmentation
@@ -94,6 +94,7 @@ There are 3 sheets, namely FirstQueue, RoundTable, and Overall Evaluation.[^4]
 
 
 <!--FootNote-->
-[^3]: these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
-[^4]: if the SimState parameter in the config file be set to 1, the side chain protocol will not be run atall and the side chain blockchain file will be empty (i.e. there will be no side chain blockchain)
+[^2]: these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
+[^1]: if the SimState parameter in the config file be set to 1, the side chain protocol will not be run atall and the side chain blockchain file will be empty (i.e. there will be no side chain blockchain)
+[^3]
 <!--FootNote-->
