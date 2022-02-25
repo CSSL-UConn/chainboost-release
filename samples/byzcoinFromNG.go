@@ -16,7 +16,7 @@ import (
 	"github.com/basedfs/blockchain/blkparser"
 	"github.com/basedfs/cosi"
 	"github.com/basedfs/log"
-	"github.com/basedfs/network"
+	"github.com/basedfs/_network"
 	"github.com/basedfs/simul/monitor"
 	"go.dedis.ch/kyber/v3"
 )

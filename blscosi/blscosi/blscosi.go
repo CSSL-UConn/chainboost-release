@@ -11,8 +11,8 @@ import (
 	"github.com/urfave/cli"
 
 	//"go.dedis.ch/cothority/v3"
-	"github.com/basedfs/app"
-	"github.com/basedfs/cfgpath"
+	app "github.com/basedfs/app"
+	cfgpath "github.com/basedfs/cfgpath"
 	"github.com/basedfs/log"
 )
 

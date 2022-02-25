@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/BurntSushi/toml"
-	"github.com/basedfs/MainAndSideChain"
+	MainAndSideChain "github.com/basedfs/MainAndSideChain"
 	"github.com/basedfs/blscosi/protocol"
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
@@ -418,7 +418,7 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 // 	"github.com/basedfs/onet"
 // 	"github.com/basedfs/ChainBoostProtocol"
 // 	"github.com/basedfs/log"
-// 	"github.com/basedfs/network"
+// 	"github.com/basedfs/_network"
 // 	"github.com/basedfs/simul/monitor"
 // 	"golang.org/x/xerrors"
 // )

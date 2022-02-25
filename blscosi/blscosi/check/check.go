@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basedfs/app"
+	app "github.com/basedfs/app"
 	"github.com/basedfs/blscosi"
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"

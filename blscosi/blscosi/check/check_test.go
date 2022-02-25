@@ -6,7 +6,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/basedfs/app"
+	app "github.com/basedfs/app"
 	"github.com/basedfs/network"
 	"github.com/basedfs/onet"
 	"github.com/stretchr/testify/require"
