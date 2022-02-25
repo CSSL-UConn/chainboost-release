@@ -37,3 +37,8 @@ Config File "BaseDFS.toml" is located under the following directory:
 - `EpochCount`
 - `CommitteeWindow`
 - `SimState`
+
+
+-------------
+- [ ] Note that the cpu time of blockchain’s two layer (RAM and Storage) communication is not counted/ eliminated from the protocol’s latency.
+- [ ] If we use ec2 for experiment, we should be careful about time zones in measuring time for latency measurement.
