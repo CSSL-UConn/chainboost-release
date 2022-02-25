@@ -21,3 +21,15 @@ const n = 10 // number of blocks
 const l = 5  //size of query set (i<n)
 var suite = pairing.NewSuiteBn256()
 <https://www.youtube.com/watch?v=8_9ONpyRZEI>
+
+
+
+Cryptographic Parameters :
+
+For BLS signatures we use the bilinear bn256 (New  software  speed records  for  cryptographic  pairings) group of elliptic curves. 
+At the 128-bit security level, a nearly optimal choice for a pairing-friendly curve is a Barreto-Naehrig (BN) curve over a prime field of size roughly 256 bits with embedding degree k = 12. 
+bits of security: 128 bits / 124 bits. 
+New  software  speed records  for  cryptographic  pairings:  a constant-time implementation of an optimal ate pairing on a BN curve over a prime field Fp of size 257 bits. 
+The prime p is given by the BN polynomial parametrization p = 36u4+36u3+24u2+6u+1, where u = v3 and v = 1966080. The curve equation is E : y2 = x3 + 17.
+Compact por: 
+"Let lambda be the security parameter; typically, lambda=80. For the scheme with public verification,p should be a 2 lambda-bit prime, and the curve should be chosen so that discrete logarithm is 2 lambda-secure. For values of lambda up to 128, Barreto–Naehrig curves are the right choice"
