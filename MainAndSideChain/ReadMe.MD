@@ -45,7 +45,6 @@ Types of Messages:
 
 There are 5 sheets, namely MarketMatching, FirstQueue, SecondQueue, and RoundTable, and PowerTable
 
-
 - `MarketMatching`: the overall information about the market matching
     - about the servers: IP, 
     - about the ServAgr: ID, duration, File size, and starting round#, isPublished (if a ServAgr get expired, the column published is set to 0 until its poropose and commit transaction get submitted to the blockchain again)
@@ -67,7 +66,10 @@ There are 5 sheets, namely MarketMatching, FirstQueue, SecondQueue, and RoundTab
     - `RegPaySpaceFull` and `BlockSpaceFull`: 1 indicates the allocated space for regular payment is full /  the block space is full
 - `Overall Evaluation`: the overall results up until each round[^3]
 
-
+### Assumptions, Simplifications ###
+[ ] we may need to say which model (account based or UTXO) are we adopting in the implmentation
+[ ] a simplifying assumption we have for committee is that in each committee, we have one instance (one node) for each committee member and not more! even if they have been powerfull and being selected as main chain's leader multiple time during last epoch.
+[ ] leader election in mainchain
 
 
 
