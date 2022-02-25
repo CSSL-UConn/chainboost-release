@@ -4,7 +4,12 @@
 
 ChainBoost's official implementation in Go.
 
-ChainBoost is a ...
+ChainBoost is a secure performance booster for blockchain-based resource markets.
+
+We used latest version of [Onet](https://github.com/dedis/onet/tree/v3.2.9) (v.3.2.9) at the time for network, simulation, and communication modules 
+as well as [Cosi](https://github.com/dedis/cothority) module from Cothority. 
+We used [Kyber](https://github.com/dedis/kyber) for advanced cryptographic primitives.
+
 
 ## Getting Started ##
 note: running on an OS other than IOS needs a change in c extention config code
@@ -49,10 +54,6 @@ The following packages provide core functionality to ..., as well as other tools
   -   `...`
 --------------------------------------------------------------------------------------------------
 
-
-We used latest version of [Onet](https://github.com/dedis/onet/tree/v3.2.9) (v.3.2.9) at the time for network, simulation, and communication modules 
-as well as [Cosi](https://github.com/dedis/cothority) module from Cothority. 
-We used [Kyber](https://github.com/dedis/kyber) for advanced cryptographic primitives.
 
 
 <!--FootNote-->
