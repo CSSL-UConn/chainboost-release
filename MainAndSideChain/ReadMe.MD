@@ -84,7 +84,7 @@ There are 6 sheets, namely MarketMatching, FirstQueue, SecondQueue, RoundTable, 
 
 ## Side Chain Blockcahin ##
 
-There are 3 sheets, namely FirstQueue, RoundTable, and Overall Evaluation.[^3]
+There are 3 sheets, namely FirstQueue, RoundTable, and Overall Evaluation.[^1]
 
 ### Assumptions, Simplifications ###
 - [ ] we may need to say which model (account based or UTXO) are we adopting in the implmentation
@@ -94,7 +94,6 @@ There are 3 sheets, namely FirstQueue, RoundTable, and Overall Evaluation.[^3]
 
 
 <!--FootNote-->
-[^2]: these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
 [^1]: if the SimState parameter in the config file be set to 1, the side chain protocol will not be run atall and the side chain blockchain file will be empty (i.e. there will be no side chain blockchain)
-[^3]
+[^2]: these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
 <!--FootNote-->
