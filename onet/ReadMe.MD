@@ -1,7 +1,6 @@
+# Onet #
 
-
-
-We used latest version of [Onet](https://github.com/dedis/onet/tree/v3.2.9) (v.3.2.9) at the time for network, simulation, and communication modules
+In ChainBoost, we used latest version of [Onet](https://github.com/dedis/onet/tree/v3.2.9) (v.3.2.9) at the time for network, simulation, and communication modules
 
 Onet's documents can be find under following link:
 <https://github.com/dedis/onet/blob/master/README.md>
