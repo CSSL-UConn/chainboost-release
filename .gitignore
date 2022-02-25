@@ -9,3 +9,4 @@ Coding/
 profile.tmp
 *.cov
 .DS_Store
+./vscode
