@@ -1,5 +1,20 @@
-## Base DFS protocol ##
+## Main Chain protocol ##
 
+Main Chain consensus:
+--------------------------
+All nodes have a same view of the blockchain 
+
+Blockchain is stored in two layers: in a file on hardware and in the storage of a root node in the protocol. So when each node sends and receives a message from the root node, it is equal to accessing the blockchain, reading from it or writing in it (the next block, if having a valid leadership proof).
+
+(step 3) Each round, all nodes check for their leadership by comparing their current power with the vrf output and if it was bigger than the random output they send a message to bc-layer1 announcing their leadership.
+
+bc-layer 1 can verify their leadership argument (verify vrf is implemented but it is not added here) and the first leader that has announced her leadership will get to be the round’s leader. 
+
+Bc-layer1 update the bc-layer2 using the config params, the selected leader’s info Etc.
+
+And once the round duration is finished, it announces the next round’s start by directly sending a message to all nodes. This is equal to having all nodes observe bc and once the new block is added (after round duration) they start the next round
+
+All nodes repeat from step 3
 
 Types of Messages:
 --------------------------------------------
@@ -35,16 +50,30 @@ Types of Messages:
 	SimState:					bz.SimState,
 }
 ```
-- timeOut: terminate the simulation
+
+## Side Chain protocol ## 
+Side chain protocol is a BlS protocol that its code is brought from Cosi module from Cothority. [^1]
+
+Types of Messages:
+--------------------------------------------
+Other than the internal messages that are sent through a round of CoSi (signs, announcments, final signature, etc.) , we have added 2 more messages in side chain protocol:
+
+- after each full run of blscosi by a leader node, that node send a message to the root node announcing a successful completion of one round of side chain.
+```
+&LtRSideChainNewRound
+```
+- after finishing the prosseccing of each side chain's round completion by root node (such as updating blockchains or increasing round number or checking for next leader and committee), the root node send a message to next side chain's round, triggering him to run the next round.
+```
+&RtLSideChainNewRound
+```
 
 
-## Blockcahin ##
+## Main Chain Blockcahin ##
 
 - ServAgr stands for `service agreement`
 - por stands for `proof of retrievibility`
 
-There are 5 sheets, namely MarketMatching, FirstQueue, SecondQueue, and RoundTable, and PowerTable
-
+There are 6 sheets, namely MarketMatching, FirstQueue, SecondQueue, RoundTable, PowerTable, and Overall Evaluation.
 
 - `MarketMatching`: the overall information about the market matching
     - about the servers: IP, 
@@ -65,12 +94,21 @@ There are 5 sheets, namely MarketMatching, FirstQueue, SecondQueue, and RoundTab
     - the time that each round has started
     - `AveWait-RegPay` and `AveWait-OtherTxs`: the average wait time in each round for regular payment and other types of transactions[^2]
     - `RegPaySpaceFull` and `BlockSpaceFull`: 1 indicates the allocated space for regular payment is full /  the block space is full
-- `Overall Evaluation`: the overall results up until each round[^3]
+- `Overall Evaluation`: the overall results up until each round [^2]
 
 
+## Side Chain Blockcahin ##
+
+There are 3 sheets, namely FirstQueue, RoundTable, and Overall Evaluation.[^1]
+
+### Assumptions, Simplifications ###
+- [ ] we may need to say which model (account based or UTXO) are we adopting in the implmentation
+- [ ] a simplifying assumption we have for committee is that in each committee, we have one instance (one node) for each committee member and not more! even if they have been powerfull and being selected as main chain's leader multiple time during last epoch.
+- [ ] leader election in mainchain
 
 
 
 <!--FootNote-->
-[^3]: these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
+[^1]: if the SimState parameter in the config file be set to 1, the side chain protocol will not be run atall and the side chain blockchain file will be empty (i.e. there will be no side chain blockchain)
+[^2]: these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
 <!--FootNote-->

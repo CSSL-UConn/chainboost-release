@@ -4,7 +4,12 @@
 
 ChainBoost's official implementation in Go.
 
-ChainBoost is a ...
+ChainBoost is a secure performance booster for blockchain-based resource markets.
+
+We used latest version of [Onet](https://github.com/dedis/onet/tree/v3.2.9) (v.3.2.9) at the time for network, simulation, and communication modules 
+as well as [Cosi](https://github.com/dedis/cothority) module from Cothority. 
+We used [Kyber](https://github.com/dedis/kyber) for advanced cryptographic primitives.
+
 
 ## Getting Started ##
 note: running on an OS other than IOS needs a change in c extention config code
@@ -13,8 +18,11 @@ note: running on an OS other than IOS needs a change in c extention config code
 - Clone or Downloade the ChainBoost's source code from Git <https://github.com/chainBstSc/basedfs>
 - Open a terminal in the directory where the folder basedfs is located
 - run the following command: 
-    - "/usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/basedfs/simul/manage/simulation"
-    - this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/simul_test.go))
+```
+/usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/basedfs/simul/manage/simulation
+```
+
+- this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/simul_test.go))
 
 
 raha@R-MacBook-Pro basedfs % /usr/local/go/bin/go test -timeout 300000s -run ^TestSimulation$ github.com/basedfs/simul/manage/simulation
@@ -46,30 +54,9 @@ The following packages provide core functionality to ..., as well as other tools
   -   `...`
 --------------------------------------------------------------------------------------------------
 
-# Base Distributed File System Network
-
-We used latest version of [Onet](https://github.com/dedis/onet/tree/v3.2.9) (v.3.2.9) for network, simulation, and communication modules 
-as well as [Cosi](https://github.com/dedis/cothority) module from Cothority 
-
-Onet's documents can be find under following link:
-<https://github.com/dedis/onet/blob/master/README.md>
-
-The Overlay-network (Onet) is a library for simulation and deployment of
-decentralized, distributed protocols. This library offers a framework for
-research, simulation, and deployment of crypto-related protocols with an emphasis
-on decentralized, distributed protocols. It offers an abstraction for tree-based
-communications between thousands of nodes and it is used both in research for
-testing out new protocols and running simulations, as well as in production to
-deploy those protocols as a service in a distributed manner.
-
-
 
 
 <!--FootNote-->
 [^1]: there may be some rounds that there is no leader for them, an empty block will be added to the blockchain in those rounds and the information of the root node (blockchain layer 1) is added (it can be removed) as the round leader but all the other columns are empty. in these rounds transactions will be added normally to the queue but no transaction is removed bcz the block is empty.
 [^2]: when in a round, some transactions should wait in a queue (i.e. the allocated space for  that transaction is full) and are submitted in another round, the average wait of that queue in the round that those transactions get to be submitted increases.
 <!--FootNote-->
-
-
-- we may need to say which model (account based or UTXO) are we adopting in the implmentation
-- a simplifying assumption we have for committee is that in each committee, we have one instance (one note) for each committee member and not more! even if they have been powerfuil and being selected as main chain's leader multiple time during last epoch
