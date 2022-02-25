@@ -170,15 +170,20 @@ func (d *Localhost) Configure(pc *Config) {
 So, what we have at the end is:
 -------------------------------------------
 1- we have added the params in config file
-2- in StartBiuld() function, the modified platform.config structure get initialized by reading the params passed from the config file
-3- in (*localhost).Configure function, the values are passed to the modified localhost structure
-4- in blockchain.InitializeCentralBC, which is called in build.go, RunTest function (before starting the protocol yet!), “the config params that are needed for initializing the centralbc file” are passed to the blockchain.InitializeCentralBC function from (modified?) *platform.RunConfig structure
-5- the function blockchain.InitializeCentralBC uses these params to initialize the centralbc file
-6- in localhost.go, in function (*localhost).Start, “the config params that are needed inside the protocol” are passed to function Simulate() (function simulate has modified input params)
-7- in function simulate(), after creating an instance of our BasedDFSProtocol, the passed params are sent to the protocol structure (our protocol has these params in its structure and get initialized here) 
-8- but note that just the first node who run the protocol has these params in the protocol structure initialized, so in order to have other nodes start running the protocol (and get initialized with these params) we sent a message to all nodes and use a HelloBaseDFS structure that carries these params in it in the function HelloBaseDFS() which is called in the Start() function by the first node. So, when each node receives the message, in the Dispatch() function, the passed params are sent to their protocol structure and their protocol gets initialized too.
-The End. :)
 
+2- in StartBiuld() function, the modified platform.config structure get initialized by reading the params passed from the config file
+
+3- in (*localhost).Configure function, the values are passed to the modified localhost structure
+
+4- in blockchain.InitializeCentralBC, which is called in build.go, RunTest function (before starting the protocol yet!), “the config params that are needed for initializing the centralbc file” are passed to the blockchain.InitializeCentralBC function from (modified?) *platform.RunConfig structure
+
+5- the function blockchain.InitializeCentralBC uses these params to initialize the centralbc file
+
+6- in localhost.go, in function (*localhost).Start, “the config params that are needed inside the protocol” are passed to function Simulate() (function simulate has modified input params)
+
+7- in function simulate(), after creating an instance of our BasedDFSProtocol, the passed params are sent to the protocol structure (our protocol has these params in its structure and get initialized here) 
+
+8- but note that just the first node who run the protocol has these params in the protocol structure initialized, so in order to have other nodes start running the protocol (and get initialized with these params) we sent a message to all nodes and use a HelloBaseDFS structure that carries these params in it in the function HelloBaseDFS() which is called in the Start() function by the first node. So, when each node receives the message, in the Dispatch() function, the passed params are sent to their protocol structure and their protocol gets initialized too.
 
 -------------
 - [ ] Note that the cpu time of blockchain’s two layer (RAM and Storage) communication is not counted/ eliminated from the protocol’s latency.
