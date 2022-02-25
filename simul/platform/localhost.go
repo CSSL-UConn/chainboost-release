@@ -13,6 +13,7 @@ import (
 	"time"
 
 	//"github.com/basedfs/app"
+	"github.com/basedfs/app"
 	"github.com/basedfs/log"
 	"github.com/basedfs/onet"
 
@@ -172,10 +173,9 @@ func (d *Localhost) Deploy(rc *RunConfig) error {
 		pwd = pwd + d.PreScript
 		_, err := os.Stat(pwd /*d.PreScript*/)
 		if !os.IsNotExist(err) {
-			//raha commented
-			//if err := app.Copy(d.runDir, pwd /*d.PreScript*/); err != nil {
-			//	return xerrors.Errorf("copying: %v", err)
-			//}
+			if err := app.Copy(d.runDir, pwd /*d.PreScript*/); err != nil {
+				return xerrors.Errorf("copying: %v", err)
+			}
 		}
 	}
 

@@ -32,6 +32,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	//"github.com/basedfs/app"
+	"github.com/basedfs/app"
 	"github.com/basedfs/log"
 	"github.com/basedfs/onet"
 	"golang.org/x/xerrors"
@@ -251,10 +252,9 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	if d.PreScript != "" {
 		_, err := os.Stat(d.PreScript)
 		if !os.IsNotExist(err) {
-			// raha: commeneted
-			//if err := app.Copy(d.deployDir, d.PreScript); err != nil {
-			//	return xerrors.Errorf("copying: %v", err)
-			//}
+			if err := app.Copy(d.deployDir, d.PreScript); err != nil {
+				return xerrors.Errorf("copying: %v", err)
+			}
 		}
 	}
 
