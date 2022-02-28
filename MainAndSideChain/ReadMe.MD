@@ -3,24 +3,22 @@
 Blockchain is stored in two layers: 
 - in a file on hardware 
 - and in the storage of a root node in the protocol. 
-So when each node sends and receives a message from the root node, it is equal to accessing the blockchain [^3], reading from it or writing in it (in the case of the next block, if having a valid leadership proof).
+So when each node sends and receives a message from the root node, it is equal to accessing the blockchain [^1], reading from it or writing in it (in the case of the next block, if having a valid leadership proof).
 
 ## Main Chain protocol ##
 
 Main Chain consensus:
 --------------------------
 
-1. On each round, all nodes check for their leadership by comparing their current power with **their own vrf output**
+1. On each round, all nodes check for their leadership by comparing their current power with **their own vrf output**.
 
-2. if it was bigger than their random output they send a message to bc-layer1 announcing their leadership
+2. if it was bigger than their random output they send a message to bc-layer1 announcing their leadership.
 
-3. bc-layer 1 can verify their leadership argument[^4] and the first leader that has announced her leadership will get to be the round’s leader[^5]. 
+3. bc-layer 1 can verify their leadership argument [^2] and the first leader that has announced her leadership will get to be the round’s leader. [^3]
 
 4. Bc-layer1 update the bc-layer2 using the config params, the selected leader’s info Etc.
 
-And once the round duration is finished, it announces the next round’s start by directly sending a message to all nodes. This is equal to having all nodes observe bc and once the new block is added (after round duration) they start the next round
-
-All nodes repeat from step 3
+5. once the round duration is finished, it announces the next round’s start by directly sending a message to all nodes. This is equal to having all nodes observe bc and once the new block is added (after round duration) they start the next round.
 
 Types of Messages:
 --------------------------------------------
@@ -59,7 +57,7 @@ Types of Messages:
 ```
 
 ## Side Chain protocol ## 
-Side chain protocol is a BlS protocol that its code is brought from Cosi module from Cothority. [^1]
+Side chain protocol is a BlS protocol that its code is brought from Cosi module from Cothority. [^4]
 
 Types of Messages:
 --------------------------------------------
@@ -101,12 +99,12 @@ There are 6 sheets, namely MarketMatching, FirstQueue, SecondQueue, RoundTable, 
     - the time that each round has started
     - `AveWait-RegPay` and `AveWait-OtherTxs`: the average wait time in each round for regular payment and other types of transactions[^2]
     - `RegPaySpaceFull` and `BlockSpaceFull`: 1 indicates the allocated space for regular payment is full /  the block space is full
-- `Overall Evaluation`: the overall results up until each round [^2]
+- `Overall Evaluation`: the overall results up until each round [^5]
 
 
 ## Side Chain Blockcahin ##
 
-There are 3 sheets, namely FirstQueue, RoundTable, and Overall Evaluation.[^1]
+There are 3 sheets, namely FirstQueue, RoundTable, and Overall Evaluation.[^4]
 
 ### Assumptions, Simplifications ###
 - [ ] we may need to say which model (account based or UTXO) are we adopting in the implmentation
@@ -116,9 +114,9 @@ There are 3 sheets, namely FirstQueue, RoundTable, and Overall Evaluation.[^1]
 
 
 <!--FootNote-->
-[^1]: if the SimState parameter in the config file be set to 1, the side chain protocol will not be run atall and the side chain blockchain file will be empty (i.e. there will be no side chain blockchain)
-[^2]: these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
-[^3] assumption: All nodes have a same view of the blockchain.
-[^4] verify vrf is implemented but it is not added here
+[^1]: assumption: All nodes have a same view of the blockchain.
+[^2]: verify vrf is implemented but it is not added here
+[^3] if the SimState parameter in the config file be set to 1, the side chain protocol will not be run atall and the side chain blockchain file will be empty (i.e. there will be no side chain blockchain)
+[^4] these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
 [^5] the simplifying assumption here is that in each round multiple nodes may have bigger power than their vrf output hence get selected, different systems have different methods to resolve this multiple branch issue, some are trying to have a single winning node, some define a rule to pick one of them. Here for simpllicity we accept thefirst announcement (the first leader that has announce his leadership) as the round's leader.
 <!--FootNote-->
