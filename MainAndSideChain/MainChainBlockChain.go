@@ -884,7 +884,7 @@ func (bz *BaseDFS) updateMainChainBCTransactionQueueTake() {
 	//-- accumulated block size
 	// --- total throughput
 	f.SetCellValue("RoundTable", axisNumRegPayTx, numberOfRegPayTx)
-	f.SetCellValue("RoundTable", axisBlockSize, accumulatedTxSize+allocatedBlockSizeForRegPayTx)
+	f.SetCellValue("RoundTable", axisBlockSize, accumulatedTxSize+allocatedBlockSizeForRegPayTx+BlockSizeMinusTransactions)
 	f.SetCellValue("RoundTable", axisTotalTxsNum, TotalNumTxsInBothQueue)
 	if TotalNumTxsInFirstQueue != 0 {
 		f.SetCellValue("RoundTable", axisAveFirstQueueWait, bz.FirstQueueWait/TotalNumTxsInFirstQueue)

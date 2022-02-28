@@ -432,14 +432,14 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
 
 	//-- accumulated block size
 	// --- total throughput
-	f.SetCellValue("RoundTable", axisBlockSize, accumulatedTxSize)
+	f.SetCellValue("RoundTable", axisBlockSize, accumulatedTxSize+BlockSizeMinusTransactions)
 	if TotalNumTxsInFirstQueue != 0 {
 		f.SetCellValue("RoundTable", axisAveFirstQueueWait, bz.SideChainQueueWait/TotalNumTxsInFirstQueue)
 	} else {
 		f.SetCellValue("RoundTable", axisAveFirstQueueWait, 0)
 	}
 
-	log.Lvl3("final result SC: \n", " this round's block size: ", accumulatedTxSize)
+	log.Lvl3("final result SC: \n", " this round's block size: ", accumulatedTxSize+BlockSizeMinusTransactions)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
