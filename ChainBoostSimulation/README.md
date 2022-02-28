@@ -42,33 +42,29 @@ Config File [BaseDFS.toml](https://github.com/chainBstSc/basedfs/blob/master/sim
     -  See: <https://github.com/chainBoost/basedfs/tree/master/ChainBoostSimulation#SimState>
 
 ## SimState ##
-The mode of simulation is determined by the `SimState` config param in the config file. if `SimState` = 1 the simulation will run in the single pure main chain mode and if `SimState` = 2 the main chain and the side chain are going to run simentaniously.
+The mode of simulation is determined by the `SimState` config param in the config file. if `SimState = 1` the simulation will run in the single pure main chain mode and if `SimState = 2` the main chain and the side chain are going to run simentaniously.
 
 ## How Transactions are Generated in Queue ##
 
-in sheet “market matching”, the ContractPublished == 1 means that:
-a “TxEscrow” transaction (this should be modified later) has been submitted (added to a block) for this contract. the column “started round number” says on what round this transaction has been submitted (i.e. the contract has started being active)
-in sheet “market matching”, the ContractPublished == 0 means that:
-The contract is expired (or just in first round not started yet)
-when this happens, a “TxStoragePayment” transaction will be sent to the transaction queue
-on the next round, with ContractPublished == 0, a “TxEscrow” transaction will be sent to the transactions queue
-and again, when the “TxEscrow” transaction leave the queue, the ContractPublished will be set to 1
-in sheet “market matching”, for each server (/contract) that the column ContractPublished == 1 a “TxPor” transaction will be sent to the transactions queue
-Note: for now, we are assuming that regardless of file size, each server have one client and will issue one por transaction each round
-Note: regular payment transactions have the priority to take the specified percentage of block size (specified in config file) and they will. So if based on the number of regular payment transactions in their queue, they take less than their allocated size, the rest of block size is going to be spent on other types of transactions.
+- in sheet “market matching”, the `ContractPublished == 1` means that a “TxEscrow” transaction (this should be modified later) has been submitted (added to a block) for this contract. the column “started round number” says on what round this transaction has been submitted (i.e. the contract has started being active)
+- in sheet “market matching”, the `ContractPublished == 0` means that The contract is expired (or just in first round not started yet)
+when this happens, a “TxStoragePayment” transaction will be sent to the transaction queue on the next round, with ContractPublished == 0, a “TxEscrow” transaction will be sent to the transactions queue and again, when the “TxEscrow” transaction leave the queue, the ContractPublished will be set to 1
+- in sheet “market matching”, for each server (/contract) that the column `ContractPublished == 1` a “TxPor” transaction will be sent to the transactions queue 
 
 ## "propose contract” & “Commit Contract” transactions ##
 “escrow creation” transaction is referencing a “contract” transaction (including a payment) and is being considered to be issued by the client .
 In the “contract” transaction I had considered commitment from both side, client and server.
 The point is that we can imagine two scenario:
-1- they have generated a “contract” transaction together, in a sense that the client has provided some part of its information (price, duration, file tag, commitment) and have passed it to the server and then the server has signed it (commitment) and then the transaction has been issued and submitted or
-2- a client issue a “propose contract” transaction including all the mentioned information, plus the escrow payment. and then the server issue a “commit contract” transaction, referencing the “propose contract” transaction. (the escrow is not locked until a “commit transaction” is submitted on top of it)
+- they have generated a “contract” transaction together, in a sense that the client has provided some part of its information (price, duration, file tag, commitment) and have passed it to the server and then the server has signed it (commitment) and then the transaction has been issued and submitted or
+- a client issue a “propose contract” transaction including all the mentioned information, plus the escrow payment. and then the server issue a “commit contract” transaction, referencing the “propose contract” transaction. (the escrow is not locked until a “commit transaction” is submitted on top of it)
 
 
 -------------
 - [ ] Note that the cpu time of blockchain’s two layer (RAM and Storage) communication is not counted/ eliminated from the protocol’s latency.
 - [ ] If we use ec2 for experiment, we should be careful about time zones in measuring time for latency measurement.
 - [ ] Note that running on an OS other than IOS needs a change in C extention config code
+- [ ] Note that for now, we are assuming that regardless of file size, each server have one client and will issue one por transaction each round
+- [ ] Note that regular payment transactions have the priority to take the specified percentage of block size (specified in config file) and they will. So if based on the number of regular payment transactions in their queue, they take less than their allocated size, the rest of block size is going to be spent on other types of transactions.
 
 <!--FootNote-->
 [^1]: these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
