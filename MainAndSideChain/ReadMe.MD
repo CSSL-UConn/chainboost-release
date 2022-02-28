@@ -3,7 +3,7 @@
 Blockchain is stored in two layers: 
 - in a file on hardware 
 - and in the storage of a root node in the protocol. 
-So when each node sends and receives a message from the root node, it is equal to accessing the blockchain [^1], reading from it or writing in it (in the case of the next block, if having a valid leadership proof).
+So when each node sends and receives a message from the root node, it is equal to accessing the blockchain [^bcassump], reading from it or writing in it (in the case of the next block, if having a valid leadership proof).
 
 ## Main Chain protocol ##
 
@@ -14,7 +14,7 @@ Main Chain consensus:
 
 2. if it was bigger than their random output they send a message to bc-layer1 announcing their leadership.
 
-3. bc-layer 1 can verify their leadership argument [^2] and the first leader that has announced her leadership will get to be the round’s leader. [^3]
+3. bc-layer 1 can verify their leadership argument [^vrf] and the first leader that has announced her leadership will get to be the round’s leader. [^mcleaderassump]
 
 4. Bc-layer1 update the bc-layer2 using the config params, the selected leader’s info Etc.
 
@@ -22,42 +22,21 @@ Main Chain consensus:
 
 Types of Messages:
 --------------------------------------------
-- each server who is elected as leader (few servers in each round) send the following msg to root node: 
+- each server who is elected as leader (few servers in each round) send the following msg to root node in which the required data to verify his leadership proof is included: 
  ```
- &NewLeader{
-	 Leaderinfo: bz.Name(), 
-	 MCRoundNumber: bz.MCRoundNumber
- } 
+ &NewLeader
  ```
-- each round, the root node send the following msg to all servers including the target server's power
+- each round, the root node send the following msg to all servers including the target server's power:
 ```
-&NewRound{
-	Seed:  seed, 
-	Power: power
-}
+&NewRound
 ```
-- in the bootstrapping phase, the root node send the following message to all servers containing protocol config parameters.
+- in the bootstrapping phase, the root node send the following message to all servers containing protocol config parameters:
 ```	
-&HelloBaseDFS{
-	Timeout:                  bz.timeout,
-	PercentageTxPay:          bz.PercentageTxPay,
-	MCRoundDuration:          bz.MCRoundDuration,
-	MainChainBlockSize:       bz.MainChainBlockSize,
-	SideChainBlockSize:		  bz.SideChainBlockSize,
-	SectorNumber:             bz.SectorNumber,
-	NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
-	SimulationSeed:			  bz.SimulationSeed,
-	nbrSubTrees:			  bz.nbrSubTrees,
-	threshold:				  bz.threshold,
-	SCRoundDuration:		  bz.SCRoundDuration,
-	CommitteeWindow:		  bz.CommitteeWindow,
-	MCRoundPerEpoch:		  bz.MCRoundPerEpoch,
-	SimState:				  bz.SimState,
-}
+&HelloBaseDFS
 ```
 
 ## Side Chain protocol ## 
-Side chain protocol is a BlS protocol that its code is brought from Cosi module from Cothority. [^4]
+Side chain protocol is a BlS protocol that its code is brought from Cosi module from Cothority. [^sc]
 
 Types of Messages:
 --------------------------------------------
@@ -78,7 +57,7 @@ Other than the internal messages that are sent through a round of CoSi (signs, a
 - ServAgr stands for `service agreement`
 - por stands for `proof of retrievibility`
 
-There are 6 sheets, namely MarketMatching, FirstQueue, SecondQueue, RoundTable, PowerTable, and Overall Evaluation.
+There are 6 sheets, namely MarketMatching, FirstQueue, SecondQueue, RoundTable, PowerTable, and Overall Evaluation. [^sheets]
 
 - `MarketMatching`: the overall information about the market matching
     - about the servers: IP, 
@@ -97,14 +76,14 @@ There are 6 sheets, namely MarketMatching, FirstQueue, SecondQueue, RoundTable, 
     - number of each transaction type that is submitted in each round
     - `TotalNumTxs`: total number of all submitted transactions in each round
     - the time that each round has started
-    - `AveWait-RegPay` and `AveWait-OtherTxs`: the average wait time in each round for regular payment and other types of transactions[^2]
+    - `AveWait-RegPay` and `AveWait-OtherTxs`: the average wait time in each round for regular payment and other types of transactions
     - `RegPaySpaceFull` and `BlockSpaceFull`: 1 indicates the allocated space for regular payment is full /  the block space is full
-- `Overall Evaluation`: the overall results up until each round [^5]
+- `Overall Evaluation`: the overall results up until each round
 
 
 ## Side Chain Blockcahin ##
 
-There are 3 sheets, namely FirstQueue, RoundTable, and Overall Evaluation.[^4]
+There are 3 sheets, namely FirstQueue, RoundTable, and Overall Evaluation.[^sheets]
 
 ### Assumptions, Simplifications ###
 - [ ] we may need to say which model (account based or UTXO) are we adopting in the implmentation
@@ -114,9 +93,9 @@ There are 3 sheets, namely FirstQueue, RoundTable, and Overall Evaluation.[^4]
 
 
 <!--FootNote-->
-[^1]: assumption: All nodes have a same view of the blockchain.
-[^2]: verify vrf is implemented but it is not added here
-[^3] if the SimState parameter in the config file be set to 1, the side chain protocol will not be run atall and the side chain blockchain file will be empty (i.e. there will be no side chain blockchain)
-[^4] these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
-[^5] the simplifying assumption here is that in each round multiple nodes may have bigger power than their vrf output hence get selected, different systems have different methods to resolve this multiple branch issue, some are trying to have a single winning node, some define a rule to pick one of them. Here for simpllicity we accept thefirst announcement (the first leader that has announce his leadership) as the round's leader.
+[^bcassump]: assumption: All nodes have a same view of the blockchain.
+[^vrf]: verify vrf is implemented but it is not added here.
+[^sc]: if the SimState parameter in the config file be set to 1, the side chain protocol will not be run atall and the side chain blockchain file will be empty (i.e. there will be no side chain blockchain)
+[^sheets]: these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
+[^mcleaderassump]: the simplifying assumption here is that in each round multiple nodes may have bigger power than their vrf output hence get selected, different systems have different methods to resolve this multiple branch issue, some are trying to have a single winning node, some define a rule to pick one of them. Here for simpllicity we accept thefirst announcement (the first leader that has announce his leadership) as the round's leader.
 <!--FootNote-->
