@@ -34,11 +34,11 @@ Config File [BaseDFS.toml](https://github.com/chainBstSc/basedfs/blob/master/sim
 - `MCRoundDuration` the time interval between each round (in seconds)
 - `SimulationSeed` 
 - `nbrSubTrees`
-- `threshold`
+- `threshold` the minimum number of votes that side chain leader should recieve to announce a block in side chain
 - `SCRoundDuration`
 - `MCRoundPerEpoch` the number of main chain's round in which an epoch will be finished.
-- `CommitteeWindow`
-- `SimState`
+- `CommitteeWindow` the number of committee in the side chain that is the number of last `CommitteeWindow` miners (leaders) in main chain [^3]
+- `SimState` see <>
 
 
 ## How Transactions are Generated in Queue ##
@@ -65,8 +65,9 @@ The point is that we can imagine two scenario:
 -------------
 - [ ] Note that the cpu time of blockchain’s two layer (RAM and Storage) communication is not counted/ eliminated from the protocol’s latency.
 - [ ] If we use ec2 for experiment, we should be careful about time zones in measuring time for latency measurement.
-- [ ]  Note that running on an OS other than IOS needs a change in C extention config code
+- [ ] Note that running on an OS other than IOS needs a change in C extention config code
 
 <!--FootNote-->
 [^1]: these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
+[^3]: Note that the last `distinct` main chain miners are added to side chain's committee in each epoch
 <!--FootNote-->
