@@ -6,6 +6,6 @@ and more specifically from the implemented VRF located in the following branch:
 
 All Algorand users execute crypto-graphic sortition to determine if they are selected to propose a block in a given round.
 
-
-In ByzcoinX: RandHound leader is selected by the VRF-based leader election
-in Algorand: Election of the committee is private and totally random (via the VRF based technique combined with proof of stake).
+---------------------------------
+- [ ] In ByzcoinX: RandHound leader is selected by the VRF-based leader election
+- [ ] in Algorand: Election of the committee is private and totally random (via the VRF based technique combined with proof of stake)
