@@ -17,7 +17,7 @@ import (
 
 	"github.com/DmitriyVTitov/size"
 	"github.com/basedfs/blscosi/protocol"
-	"github.com/basedfs/log"
+	"github.com/basedfs/onet/log"
 	"github.com/basedfs/vrf"
 
 	// ToDoRaha: later that I brought everything from blscosi package to basedfs package, I shoudl add another pacckage with

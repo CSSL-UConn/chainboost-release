@@ -6,7 +6,7 @@ import (
 	"path"
 	"runtime"
 
-	"github.com/basedfs/log"
+	"github.com/basedfs/onet/log"
 )
 
 // GetConfigPath returns the location for which the configuration files are stored.

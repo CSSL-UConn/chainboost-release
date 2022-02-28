@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"github.com/basedfs/onet"
+	"github.com/basedfs/onet/log"
 	simul "github.com/basedfs/simulation"
 	"github.com/basedfs/simulation/manage"
 	"github.com/basedfs/simulation/monitor"

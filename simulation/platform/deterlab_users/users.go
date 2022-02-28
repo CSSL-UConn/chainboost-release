@@ -12,8 +12,8 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/basedfs/log"
 	"github.com/basedfs/onet"
+	"github.com/basedfs/onet/log"
 	"github.com/basedfs/simulation/monitor"
 	"github.com/basedfs/simulation/platform"
 )

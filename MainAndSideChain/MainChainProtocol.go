@@ -9,8 +9,8 @@ import (
 	"encoding/binary"
 	"time"
 
-	"github.com/basedfs/log"
 	"github.com/basedfs/onet"
+	"github.com/basedfs/onet/log"
 	"golang.org/x/xerrors"
 )
 

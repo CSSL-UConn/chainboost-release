@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	app "github.com/basedfs/app"
 	"github.com/basedfs/blscosi"
-	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"github.com/basedfs/onet"
+	app "github.com/basedfs/onet/app"
+	"github.com/basedfs/onet/log"
 	"go.dedis.ch/kyber/v3/pairing"
 )
 

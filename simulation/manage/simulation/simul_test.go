@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/basedfs/log"
+	"github.com/basedfs/onet/log"
 	simul "github.com/basedfs/simulation"
 )
 

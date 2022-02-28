@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basedfs/log"
 	"github.com/basedfs/network"
+	"github.com/basedfs/onet/log"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/kyber/v3/suites"
 )

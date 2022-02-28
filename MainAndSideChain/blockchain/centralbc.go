@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"strconv"
 
-	log "github.com/basedfs/log"
+	log "github.com/basedfs/onet/log"
 	"github.com/xuri/excelize/v2"
 )
 

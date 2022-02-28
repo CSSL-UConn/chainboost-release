@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/basedfs/log"
+	"github.com/basedfs/onet/log"
 	"github.com/google/uuid"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/suites"

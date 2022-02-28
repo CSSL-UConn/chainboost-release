@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basedfs/log"
+	"github.com/basedfs/onet/log"
 )
 
 func TestNewDataFilter(t *testing.T) {

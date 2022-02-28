@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/basedfs/blscosi/protocol"
-	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"github.com/basedfs/onet"
+	"github.com/basedfs/onet/log"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/sign"

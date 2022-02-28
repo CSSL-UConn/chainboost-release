@@ -13,7 +13,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/basedfs/log"
+	"github.com/basedfs/onet/log"
 	"github.com/basedfs/simulation/monitor"
 	"github.com/basedfs/simulation/platform"
 	"golang.org/x/xerrors"

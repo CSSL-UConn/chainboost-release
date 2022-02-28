@@ -25,9 +25,9 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/basedfs/blscosi"
 	"github.com/basedfs/blscosi/protocol"
-	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"github.com/basedfs/onet"
+	"github.com/basedfs/onet/log"
 	"github.com/basedfs/simulation/monitor"
 	"go.dedis.ch/kyber/v3/pairing"
 )

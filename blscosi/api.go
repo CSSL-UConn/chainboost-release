@@ -3,8 +3,8 @@ package blscosi
 import (
 	"errors"
 
-	"github.com/basedfs/log"
 	"github.com/basedfs/onet"
+	"github.com/basedfs/onet/log"
 )
 
 // Client is a structure to communicate with the CoSi

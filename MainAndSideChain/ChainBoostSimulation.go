@@ -32,8 +32,8 @@ package MainAndSideChain
 import (
 	"time"
 
-	"github.com/basedfs/log"
 	"github.com/basedfs/onet"
+	"github.com/basedfs/onet/log"
 	"github.com/basedfs/por"
 	"github.com/basedfs/vrf"
 	"go.dedis.ch/kyber/v3/pairing"

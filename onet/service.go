@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/basedfs/log"
 	"github.com/basedfs/network"
+	"github.com/basedfs/onet/log"
 	"github.com/google/uuid"
 	"go.dedis.ch/kyber/v3/suites"
 	"go.dedis.ch/kyber/v3/util/key"

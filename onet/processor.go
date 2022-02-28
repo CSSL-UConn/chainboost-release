@@ -13,8 +13,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/basedfs/log"
 	"github.com/basedfs/network"
+	"github.com/basedfs/onet/log"
 	"go.dedis.ch/protobuf"
 	"golang.org/x/xerrors"
 )

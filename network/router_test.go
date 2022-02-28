@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basedfs/log"
+	"github.com/basedfs/onet/log"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/xerrors"
 )

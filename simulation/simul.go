@@ -15,7 +15,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/basedfs/log"
+	"github.com/basedfs/onet/log"
 )
 
 // The address of this server - if there is only one server in the config

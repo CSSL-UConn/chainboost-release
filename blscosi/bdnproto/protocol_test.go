@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/basedfs/blscosi/protocol"
-	"github.com/basedfs/log"
 	"github.com/basedfs/onet"
+	"github.com/basedfs/onet/log"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/kyber/v3/pairing"
 )

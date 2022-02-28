@@ -14,7 +14,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/basedfs/log"
+	"github.com/basedfs/onet/log"
 	"github.com/stretchr/testify/assert"
 )
 

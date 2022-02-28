@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basedfs/log"
 	"github.com/basedfs/network"
+	"github.com/basedfs/onet/log"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/util/key"
 	"golang.org/x/xerrors"

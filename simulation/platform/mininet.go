@@ -17,9 +17,9 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/basedfs/app"
-	"github.com/basedfs/log"
 	"github.com/basedfs/onet"
+	"github.com/basedfs/onet/app"
+	"github.com/basedfs/onet/log"
 	"golang.org/x/xerrors"
 )
 

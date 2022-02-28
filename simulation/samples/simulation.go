@@ -3,7 +3,7 @@ package sample
 // import (
 // 	"github.com/BurntSushi/toml"
 // 	"github.com/basedfs/onet"
-// 	"github.com/basedfs/log"
+// 	"github.com/basedfs/onet/log"
 // 	"github.com/basedfs/simulation/monitor"
 // 	"github.com/dedis/cothority/protocols/manage"
 // 	//"github.com/dedis/cothority/protocols/manage"

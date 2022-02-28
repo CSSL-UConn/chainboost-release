@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/basedfs/log"
+	"github.com/basedfs/onet/log"
 )
 
 /*

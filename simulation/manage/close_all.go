@@ -3,9 +3,9 @@ package manage
 import (
 	"time"
 
-	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"github.com/basedfs/onet"
+	"github.com/basedfs/onet/log"
 	"golang.org/x/xerrors"
 )
 

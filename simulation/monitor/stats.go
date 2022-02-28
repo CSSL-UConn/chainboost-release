@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/basedfs/log"
+	"github.com/basedfs/onet/log"
 	"github.com/montanaflynn/stats"
 	"golang.org/x/xerrors"
 )

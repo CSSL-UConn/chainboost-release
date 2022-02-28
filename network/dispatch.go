@@ -3,7 +3,7 @@ package network
 import (
 	"sync"
 
-	"github.com/basedfs/log"
+	"github.com/basedfs/onet/log"
 	"golang.org/x/xerrors"
 )
 

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/basedfs/log"
+	"github.com/basedfs/onet/log"
 )
 
 type Parser struct {

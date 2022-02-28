@@ -10,7 +10,7 @@
 
 package vrf
 
-import "github.com/basedfs/log"
+import "github.com/basedfs/onet/log"
 
 //Testvrf is called in Start in BaseDFS to test the VRF module
 func Testvrf() {

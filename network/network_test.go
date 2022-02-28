@@ -3,7 +3,7 @@ package network
 import (
 	"testing"
 
-	"github.com/basedfs/log"
+	"github.com/basedfs/onet/log"
 	_ "go.dedis.ch/kyber/v3/group/edwards25519"
 	"go.dedis.ch/kyber/v3/suites"
 )

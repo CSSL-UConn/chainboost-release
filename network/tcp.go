@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/basedfs/log"
+	"github.com/basedfs/onet/log"
 	"golang.org/x/xerrors"
 )
 
