@@ -1,4 +1,4 @@
-# Simulation
+# Onet Simulation #
 
 The onet library allows for multiple levels of simulations:
 
