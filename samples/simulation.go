@@ -4,7 +4,7 @@ package sample
 // 	"github.com/BurntSushi/toml"
 // 	"github.com/basedfs/onet"
 // 	"github.com/basedfs/log"
-// 	"github.com/basedfs/simul/monitor"
+// 	"github.com/basedfs/simulation/monitor"
 // 	"github.com/dedis/cothority/protocols/manage"
 // 	//"github.com/dedis/cothority/protocols/manage"
 // )

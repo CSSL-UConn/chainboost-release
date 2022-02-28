@@ -14,8 +14,8 @@ import (
 
 	"github.com/basedfs/log"
 	"github.com/basedfs/onet"
-	"github.com/basedfs/simul/monitor"
-	"github.com/basedfs/simul/platform"
+	"github.com/basedfs/simulation/monitor"
+	"github.com/basedfs/simulation/platform"
 )
 
 var kill = false

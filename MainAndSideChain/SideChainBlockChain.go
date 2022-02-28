@@ -19,7 +19,7 @@ func (bz *BaseDFS) updateSideChainBCRound(LeaderName string) {
 	// var rows *excelize.Rows
 	// var row []string
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/sidechainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -109,7 +109,7 @@ func (bz *BaseDFS) updateSideChainBCRound(LeaderName string) {
 	}
 
 	// ----
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/sidechainbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -129,7 +129,7 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueCollect() {
 	var rows *excelize.Rows
 	var row []string
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -231,7 +231,7 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueCollect() {
 		}
 	}
 	// -------------------------------------------------------------------------------
-	f1, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/sidechainbc.xlsx")
+	f1, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -290,7 +290,7 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueCollect() {
 		}
 	}
 	// -------------------------------------------------------------------------------
-	err = f1.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/sidechainbc.xlsx")
+	err = f1.SaveAs("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -310,7 +310,7 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
 	// --- reset
 	bz.SideChainQueueWait = 0
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/sidechainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -490,7 +490,7 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
 	}
 
 	// ----
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/sidechainbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)

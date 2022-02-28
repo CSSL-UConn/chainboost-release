@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/basedfs/log"
-	"github.com/basedfs/simul"
+	simul "github.com/basedfs/simulation"
 )
 
 func TestSimulation(t *testing.T) {

@@ -26,8 +26,8 @@ In the simulation config file, there is a line that specify preScript file:
 PreScript = "testPreScript.toml"
 ```
 
-Now I have added the following address (to the code) to look for it in there: "/Users/raha/Documents/GitHub/basedfs/simul/platform/"
-The code copy this file to where it call deploy-dir which is: "/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build"
+Now I have added the following address (to the code) to look for it in there: "/Users/raha/Documents/GitHub/basedfs/simulation/platform/"
+The code copy this file to where it call deploy-dir which is: "/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build"
 
 Later, again in localhost.go file, in the Start() function, it run the preScript file:
  
@@ -49,7 +49,7 @@ This file will be created in the deploy-dir
 To write/read/update this file:
 ------------------------------
 In the initialization phase, the data comes from the simulation “config file”
-In build.go, after deploy.start() (which is where the prescript is decoded and runned and the centralbc file is generated and its directory is deploy-dir which is “/simul/manage/simulation/build/”) we have:
+In build.go, after deploy.start() (which is where the prescript is decoded and runned and the centralbc file is generated and its directory is deploy-dir which is “/simulation/manage/simulation/build/”) we have:
 ```
 err := deployP.Start()
 // Raha: initializing central blockchain -------------------------

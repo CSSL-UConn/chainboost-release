@@ -19,17 +19,17 @@ note: running on an OS other than IOS needs a change in c extention config code
 - Open a terminal in the directory where the folder basedfs is located
 - run the following command: 
 ```
-/usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/basedfs/simul/manage/simulation
+/usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/basedfs/simulation/manage/simulation
 ```
 
-- this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/simul_test.go))
+- this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simulation/manage/simulation/simul_test.go))
 
 
-raha@R-MacBook-Pro basedfs % /usr/local/go/bin/go test -timeout 300000s -run ^TestSimulation$ github.com/basedfs/simul/manage/simulation
+raha@R-MacBook-Pro basedfs % /usr/local/go/bin/go test -timeout 300000s -run ^TestSimulation$ github.com/basedfs/simulation/manage/simulation
 
 
 - the stored blockchain in Excel file "mainchainbc.xlsx"  can be found under the `build` directory that is going to be created after simulation run[^3]
-- in the case of debugging the following code in ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/simul_test.go)) indicates the debug logging level, with 0 being the least logging and 5 being the most (every tiny detail is logged in this level)
+- in the case of debugging the following code in ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simulation/manage/simulation/simul_test.go)) indicates the debug logging level, with 0 being the least logging and 5 being the most (every tiny detail is logged in this level)
 ```
 log.SetDebugVisible(1)
 ```
@@ -37,7 +37,7 @@ log.SetDebugVisible(1)
 ## Config File ##
 
 Config File "BaseDFS.toml" is located under the following directory:
-([BaseDFS.toml](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/BaseDFS.toml))
+([BaseDFS.toml](https://github.com/chainBstSc/basedfs/blob/master/simulation/manage/simulation/BaseDFS.toml))
 
 
 ## Project Layout ##

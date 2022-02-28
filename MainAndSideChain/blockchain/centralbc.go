@@ -536,7 +536,7 @@ func InitializeMainChainBC(
 		log.Lvl2(err)
 	}
 	// --------------------------------------------------------------------
-	if err := f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/mainchainbc.xlsx"); err != nil {
+	if err := f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/mainchainbc.xlsx"); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
@@ -570,7 +570,7 @@ func InitializeSideChainBC() {
 			WrapText: true,
 		},
 	})
-	// f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/sidechainbc.xlsx")
+	// f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/sidechainbc.xlsx")
 	// if err != nil {
 	// 	log.Lvl2("Raha: ", err)
 	// 	panic(err)
@@ -770,7 +770,7 @@ func InitializeSideChainBC() {
 		log.Lvl2(err)
 	}
 	// --------------------------------------------------------------------
-	if err := f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simul/manage/simulation/build/sidechainbc.xlsx"); err != nil {
+	if err := f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/sidechainbc.xlsx"); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}

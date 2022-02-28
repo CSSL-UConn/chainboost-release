@@ -6,19 +6,19 @@
 - Open a terminal in the directory where the folder basedfs is located
 - run the following command: 
 ```
-    /usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/basedfs/simul/manage/simulation
+    /usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/basedfs/simulation/manage/simulation
 ```
 
-- this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/simul_test.go))
+- this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simulation/manage/simulation/simul_test.go))
 - the stored blockchain in Excel file "mainchainbc.xlsx" and "sidechainbc.xlsx" can be found under the `build` directory that is going to be created after simulation run[^1]
-- in the case of debugging the following code in ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/simul_test.go)) indicates the debug logging level, with 0 being the least logging and 5 being the most (every tiny detail is logged in this level)
+- in the case of debugging the following code in ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simulation/manage/simulation/simul_test.go)) indicates the debug logging level, with 0 being the least logging and 5 being the most (every tiny detail is logged in this level)
 ```
 log.SetDebugVisible(1)
 ```
 
 ## Config File ##
 
-Config File [BaseDFS.toml](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/BaseDFS.toml) determines the simulation properties.
+Config File [BaseDFS.toml](https://github.com/chainBstSc/basedfs/blob/master/simulation/manage/simulation/BaseDFS.toml) determines the simulation properties.
 
 ## To Change the Configs ##
 - to change number of servers, change two values: 1- `Hosts` and 2- `Nodes` - with a same number :)

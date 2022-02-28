@@ -7,7 +7,7 @@
 package main
 
 import (
-	"github.com/basedfs/simul"
+	simul "github.com/basedfs/simulation"
 )
 
 func main() {

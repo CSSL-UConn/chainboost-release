@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/basedfs/log"
-	"github.com/basedfs/simul/monitor"
-	"github.com/basedfs/simul/platform"
+	"github.com/basedfs/simulation/monitor"
+	"github.com/basedfs/simulation/platform"
 	"golang.org/x/xerrors"
 )
 

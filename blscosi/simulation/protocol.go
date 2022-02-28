@@ -28,7 +28,7 @@ import (
 	"github.com/basedfs/log"
 	"github.com/basedfs/network"
 	"github.com/basedfs/onet"
-	"github.com/basedfs/simul/monitor"
+	"github.com/basedfs/simulation/monitor"
 	"go.dedis.ch/kyber/v3/pairing"
 )
 

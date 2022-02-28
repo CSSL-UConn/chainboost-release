@@ -17,7 +17,7 @@ import (
 	"github.com/basedfs/log"
 	"github.com/basedfs/onet"
 
-	//"github.com/basedfs/simul/monitor"
+	//"github.com/basedfs/simulation/monitor"
 	"golang.org/x/xerrors"
 )
 
@@ -171,7 +171,7 @@ func (d *Localhost) Deploy(rc *RunConfig) error {
 	d.PreScript = rc.Get("PreScript")
 	if d.PreScript != "" {
 		//raha added next 2 line
-		pwd := "/Users/raha/Documents/GitHub/basedfs/simul/chainBoostFiles/"
+		pwd := "/Users/raha/Documents/GitHub/basedfs/simulation/chainBoostFiles/"
 		pwd = pwd + d.PreScript
 		_, err := os.Stat(pwd /*d.PreScript*/)
 		if !os.IsNotExist(err) {

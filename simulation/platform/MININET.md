@@ -85,7 +85,7 @@ server-config and setup behaviour again.
 ### Debugging an installation
 
 If something goes wrong, you can always try to run the
-`onet/simul/platform/mininet/setup_iccluster.sh`
+`onet/simulation/platform/mininet/setup_iccluster.sh`
 bash file to have mininet correctly installed. It is idempotent, you can
 run it as many times as you need, in order to catch all the servers once they are
 up.

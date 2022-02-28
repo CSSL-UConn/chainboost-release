@@ -57,7 +57,7 @@ type Deterlab struct {
 	deployDir string
 	// Directory for building
 	buildDir string
-	// Directory holding all go-files of onet/simul/platform
+	// Directory holding all go-files of onet/simulation/platform
 	platformDir string
 	// DNS-resolvable names
 	Phys []string
