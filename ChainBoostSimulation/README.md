@@ -1,14 +1,16 @@
 
 ## Getting Started ##
-note: running on an OS other than IOS needs a change in c extention config code
 
 - Install Go
 - Clone or Downloade the ChainBoost's source code from Git <https://github.com/chainBstSc/basedfs>
 - Open a terminal in the directory where the folder basedfs is located
 - run the following command: 
-    - "/usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/basedfs/simul/manage/simulation"
-    - this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/simul_test.go))
-- the stored blockchain in Excel file "mainchainbc.xlsx"  can be found under the `build` directory that is going to be created after simulation run[^3]
+```
+    /usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/basedfs/simul/manage/simulation
+```
+
+- this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/simul_test.go))
+- the stored blockchain in Excel file "mainchainbc.xlsx" and "sidechainbc.xlsx" can be found under the `build` directory that is going to be created after simulation run[^3]
 - in the case of debugging the following code in ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/simul_test.go)) indicates the debug logging level, with 0 being the least logging and 5 being the most (every tiny detail is logged in this level)
 ```
 log.SetDebugVisible(1)
@@ -16,30 +18,12 @@ log.SetDebugVisible(1)
 
 ## Config File ##
 
-Config File "BaseDFS.toml" is located under the following directory:
-([BaseDFS.toml](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/BaseDFS.toml))
-
-Decode Config File:
---------------------
-```
-// ReadRunFile reads from a configuration-file for a run. The configuration-file has the
-// following syntax:
-// Name1 = value1
-// Name2 = value2
-// [empty line]
-// n1, n2, n3, n4
-// v11, v12, v13, v14
-// v21, v22, v23, v24
-//
-// The Name1...Namen are global configuration-options.
-// n1..nn are configuration-options for one run
-// Both the global and the run-configuration are copied to both
-// the platform and the app-configuration.
-```
+Config File [BaseDFS.toml](https://github.com/chainBstSc/basedfs/blob/master/simul/manage/simulation/BaseDFS.toml) determines the simulation properties.
 
 ## To Change the Configs ##
 - to change number of servers, change two values: 1- `Hosts` and 2- `Nodes` - with a same number :)
-- `BlockSize` is the maximum block size (in Byte) allowed in each round (the submitted block may be less than this size based on the available transactions in the queues)[^1]
+- `MainChainBlockSize` is the maximum block size (in Byte) allowed in each main chian's round (the submitted block may be less than this size based on the available transactions in the queues)[^1]
+- `SideChainBlockSize` is the maximum block size (in Byte) allowed in each side chain's round
 - `FileSizeDistributionMean` and `FileSizeDistributionVariance` are specifying the mean and variance of the Normal distribution used to generate file-sizes in the ServAgrs
 - `ServAgrDurationDistributionMean` and `ServAgrDurationDistributionVariance` is the same for ServAgrs' duration
 - `InitialPowerDistributionMean` and `InitialPowerDistributionVariance` is the same for the intial power we assign to each server
@@ -223,6 +207,9 @@ In the “contract” transaction I had considered commitment from both side, cl
 The point is that we can imagine two scenario:
 1- they have generated a “contract” transaction together, in a sense that the client has provided some part of its information (price, duration, file tag, commitment) and have passed it to the server and then the server has signed it (commitment) and then the transaction has been issued and submitted or
 2- a client issue a “propose contract” transaction including all the mentioned information, plus the escrow payment. and then the server issue a “commit contract” transaction, referencing the “propose contract” transaction. (the escrow is not locked until a “commit transaction” is submitted on top of it)
+
+
+- note: running on an OS other than IOS needs a change in C extention config code
 
 -------------
 - [ ] Note that the cpu time of blockchain’s two layer (RAM and Storage) communication is not counted/ eliminated from the protocol’s latency.
