@@ -60,11 +60,12 @@ The point is that we can imagine two scenario:
 
 
 -------------
-- [ ] Note that the cpu time of blockchain’s two layer (RAM and Storage) communication is not counted/ eliminated from the protocol’s latency.
+- [ ] Note that the cpu time of blockchain’s two layer (RAM and Storage) communication is not counted/ eliminated from the protocol’s latency. Later we will account the proccessing time in the round durations
 - [ ] If we use ec2 for experiment, we should be careful about time zones in measuring time for latency measurement.
 - [ ] Note that running on an OS other than IOS needs a change in C extention config code
 - [ ] Note that for now, we are assuming that regardless of file size, each server have one client and will issue one por transaction each round
 - [ ] Note that regular payment transactions have the priority to take the specified percentage of block size (specified in config file) and they will. So if based on the number of regular payment transactions in their queue, they take less than their allocated size, the rest of block size is going to be spent on other types of transactions.
+- [ ] Test files should be added later (check TRAVIS CI)
 
 <!--FootNote-->
 [^1]: these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
