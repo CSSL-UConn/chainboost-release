@@ -10,7 +10,8 @@
 					Timeout:                  bz.timeout,
 					PercentageTxPay:          bz.PercentageTxPay,
 					MCRoundDuration:            bz.MCRoundDuration,
-					BlockSize:                bz.BlockSize,
+					MainChainBlockSize:                bz.MainChainBlockSize,
+					SideChainBlockSize:			bz.SideChainBlockSize,
 					SectorNumber:             bz.SectorNumber,
 					NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
 					SimulationSeed:			  bz.SimulationSeed,
@@ -47,7 +48,8 @@ type HelloBaseDFS struct {
 	//---- ToDoRaha: Do i need timeout?
 	PercentageTxPay          int
 	MCRoundDuration          int
-	BlockSize                int
+	SideChainBlockSize       int
+	MainChainBlockSize       int
 	SectorNumber             int
 	NumberOfPayTXsUpperBound int
 	SimulationSeed           int
@@ -106,7 +108,8 @@ type BaseDFS struct {
 	--------------------------------------------------------------------- */
 	PercentageTxPay          int
 	MCRoundDuration          int
-	BlockSize                int
+	MainChainBlockSize       int
+	SideChainBlockSize       int
 	SectorNumber             int
 	NumberOfPayTXsUpperBound int
 	// ---
@@ -179,7 +182,8 @@ func (bz *BaseDFS) Dispatch() error {
 			log.Lvl2(bz.TreeNode().Name(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
 			bz.PercentageTxPay = msg.PercentageTxPay
 			bz.MCRoundDuration = msg.MCRoundDuration
-			bz.BlockSize = msg.BlockSize
+			bz.MainChainBlockSize = msg.MainChainBlockSize
+			bz.SideChainBlockSize = msg.SideChainBlockSize
 			bz.SectorNumber = msg.SectorNumber
 			bz.NumberOfPayTXsUpperBound = msg.NumberOfPayTXsUpperBound
 			bz.SimulationSeed = msg.SimulationSeed

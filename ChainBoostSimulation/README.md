@@ -100,7 +100,7 @@ err := deployP.Start()
            rc.Get("DistributionMeanContractDuration"), rc.Get("DistributionVarianceContractDuration"),
            rc.Get("DistributionMeanInitialPower"), rc.Get("DistributionVarianceInitialPower"),
            rc.Get("Nodes"),
-           rc.Get("BlockSize"))
+           rc.Get("MainChainBlockSize")) ????
 // --------------------------------------------
 ```
 to add other system-wide configurations params to existing Onet’s system-wide configurations params, I added few lines of codes in following files:
@@ -121,7 +121,7 @@ type Config struct {
    // raha: adding some other system-wide configurations
    RoundDuration      string
    PercentageTxPay    string
-   BlockSize string
+   MainChainBlockSize string
 }
 ```
 
@@ -138,7 +138,7 @@ Suite:       runconfigs[0].Get("Suite"),
 // raha: adding some other system-wide configurations
 RoundDuration:      runconfigs[0].Get("RoundDuration"),
 PercentageTxPay:    runconfigs[0].Get("PercentageTxPay"),
-BlockSize:          runconfigs[0].Get("BlockSize"),
+MainChainBlockSize:          runconfigs[0].Get("MainChainBlockSize"),
        })
 ```
 
@@ -150,7 +150,7 @@ type Localhost struct {
    // raha: adding some other system-wide configurations
    RoundDuration      string
    PercentageTxPay    string
-   BlockSize string
+   MainChainBlockSize string
 }
 ```
 
@@ -172,7 +172,7 @@ func (d *Localhost) Configure(pc *Config) {
    // raha: adding some other system-wide configurations
    d.RoundDuration = pc.RoundDuration
    d.PercentageTxPay = pc.PercentageTxPay
-   d.BlockSize = pc.BlockSize
+   d.MainChainBlockSize = pc.MainChainBlockSize
    // ------------------------------
    d.localDir = pwd
    d.debug = pc.Debug

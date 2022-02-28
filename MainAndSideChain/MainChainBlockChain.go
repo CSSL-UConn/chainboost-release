@@ -261,7 +261,7 @@ func (bz *BaseDFS) updateBCPowerRound(LeaderName string, leader bool) {
 	nextRow := strconv.Itoa(rowNumber + 1) //ToDoRaha: remove these, use bz.MCRoundNumber instead!
 	// ---
 	axisBCSize := "C" + currentRow
-	err = f.SetCellValue("RoundTable", axisBCSize, bz.BlockSize)
+	err = f.SetCellValue("RoundTable", axisBCSize, bz.MainChainBlockSize)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -728,7 +728,7 @@ func (bz *BaseDFS) updateMainChainBCTransactionQueueTake() {
 				if txsize, err = strconv.Atoi(colCell); err != nil {
 					log.Lvl2("Panic Raised:\n\n")
 					panic(err)
-				} else if 100*(accumulatedTxSize+txsize) <= (bz.PercentageTxPay)*(bz.BlockSize-BlockSizeMinusTransactions) {
+				} else if 100*(accumulatedTxSize+txsize) <= (bz.PercentageTxPay)*(bz.MainChainBlockSize-BlockSizeMinusTransactions) {
 					accumulatedTxSize = accumulatedTxSize + txsize
 					numberOfRegPayTx++
 					/* transaction name in transaction queue payment is just "TxPayment"
@@ -797,7 +797,7 @@ func (bz *BaseDFS) updateMainChainBCTransactionQueueTake() {
 				if txsize, err = strconv.Atoi(colCell); err != nil {
 					log.Lvl2("Panic Raised:\n\n")
 					panic(err)
-				} else if accumulatedTxSize+txsize <= bz.BlockSize-BlockSizeMinusTransactions-allocatedBlockSizeForRegPayTx {
+				} else if accumulatedTxSize+txsize <= bz.MainChainBlockSize-BlockSizeMinusTransactions-allocatedBlockSizeForRegPayTx {
 					accumulatedTxSize = accumulatedTxSize + txsize
 					/* transaction name in transaction queue can be "TxServAgrPropose", "TxStoragePayment", or "TxPor"
 					in case of "TxServAgrCommit":

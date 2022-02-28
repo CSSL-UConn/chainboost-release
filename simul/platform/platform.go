@@ -70,7 +70,8 @@ type Config struct {
 	// raha: adding some other system-wide configurations, these fields are those who are needed in the protocol
 	MCRoundDuration          int
 	PercentageTxPay          int
-	BlockSize                int
+	MainChainBlockSize       int
+	SideChainBlockSize       int
 	SectorNumber             int
 	NumberOfPayTXsUpperBound int
 	SimulationRounds         int

@@ -37,17 +37,18 @@ Types of Messages:
 &HelloBaseDFS{
 	Timeout:                  bz.timeout,
 	PercentageTxPay:          bz.PercentageTxPay,
-	MCRoundDuration:            bz.MCRoundDuration,
-	BlockSize:                bz.BlockSize,
+	MCRoundDuration:          bz.MCRoundDuration,
+	MainChainBlockSize:       bz.MainChainBlockSize,
+	SideChainBlockSize:		  bz.SideChainBlockSize,
 	SectorNumber:             bz.SectorNumber,
 	NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
 	SimulationSeed:			  bz.SimulationSeed,
 	nbrSubTrees:			  bz.nbrSubTrees,
 	threshold:				  bz.threshold,
-	SCRoundDuration:			  bz.SCRoundDuration,
+	SCRoundDuration:		  bz.SCRoundDuration,
 	CommitteeWindow:		  bz.CommitteeWindow,
-	EpochCount:					bz.EpochCount,
-	SimState:					bz.SimState,
+	EpochCount:				  bz.EpochCount,
+	SimState:				  bz.SimState,
 }
 ```
 

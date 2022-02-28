@@ -79,7 +79,8 @@ type Localhost struct {
 	// raha: adding some other system-wide configurations
 	MCRoundDuration          int
 	PercentageTxPay          int
-	BlockSize                int
+	MainChainBlockSize       int
+	SideChainBlockSize       int
 	SectorNumber             int
 	NumberOfPayTXsUpperBound int
 	SimulationRounds         int
@@ -106,7 +107,8 @@ func (d *Localhost) Configure(pc *Config) {
 	// raha: adding some other system-wide configurations
 	d.MCRoundDuration = pc.MCRoundDuration
 	d.PercentageTxPay = pc.PercentageTxPay
-	d.BlockSize = pc.BlockSize
+	d.MainChainBlockSize = pc.MainChainBlockSize
+	d.SideChainBlockSize = pc.SideChainBlockSize
 	d.SectorNumber = pc.SectorNumber
 	d.NumberOfPayTXsUpperBound = pc.NumberOfPayTXsUpperBound
 	d.SimulationRounds = pc.SimulationRounds
@@ -240,7 +242,7 @@ func (d *Localhost) Start(args ...string) error {
 			log.Lvl2("Localhost: will start host", i, h)
 			log.Lvl2("raha: adding some other system-wide configurations")
 
-			err := Simulate(d.PercentageTxPay, d.MCRoundDuration, d.BlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.SimulationRounds,
+			err := Simulate(d.PercentageTxPay, d.MCRoundDuration, d.MainChainBlockSize, d.SideChainBlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.SimulationRounds,
 				d.SimulationSeed, d.NbrSubTrees, d.Threshold, d.SCRoundDuration, d.CommitteeWindow, d.EpochCount, d.SimState,
 				d.Suite, host, d.Simulation, "")
 			if err != nil {

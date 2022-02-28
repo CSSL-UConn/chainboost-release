@@ -70,7 +70,7 @@ func (bz *BaseDFS) updateSideChainBCRound(LeaderName string) {
 	// --------------------------------------------------------------------
 	// updating the current last row in the "BCsize" column
 	// axisBCSize := "B" + currentRow
-	// err = f.SetCellValue("RoundTable", axisBCSize, bz.BlockSize)
+	// err = f.SetCellValue("RoundTable", axisBCSize, bz.SideChainBlockSize)
 	// // this value of block size is not correct if the queue gets not full sometimes, but in the evaluation sheet the value is correct
 	// if err != nil {
 	// 	log.Lvl2("Panic Raised:\n\n")
@@ -390,7 +390,7 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
 				if txsize, err = strconv.Atoi(colCell); err != nil {
 					log.Lvl2("Panic Raised:\n\n")
 					panic(err)
-				} else if accumulatedTxSize+txsize <= bz.BlockSize-BlockSizeMinusTransactions {
+				} else if accumulatedTxSize+txsize <= bz.SideChainBlockSize-BlockSizeMinusTransactions {
 					accumulatedTxSize = accumulatedTxSize + txsize
 					if row[0] == "TxPor" {
 						log.Lvl3("a por tx added to block number", bz.MCRoundNumber, " from the queue")

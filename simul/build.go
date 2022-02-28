@@ -69,7 +69,8 @@ func startBuild() {
 
 		MCRoundDuration, _ := strconv.Atoi(runconfigs[0].Get("MCRoundDuration"))
 		PercentageTxPay, _ := strconv.Atoi(runconfigs[0].Get("PercentageTxPay"))
-		BlockSize, _ := strconv.Atoi(runconfigs[0].Get("BlockSize"))
+		MainChainBlockSize, _ := strconv.Atoi(runconfigs[0].Get("MainChainBlockSize"))
+		SideChainBlockSize, _ := strconv.Atoi(runconfigs[0].Get("SideChainBlockSize"))
 		SectorNumber, _ := strconv.Atoi(runconfigs[0].Get("SectorNumber"))
 		NumberOfPayTXsUpperBound, _ := strconv.Atoi(runconfigs[0].Get("NumberOfPayTXsUpperBound"))
 		SimulationRounds, _ := strconv.Atoi(runconfigs[0].Get("SimulationRounds"))
@@ -88,7 +89,8 @@ func startBuild() {
 			// raha: adding some other system-wide configurations
 			MCRoundDuration:          MCRoundDuration,
 			PercentageTxPay:          PercentageTxPay,
-			BlockSize:                BlockSize,
+			MainChainBlockSize:       MainChainBlockSize,
+			SideChainBlockSize:       SideChainBlockSize,
 			SectorNumber:             SectorNumber,
 			NumberOfPayTXsUpperBound: NumberOfPayTXsUpperBound,
 			SimulationRounds:         SimulationRounds,
