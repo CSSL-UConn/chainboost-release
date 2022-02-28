@@ -48,7 +48,7 @@ The mode of simulation is determined by the `SimState` config param in the confi
 
 - in sheet “market matching”, the `ContractPublished == 1` means that a “TxEscrow” transaction (this should be modified later) has been submitted (added to a block) for this contract. the column “started round number” says on what round this transaction has been submitted (i.e. the contract has started being active)
 - in sheet “market matching”, the `ContractPublished == 0` means that The contract is expired (or just in first round not started yet)
-when this happens, a “TxStoragePayment” transaction will be sent to the transaction queue on the next round, with ContractPublished == 0, a “TxEscrow” transaction will be sent to the transactions queue and again, when the “TxEscrow” transaction leave the queue, the ContractPublished will be set to 1
+when this happens, a “TxStoragePayment” transaction will be sent to the transaction queue on the next round, with `ContractPublished == 0`, a “TxEscrow” transaction will be sent to the transactions queue and again, when the “TxEscrow” transaction leave the queue, the `ContractPublished` will be set to 1
 - in sheet “market matching”, for each server (/contract) that the column `ContractPublished == 1` a “TxPor” transaction will be sent to the transactions queue 
 
 ## "propose contract” & “Commit Contract” transactions ##
