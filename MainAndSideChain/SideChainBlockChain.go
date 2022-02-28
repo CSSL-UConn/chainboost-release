@@ -14,7 +14,7 @@ import (
 	updated by the root node to reflelct an added meta-block
  ----------------------------------------------------------------------*/
 func (bz *BaseDFS) updateSideChainBCRound(LeaderName string) {
-	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.EpochCount)))
+	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.MCRoundPerEpoch)))
 	var err error
 	// var rows *excelize.Rows
 	// var row []string
@@ -62,8 +62,8 @@ func (bz *BaseDFS) updateSideChainBCRound(LeaderName string) {
 	//nextRow := strconv.Itoa(rowNumber + 1)
 	// ---
 	// this approach of calculating the current row / side chain round  number should rationally work but it didn't, maybe check later to find a solution
-	//CurrentRow := strconv.Itoa(epochNumber*bz.MCRoundDuration*bz.EpochCount/bz.SCRoundDuration + bz.SCRoundNumber + 1)
-	//nextRow := strconv.Itoa(epochNumber*bz.MCRoundDuration*bz.EpochCount/bz.SCRoundDuration + bz.SCRoundNumber + 2)
+	//CurrentRow := strconv.Itoa(epochNumber*bz.MCRoundDuration*bz.MCRoundPerEpoch/bz.SCRoundDuration + bz.SCRoundNumber + 1)
+	//nextRow := strconv.Itoa(epochNumber*bz.MCRoundDuration*bz.MCRoundPerEpoch/bz.SCRoundDuration + bz.SCRoundNumber + 2)
 	// --------------------------------------------------------------------
 	// --------------------------------------------------------------------
 
@@ -124,7 +124,7 @@ func (bz *BaseDFS) updateSideChainBCRound(LeaderName string) {
 	the por tx.s are collected based on the service agreement status read from main chain blockchain
 ------------------------------------------------------------------------ */
 func (bz *BaseDFS) updateSideChainBCTransactionQueueCollect() {
-	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.EpochCount)))
+	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.MCRoundPerEpoch)))
 	var err error
 	var rows *excelize.Rows
 	var row []string
@@ -306,7 +306,7 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueCollect() {
 func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
 	var err error
 	var rows [][]string
-	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.EpochCount)))
+	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.MCRoundPerEpoch)))
 	// --- reset
 	bz.SideChainQueueWait = 0
 
@@ -357,7 +357,7 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
 	//NextRow := strconv.Itoa(rowNumber + 1)
 	// ---
 	// this approach of calculating the current row / side chain round  number should rationally work but it didn't, maybe check later to find a solution
-	//CurrentRow := strconv.Itoa(epochNumber*bz.MCRoundDuration*bz.EpochCount/bz.SCRoundDuration + bz.SCRoundNumber + 1)
+	//CurrentRow := strconv.Itoa(epochNumber*bz.MCRoundDuration*bz.MCRoundPerEpoch/bz.SCRoundDuration + bz.SCRoundNumber + 1)
 	// --------------------------------------------------------------------
 	// --------------------------------------------------------------------
 

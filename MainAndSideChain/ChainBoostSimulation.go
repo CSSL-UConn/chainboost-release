@@ -19,7 +19,7 @@
 					threshold:				  bz.threshold,
 					SCRoundDuration:            bz.SCRoundDuration,
 					CommitteeWindow:          bz.CommitteeWindow,
-					EpochCount:					bz.EpochCount,
+					MCRoundPerEpoch:					bz.MCRoundPerEpoch,
 					SimState:					bz.SimState,
 				}
 	4- timeOut
@@ -55,7 +55,7 @@ type HelloBaseDFS struct {
 	SimulationSeed           int
 	SCRoundDuration          int
 	CommitteeWindow          int
-	EpochCount               int
+	MCRoundPerEpoch          int
 	// bls cosi config
 	NbrSubTrees int
 	Threshold   int
@@ -126,7 +126,7 @@ type BaseDFS struct {
 	--------------------------------------------------------------------- */
 	BlsCosi                  *BlsCosi
 	CommitteeNodesTreeNodeID []onet.TreeNodeID
-	EpochCount               int
+	MCRoundPerEpoch          int
 	NextSideChainLeader      onet.TreeNodeID
 	// channel used by root node to trigger side chain's leader to run a new round of blscosi for side chain
 	RtLSideChainNewRoundChan chan RtLSideChainNewRoundChan
@@ -152,7 +152,7 @@ func (bz *BaseDFS) Start() error {
 	bz.helloBaseDFS()
 
 	//------- testing message sending ------
-	// err := bz.SendTo(bz.Root(), &HelloBaseDFS{EpochCount: 0})
+	// err := bz.SendTo(bz.Root(), &HelloBaseDFS{MCRoundPerEpoch: 0})
 	// if err != nil {
 	// 	return err
 	// }
@@ -189,7 +189,7 @@ func (bz *BaseDFS) Dispatch() error {
 			bz.SimulationSeed = msg.SimulationSeed
 			bz.SCRoundDuration = msg.SCRoundDuration
 			bz.CommitteeWindow = msg.CommitteeWindow
-			bz.EpochCount = msg.EpochCount
+			bz.MCRoundPerEpoch = msg.MCRoundPerEpoch
 			// bls cosi config
 			bz.NbrSubTrees = msg.NbrSubTrees
 			bz.BlsCosi.Threshold = msg.Threshold

@@ -79,7 +79,7 @@ func startBuild() {
 		Threshold, _ := strconv.Atoi(runconfigs[0].Get("Threshold"))
 		SCRoundDuration, _ := strconv.Atoi(runconfigs[0].Get("SCRoundDuration"))
 		CommitteeWindow, _ := strconv.Atoi(runconfigs[0].Get("CommitteeWindow"))
-		EpochCount, _ := strconv.Atoi(runconfigs[0].Get("EpochCount"))
+		MCRoundPerEpoch, _ := strconv.Atoi(runconfigs[0].Get("MCRoundPerEpoch"))
 		SimState, _ := strconv.Atoi(runconfigs[0].Get("SimState"))
 
 		deployP.Configure(&platform.Config{
@@ -99,7 +99,7 @@ func startBuild() {
 			Threshold:                Threshold,
 			SCRoundDuration:          SCRoundDuration,
 			CommitteeWindow:          CommitteeWindow,
-			EpochCount:               EpochCount,
+			MCRoundPerEpoch:          MCRoundPerEpoch,
 			SimState:                 SimState,
 		})
 

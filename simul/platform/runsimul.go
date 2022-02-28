@@ -30,7 +30,7 @@ type simulInitDone struct{}
 
 // raha: adding some other system-wide configurations
 func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize, SectorNumber, NumberOfPayTXsUpperBound,
-	SimulationRounds, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, EpochCount, SimState int,
+	SimulationRounds, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, MCRoundPerEpoch, SimState int,
 	suite, serverAddress, simul, monitorAddress string) error {
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 	if err != nil {
@@ -197,7 +197,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			ChainBoostProtocol.Threshold = Threshold
 			ChainBoostProtocol.SCRoundDuration = SCRoundDuration
 			ChainBoostProtocol.CommitteeWindow = CommitteeWindow
-			ChainBoostProtocol.EpochCount = EpochCount
+			ChainBoostProtocol.MCRoundPerEpoch = MCRoundPerEpoch
 			ChainBoostProtocol.SimState = SimState
 			log.LLvl2("passing our system-wide configurations to the protocol",
 				"\n  PercentageTxPay: ", PercentageTxPay,
@@ -212,7 +212,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 				"\n  threshold of: ", Threshold,
 				"\n SCRoundDuration: ", SCRoundDuration,
 				"\n CommitteeWindow: ", CommitteeWindow,
-				"\n EpochCount: ", EpochCount,
+				"\n MCRoundPerEpoch: ", MCRoundPerEpoch,
 				"\n SimState: ", SimState,
 			)
 			// ---------------------------------------------------------------
@@ -250,7 +250,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 						Threshold:       ChainBoostProtocol.Threshold,
 						CommitteeWindow: ChainBoostProtocol.CommitteeWindow,
 						SCRoundDuration: ChainBoostProtocol.SCRoundDuration,
-						EpochCount:      ChainBoostProtocol.EpochCount,
+						MCRoundPerEpoch: ChainBoostProtocol.MCRoundPerEpoch,
 						SimState:        ChainBoostProtocol.SimState,
 					})
 					if err != nil {

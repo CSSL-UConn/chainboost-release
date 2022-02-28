@@ -128,7 +128,7 @@ func (bz *BaseDFS) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) erro
 func (bz *BaseDFS) RootPostNewRound(msg LtRSideChainNewRoundChan) error {
 	var err error
 	bz.SCRoundNumber = msg.SCRoundNumber
-	if bz.MCRoundDuration*bz.EpochCount/bz.SCRoundDuration == bz.SCRoundNumber {
+	if bz.MCRoundDuration*bz.MCRoundPerEpoch/bz.SCRoundDuration == bz.SCRoundNumber {
 
 		bz.BlsCosi.BlockType = "Summery Block"
 		// from bc: update msg size with the "summery block"'s block size on side chain
@@ -145,7 +145,7 @@ func (bz *BaseDFS) RootPostNewRound(msg LtRSideChainNewRoundChan) error {
 		// ------------- Epoch changed -----------
 		// i.e. the current published block on side chain is summery block
 		// change committee:
-		log.LLvl1("final result SC: BlsCosi: the Summery Block was for epoch number: ", bz.MCRoundNumber/bz.EpochCount)
+		log.LLvl1("final result SC: BlsCosi: the Summery Block was for epoch number: ", bz.MCRoundNumber/bz.MCRoundPerEpoch)
 		// changing next side chain's leader for the next epoch rounds from the last miner in the main chain's window of miners
 		bz.NextSideChainLeader = bz.CommitteeNodesTreeNodeID[0]
 		// changing side chain's committee to last miners in the main chain's window of miners

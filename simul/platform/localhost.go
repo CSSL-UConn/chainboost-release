@@ -90,7 +90,7 @@ type Localhost struct {
 	Threshold       int
 	SCRoundDuration int
 	CommitteeWindow int
-	EpochCount      int
+	MCRoundPerEpoch int
 	SimState        int
 }
 
@@ -117,7 +117,7 @@ func (d *Localhost) Configure(pc *Config) {
 	d.Threshold = pc.Threshold
 	d.SCRoundDuration = pc.SCRoundDuration
 	d.CommitteeWindow = pc.CommitteeWindow
-	d.EpochCount = pc.EpochCount
+	d.MCRoundPerEpoch = pc.MCRoundPerEpoch
 	d.SimState = pc.SimState
 	// ------------------------------
 	d.localDir = pwd
@@ -243,7 +243,7 @@ func (d *Localhost) Start(args ...string) error {
 			log.Lvl2("raha: adding some other system-wide configurations")
 
 			err := Simulate(d.PercentageTxPay, d.MCRoundDuration, d.MainChainBlockSize, d.SideChainBlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.SimulationRounds,
-				d.SimulationSeed, d.NbrSubTrees, d.Threshold, d.SCRoundDuration, d.CommitteeWindow, d.EpochCount, d.SimState,
+				d.SimulationSeed, d.NbrSubTrees, d.Threshold, d.SCRoundDuration, d.CommitteeWindow, d.MCRoundPerEpoch, d.SimState,
 				d.Suite, host, d.Simulation, "")
 			if err != nil {
 				log.Error("Error running localhost", h, ":", err)

@@ -81,7 +81,7 @@ type Config struct {
 	Threshold       int
 	SCRoundDuration int
 	CommitteeWindow int
-	EpochCount      int
+	MCRoundPerEpoch int
 	SimState        int
 }
 

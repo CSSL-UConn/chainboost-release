@@ -47,7 +47,7 @@ Types of Messages:
 	threshold:				  bz.threshold,
 	SCRoundDuration:		  bz.SCRoundDuration,
 	CommitteeWindow:		  bz.CommitteeWindow,
-	EpochCount:				  bz.EpochCount,
+	MCRoundPerEpoch:		  bz.MCRoundPerEpoch,
 	SimState:				  bz.SimState,
 }
 ```
