@@ -89,6 +89,7 @@ There are 3 sheets, namely FirstQueue, RoundTable, and Overall Evaluation.[^shee
 - [ ] we may need to say which model (account based or UTXO) are we adopting in the implmentation
 - [ ] a simplifying assumption we have for committee is that in each committee, we have one instance (one node) for each committee member and not more! even if they have been powerfull and being selected as main chain's leader multiple time during last epoch.
 - [ ] leader election in mainchain
+- [ ] Package bn256 from kyber library is used in blscosi module for bls scheme.
 
 
 
