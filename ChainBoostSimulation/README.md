@@ -38,8 +38,11 @@ Config File [BaseDFS.toml](https://github.com/chainBstSc/basedfs/blob/master/sim
 - `SCRoundDuration`
 - `MCRoundPerEpoch` the number of main chain's round in which an epoch will be finished.
 - `CommitteeWindow` the number of committee in the side chain that is the number of last `CommitteeWindow` miners (leaders) in main chain [^3]
-- `SimState` see <>
+- `SimState` specify the mode of simulation: pure main chain vs sid chain plus main chain (ChainBoost) 
+    -  See: <https://github.com/chainBoost/basedfs/tree/master/ChainBoostSimulation#SimState>
 
+## SimState ##
+The mode of simulation is determined by the `SimState` config param in the config file. if `SimState` = 1 the simulation will run in the single pure main chain mode and if `SimState` = 2 the main chain and the side chain are going to run simentaniously.
 
 ## How Transactions are Generated in Queue ##
 
