@@ -128,6 +128,10 @@ func (bz *BaseDFS) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) erro
 func (bz *BaseDFS) RootPostNewRound(msg LtRSideChainNewRoundChan) error {
 	var err error
 	bz.SCRoundNumber = msg.SCRoundNumber
+
+	// side chain round duration pause
+	time.Sleep(time.Duration(bz.SCRoundDuration) * time.Second)
+
 	if bz.MCRoundDuration*bz.MCRoundPerEpoch/bz.SCRoundDuration == bz.SCRoundNumber {
 
 		bz.BlsCosi.BlockType = "Summery Block"
@@ -169,8 +173,6 @@ func (bz *BaseDFS) RootPostNewRound(msg LtRSideChainNewRoundChan) error {
 		// increase side chain round number
 		bz.SCRoundNumber = bz.SCRoundNumber + 1
 	}
-	// side chain round duration pause
-	time.Sleep(time.Duration(bz.SCRoundDuration) * time.Second)
 	// --------------------------------------------------------------------
 	//triggering next side chain round leader to run next round of blscosi
 	// --------------------------------------------------------------------

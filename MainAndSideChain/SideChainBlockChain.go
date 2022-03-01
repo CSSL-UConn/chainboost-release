@@ -352,7 +352,7 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
 			roundNumber, _ = strconv.Atoi(colCell)
 		}
 	}
-	log.LLvl1(roundNumber)
+	log.LLvl5("side chain's current round number:", roundNumber)
 	CurrentRow := strconv.Itoa(rowNumber - 1) // last row that has some columns filled
 	//NextRow := strconv.Itoa(rowNumber + 1)
 	// ---
