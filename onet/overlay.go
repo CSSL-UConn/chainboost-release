@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ChainBoost/onet/log"
-	"github.com/ChainBoost/onet/network"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"github.com/google/uuid"
 	"golang.org/x/xerrors"
 )

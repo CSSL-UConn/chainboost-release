@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ChainBoost/onet/log"
-	"github.com/ChainBoost/onet/network"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

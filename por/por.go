@@ -26,8 +26,8 @@ import (
 	"math/rand"
 	"strconv"
 
-	"github.com/ChainBoost/onet"
-	"github.com/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/pairing/bn256"

@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ChainBoost/onet/log"
-	"github.com/ChainBoost/onet/network"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/protobuf"

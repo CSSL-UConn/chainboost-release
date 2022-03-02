@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ChainBoost/MainAndSideChain/blockchain"
-	"github.com/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -19,7 +19,7 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string) {
 	// var rows *excelize.Rows
 	// var row []string
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -109,7 +109,7 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string) {
 	}
 
 	// ----
-	err = f.SaveAs("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -129,7 +129,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 	var rows *excelize.Rows
 	var row []string
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -231,7 +231,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 		}
 	}
 	// -------------------------------------------------------------------------------
-	f1, err := excelize.OpenFile("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	f1, err := excelize.OpenFile("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -290,7 +290,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 		}
 	}
 	// -------------------------------------------------------------------------------
-	err = f1.SaveAs("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	err = f1.SaveAs("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -310,7 +310,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() {
 	// --- reset
 	bz.SideChainQueueWait = 0
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -490,7 +490,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() {
 	}
 
 	// ----
-	err = f.SaveAs("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)

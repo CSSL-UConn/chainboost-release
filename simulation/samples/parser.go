@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
 )
 
 type Parser struct {

@@ -2,11 +2,11 @@ package main
 
 import (
 	"github.com/BurntSushi/toml"
-	"github.com/ChainBoost/onet"
-	"github.com/ChainBoost/onet/log"
-	simul "github.com/ChainBoost/simulation"
+	"github.com/chainBoostScale/ChainBoost/onet"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
+	simul "github.com/chainBoostScale/ChainBoost/simulation"
 
-	//"github.com/ChainBoost/simulation/monitor"
+	//"github.com/chainBoostScale/ChainBoost/simulation/monitor"
 	"golang.org/x/xerrors"
 )
 

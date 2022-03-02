@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
 )
 
 func TestNewDataFilter(t *testing.T) {

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/montanaflynn/stats"
 	"golang.org/x/xerrors"
 )

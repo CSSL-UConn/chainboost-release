@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"strconv"
 
-	log "github.com/ChainBoost/onet/log"
+	log "github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -536,7 +536,7 @@ func InitializeMainChainBC(
 		log.Lvl2(err)
 	}
 	// --------------------------------------------------------------------
-	if err := f.SaveAs("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx"); err != nil {
+	if err := f.SaveAs("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx"); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
@@ -570,7 +570,7 @@ func InitializeSideChainBC() {
 			WrapText: true,
 		},
 	})
-	// f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	// f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
 	// if err != nil {
 	// 	log.Lvl2("Raha: ", err)
 	// 	panic(err)
@@ -770,7 +770,7 @@ func InitializeSideChainBC() {
 		log.Lvl2(err)
 	}
 	// --------------------------------------------------------------------
-	if err := f.SaveAs("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx"); err != nil {
+	if err := f.SaveAs("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx"); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}

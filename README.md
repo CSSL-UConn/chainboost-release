@@ -19,13 +19,13 @@ note: running on an OS other than IOS needs a change in c extention config code
 - Open a terminal in the directory where the folder ChainBoost is located
 - run the following command: 
 ```
-/usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/ChainBoost/simulation/manage/simulation
+/usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/chainBoostScale/ChainBoost/simulation/manage/simulation
 ```
 
 - this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBoostScale/ChainBoost/blob/master/simulation/manage/simulation/simul_test.go))
 
 
-raha@R-MacBook-Pro ChainBoost % /usr/local/go/bin/go test -timeout 300000s -run ^TestSimulation$ github.com/ChainBoost/simulation/manage/simulation
+raha@R-MacBook-Pro ChainBoost % /usr/local/go/bin/go test -timeout 300000s -run ^TestSimulation$ github.com/chainBoostScale/ChainBoost/simulation/manage/simulation
 
 
 - the stored blockchain in Excel file "mainchainbc.xlsx"  can be found under the `build` directory that is going to be created after simulation run[^3]
@@ -56,9 +56,6 @@ The following packages provide core functionality to `ChainBoost`:
   - `Blockchain` package for tx, block structure, measurement, management of tx queues, management of blockchain in two layers 
   - main and side chain's `Consensus protocol` (`BlsCosi` is used for sideChain. part of it is brought from Dedis’s `BlsCosi` with some modifications applied)
 --------------------------------------------------------------------------------------------------
-
-- [ ] todo: check if there is any more function/file that should be copied from blscosi to `MainandSideChain` folder and the remove `blscosi` package
-
 
 <!--FootNote-->
 [^1]: there may be some rounds that there is no leader for them, an empty block will be added to the blockchain in those rounds and the information of the root node (blockchain layer 1) is added (it can be removed) as the round leader but all the other columns are empty. in these rounds transactions will be added normally to the queue but no transaction is removed bcz the block is empty.

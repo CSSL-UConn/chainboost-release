@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/ChainBoost/onet"
-	"github.com/ChainBoost/onet/log"
-	"github.com/ChainBoost/onet/network"
+	"github.com/chainBoostScale/ChainBoost/onet"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/suites"
 	"go.dedis.ch/kyber/v3/util/encoding"

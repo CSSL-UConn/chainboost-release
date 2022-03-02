@@ -4,13 +4,14 @@ import (
 	"sync"
 
 	"github.com/BurntSushi/toml"
-	MainAndSideChain "github.com/ChainBoost/MainAndSideChain"
-	"github.com/ChainBoost/blscosi/protocol"
-	"github.com/ChainBoost/onet"
-	"github.com/ChainBoost/onet/log"
-	"github.com/ChainBoost/onet/network"
-	"github.com/ChainBoost/simulation/monitor"
-	"github.com/ChainBoost/vrf"
+	MainAndSideChain "github.com/chainBoostScale/ChainBoost/MainAndSideChain"
+	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi"
+	"github.com/chainBoostScale/ChainBoost/onet"
+	"github.com/chainBoostScale/ChainBoost/onet/blscosi-sample/protocol"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/network"
+	"github.com/chainBoostScale/ChainBoost/simulation/monitor"
+	"github.com/chainBoostScale/ChainBoost/vrf"
 	"go.dedis.ch/kyber/v3/pairing"
 
 	//"go.dedis.ch/kyber/v3/sign/bls"
@@ -162,7 +163,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			if err != nil {
 				return xerrors.New("couldn't create protocol: " + err.Error())
 			}
-			cosiProtocol := pi.(*MainAndSideChain.BlsCosi)
+			cosiProtocol := pi.(*BLSCoSi.BlsCosi)
 			cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol // Raha: it doesn't call any fuunction! just initializtion of methods that is going to be used later
 			//cosiProtocol.CreateProtocol = rootService.CreateProtocol //raha: it used to be initialized by this function call
 			// params from config file:
@@ -350,7 +351,7 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 	if err != nil {
 		log.LLvl1("couldn't create protocol: " + err.Error())
 	}
-	cosiProtocol := pi.(*MainAndSideChain.BlsCosi)
+	cosiProtocol := pi.(*BLSCoSi.BlsCosi)
 	cosiProtocol.CreateProtocol = n.Overlay.CreateProtocol
 	cosiProtocol.TreeNodeInstance = n
 	//cosiProtocol.Timeout = ChainBoostProtocol.DefaultTimeout

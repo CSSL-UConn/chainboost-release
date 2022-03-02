@@ -15,7 +15,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
 )
 
 // The address of this server - if there is only one server in the config

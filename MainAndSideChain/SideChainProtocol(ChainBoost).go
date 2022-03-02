@@ -3,11 +3,10 @@ package MainAndSideChain
 import (
 	"time"
 
-	"github.com/ChainBoost/blscosi/bdnproto"
-	"github.com/ChainBoost/blscosi/protocol"
-	"github.com/ChainBoost/onet"
-	"github.com/ChainBoost/onet/log"
-	"github.com/ChainBoost/onet/network"
+	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi"
+	"github.com/chainBoostScale/ChainBoost/onet"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"golang.org/x/xerrors"
 )
 
@@ -51,7 +50,7 @@ func (bz *ChainBoost) DispatchProtocol() error {
 		// ******* just the current side chain's leader on recieve this msg
 		// --------------------------------------------------------
 		case sig := <-bz.BlsCosi.FinalSignature:
-			if err := bdnproto.BdnSignature(sig).Verify(bz.BlsCosi.Suite, bz.BlsCosi.Msg, bz.BlsCosi.SubTrees[0].Roster.Publics()); err == nil {
+			if err := BLSCoSi.BdnSignature(sig).Verify(bz.BlsCosi.Suite, bz.BlsCosi.Msg, bz.BlsCosi.SubTrees[0].Roster.Publics()); err == nil {
 				log.LLvl2("final result SC:", bz.Name(), " : ", bz.BlsCosi.BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
 				err := bz.SendTo(bz.Root(), &LtRSideChainNewRound{
 					NewRound:      true,
@@ -107,7 +106,7 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	var x = *bz.TreeNode()
 	x.RosterIndex = 0
 	// ---
-	bz.BlsCosi.SubTrees, err = protocol.NewBlsProtocolTree(onet.NewTree(committeeRoster, &x), bz.NbrSubTrees)
+	bz.BlsCosi.SubTrees, err = BLSCoSi.NewBlsProtocolTree(onet.NewTree(committeeRoster, &x), bz.NbrSubTrees)
 	if err == nil {
 		if bz.SCRoundNumber == 1 {
 			log.Lvl1("final result SC: Next bls cosi tree is: ", bz.BlsCosi.SubTrees[0].Roster.List,

@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ChainBoost/onet"
-	"github.com/ChainBoost/onet/log"
-	"github.com/ChainBoost/onet/network"
+	"github.com/chainBoostScale/ChainBoost/onet"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"golang.org/x/xerrors"
 
 	//Raha

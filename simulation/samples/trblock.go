@@ -11,7 +11,7 @@ import (
 	"net"
 
 	//"crypto"
-	"github.com/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
 )
 
 type Block struct {

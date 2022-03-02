@@ -17,9 +17,9 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/ChainBoost/onet"
-	"github.com/ChainBoost/onet/app"
-	"github.com/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet"
+	"github.com/chainBoostScale/ChainBoost/onet/app"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"golang.org/x/xerrors"
 )
 

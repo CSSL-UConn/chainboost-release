@@ -2,9 +2,9 @@ package sample
 
 // import (
 // 	"github.com/BurntSushi/toml"
-// 	"github.com/ChainBoost/onet"
-// 	"github.com/ChainBoost/onet/log"
-// 	"github.com/ChainBoost/simulation/monitor"
+// 	"github.com/chainBoostScale/ChainBoost/onet"
+// 	"github.com/chainBoostScale/ChainBoost/onet/log"
+// 	"github.com/chainBoostScale/ChainBoost/simulation/monitor"
 // 	"github.com/dedis/cothority/protocols/manage"
 // 	//"github.com/dedis/cothority/protocols/manage"
 // )

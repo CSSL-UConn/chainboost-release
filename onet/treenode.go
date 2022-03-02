@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/ChainBoost/onet/log"
-	"github.com/ChainBoost/onet/network"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"go.dedis.ch/kyber/v3"
 	"golang.org/x/xerrors"
 )

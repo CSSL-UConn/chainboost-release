@@ -26,8 +26,8 @@ In the simulation config file, there is a line that specify preScript file:
 PreScript = "testPreScript.toml"
 ```
 
-Now I have added the following address (to the code) to look for it in there: "/Users/raha/Documents/GitHub/ChainBoost/simulation/platform/"
-The code copy this file to where it call deploy-dir which is: "/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build"
+Now I have added the following address (to the code) to look for it in there: "/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/platform/"
+The code copy this file to where it call deploy-dir which is: "/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build"
 
 Later, again in localhost.go file, in the Start() function, it run the preScript file:
  

@@ -15,14 +15,14 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/ChainBoost/blscosi/protocol"
-	"github.com/ChainBoost/onet/log"
-	"github.com/ChainBoost/vrf"
 	"github.com/DmitriyVTitov/size"
+	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/vrf"
 
 	// ToDoRaha: later that I brought everything from blscosi package to ChainBoost package, I shoudl add another pacckage with
 	// some definitions in it to be imported/used in blockchain(here) and simulation package (instead of using blscosi/protocol)
-	"github.com/ChainBoost/por"
+	"github.com/chainBoostScale/ChainBoost/por"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/util/random"
 	"go.dedis.ch/kyber/v3/xof/blake2xb"
@@ -426,7 +426,7 @@ type SCBlockHeader struct {
 	//LeaderPublicKey kyber.Point
 	////ToDoNow:check: the combined signature of committee members for each meta/summery blocks should be
 	// included in their header `SCBlockHeader` which enables future validation
-	BlsSignature protocol.BlsSignature
+	BlsSignature BLSCoSi.BlsSignature
 }
 type SCMetaBlock struct {
 	BlockSize                  [3]byte
@@ -481,7 +481,7 @@ func MetaBlockMeasurement() (MetaBlockSizeMinusTransactions int) {
 	var SCRoundNumberSample [3]byte
 	var samplePublicKey [33]byte
 	//var samplePublicKey kyber.Point
-	var sampleBlsSig protocol.BlsSignature
+	var sampleBlsSig BLSCoSi.BlsSignature
 	// ---------------- block sample ----------------
 	var TxPorArraySample []*TxPoR
 
@@ -552,7 +552,7 @@ func SummeryBlockMeasurement() (SummeryBlockSizeMinusTransactions int) {
 	var feeSample, BlockSizeSample [3]byte
 	var SCRoundNumberSample [3]byte
 	var samplePublicKey [33]byte
-	var sampleBlsSig protocol.BlsSignature
+	var sampleBlsSig BLSCoSi.BlsSignature
 	// ---------------- block sample ----------------
 	var TxSummeryArraySample []*TxSummery
 

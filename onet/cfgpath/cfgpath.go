@@ -6,7 +6,7 @@ import (
 	"path"
 	"runtime"
 
-	"github.com/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
 )
 
 // GetConfigPath returns the location for which the configuration files are stored.

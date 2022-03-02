@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ChainBoost/onet"
-	"github.com/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"go.dedis.ch/kyber/v3/suites"
 )
 

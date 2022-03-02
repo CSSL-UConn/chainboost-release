@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ChainBoost/onet/log"
-	"github.com/ChainBoost/onet/network"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"github.com/gorilla/websocket"
 	"go.dedis.ch/protobuf"
 	"golang.org/x/xerrors"

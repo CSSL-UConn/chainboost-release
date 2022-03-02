@@ -12,12 +12,12 @@ import (
 
 	"time"
 
-	//"github.com/ChainBoost/onet/app"
-	"github.com/ChainBoost/onet"
-	"github.com/ChainBoost/onet/app"
-	"github.com/ChainBoost/onet/log"
+	//"github.com/chainBoostScale/ChainBoost/onet/app"
+	"github.com/chainBoostScale/ChainBoost/onet"
+	"github.com/chainBoostScale/ChainBoost/onet/app"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
 
-	//"github.com/ChainBoost/simulation/monitor"
+	//"github.com/chainBoostScale/ChainBoost/simulation/monitor"
 	"golang.org/x/xerrors"
 )
 
@@ -171,7 +171,7 @@ func (d *Localhost) Deploy(rc *RunConfig) error {
 	d.PreScript = rc.Get("PreScript")
 	if d.PreScript != "" {
 		//raha added next 2 line
-		pwd := "/Users/raha/Documents/GitHub/ChainBoost/simulation/chainBoostFiles/"
+		pwd := "/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/chainBoostFiles/"
 		pwd = pwd + d.PreScript
 		_, err := os.Stat(pwd /*d.PreScript*/)
 		if !os.IsNotExist(err) {

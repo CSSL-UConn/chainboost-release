@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
-	"github.com/ChainBoost/onet/log"
-	simul "github.com/ChainBoost/simulation"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
+	simul "github.com/chainBoostScale/ChainBoost/simulation"
 )
 
 func TestSimulation(t *testing.T) {

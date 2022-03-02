@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/stretchr/testify/require"
 )
 

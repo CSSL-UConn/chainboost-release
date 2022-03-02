@@ -1,5 +1,5 @@
 //module go.dedis.ch/onet/v3
-module github.com/ChainBoost
+module github.com/chainBoostScale/ChainBoost
 
 require (
 	github.com/BurntSushi/toml v1.0.0

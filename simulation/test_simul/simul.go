@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/ChainBoost/onet"
-	"github.com/ChainBoost/onet/log"
-	"github.com/ChainBoost/onet/network"
-	simul "github.com/ChainBoost/simulation"
-	"github.com/ChainBoost/simulation/manage"
-	"github.com/ChainBoost/simulation/monitor"
+	"github.com/chainBoostScale/ChainBoost/onet"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/network"
+	simul "github.com/chainBoostScale/ChainBoost/simulation"
+	"github.com/chainBoostScale/ChainBoost/simulation/manage"
+	"github.com/chainBoostScale/ChainBoost/simulation/monitor"
 	"golang.org/x/xerrors"
 )
 

@@ -6,7 +6,7 @@ package platform
 import (
 	"syscall"
 
-	"github.com/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"golang.org/x/xerrors"
 )
 

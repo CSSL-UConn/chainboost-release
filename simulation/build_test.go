@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/ChainBoost/simulation/platform"
+	"github.com/chainBoostScale/ChainBoost/simulation/platform"
 )
 
 func TestDepth(t *testing.T) {

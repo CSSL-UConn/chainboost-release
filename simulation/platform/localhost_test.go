@@ -6,7 +6,7 @@ import (
 
 	"io/ioutil"
 
-	"github.com/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
 )
 
 func TestLocal(t *testing.T) {

@@ -3,7 +3,7 @@ package onet
 import (
 	"testing"
 
-	"github.com/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
 )
 
 // To avoid setting up testing-verbosity in all tests

@@ -9,8 +9,8 @@ import (
 	"encoding/binary"
 	"time"
 
-	"github.com/ChainBoost/onet"
-	"github.com/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/onet"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"golang.org/x/xerrors"
 )
 

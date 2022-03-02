@@ -32,10 +32,12 @@ package MainAndSideChain
 import (
 	"time"
 
-	"github.com/ChainBoost/onet"
-	"github.com/ChainBoost/onet/log"
-	"github.com/ChainBoost/por"
-	"github.com/ChainBoost/vrf"
+	"github.com/chainBoostScale/ChainBoost/onet"
+	"github.com/chainBoostScale/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/por"
+	"github.com/chainBoostScale/ChainBoost/vrf"
+
+	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi"
 	"go.dedis.ch/kyber/v3/pairing"
 )
 
@@ -124,7 +126,7 @@ type ChainBoost struct {
 	/* ------------------------------------------------------------------
 	 ---------------------------  bls cosi protocol  ---------------
 	--------------------------------------------------------------------- */
-	BlsCosi                  *BlsCosi
+	BlsCosi                  *BLSCoSi.BlsCosi
 	CommitteeNodesTreeNodeID []onet.TreeNodeID
 	MCRoundPerEpoch          int
 	NextSideChainLeader      onet.TreeNodeID
