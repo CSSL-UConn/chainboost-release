@@ -54,7 +54,7 @@ The following packages provide core functionality to `ChainBoost`:
 - `PoR` (See: [PoR ReadMe File](https://github.com/chainBoostScale/ChainBoost/blob/master/por/README.md))
 - `MainandSideChain` including (See: [MainandSideChain ReadMe File](https://github.com/chainBoostScale/ChainBoost/blob/master/MainAndSideChain/ReadMe.MD))
   - `Blockchain` package for tx, block structure, measurement, management of tx queues, management of blockchain in two layers 
-  - main and side chain's `Consensus protocol` (`BlsCosi` is used for sideChain. part of it is brought from Dedis’s `BlsCosi` with some modifications applied)
+  - main and side chain's `Consensus protocol` (`BlsCosi` is used for sideChain. part of it is brought from Dedis’s `BlsCosi` (See: [BLSCosSi ReadMe file](https://github.com/dedis/cothority/blob/main/blscosi/README.md) with some modifications applied)
 --------------------------------------------------------------------------------------------------
 
 - [ ] todo: check if there is any more function/file that should be copied from blscosi to `MainandSideChain` folder and the remove `blscosi` package
