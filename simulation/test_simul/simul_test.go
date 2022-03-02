@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	simul "github.com/basedfs/simulation"
+	simul "github.com/ChainBoost/simulation"
 )
 
 func TestSimulation(t *testing.T) {

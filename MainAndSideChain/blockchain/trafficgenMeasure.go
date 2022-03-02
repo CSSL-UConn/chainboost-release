@@ -15,14 +15,14 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/ChainBoost/blscosi/protocol"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/vrf"
 	"github.com/DmitriyVTitov/size"
-	"github.com/basedfs/blscosi/protocol"
-	"github.com/basedfs/onet/log"
-	"github.com/basedfs/vrf"
 
-	// ToDoRaha: later that I brought everything from blscosi package to basedfs package, I shoudl add another pacckage with
+	// ToDoRaha: later that I brought everything from blscosi package to ChainBoost package, I shoudl add another pacckage with
 	// some definitions in it to be imported/used in blockchain(here) and simulation package (instead of using blscosi/protocol)
-	"github.com/basedfs/por"
+	"github.com/ChainBoost/por"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/util/random"
 	"go.dedis.ch/kyber/v3/xof/blake2xb"

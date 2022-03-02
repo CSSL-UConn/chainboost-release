@@ -31,10 +31,10 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	//"github.com/basedfs/onet/app"
-	"github.com/basedfs/onet"
-	"github.com/basedfs/onet/app"
-	"github.com/basedfs/onet/log"
+	//"github.com/ChainBoost/onet/app"
+	"github.com/ChainBoost/onet"
+	"github.com/ChainBoost/onet/app"
+	"github.com/ChainBoost/onet/log"
 	"golang.org/x/xerrors"
 )
 

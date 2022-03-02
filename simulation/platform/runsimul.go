@@ -4,13 +4,13 @@ import (
 	"sync"
 
 	"github.com/BurntSushi/toml"
-	MainAndSideChain "github.com/basedfs/MainAndSideChain"
-	"github.com/basedfs/blscosi/protocol"
-	"github.com/basedfs/network"
-	"github.com/basedfs/onet"
-	"github.com/basedfs/onet/log"
-	"github.com/basedfs/simulation/monitor"
-	"github.com/basedfs/vrf"
+	MainAndSideChain "github.com/ChainBoost/MainAndSideChain"
+	"github.com/ChainBoost/blscosi/protocol"
+	"github.com/ChainBoost/onet"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/onet/network"
+	"github.com/ChainBoost/simulation/monitor"
+	"github.com/ChainBoost/vrf"
 	"go.dedis.ch/kyber/v3/pairing"
 
 	//"go.dedis.ch/kyber/v3/sign/bls"
@@ -140,7 +140,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		// If this cothority has the root-server, it will start the simulation
 		log.Lvl2("Starting protocol", simul, "on server", rootSC.Server.ServerIdentity.Address)
 		// Raha: I want to see the list of nodes!
-		log.Lvl4("Raha: Tree used in BaseDfs is", rootSC.Tree.Roster.List)
+		log.Lvl4("Raha: Tree used in ChainBoost is", rootSC.Tree.Roster.List)
 		wait := true
 		for wait {
 			// Raha: the protocols are created and instanciated here:
@@ -175,14 +175,14 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 				}
 			}
 			// ---------------------------------------------------------------
-			//              ------   BaseDFS protocol  ------
+			//              ------   ChainBoost protocol  ------
 			// ---------------------------------------------------------------
-			// raha: BaseDfs protocol is created here => calling CreateProtocol() => calling Dispatch()
-			p, err := rootSC.Overlay.CreateProtocol("BaseDFS", rootSC.Tree, onet.NilServiceID)
+			// raha: ChainBoost protocol is created here => calling CreateProtocol() => calling Dispatch()
+			p, err := rootSC.Overlay.CreateProtocol("ChainBoost", rootSC.Tree, onet.NilServiceID)
 			if err != nil {
 				return xerrors.New("couldn't create protocol: " + err.Error())
 			}
-			ChainBoostProtocol := p.(*MainAndSideChain.BaseDFS)
+			ChainBoostProtocol := p.(*MainAndSideChain.ChainBoost)
 			//ChainBoostProtocol.SetTimeout(time.Duration(TimeOut) * time.Second)
 			// raha: finally passing our system-wide configurations to our protocol
 			ChainBoostProtocol.PercentageTxPay = PercentageTxPay
@@ -217,15 +217,15 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			)
 			// ---------------------------------------------------------------
 			// raha: BLSCoSi protocol
-			// raha: added: this way, the roster that runs this protocol is  initiated by the main roster, the one that runs the basedfs protocol
+			// raha: added: this way, the roster that runs this protocol is  initiated by the main roster, the one that runs the ChainBoost protocol
 			// cosiProtocol.TreeNodeInstance = ChainBoostProtocol.TreeNodeInstance
 			ChainBoostProtocol.BlsCosi = cosiProtocol
 			// ---------------------------------------------------------------
 			/* Raha: note that in overlay.go the CreateProtocol function will call the Dispatch() function by creating a go routine
 			that's why I call it here in a go routine too.
 			ToDoRaha: But I should check how this part will be doing when testing on multiple servers
-			raha: should be a single dispatch assigned for each node?! yes, it is in the basedfs start ..
-			here, we call the DispatchProtocol function which handles messages in baseDfs protocol + the finalSignature message in BlsCosi protocol
+			raha: should be a single dispatch assigned for each node?! yes, it is in the ChainBoost start ..
+			here, we call the DispatchProtocol function which handles messages in ChainBoost protocol + the finalSignature message in BlsCosi protocol
 			other messages communicated in BlsCosi protocol are handled by
 			func (p *SubBlsCosi) Dispatch() which is called when the startSubProtocol in Blscosi.go,
 			create subprotocols => hence calls func (p *SubBlsCosi) Dispatch() */
@@ -236,7 +236,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			}
 			for _, child := range rootSC.Tree.List() {
 				if child != ChainBoostProtocol.TreeNode() {
-					err := ChainBoostProtocol.SendTo(child, &MainAndSideChain.HelloBaseDFS{
+					err := ChainBoostProtocol.SendTo(child, &MainAndSideChain.HelloChainBoost{
 						SimulationRounds:         ChainBoostProtocol.SimulationRounds,
 						PercentageTxPay:          ChainBoostProtocol.PercentageTxPay,
 						MCRoundDuration:          ChainBoostProtocol.MCRoundDuration,
@@ -265,12 +265,12 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 				}
 			}()
 			ChainBoostProtocol.Start()
-			// raha: bls cosi  start function is called inside basedfs protocol
+			// raha: bls cosi  start function is called inside ChainBoost protocol
 			// ---------------------------------------------------------------
 			// when it finishes  is when:
 			// ToDoRaha
-			log.LLvl1("Back to simulation module: waiting for DoneBaseDFS channel .......... ")
-			px := <-ChainBoostProtocol.DoneBaseDFS
+			log.LLvl1("Back to simulation module: ChainBoostProtocol.Start() returned. waiting for DoneChainBoost channel .......... ")
+			px := <-ChainBoostProtocol.DoneChainBoost
 			log.Lvl1("Back to simulation module. Final result is", px)
 			wait = false
 		}
@@ -336,12 +336,12 @@ type conf struct {
 func init() {
 	//network.RegisterMessage(ProofOfRetTxChan{})
 	//network.RegisterMessage(PreparedBlockChan{})
-	network.RegisterMessage(MainAndSideChain.HelloBaseDFS{})
+	network.RegisterMessage(MainAndSideChain.HelloChainBoost{})
 	network.RegisterMessage(MainAndSideChain.NewRound{})
 	network.RegisterMessage(MainAndSideChain.NewLeader{})
 	network.RegisterMessage(MainAndSideChain.LtRSideChainNewRound{})
 	network.RegisterMessage(MainAndSideChain.RtLSideChainNewRound{})
-	onet.GlobalProtocolRegister("BaseDFS", NewChainBoostProtocol)
+	onet.GlobalProtocolRegister("ChainBoost", NewChainBoostProtocol)
 }
 
 func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, error) {
@@ -364,10 +364,10 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 	//cosiProtocol.Suite = pairing.NewSuiteBn256()
 	//cosiProtocol.BlockType = ChainBoostProtocol.DefaultBlockType()
 
-	bz := &MainAndSideChain.BaseDFS{
+	bz := &MainAndSideChain.ChainBoost{
 		TreeNodeInstance:   n,
 		Suite:              pairing.NewSuiteBn256(),
-		DoneBaseDFS:        make(chan bool, 1),
+		DoneChainBoost:     make(chan bool, 1),
 		LeaderProposeChan:  make(chan bool, 1),
 		MCRoundNumber:      1,
 		SCRoundNumber:      1,

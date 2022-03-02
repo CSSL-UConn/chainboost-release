@@ -3,7 +3,7 @@ package platform
 import (
 	"syscall"
 
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet/log"
 	"golang.org/x/sys/unix"
 	"golang.org/x/xerrors"
 )

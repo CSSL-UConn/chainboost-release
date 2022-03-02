@@ -6,8 +6,8 @@ import (
 	"path"
 	"testing"
 
-	"github.com/basedfs/onet"
-	app "github.com/basedfs/onet/app"
+	"github.com/ChainBoost/onet"
+	app "github.com/ChainBoost/onet/app"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/kyber/v3/pairing"
 )

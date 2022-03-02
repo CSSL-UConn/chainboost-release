@@ -3,8 +3,8 @@ package blscosi
 import (
 	"testing"
 
-	"github.com/basedfs/onet"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet"
+	"github.com/ChainBoost/onet/log"
 	"github.com/stretchr/testify/require"
 )
 

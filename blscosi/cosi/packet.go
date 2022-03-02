@@ -3,8 +3,8 @@ package cosi
 import (
 	"errors"
 
-	"github.com/basedfs/network"
-	"github.com/basedfs/onet"
+	"github.com/ChainBoost/onet"
+	"github.com/baChainBoostsedfs/network"
 )
 
 func init() {

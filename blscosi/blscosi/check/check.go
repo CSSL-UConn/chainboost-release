@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basedfs/blscosi"
-	"github.com/basedfs/network"
-	"github.com/basedfs/onet"
-	app "github.com/basedfs/onet/app"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/blscosi"
+	"github.com/ChainBoost/onet"
+	app "github.com/ChainBoost/onet/app"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/onet/network"
 	"go.dedis.ch/kyber/v3/pairing"
 )
 

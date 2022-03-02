@@ -12,12 +12,12 @@ import (
 
 	"time"
 
-	//"github.com/basedfs/onet/app"
-	"github.com/basedfs/onet"
-	"github.com/basedfs/onet/app"
-	"github.com/basedfs/onet/log"
+	//"github.com/ChainBoost/onet/app"
+	"github.com/ChainBoost/onet"
+	"github.com/ChainBoost/onet/app"
+	"github.com/ChainBoost/onet/log"
 
-	//"github.com/basedfs/simulation/monitor"
+	//"github.com/ChainBoost/simulation/monitor"
 	"golang.org/x/xerrors"
 )
 
@@ -171,7 +171,7 @@ func (d *Localhost) Deploy(rc *RunConfig) error {
 	d.PreScript = rc.Get("PreScript")
 	if d.PreScript != "" {
 		//raha added next 2 line
-		pwd := "/Users/raha/Documents/GitHub/basedfs/simulation/chainBoostFiles/"
+		pwd := "/Users/raha/Documents/GitHub/ChainBoost/simulation/chainBoostFiles/"
 		pwd = pwd + d.PreScript
 		_, err := os.Stat(pwd /*d.PreScript*/)
 		if !os.IsNotExist(err) {

@@ -13,8 +13,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/basedfs/network"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/onet/network"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/group/edwards25519"

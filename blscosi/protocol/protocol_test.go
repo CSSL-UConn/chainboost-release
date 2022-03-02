@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basedfs/onet"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet"
+	"github.com/ChainBoost/onet/log"
 	"github.com/stretchr/testify/require"
 
 	//"go.dedis.ch/cothority/v3"

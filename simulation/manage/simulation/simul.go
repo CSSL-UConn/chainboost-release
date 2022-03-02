@@ -2,11 +2,11 @@ package main
 
 import (
 	"github.com/BurntSushi/toml"
-	"github.com/basedfs/onet"
-	"github.com/basedfs/onet/log"
-	simul "github.com/basedfs/simulation"
+	"github.com/ChainBoost/onet"
+	"github.com/ChainBoost/onet/log"
+	simul "github.com/ChainBoost/simulation"
 
-	//"github.com/basedfs/simulation/monitor"
+	//"github.com/ChainBoost/simulation/monitor"
 	"golang.org/x/xerrors"
 )
 
@@ -21,7 +21,7 @@ func init() {
 //Raha
 func init() {
 	//onet.SimulationRegister("OpinionGathering", NewSimulation)
-	onet.SimulationRegister("BaseDFS", NewSimulation)
+	onet.SimulationRegister("ChainBoost", NewSimulation)
 }
 
 // Simulation only holds the BFTree simulation
@@ -86,7 +86,7 @@ func (e *simulation) Run(config *onet.SimulationConfig) error {
 	for round := 0; round < e.Rounds; round++ {
 		log.Lvl1("Starting round", round)
 		//round := monitor.NewTimeMeasure("round")
-		p, err := config.Overlay.CreateProtocol("BaseDFS", config.Tree, onet.NilServiceID)
+		p, err := config.Overlay.CreateProtocol("ChainBoost", config.Tree, onet.NilServiceID)
 		if err != nil {
 			return xerrors.Errorf("creating protocol: %v", err)
 		}

@@ -3,7 +3,7 @@ language: go
 go:
   - "1.15.x"
 
-go_import_path: github.com/basedfs
+go_import_path: github.com/ChainBoost
 
 script:
   - env GO111MODULE=on make test

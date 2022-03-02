@@ -9,8 +9,8 @@ import (
 	"encoding/binary"
 	"time"
 
-	"github.com/basedfs/onet"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet"
+	"github.com/ChainBoost/onet/log"
 	"golang.org/x/xerrors"
 )
 
@@ -38,7 +38,7 @@ type NewRoundChan struct {
 /* ----------------------------------- FUNCTIONS -------------------------------------------------
 ------------------------------------------------------------------------------------------------  */
 
-func (bz *BaseDFS) StartMainChainProtocol() {
+func (bz *ChainBoost) StartMainChainProtocol() {
 	// the root node is filling the first block in first round
 	log.Lvl2(bz.Name(), "Filling round number ", bz.MCRoundNumber)
 	// for the first round we have the root node set as a round leader, so  it is true! and he takes txs from the queue
@@ -48,7 +48,7 @@ func (bz *BaseDFS) StartMainChainProtocol() {
 	time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
 	bz.readBCAndSendtoOthers()
 }
-func (bz *BaseDFS) RootPreNewRound(msg NewLeaderChan) {
+func (bz *ChainBoost) RootPreNewRound(msg NewLeaderChan) {
 	// -----------------------------------------------------
 	// rounds without a leader: in this case the leader info is filled with root node's info, transactions are going to be collected normally but
 	// since the block is empty, no transaction is going to be taken from queues => leader = false
@@ -94,7 +94,7 @@ func (bz *BaseDFS) RootPreNewRound(msg NewLeaderChan) {
 }
 
 //
-func (bz *BaseDFS) MainChainCheckLeadership(msg NewRoundChan) error {
+func (bz *ChainBoost) MainChainCheckLeadership(msg NewRoundChan) error {
 	var vrfOutput [64]byte
 	toBeHashed := []byte(msg.Seed)
 	proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])

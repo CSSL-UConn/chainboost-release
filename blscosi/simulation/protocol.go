@@ -23,12 +23,12 @@ import (
 	"fmt"
 
 	"github.com/BurntSushi/toml"
-	"github.com/basedfs/blscosi"
-	"github.com/basedfs/blscosi/protocol"
-	"github.com/basedfs/network"
-	"github.com/basedfs/onet"
-	"github.com/basedfs/onet/log"
-	"github.com/basedfs/simulation/monitor"
+	"github.com/ChainBoost/blscosi"
+	"github.com/ChainBoost/blscosi/protocol"
+	"github.com/ChainBoost/onet"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/onet/network"
+	"github.com/ChainBoost/simulation/monitor"
 	"go.dedis.ch/kyber/v3/pairing"
 )
 

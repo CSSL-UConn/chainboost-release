@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/basedfs/network"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/onet/network"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/suites"
 	"go.dedis.ch/kyber/v3/util/key"
@@ -343,7 +343,7 @@ func (s *SimulationBFTree) CreateRoster(sc *SimulationConfig, addresses []string
 			}
 		}
 	}
-	// Raha: this is where the roster is ctrated for baseDFS module
+	// Raha: this is where the roster is ctrated for ChainBoost module
 	sc.Roster = NewRoster(entities)
 	log.Lvl3("Creating entity List took: " + time.Now().Sub(start).String())
 }

@@ -3,15 +3,15 @@ package main
 import (
 	"testing"
 
-	"github.com/basedfs/onet/log"
-	simul "github.com/basedfs/simulation"
+	"github.com/ChainBoost/onet/log"
+	simul "github.com/ChainBoost/simulation"
 )
 
 func TestSimulation(t *testing.T) {
 	log.SetDebugVisible(1)
 	//log.SetUseColors(true)
 	//log.SetPadding(true)
-	simul.Start("BaseDFS.toml")
+	simul.Start("ChainBoost.toml")
 	//simul.Start("OpinionGathering.toml")
 }
 

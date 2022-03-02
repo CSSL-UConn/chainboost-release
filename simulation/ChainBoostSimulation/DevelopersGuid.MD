@@ -26,8 +26,8 @@ In the simulation config file, there is a line that specify preScript file:
 PreScript = "testPreScript.toml"
 ```
 
-Now I have added the following address (to the code) to look for it in there: "/Users/raha/Documents/GitHub/basedfs/simulation/platform/"
-The code copy this file to where it call deploy-dir which is: "/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build"
+Now I have added the following address (to the code) to look for it in there: "/Users/raha/Documents/GitHub/ChainBoost/simulation/platform/"
+The code copy this file to where it call deploy-dir which is: "/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build"
 
 Later, again in localhost.go file, in the Start() function, it run the preScript file:
  
@@ -160,4 +160,4 @@ So, what we have at the end is:
 
 7- in function simulate(), after creating an instance of our BasedDFSProtocol, the passed params are sent to the protocol structure (our protocol has these params in its structure and get initialized here) 
 
-8- but note that just the first node who run the protocol has these params in the protocol structure initialized, so in order to have other nodes start running the protocol (and get initialized with these params) we sent a message to all nodes and use a HelloBaseDFS structure that carries these params in it in the function HelloBaseDFS() which is called in the Start() function by the first node. So, when each node receives the message, in the Dispatch() function, the passed params are sent to their protocol structure and their protocol gets initialized too.
+8- but note that just the first node who run the protocol has these params in the protocol structure initialized, so in order to have other nodes start running the protocol (and get initialized with these params) we sent a message to all nodes and use a HelloChainBoost structure that carries these params in it in the function HelloChainBoost() which is called in the Start() function by the first node. So, when each node receives the message, in the Dispatch() function, the passed params are sent to their protocol structure and their protocol gets initialized too.

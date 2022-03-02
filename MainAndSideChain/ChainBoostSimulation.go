@@ -6,7 +6,7 @@
 	1- each server who is elected as leader (few servers in each ) send a msg of &NewLeader{Leaderinfo: bz.Name(), MCRoundNumber: bz.MCRoundNumber} to root node.
 	2- each round, the root node send a msg of &NewRound{Seed:  seed, Power: power} to all servers including the target server's power
 	3- in the bootstrapping phase, the root node send a message to all servers containing protocol config parameters.
-	&HelloBaseDFS{
+	&HelloChainBoost{
 					Timeout:                  bz.timeout,
 					PercentageTxPay:          bz.PercentageTxPay,
 					MCRoundDuration:            bz.MCRoundDuration,
@@ -32,10 +32,10 @@ package MainAndSideChain
 import (
 	"time"
 
-	"github.com/basedfs/onet"
-	"github.com/basedfs/onet/log"
-	"github.com/basedfs/por"
-	"github.com/basedfs/vrf"
+	"github.com/ChainBoost/onet"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/por"
+	"github.com/ChainBoost/vrf"
 	"go.dedis.ch/kyber/v3/pairing"
 )
 
@@ -43,7 +43,7 @@ import (
 ------------------------------------------------------------------------------------------------  */
 
 // Hello is sent down the tree from the root node, every node who gets it starts the protocol and send it to its children
-type HelloBaseDFS struct {
+type HelloChainBoost struct {
 	SimulationRounds int
 	//---- ToDoRaha: Do i need timeout?
 	PercentageTxPay          int
@@ -64,11 +64,11 @@ type HelloBaseDFS struct {
 }
 type HelloChan struct {
 	*onet.TreeNode
-	HelloBaseDFS
+	HelloChainBoost
 }
 
-//  BaseDFS is the main struct that has required parameters for running both protocols ------------
-type BaseDFS struct {
+//  ChainBoost is the main struct that has required parameters for running both protocols ------------
+type ChainBoost struct {
 	// the node we are represented-in
 	*onet.TreeNodeInstance
 	ECPrivateKey vrf.VrfPrivkey
@@ -86,7 +86,7 @@ type BaseDFS struct {
 	// onDoneCallback is the callback that will be called at the end of the protocol
 	//onDoneCallback func() //ToDoRaha: define this function and call it when you want to finish the protocol + check when should it be called
 	// channel to notify when we are done -- when a message is sent through this channel the runsimul.go file will catch it and finish the protocol.
-	DoneBaseDFS chan bool
+	DoneChainBoost chan bool
 	// channel to notify leader elected
 	LeaderProposeChan chan bool
 	MCRoundNumber     int
@@ -104,7 +104,7 @@ type BaseDFS struct {
 	   ------------------------------------------------------------------
 		these  params get initialized
 		for the root node: "after" NewMainAndSideChain call (in func: Simulate in file: runsimul.go)
-		for the rest of nodes node: while joining protocol by the HelloBaseDFS message
+		for the rest of nodes node: while joining protocol by the HelloChainBoost message
 	--------------------------------------------------------------------- */
 	PercentageTxPay          int
 	MCRoundDuration          int
@@ -143,16 +143,16 @@ type BaseDFS struct {
 /* ----------------------------------------------------------------------
 	//Start: starts the protocol by sending hello msg to all nodes
 ------------------------------------------------------------------------ */
-func (bz *BaseDFS) Start() error {
+func (bz *ChainBoost) Start() error {
 	// update the mainchainbc file with created nodes' information
 	bz.finalMainChainBCInitialization()
 	bz.BlsCosiStarted = true
 	// ------------------------------------------------------------------------------
 	// config params are sent from the leader to the other nodes in helloBasedDfs function
-	bz.helloBaseDFS()
+	bz.helloChainBoost()
 
 	//------- testing message sending ------
-	// err := bz.SendTo(bz.Root(), &HelloBaseDFS{MCRoundPerEpoch: 0})
+	// err := bz.SendTo(bz.Root(), &HelloChainBoost{MCRoundPerEpoch: 0})
 	// if err != nil {
 	// 	return err
 	// }
@@ -162,9 +162,9 @@ func (bz *BaseDFS) Start() error {
 /* ----------------------------------------------------------------------
 			 Dispatch listen on the different channels in main chain protocol
 ------------------------------------------------------------------------ */
-func (bz *BaseDFS) Dispatch() error {
+func (bz *ChainBoost) Dispatch() error {
 	// another dispatch function (DispatchProtocol) is called in runsimul.go that takes care of both chain's protocols
-	// if !bz.IsRoot() || (bz.IsRoot() && bz.StartedBaseDFS) {
+	// if !bz.IsRoot() || (bz.IsRoot() && bz.StartedChainBoost) {
 	// 	bz.DispatchProtocol()
 	// } else {
 	// 	return nil
@@ -201,7 +201,7 @@ func (bz *BaseDFS) Dispatch() error {
 					return err
 				}
 			}
-			bz.helloBaseDFS()
+			bz.helloChainBoost()
 		// -----------------------------------------------------------------------------
 		// ******** ALL nodes recieve this message to sync rounds
 		// -----------------------------------------------------------------------------
@@ -231,10 +231,10 @@ func (bz *BaseDFS) Dispatch() error {
 }
 
 /* ----------------------------------------------------------------------
- helloBaseDFS
+ helloChainBoost
 ------------------------------------------------------------------------ */
 
-func (bz *BaseDFS) helloBaseDFS() {
+func (bz *ChainBoost) helloChainBoost() {
 	log.Lvl2(bz.TreeNode().Name(), " joined to the protocol")
 	// all nodes get here and start to listen for blscosi protocol messages
 	go func() {
@@ -264,7 +264,7 @@ this function will be called just by ROOT NODE when:
 - at the end of a round duration (when no "I am a leader message is recieved): startTimer starts the timer to detect the rounds that dont have any leader elected (if any)
 and publish an empty block in those rounds
 ------------------------------------------------------------------------ */
-func (bz *BaseDFS) startTimer(MCRoundNumber int) {
+func (bz *ChainBoost) startTimer(MCRoundNumber int) {
 	select {
 	case <-time.After(time.Duration(bz.MCRoundDuration) * time.Second):
 		// bz.IsRoot() is here just to make sure!,
@@ -290,12 +290,12 @@ func (bz *BaseDFS) startTimer(MCRoundNumber int) {
 //checkLeadership
 ------------------------------------------------------------------------ */
 
-// func (bz *BaseDFS) checkLeadership() {
+// func (bz *ChainBoost) checkLeadership() {
 // 	if bz.leaders[int(math.Mod(float64(bz.MCRoundNumber), float64(len(bz.Roster().List))))] == bz.ServerIdentity().String() {
 // 		bz.LeaderPropose <- true
 // 	}
 // }
-/* func (bz *BaseDFS) checkLeadership(power uint64, seed string) {
+/* func (bz *ChainBoost) checkLeadership(power uint64, seed string) {
 	for {
 		select {
 		case <-bz.NewLeaderChan:
@@ -358,7 +358,7 @@ func (bz *BaseDFS) startTimer(MCRoundNumber int) {
 */
 
 // Testpor
-func (bz *BaseDFS) Testpor() {
+func (bz *ChainBoost) Testpor() {
 
 	sk, pk := por.RandomizedKeyGeneration()
 	Tau, pf := por.RandomizedFileStoring(sk, por.GenerateFile(bz.SectorNumber), bz.SectorNumber)

@@ -3,7 +3,7 @@ package onet
 import (
 	"testing"
 
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet/log"
 )
 
 // To avoid setting up testing-verbosity in all tests

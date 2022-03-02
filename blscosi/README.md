@@ -1,3 +1,6 @@
+Raha: this package is almost copied/brought into MainandSideChain package 
+we have sub_blscosi, struct_blscosi, blscosi, and a  file containing other required functins. but I still think some functions are being called from here thats why I kept this package so I can check later what else I ahve to bring there.
+
 Navigation: [DEDIS](https://github.com/dedis/doc/tree/master/README.md) ::
 [Cothority](../README.md) ::
 [Building Blocks](../doc/BuildingBlocks.md) ::

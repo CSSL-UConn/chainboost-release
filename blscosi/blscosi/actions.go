@@ -10,10 +10,10 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/basedfs/blscosi"
-	"github.com/basedfs/blscosi/blscosi/check"
-	app "github.com/basedfs/onet/app"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/blscosi"
+	"github.com/ChainBoost/blscosi/blscosi/check"
+	app "github.com/ChainBoost/onet/app"
+	"github.com/ChainBoost/onet/log"
 	cli "github.com/urfave/cli"
 )
 

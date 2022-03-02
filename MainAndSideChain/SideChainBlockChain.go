@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/basedfs/MainAndSideChain/blockchain"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/MainAndSideChain/blockchain"
+	"github.com/ChainBoost/onet/log"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -13,13 +13,13 @@ import (
 	updateSideChainBC:  when a side chain leader submit a meta block, the side chain blockchain is
 	updated by the root node to reflelct an added meta-block
  ----------------------------------------------------------------------*/
-func (bz *BaseDFS) updateSideChainBCRound(LeaderName string) {
+func (bz *ChainBoost) updateSideChainBCRound(LeaderName string) {
 	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.MCRoundPerEpoch)))
 	var err error
 	// var rows *excelize.Rows
 	// var row []string
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/sidechainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -109,7 +109,7 @@ func (bz *BaseDFS) updateSideChainBCRound(LeaderName string) {
 	}
 
 	// ----
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/sidechainbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -123,13 +123,13 @@ func (bz *BaseDFS) updateSideChainBCRound(LeaderName string) {
 	updated by the root node to add new proposed PoR tx.s in the queue
 	the por tx.s are collected based on the service agreement status read from main chain blockchain
 ------------------------------------------------------------------------ */
-func (bz *BaseDFS) updateSideChainBCTransactionQueueCollect() {
+func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.MCRoundPerEpoch)))
 	var err error
 	var rows *excelize.Rows
 	var row []string
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/mainchainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -231,7 +231,7 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueCollect() {
 		}
 	}
 	// -------------------------------------------------------------------------------
-	f1, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/sidechainbc.xlsx")
+	f1, err := excelize.OpenFile("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -290,7 +290,7 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueCollect() {
 		}
 	}
 	// -------------------------------------------------------------------------------
-	err = f1.SaveAs("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/sidechainbc.xlsx")
+	err = f1.SaveAs("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -303,14 +303,14 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueCollect() {
 /* ----------------------------------------------------------------------
     updateBC: this is a connection between first layer of blockchain - ROOT NODE - on the second layer - xlsx file -
 ------------------------------------------------------------------------ */
-func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
+func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() {
 	var err error
 	var rows [][]string
 	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.MCRoundPerEpoch)))
 	// --- reset
 	bz.SideChainQueueWait = 0
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/sidechainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -490,7 +490,7 @@ func (bz *BaseDFS) updateSideChainBCTransactionQueueTake() {
 	}
 
 	// ----
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/sidechainbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)

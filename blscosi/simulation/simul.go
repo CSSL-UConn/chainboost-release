@@ -7,7 +7,7 @@
 package main
 
 import (
-	simul "github.com/basedfs/simulation"
+	simul "github.com/ChainBoost/simulation"
 )
 
 func main() {

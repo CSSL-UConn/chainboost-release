@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/basedfs/network"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/onet/network"
 	"github.com/google/uuid"
 	"go.dedis.ch/kyber/v3"
 	"golang.org/x/xerrors"

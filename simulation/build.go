@@ -8,14 +8,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/basedfs/MainAndSideChain/blockchain"
+	"github.com/ChainBoost/MainAndSideChain/blockchain"
 
 	"math"
 	"time"
 
-	"github.com/basedfs/onet/log"
-	"github.com/basedfs/simulation/monitor"
-	"github.com/basedfs/simulation/platform"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/simulation/monitor"
+	"github.com/ChainBoost/simulation/platform"
 	"golang.org/x/xerrors"
 )
 

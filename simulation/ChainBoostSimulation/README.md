@@ -2,23 +2,23 @@
 ## Getting Started ##
 
 - Install Go
-- Clone or Downloade the ChainBoost's source code from Git <https://github.com/chainBstSc/basedfs>
-- Open a terminal in the directory where the folder basedfs is located
+- Clone or Downloade the ChainBoost's source code from Git <https://github.com/chainBstSc/ChainBoost>
+- Open a terminal in the directory where the folder ChainBoost is located
 - run the following command: 
 ```
-    /usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/basedfs/simulation/manage/simulation
+    /usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/ChainBoost/simulation/manage/simulation
 ```
 
-- this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simulation/manage/simulation/simul_test.go))
+- this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBstSc/ChainBoost/blob/master/simulation/manage/simulation/simul_test.go))
 - the stored blockchain in Excel file "mainchainbc.xlsx" and "sidechainbc.xlsx" can be found under the `build` directory that is going to be created after simulation run[^1]
-- in the case of debugging the following code in ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simulation/manage/simulation/simul_test.go)) indicates the debug logging level, with 0 being the least logging and 5 being the most (every tiny detail is logged in this level)
+- in the case of debugging the following code in ([simul_test.go](https://github.com/chainBstSc/ChainBoost/blob/master/simulation/manage/simulation/simul_test.go)) indicates the debug logging level, with 0 being the least logging and 5 being the most (every tiny detail is logged in this level)
 ```
 log.SetDebugVisible(1)
 ```
 
 ## Config File ##
 
-Config File [BaseDFS.toml](https://github.com/chainBstSc/basedfs/blob/master/simulation/manage/simulation/BaseDFS.toml) determines the simulation properties.
+Config File [ChainBoost.toml](https://github.com/chainBstSc/ChainBoost/blob/master/simulation/manage/simulation/ChainBoost.toml) determines the simulation properties.
 
 ## To Change the Configs ##
 - to change number of servers, change two values: 1- `Hosts` and 2- `Nodes` - with a same number :)
@@ -39,7 +39,7 @@ Config File [BaseDFS.toml](https://github.com/chainBstSc/basedfs/blob/master/sim
 - `MCRoundPerEpoch` the number of main chain's round in which an epoch will be finished.
 - `CommitteeWindow` the number of committee in the side chain that is the number of last `CommitteeWindow` miners (leaders) in main chain [^3]
 - `SimState` specify the mode of simulation: pure main chain vs sid chain plus main chain (ChainBoost) 
-    -  See: <https://github.com/chainBoost/basedfs/tree/master/ChainBoostSimulation#SimState>
+    -  See: <https://github.com/chainBoost/ChainBoost/tree/master/ChainBoostSimulation#SimState>
 
 ## SimState ##
 The mode of simulation is determined by the `SimState` config param in the config file. if `SimState = 1` the simulation will run in the single pure main chain mode and if `SimState = 2` the main chain and the side chain are going to run simentaniously.

@@ -6,8 +6,8 @@ import (
 	"encoding/binary"
 	"sync"
 
-	"github.com/basedfs/network"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/onet/network"
 	bbolt "go.etcd.io/bbolt"
 	"golang.org/x/xerrors"
 )

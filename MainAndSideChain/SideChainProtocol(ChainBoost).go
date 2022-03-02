@@ -3,11 +3,11 @@ package MainAndSideChain
 import (
 	"time"
 
-	"github.com/basedfs/blscosi/bdnproto"
-	"github.com/basedfs/blscosi/protocol"
-	"github.com/basedfs/network"
-	"github.com/basedfs/onet"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/blscosi/bdnproto"
+	"github.com/ChainBoost/blscosi/protocol"
+	"github.com/ChainBoost/onet"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/onet/network"
 	"golang.org/x/xerrors"
 )
 
@@ -38,7 +38,7 @@ type LtRSideChainNewRoundChan struct {
 /* ----------------------------------------------------------------------
  DispatchProtocol listen on the different channels in side chain protocol
 ------------------------------------------------------------------------ */
-func (bz *BaseDFS) DispatchProtocol() error {
+func (bz *ChainBoost) DispatchProtocol() error {
 
 	running := true
 	var err error
@@ -69,7 +69,7 @@ func (bz *BaseDFS) DispatchProtocol() error {
 }
 
 //SideChainLeaderPreNewRound:
-func (bz *BaseDFS) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) error {
+func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) error {
 	var err error
 	bz.SCRoundNumber = msg.SCRoundNumber
 	bz.BlsCosi.Msg = []byte{0xFF}
@@ -125,7 +125,7 @@ func (bz *BaseDFS) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) erro
 }
 
 //
-func (bz *BaseDFS) RootPostNewRound(msg LtRSideChainNewRoundChan) error {
+func (bz *ChainBoost) RootPostNewRound(msg LtRSideChainNewRoundChan) error {
 	var err error
 	bz.SCRoundNumber = msg.SCRoundNumber
 
@@ -190,7 +190,7 @@ func (bz *BaseDFS) RootPostNewRound(msg LtRSideChainNewRoundChan) error {
 // ----------------------------------------------------------------------------------------------
 // ---------------- BLS CoSi protocol (Initialization for root node) --------
 // ----------------------------------------------------------------------------------------------
-func (bz *BaseDFS) StartSideChainProtocol() {
+func (bz *ChainBoost) StartSideChainProtocol() {
 	var err error
 	// -----------------------------------------------
 	// --- initializing side chain's msg and side chain's committee roster index for the second run and the next runs
@@ -225,7 +225,7 @@ if a leader is selected multiple times during an epoch, he will nnot be added mu
 -----------------------------------------------
 --- updating the CommitteeNodesTreeNodeID
 ----------------------------------------------- */
-func (bz *BaseDFS) UpdateSideChainCommittee(msg NewLeaderChan) {
+func (bz *ChainBoost) UpdateSideChainCommittee(msg NewLeaderChan) {
 	t := 0
 	for _, a := range bz.CommitteeNodesTreeNodeID {
 		if a != msg.LeaderTreeNodeID {
@@ -250,7 +250,7 @@ func (bz *BaseDFS) UpdateSideChainCommittee(msg NewLeaderChan) {
 	}
 }
 
-// this code block was used in hello basedfs to start the side chain protocol -- its here to keep back-up in case we noticed an unresolved issue in side chain run
+// this code block was used in hello ChainBoost to start the side chain protocol -- its here to keep back-up in case we noticed an unresolved issue in side chain run
 // ----------------------------------------------------------------------------------------------
 // ---------------- BLS CoSi protocol (running for the very first time) --------
 // ----------------------------------------------------------------------------------------------

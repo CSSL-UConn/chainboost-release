@@ -4,8 +4,8 @@
 package bdnproto
 
 import (
-	"github.com/basedfs/blscosi/protocol"
-	"github.com/basedfs/onet"
+	"github.com/ChainBoost/blscosi/protocol"
+	"github.com/ChainBoost/onet"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/sign"
 	"go.dedis.ch/kyber/v3/sign/bdn"

@@ -6,10 +6,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/basedfs/blscosi/protocol"
-	"github.com/basedfs/network"
-	"github.com/basedfs/onet"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/blscosi/protocol"
+	"github.com/ChainBoost/onet"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/onet/network"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/suites"
 )

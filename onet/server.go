@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/basedfs/network"
-	"github.com/basedfs/onet/cfgpath"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet/cfgpath"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/onet/network"
 	"go.dedis.ch/kyber/v3"
 	"golang.org/x/xerrors"
 	"rsc.io/goversion/version"

@@ -15,45 +15,49 @@ We used [Kyber](https://github.com/dedis/kyber) for advanced cryptographic primi
 note: running on an OS other than IOS needs a change in c extention config code
 
 - Install Go
-- Clone or Downloade the ChainBoost's source code from Git <https://github.com/chainBstSc/basedfs>
-- Open a terminal in the directory where the folder basedfs is located
+- Clone or Downloade the ChainBoost's source code from Git <https://github.com/chainBoostScale/ChainBoost>
+- Open a terminal in the directory where the folder ChainBoost is located
 - run the following command: 
 ```
-/usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/basedfs/simulation/manage/simulation
+/usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/ChainBoost/simulation/manage/simulation
 ```
 
-- this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simulation/manage/simulation/simul_test.go))
+- this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBoostScale/ChainBoost/blob/master/simulation/manage/simulation/simul_test.go))
 
 
-raha@R-MacBook-Pro basedfs % /usr/local/go/bin/go test -timeout 300000s -run ^TestSimulation$ github.com/basedfs/simulation/manage/simulation
+raha@R-MacBook-Pro ChainBoost % /usr/local/go/bin/go test -timeout 300000s -run ^TestSimulation$ github.com/ChainBoost/simulation/manage/simulation
 
 
 - the stored blockchain in Excel file "mainchainbc.xlsx"  can be found under the `build` directory that is going to be created after simulation run[^3]
-- in the case of debugging the following code in ([simul_test.go](https://github.com/chainBstSc/basedfs/blob/master/simulation/manage/simulation/simul_test.go)) indicates the debug logging level, with 0 being the least logging and 5 being the most (every tiny detail is logged in this level)
+- in the case of debugging the following code in ([simul_test.go](https://github.com/chainBstSc/ChainBoost/blob/master/simulation/manage/simulation/simul_test.go)) indicates the debug logging level, with 0 being the least logging and 5 being the most (every tiny detail is logged in this level)
 ```
 log.SetDebugVisible(1)
 ```
 
 ## Config File ##
 
-Config File "BaseDFS.toml" is located under the following directory:
-([BaseDFS.toml](https://github.com/chainBstSc/basedfs/blob/master/simulation/manage/simulation/BaseDFS.toml))
+Config File "ChainBoost.toml" is located under the following directory:
+([ChainBoost.toml](https://github.com/chainBstSc/ChainBoost/blob/master/simulation/manage/simulation/ChainBoost.toml))
 
 
 ## Project Layout ##
 
 `ChainBoost` is split into various subpackages.
 
-The following packages provide core functionality to ..., as well as other tools and commands:
+The following packages provide core functionality to `ChainBoost`:
 
 --------------------------------------------------------------------------------------------------
-  - `crypto` contains the cryptographic constructions we're using for hashing,
-    signatures, and VRFs. There are also some Algorand-specific details here
-    about spending keys, protocols keys, one-time-use signing keys, and how they
-    relate to each other.
-  -   `...`
+1. these modules from Dedis Lab are used with few modifications: `Onet` (including `Network`, `Overlay`, and `Log`) and `Simulation` 
+2. This module from Dedis Lab is used intact: Kyber
+3. This module from Algorand is used with some modifications: `VRF`
+4. Added modules for ChainBoost:
+- `PoR`
+- `MainandSideChain` including
+  - `Blockchain` package for tx, block structure, measurement, management of tx queues, management of blockchain in two layers 
+  - main and side chain's `Consensus protocol` (`BlsCosi` is used for sideChain. part of it is brought from Dedis’s `BlsCosi` with some modifications applied)
 --------------------------------------------------------------------------------------------------
 
+- [ ] todo: check if there is any more function/file that should be copied from blscosi to `MainandSideChain` folder and the remove `blscosi` package
 
 
 <!--FootNote-->

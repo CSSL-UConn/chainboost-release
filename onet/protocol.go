@@ -3,8 +3,8 @@ package onet
 import (
 	"sync"
 
-	"github.com/basedfs/network"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/onet/network"
 	"github.com/google/uuid"
 	"golang.org/x/xerrors"
 )

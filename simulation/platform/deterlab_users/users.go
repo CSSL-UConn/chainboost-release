@@ -12,10 +12,10 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/basedfs/onet"
-	"github.com/basedfs/onet/log"
-	"github.com/basedfs/simulation/monitor"
-	"github.com/basedfs/simulation/platform"
+	"github.com/ChainBoost/onet"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/simulation/monitor"
+	"github.com/ChainBoost/simulation/platform"
 )
 
 var kill = false

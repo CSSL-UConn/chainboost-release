@@ -10,9 +10,9 @@
 
 package vrf
 
-import "github.com/basedfs/onet/log"
+import "github.com/ChainBoost/onet/log"
 
-//Testvrf is called in Start in BaseDFS to test the VRF module
+//Testvrf is called in Start in ChainBoost to test the VRF module
 func Testvrf() {
 	t := []byte("first test")
 	VrfPubkey, VrfPrivkey := VrfKeygen()

@@ -7,13 +7,13 @@ import (
 	"os"
 	"path"
 
-	"github.com/basedfs/onet"
+	"github.com/ChainBoost/onet"
 	"github.com/urfave/cli"
 
 	//"go.dedis.ch/cothority/v3"
-	app "github.com/basedfs/onet/app"
-	cfgpath "github.com/basedfs/onet/cfgpath"
-	"github.com/basedfs/onet/log"
+	app "github.com/ChainBoost/onet/app"
+	cfgpath "github.com/ChainBoost/onet/cfgpath"
+	"github.com/ChainBoost/onet/log"
 )
 
 const (

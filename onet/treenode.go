@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/basedfs/network"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/onet/network"
 	"go.dedis.ch/kyber/v3"
 	"golang.org/x/xerrors"
 )

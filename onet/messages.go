@@ -1,7 +1,7 @@
 package onet
 
 import (
-	"github.com/basedfs/network"
+	"github.com/ChainBoost/onet/network"
 	"github.com/google/uuid"
 )
 

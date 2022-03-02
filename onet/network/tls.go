@@ -16,7 +16,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet/log"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/sign/schnorr"
 	"go.dedis.ch/kyber/v3/util/encoding"

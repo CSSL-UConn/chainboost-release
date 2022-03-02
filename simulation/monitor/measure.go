@@ -7,7 +7,7 @@ import (
 
 	"sync"
 
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet/log"
 	"golang.org/x/xerrors"
 )
 

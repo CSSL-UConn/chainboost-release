@@ -6,7 +6,7 @@ package monitor
 import (
 	"syscall"
 
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet/log"
 )
 
 // Converts microseconds to seconds.

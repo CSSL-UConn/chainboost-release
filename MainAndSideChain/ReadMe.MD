@@ -32,7 +32,7 @@ Types of Messages:
 ```
 - in the bootstrapping phase, the root node send the following message to all servers containing protocol config parameters:
 ```	
-&HelloBaseDFS
+&HelloChainBoost
 ```
 
 ## Side Chain protocol ## 

@@ -9,8 +9,8 @@ protocol, as in Test Driven Development.
 import (
 	"testing"
 
-	"github.com/basedfs/network"
-	"github.com/basedfs/onet"
+	"github.com/ChainBoost/onet"
+	"github.com/ChainBoost/onet/network"
 )
 
 // tests the root of the trees

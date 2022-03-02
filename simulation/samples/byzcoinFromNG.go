@@ -11,13 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/basedfs/onet"
-	"github.com/basedfs/blockchain"
-	"github.com/basedfs/blockchain/blkparser"
-	"github.com/basedfs/cosi"
-	"github.com/basedfs/onet/log"
-	"github.com/basedfs/_network"
-	"github.com/basedfs/simulation/monitor"
+	"github.com/ChainBoost/onet"
+	"github.com/ChainBoost/blockchain"
+	"github.com/ChainBoost/blockchain/blkparser"
+	"github.com/ChainBoost/cosi"
+	"github.com/ChainBoost/onet/log"
+	"github.com/ChainBoost/_network"
+	"github.com/ChainBoost/simulation/monitor"
 	"go.dedis.ch/kyber/v3"
 )
 

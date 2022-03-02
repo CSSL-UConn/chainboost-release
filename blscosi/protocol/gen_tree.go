@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/basedfs/network"
-	"github.com/basedfs/onet"
+	"github.com/ChainBoost/onet"
+	"github.com/ChainBoost/onet/network"
 )
 
 // BlsProtocolTree represents the subtrees used in the BLS CoSi protocol

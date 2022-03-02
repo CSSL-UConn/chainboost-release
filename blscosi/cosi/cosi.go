@@ -47,13 +47,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/basedfs/network"
+	"github.com/ChainBoost/onet/network"
 	//"github.com/dedis/crypto/config"
 	"go.dedis.ch/kyber/v3/util/key"
 	//"github.com/dedis/crypto/abstract"
 	"go.dedis.ch/kyber/v3"
-	//"github.com/basedfs/MainAndSideChain"
-	"github.com/basedfs/onet"
+	//"github.com/ChainBoost/MainAndSideChain"
+	"github.com/ChainBoost/onet"
 )
 
 // CoSi is the struct that implements one round of a CoSi protocol.

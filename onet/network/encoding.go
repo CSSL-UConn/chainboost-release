@@ -11,7 +11,7 @@ import (
 	"go.dedis.ch/kyber/v3/suites"
 	"golang.org/x/xerrors"
 
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet/log"
 	"github.com/google/uuid"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/protobuf"

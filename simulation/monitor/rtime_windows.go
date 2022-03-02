@@ -6,7 +6,7 @@ package monitor
 import (
 	"syscall"
 
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet/log"
 )
 
 // Returns the system and the user CPU time used by the current process so far.

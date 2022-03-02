@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/basedfs/MainAndSideChain/blockchain"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/MainAndSideChain/blockchain"
+	"github.com/ChainBoost/onet/log"
 	"github.com/xuri/excelize/v2"
 	"golang.org/x/xerrors"
 )
@@ -18,13 +18,13 @@ import (
 	finalMainChainBCInitialization initialize the mainchainbc file based on the config params defined in the config file
 	(.toml file of the protocol) the info we hadn't before and we have now is nodes' info that this function add to the mainchainbc file
 ------------------------------------------------------------------------ */
-func (bz *BaseDFS) finalMainChainBCInitialization() {
+func (bz *ChainBoost) finalMainChainBCInitialization() {
 	var NodeInfoRow []string
 	for _, a := range bz.Roster().List {
 		NodeInfoRow = append(NodeInfoRow, a.String())
 	}
 	var err error
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/mainchainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		xerrors.New("problem creatde while opening bc:   " + err.Error())
 	} else {
@@ -72,7 +72,7 @@ func (bz *BaseDFS) finalMainChainBCInitialization() {
 		panic(err)
 	}
 
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/mainchainbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -86,9 +86,9 @@ each round THE ROOT NODE send a msg to all nodes,
 let other nodes know that the new round has started and the information they need
 from blockchain to check if they are next round's leader
 ------------------------------------------------------------------------ */
-func (bz *BaseDFS) readBCAndSendtoOthers() {
+func (bz *ChainBoost) readBCAndSendtoOthers() {
 	if bz.MCRoundNumber == bz.SimulationRounds {
-		bz.DoneBaseDFS <- true
+		bz.DoneChainBoost <- true
 	}
 	powers, seed := bz.readBCPowersAndSeed()
 	bz.MCRoundNumber = bz.MCRoundNumber + 1
@@ -110,9 +110,9 @@ func (bz *BaseDFS) readBCAndSendtoOthers() {
 }
 
 /* ----------------------------------------------------------------------*/
-func (bz *BaseDFS) readBCPowersAndSeed() (powers map[string]uint64, seed string) {
+func (bz *ChainBoost) readBCPowersAndSeed() (powers map[string]uint64, seed string) {
 	minerspowers := make(map[string]uint64)
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/mainchainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -219,14 +219,14 @@ func (bz *BaseDFS) readBCPowersAndSeed() (powers map[string]uint64, seed string)
 	assuming that servers are honest and have honestly publish por for their actice (not expired) ServAgrs,
 	for each storage server and each of their active ServAgr, add the stored file size to their current power
  ----------------------------------------------------------------------*/
-func (bz *BaseDFS) updateBCPowerRound(LeaderName string, leader bool) {
+func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 	var err error
 	var rows *excelize.Rows
 	var row []string
 	var seed string
 	rowNumber := 0
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/mainchainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -391,7 +391,7 @@ func (bz *BaseDFS) updateBCPowerRound(LeaderName string, leader bool) {
 		panic(err)
 	}
 	// ----
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/mainchainbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -403,12 +403,12 @@ func (bz *BaseDFS) updateBCPowerRound(LeaderName string, leader bool) {
 /* ----------------------------------------------------------------------
     updateBC: this is a connection between first layer of blockchain - ROOT NODE - on the second layer - xlsx file -
 ------------------------------------------------------------------------ */
-func (bz *BaseDFS) updateMainChainBCTransactionQueueCollect() {
+func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 	var err error
 	var rows *excelize.Rows
 	var row []string
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/mainchainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -667,7 +667,7 @@ func (bz *BaseDFS) updateMainChainBCTransactionQueueCollect() {
 	// -------------------------------------------------------------------------------
 
 	// ---
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/mainchainbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -680,14 +680,14 @@ func (bz *BaseDFS) updateMainChainBCTransactionQueueCollect() {
 /* ----------------------------------------------------------------------
     updateBC: this is a connection between first layer of blockchain - ROOT NODE - on the second layer - xlsx file -
 ------------------------------------------------------------------------ */
-func (bz *BaseDFS) updateMainChainBCTransactionQueueTake() {
+func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	var err error
 	var rows [][]string
 	// --- reset
 	bz.FirstQueueWait = 0
 	bz.SecondQueueWait = 0
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/mainchainbc.xlsx")
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -969,7 +969,7 @@ func (bz *BaseDFS) updateMainChainBCTransactionQueueTake() {
 	}
 
 	// ----
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/mainchainbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -983,8 +983,8 @@ func ItoA(s string) {
 	panic("unimplemented")
 }
 
-func (bz *BaseDFS) syncMainChainBCTransactionQueueCollect() {
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/mainchainbc.xlsx")
+func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() {
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
 		panic(err)
@@ -1033,7 +1033,7 @@ func (bz *BaseDFS) syncMainChainBCTransactionQueueCollect() {
 		}
 	}
 	// -------------------------------------------------------------------------------
-	err = f.SaveAs("/Users/raha/Documents/GitHub/basedfs/simulation/manage/simulation/build/mainchainbc.xlsx")
+	err = f.SaveAs("/Users/raha/Documents/GitHub/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)

@@ -5,8 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 
-	"github.com/basedfs/blockchain/blkparser"
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/blockchain/blkparser"
+	"github.com/ChainBoost/onet/log"
 )
 
 type TransactionList struct {

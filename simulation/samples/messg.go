@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet/log"
 	//"github.com/blockchain/blkparser"
 	"github.com/dedis/crypto/abstract"
 	// "go.dedis.ch/kyber/v3/suites" commented to later clear bug

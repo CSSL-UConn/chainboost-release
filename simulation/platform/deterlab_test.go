@@ -3,7 +3,7 @@ package platform
 import (
 	"testing"
 
-	"github.com/basedfs/onet/log"
+	"github.com/ChainBoost/onet/log"
 	"github.com/stretchr/testify/require"
 )
 
