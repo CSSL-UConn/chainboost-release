@@ -7,7 +7,6 @@ import (
 	MainAndSideChain "github.com/chainBoostScale/ChainBoost/MainAndSideChain"
 	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi"
 	"github.com/chainBoostScale/ChainBoost/onet"
-	"github.com/chainBoostScale/ChainBoost/onet/blscosi-sample/protocol"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"github.com/chainBoostScale/ChainBoost/simulation/monitor"
@@ -155,7 +154,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			committee := onet.NewRoster(committeeNodes)
 			var x = *rootSC.Tree.List()[CommitteeWindow]
 			x.RosterIndex = 0
-			BlsCosiSubTrees, _ := protocol.NewBlsProtocolTree(onet.NewTree(committee, &x), NbrSubTrees)
+			BlsCosiSubTrees, _ := BLSCoSi.NewBlsProtocolTree(onet.NewTree(committee, &x), NbrSubTrees)
 			// raha: BLSCoSi protocol
 			// message should be initialized with main chain's genesis block
 			// raha: BlsCosi protocol is created here => call to CreateProtocol() => call an empty Dispatch()
