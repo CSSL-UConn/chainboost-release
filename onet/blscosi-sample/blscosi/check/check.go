@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chainBoostScale/ChainBoost/blscosi"
 	"github.com/chainBoostScale/ChainBoost/onet"
 	app "github.com/chainBoostScale/ChainBoost/onet/app"
+	blscosi "github.com/chainBoostScale/ChainBoost/onet/blscosi-sample"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"go.dedis.ch/kyber/v3/pairing"

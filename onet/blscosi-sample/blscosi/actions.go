@@ -10,9 +10,9 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/chainBoostScale/ChainBoost/blscosi"
-	"github.com/chainBoostScale/ChainBoost/blscosi/blscosi/check"
 	app "github.com/chainBoostScale/ChainBoost/onet/app"
+	blscosi "github.com/chainBoostScale/ChainBoost/onet/blscosi-sample"
+	"github.com/chainBoostScale/ChainBoost/onet/blscosi-sample/blscosi/check"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	cli "github.com/urfave/cli"
 )

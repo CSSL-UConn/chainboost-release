@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/chainBoostScale/ChainBoost/onet"
-	"github.com/chainBoostScale/ChainBoost/onet/blscosi/protocol"
+	"github.com/chainBoostScale/ChainBoost/onet/blscosi-sample/protocol"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"go.dedis.ch/kyber/v3/pairing"

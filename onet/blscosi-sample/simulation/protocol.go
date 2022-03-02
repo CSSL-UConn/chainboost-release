@@ -23,9 +23,9 @@ import (
 	"fmt"
 
 	"github.com/BurntSushi/toml"
-	"github.com/chainBoostScale/ChainBoost/blscosi"
-	""github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi""
 	"github.com/chainBoostScale/ChainBoost/onet"
+	blscosi "github.com/chainBoostScale/ChainBoost/onet/blscosi-sample"
+	"github.com/chainBoostScale/ChainBoost/onet/blscosi-sample/protocol"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"github.com/chainBoostScale/ChainBoost/simulation/monitor"

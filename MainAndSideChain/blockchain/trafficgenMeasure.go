@@ -404,13 +404,6 @@ type SCMetaBlockTransactionList struct {
 	//---
 	Fees [3]byte
 }
-type SCSummeryBlockTransactionList struct {
-	//---
-	TxSummery    []*TxSummery
-	TxSummeryCnt [2]byte
-	//---
-	Fees [3]byte
-}
 type SCBlockHeader struct {
 	SCRoundNumber [3]byte
 	// next round's seed for VRF based leader election which is the output of this round's leader's proof verification: VerifyBytes
@@ -433,27 +426,32 @@ type SCMetaBlock struct {
 	SCBlockHeader              *SCBlockHeader
 	SCMetaBlockTransactionList *SCMetaBlockTransactionList
 }
+type TxSummery struct {
+	//---
+	ServAgrID       []uint64
+	ConfirmedPoRCnt []int
+	//---
+}
+type SCSummeryBlockTransactionList struct {
+	//---
+	TxSummery    []*TxSummery
+	TxSummeryCnt [2]byte
+	//---
+	Fees [3]byte
+}
 type SCSummeryBlock struct {
 	BlockSize                     [3]byte
 	SCBlockHeader                 *SCBlockHeader
 	SCSummeryBlockTransactionList *SCSummeryBlockTransactionList
 }
-type TxSummery struct {
-	//---
-	ServAgrID       uint64
-	ConfirmedPoRCnt [2]byte
-	//---
-}
 
 // side chain's Sync transaction is the result of summerizing the summery block of each epoch in side chain
 type TxSCSync struct {
 	//---
-	// ToDoRaha: for a reason I don't truly remeber this information "should be kept in side chain" in `SCSummeryBlock` and
-	// ofcourse get sent to mainchain via `TxSCSync` to make it's effect on mainchain
-	// check if everything that is kept on summery block designed transaction type `TxSummery` should be sent to mainchain.
-	// if yes, there is no need to have an extra `TxSummery` when we have `TxSCSync`
-	ServAgrID       uint64
-	ConfirmedPoRCnt [2]byte
+	// this information "should be kept in side chain" in `SCSummeryBlock` and
+	// ofcourse be sent to mainchain via `TxSCSync` to make it's effect on mainchain
+	ServAgrID       []uint64
+	ConfirmedPoRCnt []int
 	//---
 }
 
@@ -462,8 +460,8 @@ type TxSCSync struct {
 -------------------------------------------------------------------------------------------- */
 
 // MetaBlockMeasurement compute the size of meta data and every thing other than the transactions inside the meta block
-func MetaBlockMeasurement() (MetaBlockSizeMinusTransactions int) {
-
+func SCBlockMeasurement() (SummeryBlockSizeMinusTransactions int, MetaBlockSizeMinusTransactions int) {
+	// ----- block header sample -----
 	// -- Hash Sample ----
 	sha := sha256.New()
 	if _, err := sha.Write([]byte("a sample seed")); err != nil {
@@ -482,7 +480,30 @@ func MetaBlockMeasurement() (MetaBlockSizeMinusTransactions int) {
 	var samplePublicKey [33]byte
 	//var samplePublicKey kyber.Point
 	var sampleBlsSig BLSCoSi.BlsSignature
-	// ---------------- block sample ----------------
+	// --- VRF
+	t := []byte("first round's seed")
+	VrfPubkey, VrfPrivkey := vrf.VrfKeygen()
+	proof, _ := VrfPrivkey.ProveBytes(t)
+	_, vrfOutput := VrfPubkey.VerifyBytes(proof, t)
+	var nextroundseed [64]byte = vrfOutput
+	var VrfProof [80]byte = proof
+	// --- time
+	ti := []byte(time.Now().String())
+	var timeSample [4]byte
+	copy(timeSample[:], ti[:])
+	// ---
+	x10 := &SCBlockHeader{
+		SCRoundNumber:     SCRoundNumberSample,
+		RoundSeed:         nextroundseed,
+		LeadershipProof:   VrfProof,
+		PreviousBlockHash: hashSample,
+		Timestamp:         timeSample,
+		MerkleRootHash:    hashSample,
+		Version:           Version,
+		LeaderPublicKey:   samplePublicKey,
+		BlsSignature:      sampleBlsSig,
+	}
+	// ---------------- meta block sample ----------------
 	var TxPorArraySample []*TxPoR
 
 	x9 := &SCMetaBlockTransactionList{
@@ -491,30 +512,7 @@ func MetaBlockMeasurement() (MetaBlockSizeMinusTransactions int) {
 		Fees:     feeSample,
 	}
 	// real! TransactionListSize = size.Of(x9) + sum of size of included transactions
-	// --- VRF
-	t := []byte("first round's seed")
-	VrfPubkey, VrfPrivkey := vrf.VrfKeygen()
-	proof, _ := VrfPrivkey.ProveBytes(t)
-	_, vrfOutput := VrfPubkey.VerifyBytes(proof, t)
-	var nextroundseed [64]byte = vrfOutput
-	var VrfProof [80]byte = proof
-	// --- time
-	ti := []byte(time.Now().String())
-	var timeSample [4]byte
-	copy(timeSample[:], ti[:])
-	// ---
 
-	x10 := &SCBlockHeader{
-		SCRoundNumber:     SCRoundNumberSample,
-		RoundSeed:         nextroundseed,
-		LeadershipProof:   VrfProof,
-		PreviousBlockHash: hashSample,
-		Timestamp:         timeSample,
-		MerkleRootHash:    hashSample,
-		Version:           Version,
-		LeaderPublicKey:   samplePublicKey,
-		BlsSignature:      sampleBlsSig,
-	}
 	x11 := &SCMetaBlock{
 		BlockSize:                  BlockSizeSample,
 		SCBlockHeader:              x10,
@@ -523,86 +521,44 @@ func MetaBlockMeasurement() (MetaBlockSizeMinusTransactions int) {
 
 	log.Lvl5(x11)
 
-	MetaBlockSizeMinusTransactions = len(BlockSizeSample) + //x11
-		len(SCRoundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) + len(hashSample) + len(Version) + len(samplePublicKey) + len(sampleBlsSig) + //x10
-		len(cnt) + len(feeSample) //x9
+	MetaBlockSizeMinusTransactions = len(BlockSizeSample) + //x11: SCMetaBlock
+		len(SCRoundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) + 
+		len(hashSample) + len(Version) + len(samplePublicKey) + len(sampleBlsSig) + //x10: SCBlockHeader
+		len(cnt) + len(feeSample) //x9: SCMetaBlockTransactionList
 
 	// ---
 	log.Lvl3("Meta Block Size Minus Transactions is: ", MetaBlockSizeMinusTransactions)
 
-	return MetaBlockSizeMinusTransactions
-}
-
-// SummeryBlockMeasurement compute the size of meta data and every thing other than the transactions inside the summery block
-func SummeryBlockMeasurement() (SummeryBlockSizeMinusTransactions int) {
-
-	// -- Hash Sample ----
-	sha := sha256.New()
-	if _, err := sha.Write([]byte("a sample seed")); err != nil {
-		log.Error("Couldn't hash header:", err)
-		log.Lvl2("Panic Raised:\n\n")
-		panic(err)
-	}
-	hash := sha.Sum(nil)
-	var hashSample [32]uint8
-	copy(hashSample[:], hash[:])
-	// --
-	var Version [4]byte
-	var cnt [2]byte
-	var feeSample, BlockSizeSample [3]byte
-	var SCRoundNumberSample [3]byte
-	var samplePublicKey [33]byte
-	var sampleBlsSig BLSCoSi.BlsSignature
-	// ---------------- block sample ----------------
+	//------------------------------------- Summery block -----------------------------
+	// ---------------- summery block sample ----------------
 	var TxSummeryArraySample []*TxSummery
 
-	x9 := &SCSummeryBlockTransactionList{
+	x12 := &SCSummeryBlockTransactionList{
 		//---
 		TxSummery:    TxSummeryArraySample,
 		TxSummeryCnt: cnt,
 		Fees:         feeSample,
 	}
-	// real! TransactionListSize = size.Of(x9) + sum of size of included transactions
-	// --- VRF
-	t := []byte("first round's seed")
-	VrfPubkey, VrfPrivkey := vrf.VrfKeygen()
-	proof, _ := VrfPrivkey.ProveBytes(t)
-	_, vrfOutput := VrfPubkey.VerifyBytes(proof, t)
-	var nextroundseed [64]byte = vrfOutput
-	var VrfProof [80]byte = proof
-	// --- time
-	ti := []byte(time.Now().String())
-	var timeSample [4]byte
-	copy(timeSample[:], ti[:])
-	// ---
-
-	x10 := &SCBlockHeader{
-		SCRoundNumber:     SCRoundNumberSample,
-		RoundSeed:         nextroundseed,
-		LeadershipProof:   VrfProof,
-		PreviousBlockHash: hashSample,
-		Timestamp:         timeSample,
-		MerkleRootHash:    hashSample,
-		Version:           Version,
-		LeaderPublicKey:   samplePublicKey,
-		BlsSignature:      sampleBlsSig,
-	}
-	x11 := &SCSummeryBlock{
+	x13 := &SCSummeryBlock {
 		BlockSize:                     BlockSizeSample,
 		SCBlockHeader:                 x10,
-		SCSummeryBlockTransactionList: x9,
+		SCSummeryBlockTransactionList: x12,
 	}
+	log.LLvl5(x13)
+	SummeryBlockSizeMinusTransactions = len(BlockSizeSample) + //x13: SCSummeryBlock
+		len(SCRoundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) + len(hashSample) + 
+		len(Version) + len(samplePublicKey) + len(sampleBlsSig) + //x10: SCBlockHeader
+		len(cnt) + len(feeSample) //x12: SCSummeryBlockTransactionList
+	log.Lvl3("Summery Block Size Minus Transactions is: ", SummeryBlockSizeMinusTransactions)
 
-	log.Lvl5(x11)
-
-	SummeryBlockSizeMinusTransactions = len(BlockSizeSample) + //x11
-		len(SCRoundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) + len(hashSample) + len(Version) + len(samplePublicKey) + len(sampleBlsSig) + //x10
-		len(cnt) + len(feeSample) //x9
-	// ---
-	log.Lvl3("Block Size Minus Transactions is: ", SummeryBlockSizeMinusTransactions)
-
-	return SummeryBlockSizeMinusTransactions
+	return SummeryBlockSizeMinusTransactions, MetaBlockSizeMinusTransactions
 }
 
-// TransactionMeasurement computes the size of sync transaction
-// func SyncTransactionMeasurement() (SyncTxSize int) {}
+// SyncTransactionMeasurement computes the size of sync transaction
+func SyncTransactionMeasurement() (SyncTxSize int) {
+	return 
+}
+func SCSummeryTxMeasurement() (SummTxNum int) {
+	return 
+}
+

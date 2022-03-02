@@ -77,9 +77,9 @@ type ChainBoost struct {
 	// channel used to let all servers that the protocol has started
 	HelloChan chan HelloChan
 	// channel used by each round's leader to let all servers that a new round has come
-	NewRoundChan chan NewRoundChan
+	MainChainNewRoundChan chan MainChainNewRoundChan
 	// channel to let nodes that the next round's leader has been specified
-	NewLeaderChan chan NewLeaderChan
+	MainChainNewLeaderChan chan MainChainNewLeaderChan
 	// the suite we use
 	//  suite network.Suite
 	// to match the suit in blscosi
@@ -178,7 +178,7 @@ func (bz *ChainBoost) Dispatch() error {
 	for running {
 		select {
 		// -----------------------------------------------------------------------------
-		// ******** ALL nodes recieve this message to join the protocol and get the config values set
+		// ******* ALL nodes recieve this message to join the protocol and get the config values set
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.HelloChan:
 			log.Lvl2(bz.TreeNode().Name(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
@@ -205,24 +205,24 @@ func (bz *ChainBoost) Dispatch() error {
 			}
 			bz.helloChainBoost()
 		// -----------------------------------------------------------------------------
-		// ******** ALL nodes recieve this message to sync rounds
+		// *** MC *** ALL nodes recieve this message to sync rounds
 		// -----------------------------------------------------------------------------
-		case msg := <-bz.NewRoundChan:
+		case msg := <-bz.MainChainNewRoundChan:
 			bz.MCRoundNumber = bz.MCRoundNumber + 1
 			log.Lvl4(bz.Name(), " round number ", bz.MCRoundNumber, " started at ", time.Now().Format(time.RFC3339))
 			bz.MainChainCheckLeadership(msg)
 		// -----------------------------------------------------------------------------
-		// ******* just the ROOT NODE (blockchain layer one) recieve this msg
+		// *** MC *** just the ROOT NODE (blockchain layer one) recieve this msg
 		// -----------------------------------------------------------------------------
-		case msg := <-bz.NewLeaderChan:
+		case msg := <-bz.MainChainNewLeaderChan:
 			bz.RootPreNewRound(msg)
 		// -----------------------------------------------------------------------------
-		// next side chain's leader recieves this message
+		// *** SC *** next side chain's leader recieves this message
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.RtLSideChainNewRoundChan:
 			bz.SideChainLeaderPreNewRound(msg)
 		// -----------------------------------------------------------------------------
-		// ******* just the ROOT NODE (blockchain layer one) recieve this msg
+		// *** SC *** just the ROOT NODE (blockchain layer one) recieve this msg
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.LtRSideChainNewRoundChan:
 			bz.RootPostNewRound(msg)
@@ -274,7 +274,7 @@ func (bz *ChainBoost) startTimer(MCRoundNumber int) {
 		// bz.hasLeader is for when the round number has'nt changed but the leader has been announced
 		if bz.IsRoot() && bz.MCRoundNumber == MCRoundNumber && !bz.HasLeader {
 			log.Lvl2("No leader for round number ", bz.MCRoundNumber, "an empty block is added")
-			bz.NewLeaderChan <- NewLeaderChan{bz.TreeNode(), NewLeader{ /*Leaderinfo: bz.TreeNode(), */ MCRoundNumber: bz.MCRoundNumber}}
+			bz.MainChainNewLeaderChan <- MainChainNewLeaderChan{bz.TreeNode(), NewLeader{ /*Leaderinfo: bz.TreeNode(), */ MCRoundNumber: bz.MCRoundNumber}}
 		}
 	}
 }
@@ -300,7 +300,7 @@ func (bz *ChainBoost) startTimer(MCRoundNumber int) {
 /* func (bz *ChainBoost) checkLeadership(power uint64, seed string) {
 	for {
 		select {
-		case <-bz.NewLeaderChan:
+		case <-bz.MainChainNewLeaderChan:
 			return
 		default:
 

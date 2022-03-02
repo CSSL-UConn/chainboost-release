@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi"
+	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/onet/network"
@@ -135,8 +136,11 @@ func (bz *ChainBoost) RootPostNewRound(msg LtRSideChainNewRoundChan) error {
 
 		bz.BlsCosi.BlockType = "Summery Block"
 		// from bc: update msg size with the "summery block"'s block size on side chain
-		//todonow: a function that measure summery block size //ToDoRaha: what is the limitation for the summery block capacity?
-		bz.BlsCosi.Msg = []byte{0xFF} // Msg is the summery block
+		//measuring summery block size
+		SummeryBlockSizeMinusTransactions, _ := blockchain.SCBlockMeasurement()
+		blocksize := SummeryBlockSizeMinusTransactions + blockchain.SCSummeryTxMeasurement()
+		s := make([]byte, blocksize, blocksize)
+		bz.BlsCosi.Msg = append(bz.BlsCosi.Msg, s...) // Msg is the meta block
 
 		// in this round in which a summery block will be generated, new transactions will be added to the queue but not taken
 		bz.updateSideChainBCRound(msg.Name())
@@ -163,11 +167,11 @@ func (bz *ChainBoost) RootPostNewRound(msg LtRSideChainNewRoundChan) error {
 		// next meta block on side chain blockchian is added by the root node
 		bz.updateSideChainBCRound(msg.Name())
 		bz.updateSideChainBCTransactionQueueCollect()
-		bz.updateSideChainBCTransactionQueueTake()
+		blocksize := bz.updateSideChainBCTransactionQueueTake()
 		// from bc: update msg size with next "meta block"'s block size on side chain
-		bz.BlsCosi.Msg = []byte{0xFF} // Msg is the meta block
+		s := make([]byte, blocksize, blocksize)
+		bz.BlsCosi.Msg = append(bz.BlsCosi.Msg, s...) // Msg is the meta block
 		bz.BlsCosi.BlockType = "Meta Block"
-		//todonow: fill the message with the actual taken size
 
 		// increase side chain round number
 		bz.SCRoundNumber = bz.SCRoundNumber + 1
@@ -224,7 +228,7 @@ if a leader is selected multiple times during an epoch, he will nnot be added mu
 -----------------------------------------------
 --- updating the CommitteeNodesTreeNodeID
 ----------------------------------------------- */
-func (bz *ChainBoost) UpdateSideChainCommittee(msg NewLeaderChan) {
+func (bz *ChainBoost) UpdateSideChainCommittee(msg MainChainNewLeaderChan) {
 	t := 0
 	for _, a := range bz.CommitteeNodesTreeNodeID {
 		if a != msg.LeaderTreeNodeID {

@@ -303,7 +303,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 /* ----------------------------------------------------------------------
     updateBC: this is a connection between first layer of blockchain - ROOT NODE - on the second layer - xlsx file -
 ------------------------------------------------------------------------ */
-func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() {
+func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 	var err error
 	var rows [][]string
 	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.MCRoundPerEpoch)))
@@ -320,7 +320,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() {
 
 	var accumulatedTxSize, txsize int
 	blockIsFull := false
-	BlockSizeMinusTransactions := blockchain.MetaBlockMeasurement()
+	_, BlockSizeMinusTransactions := blockchain.SCBlockMeasurement()
 	var TakeTime time.Time
 
 	/* -----------------------------------------------------------------------------
@@ -498,4 +498,6 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() {
 		log.Lvl3("closing side bc")
 		log.Lvl2("Final result: Finished taking transactions from side chain queue (FIFO) into new block in round number ", bz.SCRoundNumber, "while main chain round number is: ", bz.MCRoundNumber)
 	}
+	blocksize := accumulatedTxSize + BlockSizeMinusTransactions
+	return blocksize
 }

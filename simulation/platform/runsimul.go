@@ -385,14 +385,14 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 	if err := n.RegisterChannel(&bz.HelloChan); err != nil {
 		return bz, err
 	}
-	if err := n.RegisterChannel(&bz.NewRoundChan); err != nil {
+	if err := n.RegisterChannel(&bz.MainChainNewRoundChan); err != nil {
 		return bz, err
 	}
-	if err := n.RegisterChannel(&bz.NewLeaderChan); err != nil {
+	if err := n.RegisterChannel(&bz.MainChainNewLeaderChan); err != nil {
 		return bz, err
 	}
 
-	// if err := n.RegisterChannelLength(&bz.NewLeaderChan, len(bz.Tree().List())); err != nil {
+	// if err := n.RegisterChannelLength(&bz.MainChainNewLeaderChan, len(bz.Tree().List())); err != nil {
 	// 	log.Error("Couldn't register channel:    ", err)
 	// }
 

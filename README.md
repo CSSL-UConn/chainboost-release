@@ -19,7 +19,7 @@ note: running on an OS other than IOS needs a change in c extention config code
 - Open a terminal in the directory where the folder ChainBoost is located
 - run the following command: 
 ```
-/usr/local/go/bin/go test -timeout 50000s -run ^TestSimulation$ github.com/chainBoostScale/ChainBoost/simulation/manage/simulation
+/usr/local/go/bin/go test -timeout 30000s -run ^TestSimulation$ github.com/chainBoostScale/ChainBoost/simulation/manage/simulation
 ```
 
 - this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBoostScale/ChainBoost/blob/master/simulation/manage/simulation/simul_test.go))

@@ -21,7 +21,7 @@ type NewLeader struct {
 	LeaderTreeNodeID onet.TreeNodeID
 	MCRoundNumber    int
 }
-type NewLeaderChan struct {
+type MainChainNewLeaderChan struct {
 	*onet.TreeNode
 	NewLeader
 }
@@ -30,7 +30,7 @@ type NewRound struct {
 	Seed  string
 	Power uint64
 }
-type NewRoundChan struct {
+type MainChainNewRoundChan struct {
 	*onet.TreeNode
 	NewRound
 }
@@ -48,7 +48,7 @@ func (bz *ChainBoost) StartMainChainProtocol() {
 	time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
 	bz.readBCAndSendtoOthers()
 }
-func (bz *ChainBoost) RootPreNewRound(msg NewLeaderChan) {
+func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 	// -----------------------------------------------------
 	// rounds without a leader: in this case the leader info is filled with root node's info, transactions are going to be collected normally but
 	// since the block is empty, no transaction is going to be taken from queues => leader = false
@@ -85,8 +85,8 @@ func (bz *ChainBoost) RootPreNewRound(msg NewLeaderChan) {
 	//waiting for the time of round duration
 	time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
 	// empty list of elected leaders  in this round
-	for len(bz.NewLeaderChan) > 0 {
-		<-bz.NewLeaderChan
+	for len(bz.MainChainNewLeaderChan) > 0 {
+		<-bz.MainChainNewLeaderChan
 	}
 	// announce new round and give away required checkleadership info to nodes
 	bz.readBCAndSendtoOthers()
@@ -94,7 +94,7 @@ func (bz *ChainBoost) RootPreNewRound(msg NewLeaderChan) {
 }
 
 //
-func (bz *ChainBoost) MainChainCheckLeadership(msg NewRoundChan) error {
+func (bz *ChainBoost) MainChainCheckLeadership(msg MainChainNewRoundChan) error {
 	var vrfOutput [64]byte
 	toBeHashed := []byte(msg.Seed)
 	proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
@@ -108,7 +108,7 @@ func (bz *ChainBoost) MainChainCheckLeadership(msg NewRoundChan) error {
 	if err != nil {
 		// log.Lvl2("Panic Raised:\n\n")
 		// panic(err)
-		return xerrors.New("problem creatde after recieving msg from NewRoundChan:   " + err.Error())
+		return xerrors.New("problem creatde after recieving msg from MainChainNewRoundChan:   " + err.Error())
 	}
 	// -----------
 	// the criteria for selecting the leader
