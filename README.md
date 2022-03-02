@@ -47,14 +47,14 @@ Config File "ChainBoost.toml" is located under the following directory:
 The following packages provide core functionality to `ChainBoost`:
 
 --------------------------------------------------------------------------------------------------
-1. these modules from Dedis Lab are used with few modifications: `Onet` (including `Network`, `Overlay`, and `Log`) and `Simulation` 
-2. This module from Dedis Lab is used intact: Kyber
-3. This module from Algorand is used with some modifications: `VRF`
+1. these modules from Dedis Lab are used with few modifications: [Onet](https://github.com/chainBoostScale/ChainBoost/tree/master/onet) (including `Network`, `Overlay`, and `Log`) and `Simulation` (See: [Onet ReadMe File](https://github.com/dedis/onet/blob/master/README.md))
+2. This module is used intact: `Kyber` from Dedis Lab (See: [Kyber ReadMe File](https://github.com/dedis/kyber/blob/master/README.md)) and excelize (See: [Excelize ReadMe File](https://github.com/qax-os/excelize/blob/master/README.md)) 
+3. This module from Algorand is used with some modifications: [VRF](https://github.com/chainBoostScale/ChainBoost/tree/master/vrf) (See: [VRF ReadMe File](https://github.com/chainBoostScale/ChainBoost/blob/master/vrf/ReadMe.MD))
 4. Added modules for ChainBoost:
-- `PoR`
-- `MainandSideChain` including
+- [PoR](https://github.com/chainBoostScale/ChainBoost/tree/master/por) (See: [PoR ReadMe File](https://github.com/chainBoostScale/ChainBoost/blob/master/por/README.md))
+- [MainandSideChain](https://github.com/chainBoostScale/ChainBoost/tree/master/MainAndSideChain) including (See: [MainandSideChain ReadMe File](https://github.com/chainBoostScale/ChainBoost/blob/master/MainAndSideChain/ReadMe.MD))
   - `Blockchain` package for tx, block structure, measurement, management of tx queues, management of blockchain in two layers 
-  - main and side chain's `Consensus protocol` (`BlsCosi` is used for sideChain. part of it is brought from Dedis’s `BlsCosi` with some modifications applied)
+  - main and side chain's `Consensus protocol` (`BlsCosi` is used for sideChain. part of it is brought from Dedis’s `BlsCosi` (See: [BLSCosSi ReadMe file](https://github.com/dedis/cothority/blob/main/blscosi/README.md) with some modifications applied)
 --------------------------------------------------------------------------------------------------
 
 <!--FootNote-->
