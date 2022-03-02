@@ -522,7 +522,7 @@ func SCBlockMeasurement() (SummeryBlockSizeMinusTransactions int, MetaBlockSizeM
 	log.Lvl5(x11)
 
 	MetaBlockSizeMinusTransactions = len(BlockSizeSample) + //x11: SCMetaBlock
-		len(SCRoundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) + 
+		len(SCRoundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) +
 		len(hashSample) + len(Version) + len(samplePublicKey) + len(sampleBlsSig) + //x10: SCBlockHeader
 		len(cnt) + len(feeSample) //x9: SCMetaBlockTransactionList
 
@@ -539,14 +539,14 @@ func SCBlockMeasurement() (SummeryBlockSizeMinusTransactions int, MetaBlockSizeM
 		TxSummeryCnt: cnt,
 		Fees:         feeSample,
 	}
-	x13 := &SCSummeryBlock {
+	x13 := &SCSummeryBlock{
 		BlockSize:                     BlockSizeSample,
 		SCBlockHeader:                 x10,
 		SCSummeryBlockTransactionList: x12,
 	}
 	log.LLvl5(x13)
 	SummeryBlockSizeMinusTransactions = len(BlockSizeSample) + //x13: SCSummeryBlock
-		len(SCRoundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) + len(hashSample) + 
+		len(SCRoundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) + len(hashSample) +
 		len(Version) + len(samplePublicKey) + len(sampleBlsSig) + //x10: SCBlockHeader
 		len(cnt) + len(feeSample) //x12: SCSummeryBlockTransactionList
 	log.Lvl3("Summery Block Size Minus Transactions is: ", SummeryBlockSizeMinusTransactions)
@@ -556,9 +556,8 @@ func SCBlockMeasurement() (SummeryBlockSizeMinusTransactions int, MetaBlockSizeM
 
 // SyncTransactionMeasurement computes the size of sync transaction
 func SyncTransactionMeasurement() (SyncTxSize int) {
-	return 
+	return
 }
-func SCSummeryTxMeasurement() (SummTxNum int) {
-	return 
+func SCSummeryTxMeasurement(SummTxNum int) (SummTxsSizeInSummBlock int) {
+	return
 }
-

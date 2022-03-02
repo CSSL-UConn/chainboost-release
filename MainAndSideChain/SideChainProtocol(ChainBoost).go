@@ -138,7 +138,9 @@ func (bz *ChainBoost) RootPostNewRound(msg LtRSideChainNewRoundChan) error {
 		// from bc: update msg size with the "summery block"'s block size on side chain
 		//measuring summery block size
 		SummeryBlockSizeMinusTransactions, _ := blockchain.SCBlockMeasurement()
-		blocksize := SummeryBlockSizeMinusTransactions + blockchain.SCSummeryTxMeasurement()
+		//ToDoNow
+		SummTxsSizeInSummBlock := blockchain.SCSummeryTxMeasurement(1)
+		blocksize := SummeryBlockSizeMinusTransactions + SummTxsSizeInSummBlock
 		s := make([]byte, blocksize, blocksize)
 		bz.BlsCosi.Msg = append(bz.BlsCosi.Msg, s...) // Msg is the meta block
 
