@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi"
-	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/onet/network"
@@ -18,6 +17,7 @@ import (
 type RtLSideChainNewRound struct {
 	SCRoundNumber            int
 	CommitteeNodesTreeNodeID []onet.TreeNodeID
+	blocksize                int
 }
 type RtLSideChainNewRoundChan struct {
 	*onet.TreeNode
@@ -26,6 +26,7 @@ type RtLSideChainNewRoundChan struct {
 type LtRSideChainNewRound struct { //fix this
 	NewRound      bool
 	SCRoundNumber int
+	SCSig         BLSCoSi.BlsSignature
 }
 type LtRSideChainNewRoundChan struct {
 	*onet.TreeNode
@@ -48,7 +49,7 @@ func (bz *ChainBoost) DispatchProtocol() error {
 
 		// --------------------------------------------------------
 		// message recieved from BLSCoSi (SideChain):
-		// ******* just the current side chain's leader on recieve this msg
+		// ******* just the current side chain's "LEADER" recieves this msg
 		// --------------------------------------------------------
 		case sig := <-bz.BlsCosi.FinalSignature:
 			if err := BLSCoSi.BdnSignature(sig).Verify(bz.BlsCosi.Suite, bz.BlsCosi.Msg, bz.BlsCosi.SubTrees[0].Roster.Publics()); err == nil {
@@ -56,6 +57,7 @@ func (bz *ChainBoost) DispatchProtocol() error {
 				err := bz.SendTo(bz.Root(), &LtRSideChainNewRound{
 					NewRound:      true,
 					SCRoundNumber: bz.SCRoundNumber,
+					SCSig:         sig,
 				})
 				if err != nil {
 					return xerrors.New("can't send new round msg to root" + err.Error())
@@ -116,6 +118,10 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	} else {
 		return xerrors.New("Problem in cosi protocol run:   " + err.Error())
 	}
+	// ---
+	// from bc: update msg size with next block size on side chain
+	s := make([]byte, msg.blocksize, msg.blocksize)
+	bz.BlsCosi.Msg = append(bz.BlsCosi.Msg, s...) // Msg is the meta block
 	// ----
 	err = bz.BlsCosi.Start()
 	if err != nil {
@@ -125,30 +131,22 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 }
 
 //
-func (bz *ChainBoost) RootPostNewRound(msg LtRSideChainNewRoundChan) error {
+func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) error {
 	var err error
 	bz.SCRoundNumber = msg.SCRoundNumber
-
+	bz.SCSig = msg.SCSig
 	// side chain round duration pause
 	time.Sleep(time.Duration(bz.SCRoundDuration) * time.Second)
-
+	var blocksize int
 	if bz.MCRoundDuration*bz.MCRoundPerEpoch/bz.SCRoundDuration == bz.SCRoundNumber {
 
-		bz.BlsCosi.BlockType = "Summery Block"
-		// from bc: update msg size with the "summery block"'s block size on side chain
-		//measuring summery block size
-		SummeryBlockSizeMinusTransactions, _ := blockchain.SCBlockMeasurement()
-		//ToDoNow
-		SummTxsSizeInSummBlock := blockchain.SCSummeryTxMeasurement(1)
-		blocksize := SummeryBlockSizeMinusTransactions + SummTxsSizeInSummBlock
-		s := make([]byte, blocksize, blocksize)
-		bz.BlsCosi.Msg = append(bz.BlsCosi.Msg, s...) // Msg is the meta block
-
+		bz.BlsCosi.BlockType = "Summery Block" // just to know!
+		// issueing a sync transaction from last submitted summery block to the main chain
+		blocksize = bz.syncMainChainBCTransactionQueueCollect()
+		//update the last row in round table with summery block's size
 		// in this round in which a summery block will be generated, new transactions will be added to the queue but not taken
-		bz.updateSideChainBCRound(msg.Name())
+		bz.updateSideChainBCRound(msg.Name(), blocksize)
 		bz.updateSideChainBCTransactionQueueCollect()
-		//todonow: add a take function that update the last row in round table with summery block's size ands total number of summerized (por) tx.s
-		//
 		// reset side chain round number
 		bz.SCRoundNumber = 1 // in side chain round number zero the summery blocks are published in side chain
 		// ------------- Epoch changed -----------
@@ -163,17 +161,14 @@ func (bz *ChainBoost) RootPostNewRound(msg LtRSideChainNewRoundChan) error {
 		for i, a := range bz.CommitteeNodesTreeNodeID {
 			log.Lvl2("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
 		}
-		// issueing a sync transaction from last submitted meta blocks (i.e. last submitted summery block) to the main chain
-		bz.syncMainChainBCTransactionQueueCollect()
+
 	} else {
 		// next meta block on side chain blockchian is added by the root node
-		bz.updateSideChainBCRound(msg.Name())
+		bz.updateSideChainBCRound(msg.Name(), 0) // we dont use blocksize param bcz when we are generating meta block the block size is measured and added in the func: updateSideChainBCTransactionQueueTake
+
 		bz.updateSideChainBCTransactionQueueCollect()
-		blocksize := bz.updateSideChainBCTransactionQueueTake()
-		// from bc: update msg size with next "meta block"'s block size on side chain
-		s := make([]byte, blocksize, blocksize)
-		bz.BlsCosi.Msg = append(bz.BlsCosi.Msg, s...) // Msg is the meta block
-		bz.BlsCosi.BlockType = "Meta Block"
+		blocksize = bz.updateSideChainBCTransactionQueueTake()
+		bz.BlsCosi.BlockType = "Meta Block" // just to know!
 
 		// increase side chain round number
 		bz.SCRoundNumber = bz.SCRoundNumber + 1
@@ -184,6 +179,7 @@ func (bz *ChainBoost) RootPostNewRound(msg LtRSideChainNewRoundChan) error {
 	err = bz.SendTo(bz.Tree().Search(bz.NextSideChainLeader), &RtLSideChainNewRound{
 		SCRoundNumber:            bz.SCRoundNumber,
 		CommitteeNodesTreeNodeID: bz.CommitteeNodesTreeNodeID,
+		blocksize:                blocksize,
 	})
 	if err != nil {
 		log.Lvl2(bz.Name(), "can't send new side chain round msg to", bz.Tree().Search(bz.NextSideChainLeader).Name())

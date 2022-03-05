@@ -137,6 +137,7 @@ type ChainBoost struct {
 	BlsCosiStarted bool
 	// -- meta block temp summery
 	SummPoRTxs map[int]int // server agreement ID --> number of not summerized submitted PoRs in the meta blocks for this agreement
+	SCSig      BLSCoSi.BlsSignature
 }
 
 /* ----------------------------------- FUNCTIONS -------------------------------------------------
@@ -225,7 +226,7 @@ func (bz *ChainBoost) Dispatch() error {
 		// *** SC *** just the ROOT NODE (blockchain layer one) recieve this msg
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.LtRSideChainNewRoundChan:
-			bz.RootPostNewRound(msg)
+			bz.SideChainRootPostNewRound(msg)
 		}
 		// running = false //ToDoRaha: do something about running!
 	}

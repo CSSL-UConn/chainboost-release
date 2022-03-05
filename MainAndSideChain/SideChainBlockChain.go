@@ -13,7 +13,7 @@ import (
 	updateSideChainBC:  when a side chain leader submit a meta block, the side chain blockchain is
 	updated by the root node to reflelct an added meta-block
  ----------------------------------------------------------------------*/
-func (bz *ChainBoost) updateSideChainBCRound(LeaderName string) {
+func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.MCRoundPerEpoch)))
 	var err error
 	// var rows *excelize.Rows
@@ -107,8 +107,16 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string) {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
-
-	// ----
+	// --------------------------------------------------------------------
+	if blocksize != 0 { // blocksize is measured before, while issuing the sync transaction and it is passed from func: syncMainChainBCTransactionQueueCollect
+		axisBlockSize := "B" + currentRow
+		err = f.SetCellValue("RoundTable", axisBlockSize, blocksize)
+		if err != nil {
+			log.Lvl2("Panic Raised:\n\n")
+			panic(err)
+		}
+	}
+	// --------------------------------------------------------------------
 	err = f.SaveAs("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
@@ -116,6 +124,7 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string) {
 	} else {
 		log.Lvl3("closing side chain  bc")
 	}
+	updateSideChainBCOverallEvaluation(currentRow, bz.SCRoundNumber)
 }
 
 /* ----------------------------------------------------------------------
@@ -252,7 +261,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 	s := make([]interface{}, len(newTransactionRow)) //ToDoRaha:  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
 
 	// this part can be moved to protocol initialization
-	var PorTxSize int
+	var PorTxSize uint32
 	PorTxSize, _, _, _, _ = blockchain.TransactionMeasurement(bz.SectorNumber, bz.SimulationSeed)
 	// ---
 	// map transactionQueue:
@@ -267,7 +276,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 			// 50008 means 50000 + 8 which means epoch number 5 scround number 8
 			newTransactionRow[3] = strconv.Itoa(bz.SCRoundNumber)
 			newTransactionRow[0] = "TxPor"
-			newTransactionRow[1] = strconv.Itoa(PorTxSize)
+			newTransactionRow[1] = strconv.Itoa(int(PorTxSize))
 			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
 		}
 
@@ -320,7 +329,11 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 
 	var accumulatedTxSize, txsize int
 	blockIsFull := false
-	_, BlockSizeMinusTransactions := blockchain.SCBlockMeasurement()
+	_, MetaBlockSizeMinusTransactions := blockchain.SCBlockMeasurement()
+	// --------------- adding bls signature size  -----------------
+	log.LLvl1("Size of bls signature:", len(bz.SCSig))
+	MetaBlockSizeMinusTransactions = MetaBlockSizeMinusTransactions + len(bz.SCSig)
+	// ------------------------------------------------------------
 	var TakeTime time.Time
 
 	/* -----------------------------------------------------------------------------
@@ -390,7 +403,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 				if txsize, err = strconv.Atoi(colCell); err != nil {
 					log.Lvl2("Panic Raised:\n\n")
 					panic(err)
-				} else if accumulatedTxSize+txsize <= bz.SideChainBlockSize-BlockSizeMinusTransactions {
+				} else if accumulatedTxSize+txsize <= bz.SideChainBlockSize-MetaBlockSizeMinusTransactions {
 					accumulatedTxSize = accumulatedTxSize + txsize
 					if row[0] == "TxPor" {
 						log.Lvl3("a por tx added to block number", bz.MCRoundNumber, " from the queue")
@@ -432,14 +445,14 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 
 	//-- accumulated block size
 	// --- total throughput
-	f.SetCellValue("RoundTable", axisBlockSize, accumulatedTxSize+BlockSizeMinusTransactions)
+	f.SetCellValue("RoundTable", axisBlockSize, accumulatedTxSize+MetaBlockSizeMinusTransactions)
 	if TotalNumTxsInFirstQueue != 0 {
 		f.SetCellValue("RoundTable", axisAveFirstQueueWait, bz.SideChainQueueWait/TotalNumTxsInFirstQueue)
 	} else {
 		f.SetCellValue("RoundTable", axisAveFirstQueueWait, 0)
 	}
 
-	log.Lvl3("final result SC: \n", " this round's block size: ", accumulatedTxSize+BlockSizeMinusTransactions)
+	log.Lvl3("final result SC: \n", " this round's block size: ", accumulatedTxSize+MetaBlockSizeMinusTransactions)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -447,12 +460,33 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 
 	//log.Lvl3("In total in round number ", bz.SCRoundNumber+10000 * epochNumber,
 	//	"\n number of all types of submitted txs is: ", TotalNumTxsInFirstQueue)
+	// ----
+	err = f.SaveAs("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	} else {
+		log.Lvl3("closing side bc")
+	}
+	// fill OverallEvaluation Sheet
+	updateSideChainBCOverallEvaluation(CurrentRow, bz.SCRoundNumber)
+	blocksize := accumulatedTxSize + MetaBlockSizeMinusTransactions
+	return blocksize
+}
 
-	// --------------------------------------------------------------------------------
-	// ----------------------- OverallEvaluation Sheet --------------------
-	// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+// ----------------------- OverallEvaluation Sheet --------------------
+// --------------------------------------------------------------------------------
+func updateSideChainBCOverallEvaluation(CurrentRow string, SCRoundNumber int) {
+	var err error
+	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	if err != nil {
+		log.Lvl2("Raha: ", err)
+		panic(err)
+	} else {
+		log.Lvl3("opening side chain bc")
+	}
 	// ---- overall results
-
 	axisRound := "A" + CurrentRow
 	axisBCSize := "B" + CurrentRow
 	axisOverallPoRTX := "C" + CurrentRow
@@ -460,7 +494,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 	axisOverallBlockSpaceFull := "E" + CurrentRow
 	var FormulaString string
 
-	err = f.SetCellValue("OverallEvaluation", axisRound, bz.SCRoundNumber)
+	err = f.SetCellValue("OverallEvaluation", axisRound, SCRoundNumber)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
@@ -496,8 +530,5 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 		panic(err)
 	} else {
 		log.Lvl3("closing side bc")
-		log.Lvl2("Final result: Finished taking transactions from side chain queue (FIFO) into new block in round number ", bz.SCRoundNumber, "while main chain round number is: ", bz.MCRoundNumber)
 	}
-	blocksize := accumulatedTxSize + BlockSizeMinusTransactions
-	return blocksize
 }

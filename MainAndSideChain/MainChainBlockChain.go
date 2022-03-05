@@ -546,7 +546,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 	s := make([]interface{}, len(newTransactionRow)) //ToDoRaha:  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
 
 	// this part can be moved to protocol initialization
-	var PorTxSize, ServAgrProposeTxSize, PayTxSize, StoragePayTxSize, ServAgrCommitTxSize int
+	var PorTxSize, ServAgrProposeTxSize, PayTxSize, StoragePayTxSize, ServAgrCommitTxSize uint32
 	PorTxSize, ServAgrProposeTxSize, PayTxSize, StoragePayTxSize, ServAgrCommitTxSize = blockchain.TransactionMeasurement(bz.SectorNumber, bz.SimulationSeed)
 	// ---
 	addCommitTx := false
@@ -561,21 +561,21 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 			newTransactionRow[2] = time.Now().Format(time.RFC3339)
 			newTransactionRow[3] = strconv.Itoa(bz.MCRoundNumber)
 			newTransactionRow[0] = "TxServAgrPropose"
-			newTransactionRow[1] = strconv.Itoa(ServAgrProposeTxSize)
+			newTransactionRow[1] = strconv.Itoa(int(ServAgrProposeTxSize))
 			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1]) // corresponding ServAgr id
 			addCommitTx = true                                                           // another row will be added containing "TxServAgrCommit"
 		} else if transactionQueue[a.Address.String()][3] == 1 { // TxStoragePayment required
 			newTransactionRow[2] = time.Now().Format(time.RFC3339)
 			newTransactionRow[3] = strconv.Itoa(bz.MCRoundNumber)
 			newTransactionRow[0] = "TxStoragePayment"
-			newTransactionRow[1] = strconv.Itoa(StoragePayTxSize)
+			newTransactionRow[1] = strconv.Itoa(int(StoragePayTxSize))
 			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
 			// && bz.SimState == 1 is  for backup check-  the first condition should never be true when the second condition isn't!
 		} else if transactionQueue[a.Address.String()][4] == 1 && bz.SimState == 1 { // TxPor required
 			newTransactionRow[2] = time.Now().Format(time.RFC3339)
 			newTransactionRow[3] = strconv.Itoa(bz.MCRoundNumber)
 			newTransactionRow[0] = "TxPor"
-			newTransactionRow[1] = strconv.Itoa(PorTxSize)
+			newTransactionRow[1] = strconv.Itoa(int(PorTxSize))
 			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
 		}
 
@@ -606,7 +606,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 		the commit ServAgr transaction is not yet! */
 		if addCommitTx {
 			newTransactionRow[0] = "TxServAgrCommit"
-			newTransactionRow[1] = strconv.Itoa(ServAgrCommitTxSize)
+			newTransactionRow[1] = strconv.Itoa(int(ServAgrCommitTxSize))
 			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1]) // corresponding ServAgr id
 			//--
 			for i, v := range newTransactionRow {
@@ -634,7 +634,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 	1) time
 	2) issuedMCRoundNumber */
 
-	newTransactionRow[0] = strconv.Itoa(PayTxSize)
+	newTransactionRow[0] = strconv.Itoa(int(PayTxSize))
 	newTransactionRow[1] = time.Now().Format(time.RFC3339)
 	newTransactionRow[2] = strconv.Itoa(bz.MCRoundNumber)
 	newTransactionRow[3] = ""
@@ -983,7 +983,7 @@ func ItoA(s string) {
 	panic("unimplemented")
 }
 
-func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() {
+func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
 	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
 		log.Lvl2("Raha: ", err)
@@ -1002,20 +1002,36 @@ func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() {
 	4) ServAgrId */
 	var newTransactionRow [5]string
 	s := make([]interface{}, len(newTransactionRow)) //ToDoRaha: raha:  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
-	SyncTxSize := 2                                  //todonow: measure sync size
 
 	newTransactionRow[0] = "TxSync"
-	newTransactionRow[1] = strconv.Itoa(SyncTxSize)
 	newTransactionRow[2] = time.Now().Format(time.RFC3339)
 	newTransactionRow[3] = strconv.Itoa(bz.MCRoundNumber)
 	/* In case that the transaction type is a Sync transaction,
 	the 4th column will be the number of por transactions summerized in
 	the sync tx */
+
+	var SummTxNum int
 	totalPoR := 0
 	for i, v := range bz.SummPoRTxs {
 		totalPoR = totalPoR + v
+		if v != 0 {
+			SummTxNum = SummTxNum + 1 // counting the number of active contracts to measure the length of summery tx
+		}
 		bz.SummPoRTxs[i] = 0
 	}
+	//measuring summery block size
+	SummeryBlockSizeMinusTransactions, _ := blockchain.SCBlockMeasurement()
+	// --------------- adding bls signature size  -----------------
+	log.LLvl1("Size of bls signature:", len(bz.SCSig))
+	SummeryBlockSizeMinusTransactions = SummeryBlockSizeMinusTransactions + len(bz.SCSig)
+	// ------------------------------------------------------------
+	SummTxsSizeInSummBlock := blockchain.SCSummeryTxMeasurement(SummTxNum)
+	blocksize = SummeryBlockSizeMinusTransactions + SummTxsSizeInSummBlock
+	// ---
+	// for now sync transaction and summery transaction are the same, we should change it when  they differ
+	SyncTxSize := SummTxsSizeInSummBlock
+	// ---
+	newTransactionRow[1] = strconv.Itoa(SyncTxSize)
 	newTransactionRow[4] = strconv.Itoa(totalPoR)
 
 	for i, v := range newTransactionRow {
@@ -1032,6 +1048,7 @@ func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() {
 			log.Lvl3("a Sync tx added to queue in round number", bz.MCRoundNumber)
 		}
 	}
+
 	// -------------------------------------------------------------------------------
 	err = f.SaveAs("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {
@@ -1041,4 +1058,6 @@ func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() {
 		log.Lvl3("closing mainchain bc")
 		log.Lvl2(bz.Name(), " finished collecting new sync transactions to queue in round number ", bz.MCRoundNumber)
 	}
+
+	return blocksize
 }

@@ -242,7 +242,7 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 
 // TransactionMeasurement computes the size of 5 types of transactions we currently have in the system:
 // Por, ServAgrPropose, Pay, StoragePay, ServAgrCommit
-func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize int, ServAgrProposeTxSize int, PayTxSize int, StoragePayTxSize int, ServAgrCommitTxSize int) {
+func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize uint32, ServAgrProposeTxSize uint32, PayTxSize uint32, StoragePayTxSize uint32, ServAgrCommitTxSize uint32) {
 	// -- Hash Sample ----
 	sha := sha256.New()
 	if _, err := sha.Write([]byte("a sample seed")); err != nil {
@@ -294,10 +294,10 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize int, Se
 		TxOuts:   xout,
 	}
 
-	PayTxSize = len(hashSample) + len(index) + // outpoint
+	PayTxSize = uint32(len(hashSample) + len(index) + // outpoint
 		len(UnlockingScriptSize) + len(UnlockinScriptSample) + len(SequenceNumber) + //TxPayIn
 		len(Amount) + len(LockingScriptSample) + len(LockingScriptSize) + //TxPayOut
-		len(timeSample) + len(Version) + len(cnt) + len(cnt) //TxPay
+		len(timeSample) + len(Version) + len(cnt) + len(cnt)) //TxPay
 	log.Lvl3("size of a pay transaction is: ", PayTxSize, "bytes")
 	// ---------------- por transaction sample  ----------------
 
@@ -322,8 +322,8 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize int, Se
 	log.Lvl5("x5 is:", x5, " and x7 is: ", x7)
 
 	ServAgrProposeTxSize = PayTxSize + //tx
-		len(duration) + len(fileSizeSample) + len(startRoundSample) + len(pricePerRoundSample) + len(Tau) + //ServAgr tx
-		len(cmtSample) //clientCommitment
+		uint32(len(duration)+len(fileSizeSample)+len(startRoundSample)+len(pricePerRoundSample)+len(Tau)+ //ServAgr tx
+			len(cmtSample)) //clientCommitment
 
 	log.Lvl3("size of a ServAgr Propose transaction (including ServAgr creation tx) is: ", ServAgrProposeTxSize,
 		"bytes \n with ",
@@ -360,8 +360,8 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize int, Se
 
 	log.Lvl5("tx por is: ", x6)
 
-	PorTxSize = porSize /*size of pur por*/ +
-		8 /*len(ServAgrIdSample)*/ + len(MCRoundNumberSample) //TxPoR
+	PorTxSize = uint32(porSize /*size of pur por*/ +
+		8 /*len(ServAgrIdSample)*/ + len(MCRoundNumberSample)) //TxPoR
 
 	log.Lvl3("size of a por transaction is: ", PorTxSize, " bytes \n with ",
 		SectorNumber*por.Suite.G1().ScalarLen()+por.Suite.G2().PointLen(), " bytes for pure por")
@@ -383,7 +383,7 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize int, Se
 
 	log.Lvl5("tx ServAgrCommit is: ", x10)
 
-	ServAgrCommitTxSize = len(cmtSample) + 8 /*len(ServAgrIdSample)*/
+	ServAgrCommitTxSize = uint32(len(cmtSample) + 8) /*len(ServAgrIdSample)*/
 	log.Lvl3("size of a ServAgrCommit transaction is: ", ServAgrCommitTxSize)
 
 	return PorTxSize, ServAgrProposeTxSize, PayTxSize, StoragePayTxSize, ServAgrCommitTxSize
@@ -416,8 +416,8 @@ type SCBlockHeader struct {
 	MerkleRootHash  [32]byte
 	Version         [4]byte
 	LeaderPublicKey [33]byte // see https://medium.com/coinmonks/on-bitcoin-transaction-sizes-97e31bc9d816
-	//LeaderPublicKey kyber.Point
-	////ToDoNow:check: the combined signature of committee members for each meta/summery blocks should be
+	// LeaderPublicKey kyber.Point
+	// the combined signature of committee members for each meta/summery blocks should be
 	// included in their header `SCBlockHeader` which enables future validation
 	BlsSignature BLSCoSi.BlsSignature
 }
@@ -429,7 +429,7 @@ type SCMetaBlock struct {
 type TxSummery struct {
 	//---
 	ServAgrID       []uint64
-	ConfirmedPoRCnt []int
+	ConfirmedPoRCnt []uint64
 	//---
 }
 type SCSummeryBlockTransactionList struct {
@@ -451,7 +451,7 @@ type TxSCSync struct {
 	// this information "should be kept in side chain" in `SCSummeryBlock` and
 	// ofcourse be sent to mainchain via `TxSCSync` to make it's effect on mainchain
 	ServAgrID       []uint64
-	ConfirmedPoRCnt []int
+	ConfirmedPoRCnt []uint64
 	//---
 }
 
@@ -479,7 +479,6 @@ func SCBlockMeasurement() (SummeryBlockSizeMinusTransactions int, MetaBlockSizeM
 	var SCRoundNumberSample [3]byte
 	var samplePublicKey [33]byte
 	//var samplePublicKey kyber.Point
-	var sampleBlsSig BLSCoSi.BlsSignature
 	// --- VRF
 	t := []byte("first round's seed")
 	VrfPubkey, VrfPrivkey := vrf.VrfKeygen()
@@ -501,7 +500,7 @@ func SCBlockMeasurement() (SummeryBlockSizeMinusTransactions int, MetaBlockSizeM
 		MerkleRootHash:    hashSample,
 		Version:           Version,
 		LeaderPublicKey:   samplePublicKey,
-		BlsSignature:      sampleBlsSig,
+		//BlsSignature:      sampleBlsSig, // this will be added back in the protocol
 	}
 	// ---------------- meta block sample ----------------
 	var TxPorArraySample []*TxPoR
@@ -523,9 +522,8 @@ func SCBlockMeasurement() (SummeryBlockSizeMinusTransactions int, MetaBlockSizeM
 
 	MetaBlockSizeMinusTransactions = len(BlockSizeSample) + //x11: SCMetaBlock
 		len(SCRoundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) +
-		len(hashSample) + len(Version) + len(samplePublicKey) + len(sampleBlsSig) + //x10: SCBlockHeader
+		len(hashSample) + len(Version) + len(samplePublicKey) + //x10: SCBlockHeader
 		len(cnt) + len(feeSample) //x9: SCMetaBlockTransactionList
-
 	// ---
 	log.Lvl3("Meta Block Size Minus Transactions is: ", MetaBlockSizeMinusTransactions)
 
@@ -547,7 +545,7 @@ func SCBlockMeasurement() (SummeryBlockSizeMinusTransactions int, MetaBlockSizeM
 	log.LLvl5(x13)
 	SummeryBlockSizeMinusTransactions = len(BlockSizeSample) + //x13: SCSummeryBlock
 		len(SCRoundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) + len(hashSample) +
-		len(Version) + len(samplePublicKey) + len(sampleBlsSig) + //x10: SCBlockHeader
+		len(Version) + len(samplePublicKey) + //x10: SCBlockHeader
 		len(cnt) + len(feeSample) //x12: SCSummeryBlockTransactionList
 	log.Lvl3("Summery Block Size Minus Transactions is: ", SummeryBlockSizeMinusTransactions)
 
@@ -559,5 +557,10 @@ func SyncTransactionMeasurement() (SyncTxSize int) {
 	return
 }
 func SCSummeryTxMeasurement(SummTxNum int) (SummTxsSizeInSummBlock int) {
-	return
+	r := rand.New(rand.NewSource(int64(0)))
+	var a []uint64
+	for i := 0; i < SummTxNum; i++ {
+		a = append(a, r.Uint64())
+	}
+	return 2 * len(a)
 }

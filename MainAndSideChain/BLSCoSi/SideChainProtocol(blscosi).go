@@ -480,7 +480,6 @@ func (p *BlsCosi) generateSignature(responses ResponseMap) (BlsSignature, error)
 		log.Lvlf2("%v failed to create aggregate signature", p.ServerIdentity())
 		return nil, err
 	}
-
 	return sig, err
 }
 
