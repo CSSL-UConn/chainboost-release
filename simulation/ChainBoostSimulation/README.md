@@ -22,12 +22,12 @@ Config File [ChainBoost.toml](https://github.com/chainBstSc/ChainBoost/blob/mast
 
 ## To Change the Configs ##
 - to change number of servers, change two values: 1- `Hosts` and 2- `Nodes` - with a same number :)
-- `MainChainBlockSize` is the maximum block size (in Byte) allowed in each main chian's round (the submitted block may be less than this size based on the available transactions in the queues)[^2]
+- `MainChainBlockSize` is the maximum block size (in Byte) allowed in each main chian's round (the submitted block may be less than this size based on the available transactions in the queues)
 - `SideChainBlockSize` is the maximum block size (in Byte) allowed in each side chain's round
 - `FileSizeDistributionMean` and `FileSizeDistributionVariance` are specifying the mean and variance of the Normal distribution used to generate file-sizes in the ServAgrs
-- `ServAgrDurationDistributionMean` and `ServAgrDurationDistributionVariance` is the same for ServAgrs' duration
+- `ServAgrDurationDistributionMean` and `ServAgrDurationDistributionVariance` is the same for ServAgrs' duration. Note that duration is in terms of MainChain rounds. (i.e. 10 for a server agreement duration means that the server agreement will expire 10 main chian's round after being started.
 - `InitialPowerDistributionMean` and `InitialPowerDistributionVariance` is the same for the intial power we assign to each server
-- `SectorNumber` is the number of sectors in each block of file with impact the por transaction size
+- `SectorNumber` is the number of sectors in each block of file with impact the por transaction size. [^sectorNumber]
 - `PercentageTxPay` the block size percentage allocated for regular payment transactions (if regular payment txs are less, other types of txs will take its space)
 - `NumberOfPayTXsUpperBound` the upper bound for a random number of regular payment transactions issued in each round
 - `SimulationRounds` is number of mainchain's round that we want the protocol to stop after it
@@ -70,4 +70,5 @@ The point is that we can imagine two scenario:
 <!--FootNote-->
 [^1]: these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
 [^3]: Note that the last `distinct` main chain miners are added to side chain's committee in each epoch
+[^sectorNumber]: having higher s is better for chainboost and every body ! bcz bigger s means less storage overhead for servers (so less service cost for clients) and longer por messages in side chain which will be summerized by chainboost and this show its good impact on the system.
 <!--FootNote-->
