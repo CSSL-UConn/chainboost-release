@@ -66,6 +66,8 @@ The point is that we can imagine two scenario:
 - [ ] Note that for now, we are assuming that regardless of file size, each server have one client and will issue one por transaction each round
 - [ ] Note that regular payment transactions have the priority to take the specified percentage of block size (specified in config file) and they will. So if based on the number of regular payment transactions in their queue, they take less than their allocated size, the rest of block size is going to be spent on other types of transactions.
 - [ ] Test files should be added later (check TRAVIS CI)
+- [ ] later: edit bc files to dynamic go path 
+- [ ] check list of ToDoRaha
 
 <!--FootNote-->
 [^1]: these sheets are updated each round so, after running the simulation, we can track the blockchain's progress while running. try opening the file and closing if you are using microsoft or just refreshing the file if you are opening it in visual studio code IDE.
