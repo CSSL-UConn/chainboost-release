@@ -979,10 +979,6 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	}
 }
 
-func ItoA(s string) {
-	panic("unimplemented")
-}
-
 func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
 	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {

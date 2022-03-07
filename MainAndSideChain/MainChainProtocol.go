@@ -67,7 +67,8 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 	// normal rounds with a leader => leader = true
 	// -----------------------------------------------------
 	if !bz.HasLeader && msg.MCRoundNumber == bz.MCRoundNumber {
-		// ToDoRaha: first validate the leadership proof
+		bz.HasLeader = true
+		// ToDoRaha: later validate the leadership proof
 		log.Lvl1("final result MC: leader: ", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), " is the round leader for round number ", bz.MCRoundNumber)
 		// -----------------------------------------------
 		// dynamically change the side chain's committee with last main chain's leader
@@ -75,22 +76,12 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 			bz.UpdateSideChainCommittee(msg)
 		}
 		// -----------------------------------------------
-		bz.HasLeader = true
 		bz.updateBCPowerRound(bz.Tree().Search(msg.LeaderTreeNodeID).Name(), true)
 		bz.updateMainChainBCTransactionQueueCollect()
 		bz.updateMainChainBCTransactionQueueTake()
 	} else {
 		log.Lvl2("this round already has a leader!")
 	}
-	//waiting for the time of round duration
-	time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
-	// empty list of elected leaders  in this round
-	for len(bz.MainChainNewLeaderChan) > 0 {
-		<-bz.MainChainNewLeaderChan
-	}
-	// announce new round and give away required checkleadership info to nodes
-	bz.readBCAndSendtoOthers()
-	log.Lvl2("new round is announced")
 }
 
 //

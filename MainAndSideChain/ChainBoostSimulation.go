@@ -217,6 +217,7 @@ func (bz *ChainBoost) Dispatch() error {
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.MainChainNewLeaderChan:
 			bz.RootPreNewRound(msg)
+			bz.MCroundDurationWait(bz.MCRoundDuration)
 		// -----------------------------------------------------------------------------
 		// *** SC *** next side chain's leader recieves this message
 		// -----------------------------------------------------------------------------
@@ -226,7 +227,7 @@ func (bz *ChainBoost) Dispatch() error {
 		// *** SC *** just the ROOT NODE (blockchain layer one) recieve this msg
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.LtRSideChainNewRoundChan:
-			bz.SideChainRootPostNewRound(msg)
+			bz.SCroundDurationWait(bz.SCRoundDuration, msg)
 		}
 		// running = false //ToDoRaha: do something about running!
 	}
@@ -250,8 +251,8 @@ func (bz *ChainBoost) helloChainBoost() {
 
 	if bz.IsRoot() && bz.BlsCosiStarted {
 		if bz.SimState == 2 {
-			bz.StartSideChainProtocol()
-			bz.StartMainChainProtocol()
+			go bz.StartMainChainProtocol()
+			go bz.StartSideChainProtocol()
 		} else if bz.SimState == 1 {
 			bz.StartMainChainProtocol()
 		} else {
@@ -277,6 +278,26 @@ func (bz *ChainBoost) startTimer(MCRoundNumber int) {
 			log.Lvl2("No leader for round number ", bz.MCRoundNumber, "an empty block is added")
 			bz.MainChainNewLeaderChan <- MainChainNewLeaderChan{bz.TreeNode(), NewLeader{ /*Leaderinfo: bz.TreeNode(), */ MCRoundNumber: bz.MCRoundNumber}}
 		}
+	}
+}
+
+func (bz *ChainBoost) MCroundDurationWait(d int) {
+	select {
+	case <-time.After(time.Duration(d) * time.Second):
+		// empty list of elected leaders  in this round
+		for len(bz.MainChainNewLeaderChan) > 0 {
+			<-bz.MainChainNewLeaderChan
+		}
+		// announce new round and give away required checkleadership info to nodes
+		bz.readBCAndSendtoOthers()
+		log.Lvl2("new round is announced")
+	}
+}
+
+func (bz *ChainBoost) SCroundDurationWait(d int, msg LtRSideChainNewRoundChan) {
+	select {
+	case <-time.After(time.Duration(d) * time.Second):
+		bz.SideChainRootPostNewRound(msg)
 	}
 }
 

@@ -1,8 +1,6 @@
 package MainAndSideChain
 
 import (
-	"time"
-
 	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi"
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
@@ -135,8 +133,6 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 	var err error
 	bz.SCRoundNumber = msg.SCRoundNumber
 	bz.SCSig = msg.SCSig
-	// side chain round duration pause
-	time.Sleep(time.Duration(bz.SCRoundDuration) * time.Second)
 	var blocksize int
 	if bz.MCRoundDuration*bz.MCRoundPerEpoch/bz.SCRoundDuration == bz.SCRoundNumber {
 

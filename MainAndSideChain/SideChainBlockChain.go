@@ -80,18 +80,26 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 	// --- set starting round time
 	// --------------------------------------------------------------------
 	cellStartDate := "E" + currentRow
-	cellStartTime := "I" + currentRow
+	cellStartInterval := "I" + currentRow
+	cellStartMCRN := "J" + currentRow
+
 	err = f.SetCellValue("RoundTable", cellStartDate, time.Now().Format(time.RFC3339))
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
 
-	err = f.SetCellValue("RoundTable", cellStartTime, RoundIntervalSec)
+	err = f.SetCellValue("RoundTable", cellStartInterval, RoundIntervalSec)
 	if err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
+	err = f.SetCellValue("RoundTable", cellStartMCRN, bz.MCRoundNumber)
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+
 	// --------------------------------------------------------------------
 	// updating the current last row in the "miner" column
 	axisMiner := "C" + currentRow
