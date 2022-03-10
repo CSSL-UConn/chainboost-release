@@ -91,11 +91,15 @@ func (bz *ChainBoost) readBCAndSendtoOthers() {
 		bz.DoneChainBoost <- true
 	}
 	powers, seed := bz.readBCPowersAndSeed()
+	log.LLvl1("incerasing mc round number:", bz.MCRoundNumber)
 	bz.MCRoundNumber = bz.MCRoundNumber + 1
 	bz.HasLeader = false
 	for _, b := range bz.Tree().List() {
+		//log.LLvl1(b.Name())
 		power, found := powers[b.ServerIdentity.String()]
+		//log.LLvl1(power, "::", found)
 		if found && !b.IsRoot() {
+			//go func() {
 			err := bz.SendTo(b, &NewRound{
 				Seed:  seed,
 				Power: power})
@@ -103,6 +107,7 @@ func (bz *ChainBoost) readBCAndSendtoOthers() {
 				log.Lvl2(bz.Info(), "can't send new round msg to", b.Name())
 				panic(err)
 			}
+			//}()
 		}
 	}
 	// detecting leader-less in next round
@@ -203,7 +208,7 @@ func (bz *ChainBoost) readBCPowersAndSeed() (powers map[string]uint64, seed stri
 			t, er := strconv.Atoi(p)
 			if er != nil {
 				log.Lvl2("Panic Raised:\n\n")
-				panic(err)
+				panic(er)
 			}
 			upperPower := uint64(t)
 			minerspowers[a.Address.String()] = minerspowers[a.Address.String()] + upperPower

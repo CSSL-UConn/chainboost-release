@@ -42,6 +42,12 @@ func (bz *ChainBoost) StartMainChainProtocol() {
 	// the root node is filling the first block in first round
 	log.Lvl2(bz.Name(), "Filling round number ", bz.MCRoundNumber)
 	// for the first round we have the root node set as a round leader, so  it is true! and he takes txs from the queue
+	//----
+	bz.BCLock.Lock()
+	defer bz.BCLock.Unlock()
+	bz.MCPLock.Lock()
+	defer bz.MCPLock.Unlock()
+	//----
 	bz.updateBCPowerRound(bz.TreeNode().Name(), true)
 	bz.updateMainChainBCTransactionQueueCollect()
 	bz.updateMainChainBCTransactionQueueTake()
@@ -49,6 +55,12 @@ func (bz *ChainBoost) StartMainChainProtocol() {
 	bz.readBCAndSendtoOthers()
 }
 func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
+	//----
+	bz.BCLock.Lock()
+	defer bz.BCLock.Unlock()
+	bz.MCPLock.Lock()
+	defer bz.MCPLock.Unlock()
+	//----
 	// -----------------------------------------------------
 	// rounds without a leader: in this case the leader info is filled with root node's info, transactions are going to be collected normally but
 	// since the block is empty, no transaction is going to be taken from queues => leader = false
@@ -79,6 +91,9 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 		bz.updateBCPowerRound(bz.Tree().Search(msg.LeaderTreeNodeID).Name(), true)
 		bz.updateMainChainBCTransactionQueueCollect()
 		bz.updateMainChainBCTransactionQueueTake()
+		// announce new round and give away required checkleadership info to nodes
+		bz.readBCAndSendtoOthers()
+		log.Lvl2("new round is announced")
 	} else {
 		log.Lvl2("this round already has a leader!")
 	}

@@ -258,6 +258,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 					}
 				}
 			}
+			// Raha: it is just the root  node
 			go func() {
 				err := ChainBoostProtocol.DispatchProtocol()
 				if err != nil {

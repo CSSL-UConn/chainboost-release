@@ -121,11 +121,14 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	s := make([]byte, msg.blocksize, msg.blocksize)
 	bz.BlsCosi.Msg = append(bz.BlsCosi.Msg, s...) // Msg is the meta block
 	// ----
-	err = bz.BlsCosi.Start()
-	if err != nil {
-		return xerrors.New("Problem in cosi protocol run:   " + err.Error())
-	}
-	return nil
+	go func() error {
+		bz.BlsCosi.Start()
+		if err != nil {
+			return xerrors.New("Problem in cosi protocol run:   " + err.Error())
+		}
+		return nil
+	}()
+	return xerrors.New("Problem in cosi protocol run: should not get here")
 }
 
 //
@@ -134,6 +137,10 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 	bz.SCRoundNumber = msg.SCRoundNumber
 	bz.SCSig = msg.SCSig
 	var blocksize int
+	//----
+	bz.BCLock.Lock()
+	defer bz.BCLock.Unlock()
+	//----
 	if bz.MCRoundDuration*bz.MCRoundPerEpoch/bz.SCRoundDuration == bz.SCRoundNumber {
 
 		bz.BlsCosi.BlockType = "Summery Block" // just to know!
