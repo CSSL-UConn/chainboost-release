@@ -11,6 +11,31 @@ This is the implementation of **the scheme with public verifiability** proposed 
 - At the 128-bit security level, a nearly optimal choice for a pairing-friendly curve is a Barreto-Naehrig (BN) curve over a prime field of size roughly 256 bits with embedding degree k = 12. 
 - bits of security: 128 bits / 124 bits. 
 The prime p is given by the BN polynomial parametrization p = 36u4+36u3+24u2+6u+1, where u = v3 and v = 1966080. 
+<!--- 
+based on the following calculations:
+
+log(36(x^4)+36(x^3)+24(x^2)+6(x^1)+1), x=(1966080)^3 in https://www.wolframalpha.com/input?i=log%2836%28x%5E4%29%2B36%28x%5E3%29%2B24%28x%5E2%29%2B6%28x%5E1%29%2B1%29%2C+x%3D%281966080%29%5E3
+and (2^257)- 120092732040802788441093648045657013314235355142139720793828567809913782272001 in https://www.wolframalpha.com/input?i=%282%5E257%29-+120092732040802788441093648045657013314235355142139720793828567809913782272001 
+log of p is 256<x<257
+
+we know sector-number is the number of elements (from Z_p) in each block
+if a file size is b bits, then the number of blocks for that file will be
+n = [b/s log p]
+
+so if s=2 we will have n/2 number of blocks.
+
+From Compact PoR paper:
+"A Tradeoff Between Storage and Communication:
+As we have described our schemesabove, each file block is accompanied by an authenticator of equal length. This gives a 2×overhead  beyond  that  imposed  by  the  erasure  code,  and  the  server’s  response in the proof-of-retrievability protocol is 2×the length of an authenticator. 
+In the full schemes of Sect.3, we introduce a parameter s that gives a tradeoff between storage overhead and response length. 
+Each block consists of s elements of Zp that we call sectors. 
+There is one authenticator per block, reducing the overhead to(1+1/s)×.
+The server’s response is one aggregated block and authenticator, and is(1+s)×as long as an authenticator. 
+Thus, a larger value of s gives less storage overhead at the cost of higher communication. The choice s=1 corresponds to our schemes as we described them above and to the scheme given by Ateniese et al. [3]"
+
+
+
+--->
 The curve equation is E : y2 = x3 + 17.
 
 ## Parameter Selection ##

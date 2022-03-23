@@ -55,18 +55,26 @@ func (bz *ChainBoost) StartMainChainProtocol() {
 	bz.readBCAndSendtoOthers()
 }
 func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
-	//----
-	bz.BCLock.Lock()
-	defer bz.BCLock.Unlock()
-	bz.MCPLock.Lock()
-	defer bz.MCPLock.Unlock()
-	//----
 	// -----------------------------------------------------
 	// rounds without a leader: in this case the leader info is filled with root node's info, transactions are going to be collected normally but
 	// since the block is empty, no transaction is going to be taken from queues => leader = false
 	// -----------------------------------------------------
 	if msg.LeaderTreeNodeID == bz.TreeNode().ID && bz.MCRoundNumber != 1 && !bz.HasLeader && msg.MCRoundNumber == bz.MCRoundNumber {
 		bz.HasLeader = true
+		// wait for MCDuration/SCduration number of go routines
+		// to be Done (Done is triggered after finishing SideChainRootPostNewRound)
+		if bz.SimState == 2 {
+			bz.wg.Wait()
+			//
+			x := int(bz.MCRoundDuration / bz.SCRoundDuration)
+			bz.wg.Add(x)
+		}
+		//----
+		bz.BCLock.Lock()
+		defer bz.BCLock.Unlock()
+		bz.MCPLock.Lock()
+		defer bz.MCPLock.Unlock()
+		//----
 		bz.updateBCPowerRound(bz.Tree().Search(msg.LeaderTreeNodeID).Name(), false)
 		// in the case of a leader-less round
 		log.Lvl1("final result MC: leader TreeNodeID: ", msg.LeaderTreeNodeID.String(), "(root node) filled round number", bz.MCRoundNumber, "with empty block")
@@ -80,6 +88,14 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 	// -----------------------------------------------------
 	if !bz.HasLeader && msg.MCRoundNumber == bz.MCRoundNumber {
 		bz.HasLeader = true
+		// wait for MCDuration/SCduration number of go routines
+		// to be Done (Done is triggered after finishing SideChainRootPostNewRound)
+		if bz.SimState == 2 {
+			bz.wg.Wait()
+			//
+			x := int(bz.MCRoundDuration / bz.SCRoundDuration)
+			bz.wg.Add(x)
+		}
 		// ToDoRaha: later validate the leadership proof
 		log.Lvl1("final result MC: leader: ", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), " is the round leader for round number ", bz.MCRoundNumber)
 		// -----------------------------------------------
@@ -88,6 +104,12 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 			bz.UpdateSideChainCommittee(msg)
 		}
 		// -----------------------------------------------
+		//----
+		bz.BCLock.Lock()
+		defer bz.BCLock.Unlock()
+		bz.MCPLock.Lock()
+		defer bz.MCPLock.Unlock()
+		//----
 		bz.updateBCPowerRound(bz.Tree().Search(msg.LeaderTreeNodeID).Name(), true)
 		bz.updateMainChainBCTransactionQueueCollect()
 		bz.updateMainChainBCTransactionQueueTake()

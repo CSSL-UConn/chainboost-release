@@ -63,6 +63,17 @@ func (bz *ChainBoost) finalMainChainBCInitialization() {
 			bz.SummPoRTxs[RandomServerAgreementID] = 0
 		}
 	}
+	// --- sum of server agreement file size
+	_ = f.NewSheet("ExtraInfo")
+	if err = f.SetCellValue("ExtraInfo", "B1", "sum of file size"); err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
+	FormulaString := "=SUM(MarketMatching!B2:B" + strconv.Itoa(len(NodeInfoRow)+1) + ")"
+	err = f.SetCellFormula("ExtraInfo", "B2", FormulaString)
+	if err != nil {
+		log.Lvl2(err)
+	}
 	// --- power table sheet
 	index = f.GetSheetIndex("PowerTable")
 	f.SetActiveSheet(index)
@@ -711,7 +722,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 
 	numberOfRegPayTx := 0
 	BlockSizeMinusTransactions := blockchain.BlockMeasurement()
-	var TakeTime time.Time
+	//var TakeTime time.Time
 
 	/* -----------------------------------------------------------------------------
 		-- take regular payment transactions from sheet: SecondQueue
@@ -739,12 +750,22 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 					/* transaction name in transaction queue payment is just "TxPayment"
 					the transactions are just removed from queue and their size are added to included transactions' size in block */
 					log.Lvl2("a regular payment transaction added to block number", bz.MCRoundNumber, " from the queue")
+
 					// row[1] is transaction's collected time
-					if TakeTime, err = time.Parse(time.RFC3339, row[1]); err != nil {
+					// if TakeTime, err = time.Parse(time.RFC3339, row[1]); err != nil {
+					// 	log.Lvl2("Panic Raised:\n\n")
+					// 	panic(err)
+					// }
+					//bz.SecondQueueWait = bz.SecondQueueWait + int(time.Now().Sub(TakeTime).Seconds())
+
+					// row[2] is the MCRound Number that the transaction has been issued
+					if x, err := strconv.Atoi(row[2]); err != nil {
 						log.Lvl2("Panic Raised:\n\n")
 						panic(err)
+					} else {
+						bz.SecondQueueWait = bz.SecondQueueWait + bz.MCRoundNumber - x
 					}
-					bz.SecondQueueWait = bz.SecondQueueWait + int(time.Now().Sub(TakeTime).Seconds())
+
 					f.RemoveRow("SecondQueue", i)
 				} else {
 					blockIsFull = true
@@ -853,12 +874,22 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 						log.Lvl2("Panic Raised:\n\n")
 						panic("the type of transaction in the queue is un-defined")
 					}
-					// row[2] is transaction's collected time
-					if TakeTime, err = time.Parse(time.RFC3339, row[2]); err != nil {
+
+					// when performance was being measured based on time!
+					// if TakeTime, err = time.Parse(time.RFC3339, row[2]); err != nil {
+					// 	log.Lvl2("Panic Raised:\n\n")
+					// 	panic(err)
+					// }
+					//bz.FirstQueueWait = bz.FirstQueueWait + int(time.Now().Sub(TakeTime).Seconds())
+
+					// row[3] is the MCRound Number that the transaction has been issued
+					if x, err := strconv.Atoi(row[3]); err != nil {
 						log.Lvl2("Panic Raised:\n\n")
 						panic(err)
+					} else {
+						bz.FirstQueueWait = bz.FirstQueueWait + bz.MCRoundNumber - x
 					}
-					bz.FirstQueueWait = bz.FirstQueueWait + int(time.Now().Sub(TakeTime).Seconds())
+					// remove transaction from the top of the queue (older ones)
 					f.RemoveRow("FirstQueue", i)
 				} else {
 					blockIsFull = true
@@ -892,10 +923,10 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	f.SetCellValue("RoundTable", axisBlockSize, accumulatedTxSize+allocatedBlockSizeForRegPayTx+BlockSizeMinusTransactions)
 	f.SetCellValue("RoundTable", axisTotalTxsNum, TotalNumTxsInBothQueue)
 	if TotalNumTxsInFirstQueue != 0 {
-		f.SetCellValue("RoundTable", axisAveFirstQueueWait, bz.FirstQueueWait/TotalNumTxsInFirstQueue)
+		f.SetCellValue("RoundTable", axisAveFirstQueueWait, float64(bz.FirstQueueWait)/float64(TotalNumTxsInFirstQueue))
 	}
 	if numberOfRegPayTx != 0 {
-		f.SetCellValue("RoundTable", axisAveSecondQueueWait, bz.SecondQueueWait/numberOfRegPayTx)
+		f.SetCellValue("RoundTable", axisAveSecondQueueWait, float64(bz.SecondQueueWait)/float64(numberOfRegPayTx))
 	}
 
 	log.Lvl3("final result MC: \n", allocatedBlockSizeForRegPayTx,
@@ -972,7 +1003,6 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	if err != nil {
 		log.Lvl2(err)
 	}
-
 	// ----
 	err = f.SaveAs("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
 	if err != nil {

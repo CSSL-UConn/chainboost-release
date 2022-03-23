@@ -7,26 +7,26 @@ RunWait = "600000s"
 Suite = "bn256.adapter"
 NbrSubTrees = 1
 PreScript = "ChainBoostPreScript.toml"
-FileSizeDistributionMean = 100
+FileSizeDistributionMean = 115
 FileSizeDistributionVariance = 5
-ServAgrDurationDistributionMean = 20
-ServAgrDurationDistributionVariance = 50
+ServAgrDurationDistributionMean = 25
+ServAgrDurationDistributionVariance = 10
 InitialPowerDistributionMean = 9000000000000000000
 InitialPowerDistributionVariance = 9000000000000000
 SectorNumber = 2
-NumberOfPayTXsUpperBound = 30
-PercentageTxPay = 30
-SCRoundDuration = 2
-MCRoundDuration = 10
+SCRoundDuration = 60
+MCRoundDuration = 180
 MCRoundPerEpoch = 2
-Nodes = 10
 CommitteeWindow = 5
 Threshold = 4   
-SimState = 2
+MainChainBlockSize = 30000
+SideChainBlockSize = 25000
+Nodes = 50
+NumberOfPayTXsUpperBound = 50
+PercentageTxPay = 30
+SimState = 1
 SimulationSeed = 5
-SimulationRounds = 50
-MainChainBlockSize = 27000
-SideChainBlockSize = 20000
+SimulationRounds = 22
 
 Hosts
-10
+50

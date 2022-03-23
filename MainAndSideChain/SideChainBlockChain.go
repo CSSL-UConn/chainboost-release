@@ -1,6 +1,7 @@
 package MainAndSideChain
 
 import (
+	"math"
 	"strconv"
 	"time"
 
@@ -265,7 +266,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 	3) issuedMCRoundNumber
 	4) ServAgrId */
 
-	var newTransactionRow [5]string
+	var newTransactionRow [6]string
 	s := make([]interface{}, len(newTransactionRow)) //ToDoRaha:  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
 
 	// this part can be moved to protocol initialization
@@ -286,6 +287,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 			newTransactionRow[0] = "TxPor"
 			newTransactionRow[1] = strconv.Itoa(int(PorTxSize))
 			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
+			newTransactionRow[5] = strconv.Itoa(bz.MCRoundNumber)
 		}
 
 		for i, v := range newTransactionRow {
@@ -342,7 +344,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 	log.LLvl1("Size of bls signature:", len(bz.SCSig))
 	MetaBlockSizeMinusTransactions = MetaBlockSizeMinusTransactions + len(bz.SCSig)
 	// ------------------------------------------------------------
-	var TakeTime time.Time
+	//var TakeTime time.Time
 
 	/* -----------------------------------------------------------------------------
 		 -- take por transactions from sheet: FirstQueue
@@ -421,11 +423,29 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 						panic("the type of transaction in the queue is un-defined")
 					}
 					// row[2] is transaction's collected time
-					if TakeTime, err = time.Parse(time.RFC3339, row[2]); err != nil {
+					// if TakeTime, err = time.Parse(time.RFC3339, row[2]); err != nil {
+					// 	log.Lvl2("Panic Raised:\n\n")
+					// 	panic(err)
+					// }
+					// bz.SideChainQueueWait = bz.SideChainQueueWait + int(time.Now().Sub(TakeTime).Seconds())
+
+					if bz.MCRoundNumber == 10 {
+						log.LLvl1("wait")
+					}
+
+					// row[3] is the SCRound Number that the transaction has been issued
+					if x1, err := strconv.Atoi(row[3]); err != nil {
 						log.Lvl2("Panic Raised:\n\n")
 						panic(err)
+					} else {
+						if x2, err := strconv.Atoi(row[5]); err != nil {
+							log.Lvl2("Panic Raised:\n\n")
+							panic(err)
+						} else {
+							bz.SideChainQueueWait = bz.SideChainQueueWait + int(math.Abs(float64(bz.SCRoundNumber-x1))) + bz.MCRoundDuration/bz.SCRoundDuration*(bz.MCRoundNumber-x2)
+						}
 					}
-					bz.SideChainQueueWait = bz.SideChainQueueWait + int(time.Now().Sub(TakeTime).Seconds())
+
 					// ---------- keep taken transaction's info summery --------------------
 					if serverAgrId, err := strconv.Atoi(row[4]); err != nil {
 						log.Lvl2("Panic Raised:\n\n")
@@ -455,7 +475,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 	// --- total throughput
 	f.SetCellValue("RoundTable", axisBlockSize, accumulatedTxSize+MetaBlockSizeMinusTransactions)
 	if TotalNumTxsInFirstQueue != 0 {
-		f.SetCellValue("RoundTable", axisAveFirstQueueWait, bz.SideChainQueueWait/TotalNumTxsInFirstQueue)
+		f.SetCellValue("RoundTable", axisAveFirstQueueWait, float64(bz.SideChainQueueWait)/float64(TotalNumTxsInFirstQueue))
 	} else {
 		f.SetCellValue("RoundTable", axisAveFirstQueueWait, 0)
 	}

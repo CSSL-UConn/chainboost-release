@@ -61,10 +61,16 @@ The curve equation is E : y2 = x3 +17.
 var TauSize int
 
 //-----------------------------------------------------------------------
+//sigma_i is an element of G
+// the length of sigma array is equal to n value
+// (number of blocks in each file which is a function of file size and sector number)
+// this is the storage overhead!
 type processedFile struct {
 	m_ij  initialFile
 	sigma [n]kyber.Point
 }
+
+//m_ij is an elemnt of Z_P
 type initialFile struct {
 	m [n][]kyber.Scalar
 }
@@ -72,6 +78,9 @@ type randomQuery struct {
 	i   [l]int
 	v_i [l]kyber.Scalar
 }
+
+// the length of Mu array is equal to s value (sector  number set in config params)
+// this is the communication overhead!
 type Por struct {
 	Mu    []kyber.Scalar
 	Sigma kyber.Point

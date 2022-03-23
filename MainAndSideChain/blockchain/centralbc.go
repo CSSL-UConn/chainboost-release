@@ -28,6 +28,7 @@ func generateNormalValues(variance, mean, nodes, SimulationSeed int) []uint64 {
 			intlist = append(intlist, t)
 		}
 	}
+
 	return intlist
 }
 
@@ -439,11 +440,11 @@ func InitializeMainChainBC(
 	}
 
 	// -----------------------    Filling Round Table's first row  -------------------
-	err = f.SetCellValue("RoundTable", "A2", 0)
-	if err != nil {
-		log.Lvl2("Panic Raised:\n\n")
-		panic(err)
-	}
+	// err = f.SetCellValue("RoundTable", "A2", 0)
+	// if err != nil {
+	// 	log.Lvl2("Panic Raised:\n\n")
+	// 	panic(err)
+	// }
 	t := rand.Intn(SimulationSeedInt)
 	err = f.SetCellValue("RoundTable", "B2", t)
 	if err != nil {
@@ -635,6 +636,11 @@ func InitializeSideChainBC() {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}
+	err = f.SetCellValue("FirstQueue", "F1", "MC Round#")
+	if err != nil {
+		log.Lvl2("Panic Raised:\n\n")
+		panic(err)
+	}
 
 	// --------------------------------------------------------------------
 	// --------------------- Round Table Sheet ---------------------------
@@ -722,6 +728,14 @@ func InitializeSideChainBC() {
 		log.Lvl2(err)
 	}
 	err = f.SetCellValue("RoundTable", "H1", "BlockSpaceFull")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "I1", "TimeTaken")
+	if err != nil {
+		log.Lvl2(err)
+	}
+	err = f.SetCellValue("RoundTable", "J1", "Mc Round#")
 	if err != nil {
 		log.Lvl2(err)
 	}

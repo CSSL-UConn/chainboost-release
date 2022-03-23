@@ -95,6 +95,8 @@ type ChainBoost struct {
 	BCLock sync.Mutex
 	// to let the  first leader run main chian protocol and ignore the rest
 	MCPLock sync.Mutex
+	// for root node to wait for a specific number of side chain rounds before proceeding to next main chain's round
+	wg sync.WaitGroup
 	// channel to notify leader elected
 	LeaderProposeChan chan bool
 	MCRoundNumber     int
@@ -153,8 +155,10 @@ type ChainBoost struct {
 	//Start: starts the protocol by sending hello msg to all nodes
 ------------------------------------------------------------------------ */
 func (bz *ChainBoost) Start() error {
+	bz.BCLock.Lock()
 	// update the mainchainbc file with created nodes' information
 	bz.finalMainChainBCInitialization()
+	bz.BCLock.Unlock()
 	bz.BlsCosiStarted = true
 	// ------------------------------------------------------------------------------
 	// config params are sent from the leader to the other nodes in helloBasedDfs function
@@ -215,24 +219,21 @@ func (bz *ChainBoost) Dispatch() error {
 		// *** MC *** ALL nodes recieve this message to sync rounds
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.MainChainNewRoundChan:
-			go func() {
-				bz.MCRoundNumber = bz.MCRoundNumber + 1
-				log.Lvl4(bz.Name(), " round number ", bz.MCRoundNumber, " started at ", time.Now().Format(time.RFC3339))
-				bz.MainChainCheckLeadership(msg)
-			}()
+			bz.MCRoundNumber = bz.MCRoundNumber + 1
+			log.Lvl4(bz.Name(), " round number ", bz.MCRoundNumber, " started at ", time.Now().Format(time.RFC3339))
+			go bz.MainChainCheckLeadership(msg)
 		// -----------------------------------------------------------------------------
 		// *** MC *** just the ROOT NODE (blockchain layer one) recieve this msg
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.MainChainNewLeaderChan:
-			//go func() {
-			bz.RootPreNewRound(msg)
-			time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
-			for len(bz.MainChainNewLeaderChan) > 0 {
-				a := <-bz.MainChainNewLeaderChan
-				log.Lvl1(a.LeaderTreeNodeID, "----", a.MCRoundNumber)
-			}
-			//}()
-
+			go func() {
+				time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
+				bz.RootPreNewRound(msg)
+				for len(bz.MainChainNewLeaderChan) > 0 {
+					a := <-bz.MainChainNewLeaderChan
+					log.Lvl1(a.LeaderTreeNodeID, " for round", a.MCRoundNumber, "popped out")
+				}
+			}()
 		// -----------------------------------------------------------------------------
 		// *** SC *** next side chain's leader recieves this message
 		// -----------------------------------------------------------------------------
@@ -246,7 +247,6 @@ func (bz *ChainBoost) Dispatch() error {
 				time.Sleep(time.Duration(bz.SCRoundDuration) * time.Second)
 				bz.SideChainRootPostNewRound(msg)
 			}()
-			// running = false //ToDoRaha: do something about running!
 		}
 	}
 	return err
