@@ -25,7 +25,8 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"strconv"
+
+	//"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -94,6 +95,23 @@ type Deterlab struct {
 	PreScript string
 	// Tags to use when compiling
 	Tags string
+
+	// raha: adding some other system-wide configurations
+	MCRoundDuration          int
+	PercentageTxPay          int
+	MainChainBlockSize       int
+	SideChainBlockSize       int
+	SectorNumber             int
+	NumberOfPayTXsUpperBound int
+	SimulationRounds         int
+	SimulationSeed           int
+	//-- bls cosi
+	NbrSubTrees     int
+	Threshold       int
+	SCRoundDuration int
+	CommitteeWindow int
+	MCRoundPerEpoch int
+	SimState        int
 }
 
 var simulConfig *onet.SimulationConfig
@@ -115,7 +133,23 @@ func (d *Deterlab) Configure(pc *Config) {
 	d.MonitorPort = pc.MonitorPort
 	log.Lvl3("Dirs are:", pwd, d.deployDir)
 	d.loadAndCheckDeterlabVars()
-
+	// ------------------------------
+	// raha: adding some other system-wide configurations
+	d.MCRoundDuration = pc.MCRoundDuration
+	d.PercentageTxPay = pc.PercentageTxPay
+	d.MainChainBlockSize = pc.MainChainBlockSize
+	d.SideChainBlockSize = pc.SideChainBlockSize
+	d.SectorNumber = pc.SectorNumber
+	d.NumberOfPayTXsUpperBound = pc.NumberOfPayTXsUpperBound
+	d.SimulationRounds = pc.SimulationRounds
+	d.SimulationSeed = pc.SimulationSeed
+	d.NbrSubTrees = pc.NbrSubTrees
+	d.Threshold = pc.Threshold
+	d.SCRoundDuration = pc.SCRoundDuration
+	d.CommitteeWindow = pc.CommitteeWindow
+	d.MCRoundPerEpoch = pc.MCRoundPerEpoch
+	d.SimState = pc.SimState
+	// ------------------------------
 	d.Debug = pc.Debug
 	if d.Simulation == "" {
 		log.Fatal("No simulation defined in runconfig")
@@ -151,8 +185,13 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 	// start building the necessary binaries - it's always the same,
 	// but built for another architecture.
 	packages := []pkg{
-		{"simul", "amd64", "linux", d.simulDir},
-		{"users", "386", "freebsd", path.Join(d.platformDir, "deterlab_users")},
+		//raha: changed
+		// deter has an amd64, linux architecture
+		//{"simul", "amd64", "linux", d.simulDir},
+		{"simul", "arm64", "darwin", d.simulDir},
+		{"simul", "arm64", "linux", d.simulDir},
+		//{"users", "386", "freebsd", path.Join(d.platformDir, "deterlab_users")},
+		//{"users", "arm64", "linux", path.Join(d.platformDir, "deterlab_users")},
 	}
 	if build == "" {
 		build = "simul,users"
@@ -174,7 +213,9 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 			dst := path.Join(d.buildDir, p.name)
 			path, err := filepath.Rel(d.simulDir, p.path)
 			log.ErrFatal(err)
-			// deter has an amd64, linux architecture
+
+			//ToDoRaha our the taregt system has?z
+
 			var out string
 			if p.name == "simul" {
 				out, err = Build(path, dst,
@@ -260,7 +301,7 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 
 	// deploy will get rsync to /remote on the NFS
 
-	log.Lvl2("Localhost: Deploying and writing config-files")
+	log.Lvl2("Deterlab: Deploying and writing config-files")
 	sim, err := onet.NewSimulation(d.Simulation, string(rc.Toml()))
 	if err != nil {
 		return xerrors.Errorf("simulation: %v", err)
@@ -274,8 +315,21 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	if err != nil {
 		return xerrors.Errorf("decoding toml: %v", err)
 	}
-	log.Lvl3("Creating hosts")
-	deter.createHosts()
+
+	//-----------------------------------
+	// ToDoRaha : temp comment, at the end they just fill 2 attributes in deter struct (deter.Virt, deter.Phys) by an string array of IPs and DNS resolvable host names
+	//log.Lvl3("Creating hosts")
+	//deter.createHosts()
+
+	// ToDoRaha added 1 address from amazon free tier VPS
+
+	//d.Phys = append(d.Phys, fullName)
+	//d.Virt = append(d.Virt, ip)
+	log.Lvl3("Raha: added 1 address from amazon free tier VPS")
+	deter.Phys = append(d.Phys, "ec2-54-234-59-95.compute-1.amazonaws.com:20")
+	deter.Virt = append(d.Virt, "54.234.59.95")
+	//-----------------------------------
+
 	log.Lvl3("Writing the config file :", deter)
 	onet.WriteTomlConfig(deter, deterConfig, d.deployDir)
 
@@ -293,6 +347,17 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	ioutil.WriteFile(path.Join(d.deployDir, "simul.conf"),
 		[]byte(simulConnectionsConf), 0444)
 
+	//ToDoraha : is it the best way to do so?!
+	// Copying chainBoost.toml file to deploy-directory so it gets transferred to distributed servers
+	err = exec.Command("cp", d.simulDir+"/"+d.Simulation+".toml", d.deployDir).Run()
+	if err != nil {
+		log.Fatal("error copying chainBoost.toml-file:", d.simulDir, d.Simulation+".toml", d.deployDir, err)
+	}
+	err = exec.Command("cp", d.simulDir+"/"+"simul.go", d.deployDir).Run()
+	if err != nil {
+		log.Fatal("error copying chainBoost.toml-file:", d.simulDir, d.Simulation+".toml", d.deployDir, err)
+	}
+
 	// Copying build-files to deploy-directory
 	build, err := ioutil.ReadDir(d.buildDir)
 	for _, file := range build {
@@ -304,7 +369,8 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 
 	// Copy everything over to Deterlab
 	log.Lvl1("Copying over to", d.Login, "@", d.Host)
-	err = Rsync(d.Login, d.Host, d.deployDir+"/", "remote/")
+	//ToDoRaha: fix this later
+	err = Rsync(d.Login, d.Host, d.deployDir+"/", "~/remote/")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -322,19 +388,21 @@ func (d *Deterlab) Start(args ...string) error {
 	// proxy => the proxy redirects packets to the same port the sink is
 	// listening.
 	// -n = stdout == /Dev/null, -N => no command stream, -T => no tty
-	redirection := strconv.Itoa(d.MonitorPort) + ":" + d.ProxyAddress + ":" + strconv.Itoa(d.MonitorPort)
-	cmd := []string{"-nNTf", "-o", "StrictHostKeyChecking=no", "-o", "ExitOnForwardFailure=yes", "-R",
-		redirection, fmt.Sprintf("%s@%s", d.Login, d.Host)}
-	exCmd := exec.Command("ssh", cmd...)
-	if err := exCmd.Start(); err != nil {
-		log.Fatal("Failed to start the ssh port forwarding:", err)
-	}
-	if err := exCmd.Wait(); err != nil {
-		log.Fatal("ssh port forwarding exited in failure:", err)
-	}
-	log.Lvl3("Setup remote port forwarding", cmd)
+	//todoraha: commented temp  do we need them?
+	//redirection := strconv.Itoa(d.MonitorPort) + ":" + d.ProxyAddress + ":" + strconv.Itoa(d.MonitorPort)
+	//cmd := []string{"-nNTf", "-o", "StrictHostKeyChecking=no", "-o", "ExitOnForwardFailure=yes", "-R",
+	//	redirection, fmt.Sprintf("%s@%s", d.Login, d.Host)}
+	//exCmd := exec.Command("ssh", cmd...)
+	//if err := exCmd.Start(); err != nil {
+	//	log.Fatal("Failed to start the ssh port forwarding:", err)
+	//}
+	//if err := exCmd.Wait(); err != nil {
+	//	log.Fatal("ssh port forwarding exited in failure:", err)
+	//}
+	//log.Lvl3("Setup remote port forwarding", cmd)
 	go func() {
-		err := SSHRunStdout(d.Login, d.Host, "cd remote; ./users -suite="+d.Suite)
+		//err := SSHRunStdout(d.Login, d.Host, "cd remote; ./users -suite="+d.Suite)
+		err := SSHRunStdout(d.Login, d.Host, "cd remote; ./simul -suite="+d.Suite)
 		if err != nil {
 			log.Lvl3(err)
 		}
@@ -464,7 +532,7 @@ func (d *Deterlab) loadAndCheckDeterlabVars() {
 	}
 
 	if d.MonitorAddress == "" {
-		d.MonitorAddress = readString("Please enter the Monitor address (where clients will connect)", "users.isi.deterlab.net")
+		d.MonitorAddress = readString("Please enter the Monitor address (where clients will connect)", "ec2-3-87-13-148.compute-1.amazonaws.com")
 	}
 	if d.ProxyAddress == "" {
 		d.ProxyAddress = readString("Please enter the proxy redirection address", "localhost")

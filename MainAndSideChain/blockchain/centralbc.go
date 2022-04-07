@@ -537,7 +537,11 @@ func InitializeMainChainBC(
 		log.Lvl2(err)
 	}
 	// --------------------------------------------------------------------
-	if err := f.SaveAs("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx"); err != nil {
+	// if err := f.SaveAs("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx"); err != nil {
+	// 	log.Lvl2("Panic Raised:\n\n")
+	// 	panic(err)
+	// }
+	if err := f.SaveAs("mainchainbc.xlsx"); err != nil {
 		log.Lvl2("Panic Raised:\n\n")
 		panic(err)
 	}

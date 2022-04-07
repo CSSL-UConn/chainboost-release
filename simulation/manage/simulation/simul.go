@@ -6,21 +6,11 @@ import (
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	simul "github.com/chainBoostScale/ChainBoost/simulation"
 
-	//"github.com/chainBoostScale/ChainBoost/simulation/monitor"
 	"golang.org/x/xerrors"
 )
 
-/*
-Defines the simulation for the count-protocol
-*/
-/*
+/*Defines the simulation for each-protocol*/
 func init() {
-	onet.SimulationRegister("Count", NewSimulation)
-}
-*/
-//Raha
-func init() {
-	//onet.SimulationRegister("OpinionGathering", NewSimulation)
 	onet.SimulationRegister("ChainBoost", NewSimulation)
 }
 
@@ -97,5 +87,6 @@ func (e *simulation) Run(config *onet.SimulationConfig) error {
 }
 
 func main() {
-	simul.Start()
+	log.LLvl1("The simulation starts from here in the distributed servers")
+	simul.Start("ChainBoost.toml")
 }

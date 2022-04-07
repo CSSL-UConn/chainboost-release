@@ -18,7 +18,8 @@ import (
 	"github.com/DmitriyVTitov/size"
 	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
-	"github.com/chainBoostScale/ChainBoost/vrf"
+
+	//"github.com/chainBoostScale/ChainBoost/vrf"
 
 	// ToDoRaha: later that I brought everything from blscosi package to ChainBoost package, I shoudl add another pacckage with
 	// some definitions in it to be imported/used in blockchain(here) and simulation package (instead of using blscosi/protocol)
@@ -202,12 +203,13 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 	}
 	// real! TransactionListSize = size.Of(x9) + sum of size of included transactions
 	// --- VRF
-	t := []byte("first round's seed")
-	VrfPubkey, VrfPrivkey := vrf.VrfKeygen()
-	proof, _ := VrfPrivkey.ProveBytes(t)
-	_, vrfOutput := VrfPubkey.VerifyBytes(proof, t)
-	var nextroundseed [64]byte = vrfOutput
-	var VrfProof [80]byte = proof
+	//raha: ToDoRaha: temp comment
+	// t := []byte("first round's seed")
+	// VrfPubkey, VrfPrivkey := vrf.VrfKeygen()
+	// proof, _ := VrfPrivkey.ProveBytes(t)
+	// _, vrfOutput := VrfPubkey.VerifyBytes(proof, t)
+	// var nextroundseed [64]byte =  // vrfOutput
+	// var VrfProof [80]byte = proof
 	// --- time
 	ti := []byte(time.Now().String())
 	var timeSample [4]byte
@@ -215,9 +217,9 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 	// ---
 
 	x10 := &BlockHeader{
-		MCRoundNumber:     MCRoundNumberSample,
-		RoundSeed:         nextroundseed,
-		LeadershipProof:   VrfProof,
+		MCRoundNumber: MCRoundNumberSample,
+		//RoundSeed:         nextroundseed,
+		//LeadershipProof:   VrfProof,
 		PreviousBlockHash: hashSample,
 		Timestamp:         timeSample,
 		MerkleRootHash:    hashSample,
@@ -232,7 +234,7 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 	log.Lvl5(x11)
 
 	BlockSizeMinusTransactions = len(BlockSizeSample) + //x11
-		len(MCRoundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) + len(hashSample) + len(Version) + //x10
+		len(MCRoundNumberSample) + /*ToDoRaha: temp comment: len(nextroundseed) + len(VrfProof) + */ len(hashSample) + len(timeSample) + len(hashSample) + len(Version) + //x10
 		5*len(cnt) + len(feeSample) //x9
 	// ---
 	log.Lvl3("Block Size Minus Transactions is: ", BlockSizeMinusTransactions)
@@ -480,21 +482,21 @@ func SCBlockMeasurement() (SummeryBlockSizeMinusTransactions int, MetaBlockSizeM
 	var samplePublicKey [33]byte
 	//var samplePublicKey kyber.Point
 	// --- VRF
-	t := []byte("first round's seed")
-	VrfPubkey, VrfPrivkey := vrf.VrfKeygen()
-	proof, _ := VrfPrivkey.ProveBytes(t)
-	_, vrfOutput := VrfPubkey.VerifyBytes(proof, t)
-	var nextroundseed [64]byte = vrfOutput
-	var VrfProof [80]byte = proof
+	// t := []byte("first round's seed")
+	// VrfPubkey, VrfPrivkey := vrf.VrfKeygen()
+	// proof, _ := VrfPrivkey.ProveBytes(t)
+	// _, vrfOutput := VrfPubkey.VerifyBytes(proof, t)
+	// var nextroundseed [64]byte = vrfOutput
+	// var VrfProof [80]byte = proof
 	// --- time
 	ti := []byte(time.Now().String())
 	var timeSample [4]byte
 	copy(timeSample[:], ti[:])
 	// ---
 	x10 := &SCBlockHeader{
-		SCRoundNumber:     SCRoundNumberSample,
-		RoundSeed:         nextroundseed,
-		LeadershipProof:   VrfProof,
+		SCRoundNumber: SCRoundNumberSample,
+		//RoundSeed:         nextroundseed,
+		//LeadershipProof:   VrfProof,
 		PreviousBlockHash: hashSample,
 		Timestamp:         timeSample,
 		MerkleRootHash:    hashSample,
@@ -521,7 +523,7 @@ func SCBlockMeasurement() (SummeryBlockSizeMinusTransactions int, MetaBlockSizeM
 	log.Lvl5(x11)
 
 	MetaBlockSizeMinusTransactions = len(BlockSizeSample) + //x11: SCMetaBlock
-		len(SCRoundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) +
+		len(SCRoundNumberSample) + /* len(nextroundseed) + len(VrfProof) +*/ len(hashSample) + len(timeSample) +
 		len(hashSample) + len(Version) + len(samplePublicKey) + //x10: SCBlockHeader
 		len(cnt) + len(feeSample) //x9: SCMetaBlockTransactionList
 	// ---
@@ -544,7 +546,7 @@ func SCBlockMeasurement() (SummeryBlockSizeMinusTransactions int, MetaBlockSizeM
 	}
 	log.LLvl5(x13)
 	SummeryBlockSizeMinusTransactions = len(BlockSizeSample) + //x13: SCSummeryBlock
-		len(SCRoundNumberSample) + len(nextroundseed) + len(VrfProof) + len(hashSample) + len(timeSample) + len(hashSample) +
+		len(SCRoundNumberSample) + /*len(nextroundseed) + len(VrfProof) +*/ len(hashSample) + len(timeSample) + len(hashSample) +
 		len(Version) + len(samplePublicKey) + //x10: SCBlockHeader
 		len(cnt) + len(feeSample) //x12: SCSummeryBlockTransactionList
 	log.Lvl3("Summery Block Size Minus Transactions is: ", SummeryBlockSizeMinusTransactions)

@@ -12,7 +12,7 @@ func TestSimulation(t *testing.T) {
 	//log.SetUseColors(true)
 	//log.SetPadding(true)
 	simul.Start("ChainBoost.toml")
-	//simul.Start("OpinionGathering.toml")
+	//simul.Start("deter.toml")
 }
 
 /*

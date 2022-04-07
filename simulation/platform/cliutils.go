@@ -35,7 +35,71 @@ func Scp(username, host, file, dest string) error {
 
 // Rsync copies files or directories to the remote host. If the DebugVisible
 // is > 1, the rsync-operation is displayed on screen.
+
+//-o : owner
+//-x : dont cross sys boundary
+//-T : time
+//-e : remote
+//-Pauz : ?!!
+/*
+	SSing to remote server:
+	ssh -i "~/.ssh/chainboostTest.pem" ubuntu@ec2-54-89-250-206.compute-1.amazonaws.com
+
+	check if rsync and ssh is installed:
+	rsync -version
+
+	install rsync:
+	brew install rsync
+
+	Test ssh+rsync on remote server:
+	ssh -i ~/.ssh/chainboostTest.pem ubuntu@ec2-54-89-250-206.compute-1.amazonaws.com rsync --version
+
+	RSync+SSH:
+	sudo rsync -Pauz -e "ssh -i /Users/raha/.ssh/chainboostTest.pem" ~/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/deploy/ ubuntu@ec2-54-89-250-206.compute-1.amazonaws.com:~/remote/
+
+	Parameters that didn’t work out!:
+	rsync -e 'ssh -v'
+	--rsync-path=/some/path/rsync-debug
+	-T -r -v -o -x
+	Compression=no -x
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		log.LLvl1(homeDir)
+	}
+	// test sudo
+	cmd := exec.Command("sudo", "-S", "ls")
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = strings.NewReader("Raha1367")
+
+	out, err := cmd.Output()
+	if err != nil {
+		log.LLvl1("Err", err)
+	} else {
+		log.LLvl1("OUT:", string(out))
+	}
+	//test SSH
+	addr := "ubuntu@ec2-3-87-13-148.compute-1.amazonaws.com"
+	cmd = exec.Command("ssh", "-T", "-i", "~/.ssh/chainboostTest.pem", addr)
+	cmd.Stderr = os.Stderr
+	if log.DebugVisible() > 1 {
+		cmd.Stdout = os.Stdout
+	}
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+*/
 func Rsync(username, host, file, dest string) error {
+	//-----
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		log.LLvl1(homeDir)
+	}
 	h, p, err := net.SplitHostPort(host)
 	if err != nil {
 		if !strings.Contains(err.Error(), "missing port in address") {
@@ -43,11 +107,19 @@ func Rsync(username, host, file, dest string) error {
 		}
 		p = "22"
 	}
+	log.LLvl1("raha: alaki port:", p)
+
 	addr := h + ":" + dest
 	if username != "" {
 		addr = username + "@" + addr
 	}
-	cmd := exec.Command("rsync", "-Pauz", "-e", fmt.Sprintf("ssh -T -o Compression=no -x -p %s", p), file, addr)
+	//cmd := exec.Command("rsync", "-Pauz", "-e", fmt.Sprintf("ssh -T -o Compression=no -x -p %s", p), file, addr)
+	SSHString := "ssh -i '/Users/raha/.ssh/chainboostTest.pem'"
+	//file = "/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/deploy/"
+	//addr = "ubuntu@ec2-3-87-13-148.compute-1.amazonaws.com:"
+	//cmd := exec.Command( /*"sudo", "-S",*/ "rsync", "-Pauz", "-e", SSHString, file, addr)
+	//cmd.Stdin = strings.NewReader("pass")
+	cmd := exec.Command("rsync", "-Pauz", "-e", SSHString, file, addr)
 	cmd.Stderr = os.Stderr
 	if log.DebugVisible() > 1 {
 		cmd.Stdout = os.Stdout
@@ -61,14 +133,25 @@ func Rsync(username, host, file, dest string) error {
 
 // SSHRun runs a command on the remote host
 func SSHRun(username, host, command string) ([]byte, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(homeDir)
+
 	addr := host
 	if username != "" {
 		addr = username + "@" + addr
 	}
-
 	log.Lvl2("Going to ssh to", addr, command)
-	cmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", addr,
-		"eval '"+command+"'")
+	// todoRaha: put the key somewhere safe
+	//cmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-i", "'~/Documents/GitHub/chainBoostScale/chainboostTest.pem'",
+	//	addr) //, "eval '"+command+"'")
+	//, "-o", "StrictHostKeyChecking=no"
+	// todoRaha: temp comment command
+	cmd := exec.Command("ssh", "-i", "~/.ssh/chainboostTest.pem", addr) //, "eval '"+command+"'")
+	//cmd.Dir = "~/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage"
 	buf, err := cmd.Output()
 	if err != nil {
 		return nil, xerrors.Errorf("cmd: %v", err)
@@ -92,7 +175,7 @@ func SSHRunStdout(username, host, command string) error {
 	}
 
 	log.Lvl4("Going to ssh to", addr, command)
-	cmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-p", p, addr,
+	cmd := exec.Command("ssh", "-i", "~/.ssh/chainboostTest.pem", "-o", "StrictHostKeyChecking=no", "-p", p, addr,
 		"eval '"+command+"'")
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout

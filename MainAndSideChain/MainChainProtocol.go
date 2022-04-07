@@ -5,13 +5,13 @@ package MainAndSideChain
 // ----------------------------------------------------------------------------------------------
 
 import (
-	"bytes"
-	"encoding/binary"
+	//"bytes"
+	//"encoding/binary"
 	"time"
 
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
-	"golang.org/x/xerrors"
+	//"golang.org/x/xerrors"
 )
 
 /* ----------------------------------------- TYPES -------------------------------------------------
@@ -123,21 +123,22 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 
 //
 func (bz *ChainBoost) MainChainCheckLeadership(msg MainChainNewRoundChan) error {
-	var vrfOutput [64]byte
-	toBeHashed := []byte(msg.Seed)
-	proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
-	if !ok {
-		log.Lvl2("error while generating proof")
-	}
-	_, vrfOutput = bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
+	//raha: todoRaha:temp commented all verf calls
+	// var vrfOutput [64]byte
+	// toBeHashed := []byte(msg.Seed)
+	// proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
+	// if !ok {
+	// 	log.Lvl2("error while generating proof")
+	// }
+	// _, vrfOutput = bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
 	var vrfoutputInt64 uint64
-	buf := bytes.NewReader(vrfOutput[:])
-	err := binary.Read(buf, binary.LittleEndian, &vrfoutputInt64)
-	if err != nil {
-		// log.Lvl2("Panic Raised:\n\n")
-		// panic(err)
-		return xerrors.New("problem creatde after recieving msg from MainChainNewRoundChan:   " + err.Error())
-	}
+	// buf := bytes.NewReader(vrfOutput[:])
+	// err := binary.Read(buf, binary.LittleEndian, &vrfoutputInt64)
+	// if err != nil {
+	// 	// log.Lvl2("Panic Raised:\n\n")
+	// 	// panic(err)
+	// 	return xerrors.New("problem creatde after recieving msg from MainChainNewRoundChan:   " + err.Error())
+	// }
 	// -----------
 	// the criteria for selecting the leader
 	if vrfoutputInt64 < msg.Power {

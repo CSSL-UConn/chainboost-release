@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
+	//"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
 
 	"math"
 	"time"
@@ -19,11 +19,13 @@ import (
 	"golang.org/x/xerrors"
 )
 
+// todoRaha: change it to ghada lab later
 // Configuration-variables
-var platformDst = "localhost"
+//var platformDst = "localhost"
+var platformDst = "deterlab"
 var nobuild = false
 var clean = true
-var build = ""
+var build = "simul"
 var machines = 3
 var monitorPort = monitor.DefaultSinkPort
 var simRange = ""
@@ -229,10 +231,12 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 		monitor.NewStats(rc.Map(), "hosts", "bf"),
 	}
 
-	if err := deployP.Cleanup(); err != nil {
-		log.Error(err)
-		return nil, xerrors.Errorf("cleanup: %v", err)
-	}
+	//todoRaha : temp commented
+
+	// if err := deployP.Cleanup(); err != nil {
+	// 	log.Error(err)
+	// 	return nil, xerrors.Errorf("cleanup: %v", err)
+	// }
 
 	if err := deployP.Deploy(rc); err != nil {
 		log.Error(err)
@@ -271,13 +275,14 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 		// in case of deterlab.
 		err := deployP.Start()
 		// Raha: initializing main chain's blockchain -------------------------
-		blockchain.InitializeMainChainBC(
-			rc.Get("FileSizeDistributionMean"), rc.Get("FileSizeDistributionVariance"),
-			rc.Get("ServAgrDurationDistributionMean"), rc.Get("ServAgrDurationDistributionVariance"),
-			rc.Get("InitialPowerDistributionMean"), rc.Get("InitialPowerDistributionVariance"),
-			rc.Get("Nodes"), rc.Get("SimulationSeed"))
-		// Raha: initializing side chain's blockchain -------------------------
-		blockchain.InitializeSideChainBC()
+		//ToDoRaha temp comment
+		// blockchain.InitializeMainChainBC(
+		// 	rc.Get("FileSizeDistributionMean"), rc.Get("FileSizeDistributionVariance"),
+		// 	rc.Get("ServAgrDurationDistributionMean"), rc.Get("ServAgrDurationDistributionVariance"),
+		// 	rc.Get("InitialPowerDistributionMean"), rc.Get("InitialPowerDistributionVariance"),
+		// 	rc.Get("Nodes"), rc.Get("SimulationSeed"))
+		// // Raha: initializing side chain's blockchain -------------------------
+		// blockchain.InitializeSideChainBC()
 
 		// --------------------------------------------
 		if err != nil {

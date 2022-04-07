@@ -10,7 +10,8 @@ import (
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"github.com/chainBoostScale/ChainBoost/simulation/monitor"
-	"github.com/chainBoostScale/ChainBoost/vrf"
+
+	//"github.com/chainBoostScale/ChainBoost/vrf"
 	"go.dedis.ch/kyber/v3/pairing"
 
 	//"go.dedis.ch/kyber/v3/sign/bls"
@@ -400,7 +401,8 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 	bz.CommitteeNodesTreeNodeID = make([]onet.TreeNodeID, bz.CommitteeWindow)
 	bz.SummPoRTxs = make(map[int]int)
 	// bls key pair for each node for VRF
-	_, bz.ECPrivateKey = vrf.VrfKeygen()
+	//raha todo temp comment
+	//_, bz.ECPrivateKey = vrf.VrfKeygen()
 	// --------------------------------------- blscosi -------------------
 	if err := n.RegisterChannel(&bz.RtLSideChainNewRoundChan); err != nil {
 		return bz, err

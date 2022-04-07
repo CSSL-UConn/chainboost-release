@@ -1,4 +1,3 @@
-//module go.dedis.ch/onet/v3
 module github.com/chainBoostScale/ChainBoost
 
 require (
