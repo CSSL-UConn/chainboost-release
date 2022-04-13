@@ -22,7 +22,7 @@ type simulInit struct{}
 type simulInitDone struct{}
 
 // Simulate starts the server and will setup the protocol.
-// Raha: in cas of localhost simulation,
+// Raha: in case of localhost simulation,
 // in localhost.go simulate function will be called and its params are:
 // Simulate(d.Suite, host, d.Simulation, "") which means
 // host = 127.0.0." + strconv.Itoa(index+1)

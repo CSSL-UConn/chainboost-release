@@ -190,8 +190,10 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 		//{"simul", "amd64", "linux", d.simulDir},
 		{"simul", "arm64", "darwin", d.simulDir},
 		{"simul", "arm64", "linux", d.simulDir},
+		//{"users", "arm64", "darwin", d.simulDir},
+		//{"users", "arm64", "linux", d.simulDir},
 		//{"users", "386", "freebsd", path.Join(d.platformDir, "deterlab_users")},
-		//{"users", "arm64", "linux", path.Join(d.platformDir, "deterlab_users")},
+		{"users", "arm64", "linux", path.Join(d.platformDir, "deterlab_users")},
 	}
 	if build == "" {
 		build = "simul,users"
