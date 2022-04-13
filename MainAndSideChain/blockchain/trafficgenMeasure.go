@@ -19,8 +19,6 @@ import (
 	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 
-	//"github.com/chainBoostScale/ChainBoost/vrf"
-
 	// ToDoRaha: later that I brought everything from blscosi package to ChainBoost package, I shoudl add another pacckage with
 	// some definitions in it to be imported/used in blockchain(here) and simulation package (instead of using blscosi/protocol)
 	"github.com/chainBoostScale/ChainBoost/por"

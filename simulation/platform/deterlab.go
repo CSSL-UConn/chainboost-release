@@ -326,7 +326,7 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	//d.Phys = append(d.Phys, fullName)
 	//d.Virt = append(d.Virt, ip)
 	log.Lvl3("Raha: added 1 address from amazon free tier VPS")
-	deter.Phys = append(d.Phys, "ec2-54-234-59-95.compute-1.amazonaws.com:20")
+	deter.Phys = append(d.Phys, "ec2-3-83-2-13.compute-1.amazonaws.com:20")
 	deter.Virt = append(d.Virt, "54.234.59.95")
 	//-----------------------------------
 
@@ -532,7 +532,7 @@ func (d *Deterlab) loadAndCheckDeterlabVars() {
 	}
 
 	if d.MonitorAddress == "" {
-		d.MonitorAddress = readString("Please enter the Monitor address (where clients will connect)", "ec2-3-87-13-148.compute-1.amazonaws.com")
+		d.MonitorAddress = readString("Please enter the Monitor address (where clients will connect)", "ec2-3-83-2-13.compute-1.amazonaws.com")
 	}
 	if d.ProxyAddress == "" {
 		d.ProxyAddress = readString("Please enter the proxy redirection address", "localhost")
