@@ -62,13 +62,13 @@ func Start(rcs ...string) {
 	}
 	flag.Parse()
 	if simul == "" {
+		log.LLvl1("Raha: simul is empty")
 		startBuild()
 	} else {
-		log.LLvl1("raha here?!!")
-		err := platform.Simulate(0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		log.LLvl1("Raha: simul is not empty!")
+		err := platform.Simulate(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 			suite, serverAddress, simul, monitorAddress)
 		log.ErrFatal(err)
 	}
-	log.LLvl1("raha here?!!2")
 	os.Chdir(wd)
 }

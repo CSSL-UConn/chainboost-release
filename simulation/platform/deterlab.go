@@ -189,11 +189,13 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 		// deter has an amd64, linux architecture
 		//{"simul", "amd64", "linux", d.simulDir},
 		{"simul", "arm64", "darwin", d.simulDir},
-		{"simul", "arm64", "linux", d.simulDir},
+		//ToDoRaha: dynamic path
+		{"simul", "arm64", "linux", "/go/src/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"},
 		//{"users", "arm64", "darwin", d.simulDir},
 		//{"users", "arm64", "linux", d.simulDir},
 		//{"users", "386", "freebsd", path.Join(d.platformDir, "deterlab_users")},
-		{"users", "arm64", "linux", path.Join(d.platformDir, "deterlab_users")},
+		//{"users", "arm64", "linux", path.Join(d.platformDir, "deterlab_users")},
+		{"users", "arm64", "linux", path.Join("/go/src/github.com/chainBoostScale/ChainBoost/simulation/platform", "deterlab_users")},
 	}
 	if build == "" {
 		build = "simul,users"
@@ -213,16 +215,24 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 		go func(p pkg) {
 			defer wg.Done()
 			dst := path.Join(d.buildDir, p.name)
-			path, err := filepath.Rel(d.simulDir, p.path)
-			log.ErrFatal(err)
-
-			//ToDoRaha our the taregt system has?z
-
+			//raha
+			var path string
+			var err error
+			if p.system == "linux" {
+				// 	d.simulDir = "/go/src/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"
+				// 	d.platformDir = "/go/src/github.com/chainBoostScale/ChainBoost/simulation/platform"
+				path = "../../platform/deterlab_users"
+			} else {
+				path, err = filepath.Rel(d.simulDir, p.path)
+				log.ErrFatal(err)
+			}
 			var out string
 			if p.name == "simul" {
+				log.Lvl3("Building: simul")
 				out, err = Build(path, dst,
 					p.processor, p.system, append(arg, tags...)...)
 			} else {
+				log.Lvl3("Building: users")
 				out, err = Build(path, dst,
 					p.processor, p.system, arg...)
 			}
@@ -390,6 +400,7 @@ func (d *Deterlab) Start(args ...string) error {
 	// proxy => the proxy redirects packets to the same port the sink is
 	// listening.
 	// -n = stdout == /Dev/null, -N => no command stream, -T => no tty
+
 	//todoraha: commented temp  do we need them?
 	//redirection := strconv.Itoa(d.MonitorPort) + ":" + d.ProxyAddress + ":" + strconv.Itoa(d.MonitorPort)
 	//cmd := []string{"-nNTf", "-o", "StrictHostKeyChecking=no", "-o", "ExitOnForwardFailure=yes", "-R",
@@ -403,8 +414,7 @@ func (d *Deterlab) Start(args ...string) error {
 	//}
 	//log.Lvl3("Setup remote port forwarding", cmd)
 	go func() {
-		//err := SSHRunStdout(d.Login, d.Host, "cd remote; ./users -suite="+d.Suite)
-		err := SSHRunStdout(d.Login, d.Host, "cd remote; ./simul -suite="+d.Suite)
+		err := SSHRunStdout(d.Login, d.Host, "cd remote; ./users -suite="+d.Suite)
 		if err != nil {
 			log.Lvl3(err)
 		}

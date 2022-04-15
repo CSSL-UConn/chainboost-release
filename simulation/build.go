@@ -13,6 +13,7 @@ import (
 	"math"
 	"time"
 
+	//"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/simulation/monitor"
 	"github.com/chainBoostScale/ChainBoost/simulation/platform"
@@ -271,9 +272,17 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 	}()
 
 	go func() {
+		var err error
 		// Start monitor before so ssh tunnel can connect to the monitor
 		// in case of deterlab.
-		err := deployP.Start()
+		err = deployP.Start()
+		if err != nil {
+			done <- err
+			return
+		}
+
+		// --------------------------------------------
+
 		// Raha: initializing main chain's blockchain -------------------------
 		//ToDoRaha temp comment
 		// blockchain.InitializeMainChainBC(
@@ -285,10 +294,6 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 		// blockchain.InitializeSideChainBC()
 
 		// --------------------------------------------
-		if err != nil {
-			done <- err
-			return
-		}
 
 		if err = deployP.Wait(); err != nil {
 			log.Error("Test failed:", err)

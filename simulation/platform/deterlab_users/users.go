@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"os"
+	//"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -30,26 +30,31 @@ func init() {
 // - copy the simulation-files to the server
 // - start the simulation
 func main() {
-	log.LLvl1("raha here?!!3")
-	log.Fatal("De")
-	//init with deter.toml
+	log.LLvl1("./users file is called and is running the main function in users.go file")
+	// //raha: why?!!! coomented next line
+	// //log.Fatal("De")
+
+	// //init with deter.toml
 	deter := deterFromConfig()
 	flag.Parse()
-	// kill old processes
+	// // kill old processes
 	var wg sync.WaitGroup
 	re := regexp.MustCompile(" +")
-	hosts, err := exec.Command("/usr/testbed/bin/node_list", "-e", deter.Project+","+deter.Experiment).Output()
-	if err != nil {
-		log.Fatal("Deterlab experiment", deter.Project+"/"+deter.Experiment, "seems not to be swapped in. Aborting.")
-		os.Exit(-1)
-	}
+	// hosts, err := exec.Command("/usr/testbed/bin/node_list", "-e", deter.Project+","+deter.Experiment).Output()
+	// if err != nil {
+	// 	log.Fatal("Deterlab experiment", deter.Project+"/"+deter.Experiment, "tttt seems not to be swapped in. Aborting.")
+	// 	os.Exit(-1)
+	// }
+	hosts := "ec2-3-83-2-13.compute-1.amazonaws.com"
 	hostsTrimmed := strings.TrimSpace(re.ReplaceAllString(string(hosts), " "))
 	hostlist := strings.Split(hostsTrimmed, " ")
+
 	doneHosts := make([]bool, len(hostlist))
 	log.Lvl2("Found the following hosts:", hostlist)
 	if kill {
 		log.Lvl1("Cleaning up", len(hostlist), "hosts.")
 	}
+
 	for i, h := range hostlist {
 		wg.Add(1)
 		go func(i int, h string) {

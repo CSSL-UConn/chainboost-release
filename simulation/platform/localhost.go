@@ -171,6 +171,7 @@ func (d *Localhost) Deploy(rc *RunConfig) error {
 	d.PreScript = rc.Get("PreScript")
 	if d.PreScript != "" {
 		//raha added next 2 line
+		//ToDoRaha: what?!!!!!!
 		pwd := "/deterlab_users/GitHub/chainBoostScale/ChainBoost/simulation/chainBoostFiles/"
 		pwd = pwd + d.PreScript
 		_, err := os.Stat(pwd /*d.PreScript*/)
