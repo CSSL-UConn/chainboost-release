@@ -150,7 +150,7 @@ func SSHRun(username, host, command string) ([]byte, error) {
 	//	addr) //, "eval '"+command+"'")
 	//, "-o", "StrictHostKeyChecking=no"
 	// todoRaha: temp comment command
-	cmd := exec.Command("ssh", "-i", "~/.ssh/chainboostTest.pem", addr , "eval '"+command+"'")
+	cmd := exec.Command("ssh", "-i", "~/.ssh/chainboostTest.pem", addr, "eval '"+command+"'")
 	buf, err := cmd.Output()
 	if err != nil {
 		return nil, xerrors.Errorf("cmd: %v", err)

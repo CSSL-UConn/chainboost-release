@@ -219,6 +219,7 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 			var path string
 			var err error
 			if p.system == "linux" {
+				//todoraha
 				// 	d.simulDir = "/go/src/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"
 				// 	d.platformDir = "/go/src/github.com/chainBoostScale/ChainBoost/simulation/platform"
 				path = "../../platform/deterlab_users"
@@ -338,8 +339,8 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	//d.Phys = append(d.Phys, fullName)
 	//d.Virt = append(d.Virt, ip)
 	log.Lvl3("Raha: added 1 address from amazon free tier VPS")
-	deter.Phys = append(d.Phys, "ec2-3-83-2-13.compute-1.amazonaws.com:20")
-	deter.Virt = append(d.Virt, "54.234.59.95")
+	deter.Phys = append(d.Phys, "ec2-3-83-2-13.compute-1.amazonaws.com:22")
+	deter.Virt = append(d.Virt, "ec2-3-83-2-13.compute-1.amazonaws.com")
 	//-----------------------------------
 
 	log.Lvl3("Writing the config file :", deter)
@@ -369,6 +370,10 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	if err != nil {
 		log.Fatal("error copying chainBoost.toml-file:", d.simulDir, d.Simulation+".toml", d.deployDir, err)
 	}
+	err = exec.Command("cp", "/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/chainBoostFiles/chainboostTest.pem", d.deployDir).Run()
+	if err != nil {
+		log.Fatal("error copying chainboostTest.pem to: ", d.deployDir, err)
+	}
 
 	// Copying build-files to deploy-directory
 	build, err := ioutil.ReadDir(d.buildDir)
@@ -387,6 +392,9 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 		log.Fatal(err)
 	}
 	log.Lvl2("Done copying")
+
+	log.LLvl1("Raha: moving chainboostTest.pem file to .ssh in the servers")
+	SSHRunStdout(d.Login, d.Host, "mv ~/remote/chainboostTest.pem ~/.ssh")
 
 	return nil
 }
@@ -544,7 +552,7 @@ func (d *Deterlab) loadAndCheckDeterlabVars() {
 	}
 
 	if d.MonitorAddress == "" {
-		d.MonitorAddress = readString("Please enter the Monitor address (where clients will connect)", "ec2-3-83-2-13.compute-1.amazonaws.com")
+		d.MonitorAddress = readString("Please enter the Monitor address (where clients will connect)", "ec2-3-83-2-13.compute-1.amazonaws.com:22")
 	}
 	if d.ProxyAddress == "" {
 		d.ProxyAddress = readString("Please enter the proxy redirection address", "localhost")

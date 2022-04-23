@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"os"
+
 	//"os"
 	"os/exec"
 	"regexp"
@@ -14,24 +16,47 @@ import (
 
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
-	"github.com/chainBoostScale/ChainBoost/simulation/monitor"
 	"github.com/chainBoostScale/ChainBoost/simulation/platform"
 )
 
+//todoraha: commeneted: why!!!
 var kill = false
+
+//var suite string
+// func init() {
+// 	flag.BoolVar(&kill, "kill", false, "kill everything (and don't start anything)")
+// 	flag.StringVar(&suite, "suite", "ed25519", "suite used for simulation")
+// }
+// The address of this server - if there is only one server in the config
+// file, it will be derived from it automatically
+var serverAddress string
+
+// ip addr of the logger to connect to
+var monitorAddress string
+
+// Simul is != "" if this node needs to start a simulation of that protocol
+var simul string
+
+// suite is Ed25519 by default
 var suite string
 
+// Initialize before 'init' so we can directly use the fields as parameters
+// to 'Flag'
 func init() {
 	flag.BoolVar(&kill, "kill", false, "kill everything (and don't start anything)")
-	flag.StringVar(&suite, "suite", "ed25519", "suite used for simulation")
+	flag.StringVar(&serverAddress, "address", "", "our address to use")
+	flag.StringVar(&simul, "simul", "", "start simulating that protocol")
+	flag.StringVar(&monitorAddress, "monitor", "", "remote monitor")
+	flag.StringVar(&suite, "suite", "Ed25519", "cryptographic suite to use")
+
 }
 
 // DeterlabUsers is called on the users.deterlab.net-server and will:
 // - copy the simulation-files to the server
 // - start the simulation
 func main() {
-	log.LLvl1("./users file is called and is running the main function in users.go file")
-	// //raha: why?!!! coomented next line
+	log.LLvl1("Raha: ./users file is called and is running the main function in users.go file")
+	// //raha: why?!!! commented next line
 	// //log.Fatal("De")
 
 	// //init with deter.toml
@@ -45,12 +70,12 @@ func main() {
 	// 	log.Fatal("Deterlab experiment", deter.Project+"/"+deter.Experiment, "tttt seems not to be swapped in. Aborting.")
 	// 	os.Exit(-1)
 	// }
-	hosts := "ec2-3-83-2-13.compute-1.amazonaws.com"
+	hosts := "ec2-3-83-2-13.compute-1.amazonaws.com:22"
 	hostsTrimmed := strings.TrimSpace(re.ReplaceAllString(string(hosts), " "))
 	hostlist := strings.Split(hostsTrimmed, " ")
 
 	doneHosts := make([]bool, len(hostlist))
-	log.Lvl2("Found the following hosts:", hostlist)
+	log.Lvl1("Found the following hosts:", hostlist)
 	if kill {
 		log.Lvl1("Cleaning up", len(hostlist), "hosts.")
 	}
@@ -74,12 +99,13 @@ func main() {
 					_ = platform.SSHRunStdout("", h, "ps aux")
 				}
 			} else {
-				log.Lvl3("Setting the file-limit higher on", h)
-				// Copy configuration file to make higher file-limits
-				err := platform.SSHRunStdout("", h, "sudo cp remote/simul.conf /etc/security/limits.d")
-				if err != nil {
-					log.Fatal("Couldn't copy limit-file:", err)
-				}
+				log.LLvl1("Raha: skipping: Setting the file-limit higher")
+				// log.Lvl3("Setting the file-limit higher on", h)
+				// // Copy configuration file to make higher file-limits
+				// err := platform.SSHRunStdout("", h, "sudo cp remote/simul.conf /etc/security/limits.d")
+				// if err != nil {
+				// 	log.Fatal("Couldn't copy limit-file:", err)
+				// }
 			}
 			doneHosts[i] = true
 			log.Lvl3("Host", h, "cleaned up")
@@ -111,14 +137,17 @@ func main() {
 	// Proxy will listen on Sink:SinkPort and redirect every packet to
 	// RedirectionAddress:SinkPort-1. With remote tunnel forwarding it will
 	// be forwarded to the real sink
-	addr, port := deter.ProxyAddress, uint16(deter.MonitorPort+1)
-	log.Lvl2("Launching proxy redirecting to", addr, ":", port)
-	prox, err := monitor.NewProxy(uint16(deter.MonitorPort), addr, port)
-	if err != nil {
-		log.Fatal("Couldn't start proxy:", err)
-	}
-	go prox.Run()
-	log.Lvl1("starting", deter.Servers, "cothorities for a total of", deter.Hosts, "processes.")
+	//-------------------
+	// Tododraha: commented!!! why proxy why monitor?!
+	// addr, port := deter.ProxyAddress, uint16(deter.MonitorPort+1)
+	// log.Lvl2("Launching proxy redirecting to", addr, ":", port)
+	// prox, err := monitor.NewProxy(uint16(deter.MonitorPort), addr, port)
+	// if err != nil {
+	// 	log.Fatal("Couldn't start proxy:", err)
+	// }
+	// go prox.Run()
+	// log.Lvl1("starting", deter.Servers, "cothorities for a total of", deter.Hosts, "processes.")
+	//-------------------
 	killing := false
 	for i, phys := range deter.Phys {
 		log.Lvl2("Launching simul on", phys)
@@ -130,20 +159,55 @@ func main() {
 			log.Lvl4("Starting servers on physical machine ", internal, "with monitor = ",
 				monitorAddr)
 			// If PreScript is defined, run the appropriate script _before_ the simulation.
-			if deter.PreScript != "" {
-				err := platform.SSHRunStdout("", phys, "cd remote; sudo ./"+deter.PreScript+" deterlab")
-				if err != nil {
-					log.Fatal("error deploying PreScript: ", err)
-				}
-			}
+			log.LLvl1("Raha: skipping:run the appropriate script")
+			// if deter.PreScript != "" {
+			// 	log.LLvl1("raha: deter.PreScript running?")
+			// 	err := platform.SSHRunStdout("", phys, "cd remote; sudo ./"+deter.PreScript+" deterlab")
+			// 	if err != nil {
+			// 		log.Fatal("error deploying PreScript: ", err)
+			// 	}
+			// } else {
+			// 	log.LLvl1("raha: deter.PreScript is empty.")
+			// }
 			args := " -address=" + internal +
 				" -simul=" + deter.Simulation +
 				" -monitor=" + monitorAddr +
-				" -debug=" + strconv.Itoa(log.DebugVisible()) +
+				//todoraha
+				//" -debug=" + strconv.Itoa(log.DebugVisible()) +
 				" -suite=" + suite
 			log.Lvl3("Args is", args)
-			err := platform.SSHRunStdout("", phys, "cd remote; sudo ./simul "+
-				args)
+
+			// -----------------------------------------
+			// d, _ := os.Getwd()
+			// log.LLvl1("Raha:" + d)
+			// cmd := exec.Command("ls")
+			// cmd.Stdout = os.Stdout
+			// cmd.Stderr = os.Stderr
+			// err := cmd.Run()
+			// if err != nil {
+			// 	log.LLvl1("err")
+			// }
+			// //cd is ~/remote;!
+			cmd := exec.Command("./simul", "-simul", deter.Simulation)
+			// log.LLvl1(cmd)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			err := cmd.Run()
+			if err != nil {
+				log.LLvl1("err: ", err)
+			}
+
+			// -----------------------------------------
+			// todoraha: commeneted
+			//err := platform.SSHRunStdout("", phys, "cd remote; sudo ./simul "+
+			//	args)
+
+			//cd remote;
+			// err := platform.SSHRunStdout("ubuntu", "ec2-3-83-2-13.compute-1.amazonaws.com:22", "cd remote; sudo ./simul "+
+			// 	args)
+
+			// -----------------------------------------
+
 			if err != nil && !killing {
 				log.Lvl1("Error starting simul - will kill all others:", err, internal)
 				killing = true
@@ -157,7 +221,8 @@ func main() {
 	}
 	// wait for the servers to finish before stopping
 	wg.Wait()
-	prox.Stop()
+	//totdoraha: commented
+	//prox.Stop()
 }
 
 // Reads in the deterlab-config and drops out if there is an error
