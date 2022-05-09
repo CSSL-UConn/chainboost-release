@@ -190,12 +190,13 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 		//{"simul", "amd64", "linux", d.simulDir},
 		{"simul", "arm64", "darwin", d.simulDir},
 		//ToDoRaha: dynamic path
-		{"simul", "arm64", "linux", "/go/src/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"},
+		//{"simul", "arm64", "linux", "/go/src/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"},
+		{"simul", "amd64", "linux", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
 		//{"users", "arm64", "darwin", d.simulDir},
 		//{"users", "arm64", "linux", d.simulDir},
 		//{"users", "386", "freebsd", path.Join(d.platformDir, "deterlab_users")},
 		//{"users", "arm64", "linux", path.Join(d.platformDir, "deterlab_users")},
-		{"users", "arm64", "linux", path.Join("/go/src/github.com/chainBoostScale/ChainBoost/simulation/platform", "deterlab_users")},
+		{"users", "amd64", "linux", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/platform", "deterlab_users")},
 	}
 	if build == "" {
 		build = "simul,users"
@@ -218,15 +219,15 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 			//raha
 			var path string
 			var err error
-			if p.system == "linux" {
-				//todoraha
-				// 	d.simulDir = "/go/src/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"
-				// 	d.platformDir = "/go/src/github.com/chainBoostScale/ChainBoost/simulation/platform"
-				path = "../../platform/deterlab_users"
-			} else {
-				path, err = filepath.Rel(d.simulDir, p.path)
-				log.ErrFatal(err)
-			}
+			// if p.system == "linux" {
+			// 	//todoraha
+			d.simulDir = "/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"
+			d.platformDir = "/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/platform"
+			// 	path = "../../platform/deterlab_users"
+			// } else {
+			path, err = filepath.Rel(d.simulDir, p.path)
+			log.ErrFatal(err)
+			//}
 			var out string
 			if p.name == "simul" {
 				log.Lvl3("Building: simul")
@@ -333,14 +334,13 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	// ToDoRaha : temp comment, at the end they just fill 2 attributes in deter struct (deter.Virt, deter.Phys) by an string array of IPs and DNS resolvable host names
 	//log.Lvl3("Creating hosts")
 	//deter.createHosts()
-
-	// ToDoRaha added 1 address from amazon free tier VPS
+	//todoraha
 
 	//d.Phys = append(d.Phys, fullName)
 	//d.Virt = append(d.Virt, ip)
-	log.Lvl3("Raha: added 1 address from amazon free tier VPS")
-	deter.Phys = append(d.Phys, "ec2-3-83-2-13.compute-1.amazonaws.com:22")
-	deter.Virt = append(d.Virt, "ec2-3-83-2-13.compute-1.amazonaws.com")
+	log.Lvl3("Raha: added 1 address from uconn free tier VPS")
+	deter.Phys = append(d.Phys, "csi-lab-ssh.engr.uconn.edu:22")
+	deter.Virt = append(d.Virt, "csi-lab-ssh.engr.uconn.edu.com")
 	//-----------------------------------
 
 	log.Lvl3("Writing the config file :", deter)
@@ -552,7 +552,7 @@ func (d *Deterlab) loadAndCheckDeterlabVars() {
 	}
 
 	if d.MonitorAddress == "" {
-		d.MonitorAddress = readString("Please enter the Monitor address (where clients will connect)", "ec2-3-83-2-13.compute-1.amazonaws.com:22")
+		d.MonitorAddress = readString("Please enter the Monitor address (where clients will connect)", "csi-lab-ssh.engr.uconn.edu:22")
 	}
 	if d.ProxyAddress == "" {
 		d.ProxyAddress = readString("Please enter the proxy redirection address", "localhost")

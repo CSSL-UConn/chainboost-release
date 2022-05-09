@@ -114,7 +114,9 @@ func Rsync(username, host, file, dest string) error {
 		addr = username + "@" + addr
 	}
 	//cmd := exec.Command("rsync", "-Pauz", "-e", fmt.Sprintf("ssh -T -o Compression=no -x -p %s", p), file, addr)
-	SSHString := "ssh -i '/Users/raha/.ssh/chainboostTest.pem'"
+	//SSHString := "ssh -i '/Users/raha/.ssh/chainboostTest.pem'"
+	//todoraha: -i is required just if the key is not on default (~/.ssh) directory
+	SSHString := "ssh -i '/Users/raha/.ssh/id_rsa'"
 	//file = "/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/deploy/"
 	//addr = "ubuntu@ec2-3-87-13-148.compute-1.amazonaws.com:"
 	//cmd := exec.Command( /*"sudo", "-S",*/ "rsync", "-Pauz", "-e", SSHString, file, addr)
@@ -150,7 +152,8 @@ func SSHRun(username, host, command string) ([]byte, error) {
 	//	addr) //, "eval '"+command+"'")
 	//, "-o", "StrictHostKeyChecking=no"
 	// todoRaha: temp comment command
-	cmd := exec.Command("ssh", "-i", "~/.ssh/chainboostTest.pem", addr, "eval '"+command+"'")
+	//cmd := exec.Command("ssh", "-i", "~/.ssh/chainboostTest.pem", addr, "eval '"+command+"'")
+	cmd := exec.Command("ssh", addr, "eval '"+command+"'")
 	buf, err := cmd.Output()
 	if err != nil {
 		return nil, xerrors.Errorf("cmd: %v", err)
@@ -174,8 +177,11 @@ func SSHRunStdout(username, host, command string) error {
 	}
 
 	log.Lvl4("Going to ssh to", addr, command)
-	cmd := exec.Command("ssh", "-i", "~/.ssh/chainboostTest.pem", "-o", "StrictHostKeyChecking=no", "-p", p, addr,
+	//cmd := exec.Command("ssh", "-i", "~/.ssh/chainboostTest.pem", "-o", "StrictHostKeyChecking=no", "-p", p, addr,
+	//	"eval '"+command+"'")
+	cmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-p", p, addr,
 		"eval '"+command+"'")
+
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	err = cmd.Run()

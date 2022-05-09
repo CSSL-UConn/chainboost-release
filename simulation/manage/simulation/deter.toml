@@ -1,9 +1,9 @@
-Login = "ubuntu"
-Host = "ec2-3-83-2-13.compute-1.amazonaws.com:22"
+Login = "zam20015"
+Host = "csi-lab-ssh.engr.uconn.edu:22"
 Project = "SAFER"
 Experiment = "Dissent-CS"
 ProxyAddress = "localhost"
-MonitorAddress = "ec2-3-83-2-13.compute-1.amazonaws.com"
+MonitorAddress = "csi-lab-ssh.engr.uconn.edu"
 MonitorPort = 10000
 Servers = 1
 Simulation = "ChainBoost"

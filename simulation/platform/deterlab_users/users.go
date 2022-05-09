@@ -70,7 +70,7 @@ func main() {
 	// 	log.Fatal("Deterlab experiment", deter.Project+"/"+deter.Experiment, "tttt seems not to be swapped in. Aborting.")
 	// 	os.Exit(-1)
 	// }
-	hosts := "ec2-3-83-2-13.compute-1.amazonaws.com:22"
+	hosts := "csi-lab-ssh.engr.uconn.edu:22"
 	hostsTrimmed := strings.TrimSpace(re.ReplaceAllString(string(hosts), " "))
 	hostlist := strings.Split(hostsTrimmed, " ")
 

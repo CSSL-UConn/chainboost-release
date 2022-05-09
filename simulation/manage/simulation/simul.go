@@ -88,6 +88,6 @@ func (e *simulation) Run(config *onet.SimulationConfig) error {
 
 func main() {
 	//ToDoRaha!!
-	log.LLvl1("The simulation starts from here in the distributed servers???")
+	log.LLvl1("The simulation starts from here in the distributed servers!")
 	simul.Start("ChainBoost.toml")
 }
