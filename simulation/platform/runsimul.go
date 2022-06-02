@@ -33,11 +33,13 @@ type simulInitDone struct{}
 func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize, SectorNumber, NumberOfPayTXsUpperBound,
 	SimulationRounds, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, MCRoundPerEpoch, SimState int,
 	suite, serverAddress, simul, monitorAddress string) error {
+	log.LLvl1("Raha: func Simulate is runnning!")
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 	if err != nil {
 		// We probably are not needed
-		log.Lvl2(err, serverAddress)
-		return nil
+		log.LLvl1(err, serverAddress)
+		log.LLvl1("Raha:1")
+		return err
 	}
 	if monitorAddress != "" {
 		if err := monitor.ConnectSink(monitorAddress); err != nil {
@@ -117,6 +119,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 				_, err := scTmp.Server.Send(env.ServerIdentity, &simulInitDone{})
 				log.ErrFatal(err)
 			}()
+			log.LLvl1("Raha: is the error here?")
 			return nil
 		})
 		server.RegisterProcessorFunc(simulInitDoneID, func(env *network.Envelope) error {
@@ -127,6 +130,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 				measure.Reset()
 				measuresLock.Unlock()
 			}
+			log.LLvl1("Raha: is the error here?")
 			return nil
 		})
 		if server.ServerIdentity.ID.Equal(sc.Tree.Root.ServerIdentity.ID) {
@@ -172,6 +176,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			if NbrSubTrees > 0 {
 				err := cosiProtocol.SetNbrSubTree(NbrSubTrees)
 				if err != nil {
+					log.LLvl1("Raha:2")
 					return err
 				}
 			}
@@ -326,6 +331,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 	if simError != nil {
 		return xerrors.New("error from simulation run: " + simError.Error())
 	}
+	log.LLvl1("Raha: func Simulate is returning")
 	return nil
 }
 

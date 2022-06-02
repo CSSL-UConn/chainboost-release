@@ -1,10 +1,12 @@
 package main
 
 import (
+	"os"
+
 	"github.com/BurntSushi/toml"
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
-	simul "github.com/chainBoostScale/ChainBoost/simulation"
+	"github.com/chainBoostScale/ChainBoost/simulation/platform"
 
 	"golang.org/x/xerrors"
 )
@@ -87,7 +89,22 @@ func (e *simulation) Run(config *onet.SimulationConfig) error {
 }
 
 func main() {
-	//ToDoRaha!!
-	log.LLvl1("The simulation starts from here in the distributed servers!")
-	simul.Start("ChainBoost.toml")
+	log.LLvl1("running ./simul exe in: main package, main function")
+
+	//raha commented
+	//simul.Start("ChainBoost.toml")
+
+	wd, err := os.Getwd()
+	log.Lvl1("Running toml-file: ", "ChainBoost.toml")
+	os.Args = []string{os.Args[0], "ChainBoost.toml"}
+	log.LLvl1("Raha: simul is not empty!")
+	err = platform.Simulate(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		"bn256.adapter", "csi-lab-ssh.engr.uconn.edu", "ChainBoost.toml", "zam20015@csi-lab-ssh.engr.uconn.edu")
+	if err != nil {
+		log.LLvl1("Raha: err returned from simulate: ", err)
+	} else {
+		log.LLvl1("Raha: func simulate returned without err")
+	}
+	log.ErrFatal(err)
+	os.Chdir(wd)
 }

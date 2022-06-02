@@ -1,26 +1,19 @@
 package platform
 
-import (
-	"testing"
+// func TestDeterlab_parseHosts(t *testing.T) {
+// 	d := &Deterlab{}
+// 	require.NotNil(t, d.parseHosts(""))
+// 	require.NotNil(t, d.parseHosts(deterHostsErr1))
+// 	require.NotNil(t, d.parseHosts(deterHostsErr2))
 
-	"github.com/chainBoostScale/ChainBoost/onet/log"
-	"github.com/stretchr/testify/require"
-)
+// 	log.ErrFatal(d.parseHosts(deterHosts1))
+// 	require.Equal(t, 9, len(d.Virt))
+// 	require.Equal(t, 9, len(d.Phys))
 
-func TestDeterlab_parseHosts(t *testing.T) {
-	d := &Deterlab{}
-	require.NotNil(t, d.parseHosts(""))
-	require.NotNil(t, d.parseHosts(deterHostsErr1))
-	require.NotNil(t, d.parseHosts(deterHostsErr2))
-
-	log.ErrFatal(d.parseHosts(deterHosts1))
-	require.Equal(t, 9, len(d.Virt))
-	require.Equal(t, 9, len(d.Phys))
-
-	log.ErrFatal(d.parseHosts(deterHosts2))
-	require.Equal(t, 2, len(d.Virt))
-	require.Equal(t, 2, len(d.Phys))
-}
+// 	log.ErrFatal(d.parseHosts(deterHosts2))
+// 	require.Equal(t, 2, len(d.Virt))
+// 	require.Equal(t, 2, len(d.Phys))
+// }
 
 const deterHostsErr1 = `
 Experiment: SAFER/LB-LLD

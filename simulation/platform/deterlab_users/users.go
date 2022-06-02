@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"os"
 
 	//"os"
 	"os/exec"
@@ -75,7 +74,7 @@ func main() {
 	hostlist := strings.Split(hostsTrimmed, " ")
 
 	doneHosts := make([]bool, len(hostlist))
-	log.Lvl1("Found the following hosts:", hostlist)
+	log.LLvl1("Found the following hosts:", hostlist)
 	if kill {
 		log.Lvl1("Cleaning up", len(hostlist), "hosts.")
 	}
@@ -114,23 +113,23 @@ func main() {
 	cleanupChannel := make(chan string)
 	go func() {
 		wg.Wait()
-		log.Lvl3("Done waiting")
+		log.LLvl1("Done waiting")
 		cleanupChannel <- "done"
 	}()
 	select {
 	case msg := <-cleanupChannel:
-		log.Lvl3("Received msg from cleanupChannel", msg)
+		log.LLvl1("Received msg from cleanupChannel", msg)
 	case <-time.After(time.Second * 20):
 		for i, m := range doneHosts {
 			if !m {
-				log.Lvl1("Missing host:", hostlist[i], "- You should run")
-				log.Lvl1("/usr/testbed/bin/node_reboot", hostlist[i])
+				log.LLvl1("Missing host:", hostlist[i], "- You should run")
+				log.LLvl1("/usr/testbed/bin/node_reboot", hostlist[i])
 			}
 		}
 		log.Fatal("Didn't receive all replies while cleaning up - aborting.")
 	}
 	if kill {
-		log.Lvl2("Only cleaning up - returning")
+		log.LLvl1("Only cleaning up - returning")
 		return
 	}
 	// ADDITIONS : the monitoring part
@@ -150,13 +149,13 @@ func main() {
 	//-------------------
 	killing := false
 	for i, phys := range deter.Phys {
-		log.Lvl2("Launching simul on", phys)
+		log.LLvl1("Launching simul on", phys)
 		wg.Add(1)
 		go func(phys, internal string) {
 			//log.Lvl4("running on", phys, cmd)
 			defer wg.Done()
 			monitorAddr := deter.MonitorAddress + ":" + strconv.Itoa(deter.MonitorPort)
-			log.Lvl4("Starting servers on physical machine ", internal, "with monitor = ",
+			log.LLvl1("Starting servers on physical machine ", internal, "with monitor = ",
 				monitorAddr)
 			// If PreScript is defined, run the appropriate script _before_ the simulation.
 			log.LLvl1("Raha: skipping:run the appropriate script")
@@ -173,9 +172,9 @@ func main() {
 				" -simul=" + deter.Simulation +
 				" -monitor=" + monitorAddr +
 				//todoraha
-				//" -debug=" + strconv.Itoa(log.DebugVisible()) +
+				" -debug=" + strconv.Itoa(log.DebugVisible()) +
 				" -suite=" + suite
-			log.Lvl3("Args is", args)
+			log.LLvl1("Args is", args)
 
 			// -----------------------------------------
 			// d, _ := os.Getwd()
@@ -188,35 +187,33 @@ func main() {
 			// 	log.LLvl1("err")
 			// }
 			// //cd is ~/remote;!
-			cmd := exec.Command("./simul", "-simul", deter.Simulation)
-			// log.LLvl1(cmd)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			err := cmd.Run()
-			if err != nil {
-				log.LLvl1("err: ", err)
-			}
+
+			// cmd := exec.Command("./simul", " -simul=", deter.Simulation)
+			// // log.LLvl1(cmd)
+			// cmd.Stdout = os.Stdout
+			// cmd.Stderr = os.Stderr
+			// err := cmd.Run()
+			// if err != nil {
+			// 	log.LLvl1("err: ", err)
+			// }
 
 			// -----------------------------------------
 			// todoraha: commeneted
-			//err := platform.SSHRunStdout("", phys, "cd remote; sudo ./simul "+
-			//	args)
-
-			//cd remote;
-			// err := platform.SSHRunStdout("ubuntu", "ec2-3-83-2-13.compute-1.amazonaws.com:22", "cd remote; sudo ./simul "+
-			// 	args)
+			log.LLvl1("Raha: running ./simul with non-empty simul tag!!!")
+			err := platform.SSHRunStdout("zam20015", "csi-lab-ssh.engr.uconn.edu:22", "cd remote; ./simul "+
+				args)
 
 			// -----------------------------------------
 
 			if err != nil && !killing {
-				log.Lvl1("Error starting simul - will kill all others:", err, internal)
+				log.LLvl1("Error starting simul - will kill all others:", err, internal)
 				killing = true
 				err := exec.Command("killall", "ssh").Run()
 				if err != nil {
 					log.Fatal("Couldn't killall ssh:", err)
 				}
 			}
-			log.Lvl4("Finished with simul on", internal)
+			log.LLvl1("Finished with simul on", internal)
 		}(phys, deter.Virt[i])
 	}
 	// wait for the servers to finish before stopping

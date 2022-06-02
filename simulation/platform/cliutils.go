@@ -115,7 +115,9 @@ func Rsync(username, host, file, dest string) error {
 	}
 	//cmd := exec.Command("rsync", "-Pauz", "-e", fmt.Sprintf("ssh -T -o Compression=no -x -p %s", p), file, addr)
 	//SSHString := "ssh -i '/Users/raha/.ssh/chainboostTest.pem'"
-	//todoraha: -i is required just if the key is not on default (~/.ssh) directory
+	//Raha: -i is required just if the key is not on default (~/.ssh) directory
+
+	// rahatodo: it works with out id_rsa now but I am not sure how I am authenticated to the gateway, will I need it or not!, I will keep it for now
 	SSHString := "ssh -i '/Users/raha/.ssh/id_rsa'"
 	//file = "/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/deploy/"
 	//addr = "ubuntu@ec2-3-87-13-148.compute-1.amazonaws.com:"

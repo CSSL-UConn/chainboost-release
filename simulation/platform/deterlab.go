@@ -188,8 +188,7 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 		//raha: changed
 		// deter has an amd64, linux architecture
 		//{"simul", "amd64", "linux", d.simulDir},
-		{"simul", "arm64", "darwin", d.simulDir},
-		//ToDoRaha: dynamic path
+		{"simul", "arm64", "darwin", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
 		//{"simul", "arm64", "linux", "/go/src/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"},
 		{"simul", "amd64", "linux", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
 		//{"users", "arm64", "darwin", d.simulDir},
@@ -219,15 +218,13 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 			//raha
 			var path string
 			var err error
-			// if p.system == "linux" {
-			// 	//todoraha
+
 			d.simulDir = "/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"
 			d.platformDir = "/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/platform"
-			// 	path = "../../platform/deterlab_users"
-			// } else {
+
 			path, err = filepath.Rel(d.simulDir, p.path)
 			log.ErrFatal(err)
-			//}
+
 			var out string
 			if p.name == "simul" {
 				log.Lvl3("Building: simul")
@@ -329,18 +326,14 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	if err != nil {
 		return xerrors.Errorf("decoding toml: %v", err)
 	}
-
 	//-----------------------------------
-	// ToDoRaha : temp comment, at the end they just fill 2 attributes in deter struct (deter.Virt, deter.Phys) by an string array of IPs and DNS resolvable host names
-	//log.Lvl3("Creating hosts")
-	//deter.createHosts()
-	//todoraha
-
-	//d.Phys = append(d.Phys, fullName)
-	//d.Virt = append(d.Virt, ip)
-	log.Lvl3("Raha: added 1 address from uconn free tier VPS")
+	// ToDoRaha: filling 2 attributes in deter struct: deter.Virt, deter.Phys
+	// by an string array of IPs and DNS resolvable host names
+	// createHosts and parseHost functioons are deterlab API specific.
+	// deter.createHosts()
+	log.Lvl3("Creating hosts")
 	deter.Phys = append(d.Phys, "csi-lab-ssh.engr.uconn.edu:22")
-	deter.Virt = append(d.Virt, "csi-lab-ssh.engr.uconn.edu.com")
+	deter.Virt = append(d.Virt, "csi-lab-ssh.engr.uconn.edu:22")
 	//-----------------------------------
 
 	log.Lvl3("Writing the config file :", deter)
@@ -364,16 +357,17 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	// Copying chainBoost.toml file to deploy-directory so it gets transferred to distributed servers
 	err = exec.Command("cp", d.simulDir+"/"+d.Simulation+".toml", d.deployDir).Run()
 	if err != nil {
-		log.Fatal("error copying chainBoost.toml-file:", d.simulDir, d.Simulation+".toml", d.deployDir, err)
+		log.Fatal("error copying chainBoost.toml-file:", d.simulDir, d.Simulation+".toml to ", d.deployDir, err)
 	}
 	err = exec.Command("cp", d.simulDir+"/"+"simul.go", d.deployDir).Run()
 	if err != nil {
 		log.Fatal("error copying chainBoost.toml-file:", d.simulDir, d.Simulation+".toml", d.deployDir, err)
 	}
-	err = exec.Command("cp", "/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/chainBoostFiles/chainboostTest.pem", d.deployDir).Run()
-	if err != nil {
-		log.Fatal("error copying chainboostTest.pem to: ", d.deployDir, err)
-	}
+	// this was for the amazon key file
+	// err = exec.Command("cp", "/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/chainBoostFiles/chainboostTest.pem", d.deployDir).Run()
+	// if err != nil {
+	// 	log.Fatal("error copying chainboostTest.pem to: ", d.deployDir, err)
+	// }
 
 	// Copying build-files to deploy-directory
 	build, err := ioutil.ReadDir(d.buildDir)
@@ -393,8 +387,9 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	}
 	log.Lvl2("Done copying")
 
-	log.LLvl1("Raha: moving chainboostTest.pem file to .ssh in the servers")
-	SSHRunStdout(d.Login, d.Host, "mv ~/remote/chainboostTest.pem ~/.ssh")
+	// this was for the amazon key file
+	// log.LLvl1("Raha: moving chainboostTest.pem file to .ssh in the servers")
+	// SSHRunStdout(d.Login, d.Host, "mv ~/remote/chainboostTest.pem ~/.ssh")
 
 	return nil
 }
@@ -454,67 +449,6 @@ func (d *Deterlab) Wait() error {
 		}
 		d.started = false
 	}
-	return nil
-}
-
-// Write the hosts.txt file automatically
-// from project name and number of servers
-func (d *Deterlab) createHosts() {
-	// Query deterlab's API for servers
-	log.Lvl2("Querying Deterlab's API to retrieve server names and addresses")
-	command := fmt.Sprintf("/usr/testbed/bin/expinfo -l -e %s,%s", d.Project, d.Experiment)
-	apiReply, err := SSHRun(d.Login, d.Host, command)
-	if err != nil {
-		log.Fatal("Error while querying Deterlab:", err)
-	}
-	log.ErrFatal(d.parseHosts(string(apiReply)))
-}
-
-func (d *Deterlab) parseHosts(str string) error {
-	// Get the link-information, which is the second block in `expinfo`-output
-	infos := strings.Split(str, "\n\n")
-	if len(infos) < 2 {
-		return xerrors.New("didn't recognize output of 'expinfo'")
-	}
-	linkInfo := infos[1]
-	// Test for correct version in case the API-output changes
-	if !strings.HasPrefix(linkInfo, "Virtual Lan/Link Info:") {
-		return xerrors.New("didn't recognize output of 'expinfo'")
-	}
-	linkLines := strings.Split(linkInfo, "\n")
-	if len(linkLines) < 5 {
-		return xerrors.New("didn't recognice output of 'expinfo'")
-	}
-	nodes := linkLines[3:]
-
-	d.Phys = []string{}
-	d.Virt = []string{}
-	names := make(map[string]bool)
-
-	for i, node := range nodes {
-		if i%2 == 1 {
-			continue
-		}
-		matches := strings.Fields(node)
-		if len(matches) != 6 {
-			return xerrors.New("expinfo-output seems to have changed")
-		}
-		// Convert client-0:0 to client-0
-		name := strings.Split(matches[1], ":")[0]
-		ip := matches[2]
-
-		fullName := fmt.Sprintf("%s.%s.%s.isi.deterlab.net", name, d.Experiment, d.Project)
-		log.Lvl3("Discovered", fullName, "on ip", ip)
-
-		if _, exists := names[fullName]; !exists {
-			d.Phys = append(d.Phys, fullName)
-			d.Virt = append(d.Virt, ip)
-			names[fullName] = true
-		}
-	}
-
-	log.Lvl2("Physical:", d.Phys)
-	log.Lvl2("Internal:", d.Virt)
 	return nil
 }
 
@@ -580,3 +514,58 @@ const simulConnectionsConf = `
 * soft nofile 128000
 * hard nofile 128000
 `
+
+// Write the hosts.txt file automatically
+// from project name and number of servers
+// func (d *Deterlab) createHosts() {
+// 	// Query deterlab's API for servers
+// 	log.Lvl2("Querying Deterlab's API to retrieve server names and addresses")
+// 	command := fmt.Sprintf("/usr/testbed/bin/expinfo -l -e %s,%s", d.Project, d.Experiment)
+// 	apiReply, err := SSHRun(d.Login, d.Host, command)
+// 	if err != nil {
+// 		log.Fatal("Error while querying Deterlab:", err)
+// 	}
+// 	log.ErrFatal(d.parseHosts(string(apiReply)))
+// }
+// func (d *Deterlab) parseHosts(str string) error {
+// 	// Get the link-information, which is the second block in `expinfo`-output
+// 	infos := strings.Split(str, "\n\n")
+// 	if len(infos) < 2 {
+// 		return xerrors.New("didn't recognize output of 'expinfo'")
+// 	}
+// 	linkInfo := infos[1]
+// 	// Test for correct version in case the API-output changes
+// 	if !strings.HasPrefix(linkInfo, "Virtual Lan/Link Info:") {
+// 		return xerrors.New("didn't recognize output of 'expinfo'")
+// 	}
+// 	linkLines := strings.Split(linkInfo, "\n")
+// 	if len(linkLines) < 5 {
+// 		return xerrors.New("didn't recognice output of 'expinfo'")
+// 	}
+// 	nodes := linkLines[3:]
+// 	d.Phys = []string{}
+// 	d.Virt = []string{}
+// 	names := make(map[string]bool)
+// 	for i, node := range nodes {
+// 		if i%2 == 1 {
+// 			continue
+// 		}
+// 		matches := strings.Fields(node)
+// 		if len(matches) != 6 {
+// 			return xerrors.New("expinfo-output seems to have changed")
+// 		}
+// 		// Convert client-0:0 to client-0
+// 		name := strings.Split(matches[1], ":")[0]
+// 		ip := matches[2]
+// 		fullName := fmt.Sprintf("%s.%s.%s.isi.deterlab.net", name, d.Experiment, d.Project)
+// 		log.Lvl3("Discovered", fullName, "on ip", ip)
+// 		if _, exists := names[fullName]; !exists {
+// 			d.Phys = append(d.Phys, fullName)
+// 			d.Virt = append(d.Virt, ip)
+// 			names[fullName] = true
+// 		}
+// 	}
+// 	log.Lvl2("Physical:", d.Phys)
+// 	log.Lvl2("Internal:", d.Virt)
+// 	return nil
+// }
