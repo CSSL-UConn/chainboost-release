@@ -308,7 +308,7 @@ func (m *MiniNet) Deploy(rc *RunConfig) error {
 
 	// Copy everything over to MiniNet
 	log.Lvl1("Copying over to", m.Login, "@", m.External)
-	err = Rsync(m.Login, m.External, m.deployDir+"/", "mininet_run/")
+	err = Rsync(m.Login, m.External, "", m.deployDir+"/", "mininet_run/")
 	if err != nil {
 		log.Fatal(err)
 	}

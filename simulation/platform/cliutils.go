@@ -33,66 +33,7 @@ func Scp(username, host, file, dest string) error {
 	return nil
 }
 
-// Rsync copies files or directories to the remote host. If the DebugVisible
-// is > 1, the rsync-operation is displayed on screen.
-
-//-o : owner
-//-x : dont cross sys boundary
-//-T : time
-//-e : remote
-//-Pauz : ?!!
-/*
-	SSing to remote server:
-	ssh -i "~/.ssh/chainboostTest.pem" ubuntu@ec2-54-89-250-206.compute-1.amazonaws.com
-
-	check if rsync and ssh is installed:
-	rsync -version
-
-	install rsync:
-	brew install rsync
-
-	Test ssh+rsync on remote server:
-	ssh -i ~/.ssh/chainboostTest.pem ubuntu@ec2-54-89-250-206.compute-1.amazonaws.com rsync --version
-
-	RSync+SSH:
-	sudo rsync -Pauz -e "ssh -i /Users/raha/.ssh/chainboostTest.pem" ~/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/deploy/ ubuntu@ec2-54-89-250-206.compute-1.amazonaws.com:~/remote/
-
-	Parameters that didn’t work out!:
-	rsync -e 'ssh -v'
-	--rsync-path=/some/path/rsync-debug
-	-T -r -v -o -x
-	Compression=no -x
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		log.LLvl1(homeDir)
-	}
-	// test sudo
-	cmd := exec.Command("sudo", "-S", "ls")
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = strings.NewReader("Raha1367")
-
-	out, err := cmd.Output()
-	if err != nil {
-		log.LLvl1("Err", err)
-	} else {
-		log.LLvl1("OUT:", string(out))
-	}
-	//test SSH
-	addr := "ubuntu@ec2-3-87-13-148.compute-1.amazonaws.com"
-	cmd = exec.Command("ssh", "-T", "-i", "~/.ssh/chainboostTest.pem", addr)
-	cmd.Stderr = os.Stderr
-	if log.DebugVisible() > 1 {
-		cmd.Stdout = os.Stdout
-	}
-	err = cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
-*/
-func Rsync(username, host, file, dest string) error {
+func Rsync(username, host, SSHString, file, dest string) error {
 	//-----
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -117,13 +58,17 @@ func Rsync(username, host, file, dest string) error {
 	//SSHString := "ssh -i '/Users/raha/.ssh/chainboostTest.pem'"
 	//Raha: -i is required just if the key is not on default (~/.ssh) directory
 
-	// rahatodo: it works with out id_rsa now but I am not sure how I am authenticated to the gateway, will I need it or not!, I will keep it for now
-	SSHString := "ssh -i '/Users/raha/.ssh/id_rsa'"
 	//file = "/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/deploy/"
 	//addr = "ubuntu@ec2-3-87-13-148.compute-1.amazonaws.com:"
 	//cmd := exec.Command( /*"sudo", "-S",*/ "rsync", "-Pauz", "-e", SSHString, file, addr)
 	//cmd.Stdin = strings.NewReader("pass")
-	cmd := exec.Command("rsync", "-Pauz", "-e", SSHString, file, addr)
+	var cmd *exec.Cmd
+	if SSHString != "" {
+		cmd = exec.Command("rsync", "-Pauz", "-e", SSHString, file, addr)
+	} else {
+		cmd = exec.Command("rsync", "-Pauz", "-e", file, addr)
+	}
+
 	cmd.Stderr = os.Stderr
 	if log.DebugVisible() > 1 {
 		cmd.Stdout = os.Stdout

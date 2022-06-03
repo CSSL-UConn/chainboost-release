@@ -54,7 +54,7 @@ func init() {
 // - copy the simulation-files to the server
 // - start the simulation
 func main() {
-	log.LLvl1("Raha: ./users file is called and is running the main function in users.go file")
+	log.LLvl1("Raha: ./users file is called on th server and is running the main function in users.go file")
 	// //raha: why?!!! commented next line
 	// //log.Fatal("De")
 
@@ -119,7 +119,7 @@ func main() {
 	select {
 	case msg := <-cleanupChannel:
 		log.LLvl1("Received msg from cleanupChannel", msg)
-	case <-time.After(time.Second * 20):
+	case <-time.After(time.Second * 20000):
 		for i, m := range doneHosts {
 			if !m {
 				log.LLvl1("Missing host:", hostlist[i], "- You should run")
@@ -152,22 +152,21 @@ func main() {
 		log.LLvl1("Launching simul on", phys)
 		wg.Add(1)
 		go func(phys, internal string) {
-			//log.Lvl4("running on", phys, cmd)
 			defer wg.Done()
 			monitorAddr := deter.MonitorAddress + ":" + strconv.Itoa(deter.MonitorPort)
 			log.LLvl1("Starting servers on physical machine ", internal, "with monitor = ",
 				monitorAddr)
 			// If PreScript is defined, run the appropriate script _before_ the simulation.
 			log.LLvl1("Raha: skipping:run the appropriate script")
-			// if deter.PreScript != "" {
-			// 	log.LLvl1("raha: deter.PreScript running?")
-			// 	err := platform.SSHRunStdout("", phys, "cd remote; sudo ./"+deter.PreScript+" deterlab")
-			// 	if err != nil {
-			// 		log.Fatal("error deploying PreScript: ", err)
-			// 	}
-			// } else {
-			// 	log.LLvl1("raha: deter.PreScript is empty.")
-			// }
+			if deter.PreScript != "" {
+				log.LLvl1("raha: deter.PreScript running?")
+				err := platform.SSHRunStdout("root", phys, "cd remote; sudo ./"+deter.PreScript+" deterlab")
+				if err != nil {
+					log.Fatal("error deploying PreScript: ", err)
+				}
+			} else {
+				log.LLvl1("raha: deter.PreScript is empty.")
+			}
 			args := " -address=" + internal +
 				" -simul=" + deter.Simulation +
 				" -monitor=" + monitorAddr +
@@ -198,9 +197,21 @@ func main() {
 			// }
 
 			// -----------------------------------------
+			// Raha added this part!
+			// -----------------------------------------
+			// Copy everything over to each vm
+			log.Lvl1("Copying over to", phys)
+			err := platform.SSHRunStdout("root", phys, "mkdir remote")
+			err = platform.Rsync("root", phys, "", "~/remote/", "~/remote/")
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.Lvl2("Done copying to VMs")
+			// -----------------------------------------
+
 			// todoraha: commeneted
 			log.LLvl1("Raha: running ./simul with non-empty simul tag!!!")
-			err := platform.SSHRunStdout("zam20015", "csi-lab-ssh.engr.uconn.edu:22", "cd remote; ./simul "+
+			err = platform.SSHRunStdout("root", phys, "cd remote; sudo ./simul "+
 				args)
 
 			// -----------------------------------------

@@ -99,7 +99,7 @@ func main() {
 	os.Args = []string{os.Args[0], "ChainBoost.toml"}
 	log.LLvl1("Raha: simul is not empty!")
 	err = platform.Simulate(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		"bn256.adapter", "csi-lab-ssh.engr.uconn.edu", "ChainBoost.toml", "zam20015@csi-lab-ssh.engr.uconn.edu")
+		"bn256.adapter", "chainboost001.csi", "ChainBoost.toml", "chainboost001.csi")
 	if err != nil {
 		log.LLvl1("Raha: err returned from simulate: ", err)
 	} else {

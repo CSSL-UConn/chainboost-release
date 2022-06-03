@@ -6,7 +6,6 @@ timeout = 900000
 RunWait = "600000s"
 Suite = "bn256.adapter"
 NbrSubTrees = 1
-PreScript = "ChainBoostPreScript.toml"
 FileSizeDistributionMean = 115
 FileSizeDistributionVariance = 5
 ServAgrDurationDistributionMean = 25

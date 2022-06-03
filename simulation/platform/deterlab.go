@@ -328,12 +328,13 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	}
 	//-----------------------------------
 	// ToDoRaha: filling 2 attributes in deter struct: deter.Virt, deter.Phys
-	// by an string array of IPs and DNS resolvable host names
-	// createHosts and parseHost functioons are deterlab API specific.
+	// by an "string array of IPs and DNS resolvable host names"
+
+	// createHosts and parseHost functions are deterlab API specific.
 	// deter.createHosts()
-	log.Lvl3("Creating hosts")
-	deter.Phys = append(d.Phys, "csi-lab-ssh.engr.uconn.edu:22")
-	deter.Virt = append(d.Virt, "csi-lab-ssh.engr.uconn.edu:22")
+	log.Lvl3("Getting the hosts (vm addresses?)")
+	deter.Phys = append(d.Phys, "192.168.0.86:22")
+	deter.Virt = append(d.Virt, "chainboost001.csi:22")
 	//-----------------------------------
 
 	log.Lvl3("Writing the config file :", deter)
@@ -359,15 +360,11 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	if err != nil {
 		log.Fatal("error copying chainBoost.toml-file:", d.simulDir, d.Simulation+".toml to ", d.deployDir, err)
 	}
+
 	err = exec.Command("cp", d.simulDir+"/"+"simul.go", d.deployDir).Run()
 	if err != nil {
 		log.Fatal("error copying chainBoost.toml-file:", d.simulDir, d.Simulation+".toml", d.deployDir, err)
 	}
-	// this was for the amazon key file
-	// err = exec.Command("cp", "/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/chainBoostFiles/chainboostTest.pem", d.deployDir).Run()
-	// if err != nil {
-	// 	log.Fatal("error copying chainboostTest.pem to: ", d.deployDir, err)
-	// }
 
 	// Copying build-files to deploy-directory
 	build, err := ioutil.ReadDir(d.buildDir)
@@ -378,18 +375,17 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 		}
 	}
 
-	// Copy everything over to Deterlab
+	// Copy everything over to uconn's gateway server
 	log.Lvl1("Copying over to", d.Login, "@", d.Host)
+
+	// rahatodo: it works with out id_rsa now but I am not sure how I am authenticated to the gateway, will I need it or not!, I will keep it for now
+	SSHString := "ssh -i '/Users/raha/.ssh/id_rsa'"
 	//ToDoRaha: fix this later
-	err = Rsync(d.Login, d.Host, d.deployDir+"/", "~/remote/")
+	err = Rsync(d.Login, d.Host, SSHString, d.deployDir+"/", "~/remote/")
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Lvl2("Done copying")
-
-	// this was for the amazon key file
-	// log.LLvl1("Raha: moving chainboostTest.pem file to .ssh in the servers")
-	// SSHRunStdout(d.Login, d.Host, "mv ~/remote/chainboostTest.pem ~/.ssh")
 
 	return nil
 }
@@ -405,18 +401,20 @@ func (d *Deterlab) Start(args ...string) error {
 	// -n = stdout == /Dev/null, -N => no command stream, -T => no tty
 
 	//todoraha: commented temp  do we need them?
-	//redirection := strconv.Itoa(d.MonitorPort) + ":" + d.ProxyAddress + ":" + strconv.Itoa(d.MonitorPort)
-	//cmd := []string{"-nNTf", "-o", "StrictHostKeyChecking=no", "-o", "ExitOnForwardFailure=yes", "-R",
-	//	redirection, fmt.Sprintf("%s@%s", d.Login, d.Host)}
-	//exCmd := exec.Command("ssh", cmd...)
-	//if err := exCmd.Start(); err != nil {
-	//	log.Fatal("Failed to start the ssh port forwarding:", err)
-	//}
-	//if err := exCmd.Wait(); err != nil {
-	//	log.Fatal("ssh port forwarding exited in failure:", err)
-	//}
-	//log.Lvl3("Setup remote port forwarding", cmd)
+	// redirection := strconv.Itoa(d.MonitorPort) + ":" + d.ProxyAddress + ":" + strconv.Itoa(d.MonitorPort)
+	// cmd := []string{"-nNTf", "-o", "StrictHostKeyChecking=no", "-o", "ExitOnForwardFailure=yes", "-R",
+	// 	redirection, fmt.Sprintf("%s@%s", d.Login, d.Host)}
+	// exCmd := exec.Command("ssh", cmd...)
+	// if err := exCmd.Start(); err != nil {
+	// 	log.Fatal("Failed to start the ssh port forwarding:", err)
+	// }
+	// if err := exCmd.Wait(); err != nil {
+	// 	log.Fatal("ssh port forwarding exited in failure:", err)
+	// }
+	// log.Lvl3("Setup remote port forwarding", cmd)
+
 	go func() {
+		log.LLvl1("Raha: Running ./users on the server:", d.Login, "@", d.Host)
 		err := SSHRunStdout(d.Login, d.Host, "cd remote; ./users -suite="+d.Suite)
 		if err != nil {
 			log.Lvl3(err)
@@ -468,7 +466,7 @@ func (d *Deterlab) loadAndCheckDeterlabVars() {
 	}
 
 	if d.Host == "" {
-		d.Host = readString("Please enter the hostname of deterlab", "users.deterlab.net")
+		d.Host = readString("Please enter the hostname of deterlab", "csi-lab-ssh.engr.uconn.edu")
 	}
 
 	login, err := user.Current()
