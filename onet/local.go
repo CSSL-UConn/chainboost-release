@@ -273,7 +273,7 @@ func (l *LocalTest) WaitDone(t time.Duration) error {
 
 // CloseAll closes all the servers.
 func (l *LocalTest) CloseAll() {
-	log.Lvl3("Stopping all")
+	log.LLvl1("Stopping all")
 	if err := l.WaitDone(time.Second); err != nil {
 		log.Warn("Some things still running:", err)
 	}
@@ -326,7 +326,7 @@ func (l *LocalTest) CloseAll() {
 	}
 
 	for _, node := range l.Nodes {
-		log.Lvl3("Closing node", node)
+		log.LLvl1("Closing node", node)
 		err := node.closeDispatch()
 		if err != nil {
 			log.Error("Error while closing dispatcher:", err)
@@ -338,7 +338,7 @@ func (l *LocalTest) CloseAll() {
 	for _, srv := range l.Servers {
 		sd.Add(1)
 		go func(server *Server) {
-			log.Lvl3("Closing server", server.ServerIdentity.Address)
+			log.LLvl1("Closing server", server.ServerIdentity.Address)
 			err := server.Close()
 			if err != nil {
 				log.Error("Closing server", server.ServerIdentity.Address,
@@ -346,7 +346,7 @@ func (l *LocalTest) CloseAll() {
 			}
 
 			for server.Listening() {
-				log.Lvl1("Sleeping while waiting to close...")
+				log.LLvl1("Sleeping while waiting to close...")
 				time.Sleep(10 * time.Millisecond)
 			}
 			sd.Done()
@@ -525,7 +525,7 @@ func newTCPServer(s network.Suite, port int, path string, wantsTLS bool) *Server
 			l.Close()
 			break
 		}
-		log.Lvl2("Found closed port:", addrWS)
+		log.LLvl1("Found closed port:", addrWS)
 	}
 	scheme := "http"
 	if wantsTLS {

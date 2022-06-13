@@ -344,10 +344,10 @@ func (c *Client) SendProtobufParallelWithDecoder(nodes []*network.ServerIdentity
 				log.Lvlf3("Asking %T from: %v - %v", msg, node.Address, node.URL)
 				reply, err := c.Send(node, path, buf)
 				if err != nil {
-					log.Lvl2("Error while sending to node:", node, err)
+					log.LLvl1("Error while sending to node:", node, err)
 					errChan <- err
 				} else {
-					log.Lvl3("Done asking node", node, len(reply))
+					log.LLvl1("Done asking node", node, len(reply))
 					decoding.Lock()
 					select {
 					case <-done:

@@ -256,7 +256,7 @@ func (n *TreeNodeInstance) RegisterChannelLength(c interface{}, length int) erro
 	n.channels[typ] = c
 	//typ := network.RTypeToUUID(cr.Elem().Field(1).Type) n.channels[typ] = c
 	n.messageTypeFlags[typ] = flags
-	log.Lvl4("Registered channel", typ, "with flags", flags)
+	log.LLvl1("Registered channel", typ, "with flags", flags)
 	return nil
 }
 
@@ -323,7 +323,7 @@ func (n *TreeNodeInstance) RegisterHandler(c interface{}) error {
 	typ := network.RegisterMessage(ptr.Interface())
 	n.handlers[typ] = c
 	n.messageTypeFlags[typ] = flags
-	log.Lvl3("Registered handler", typ, "with flags", flags)
+	log.LLvl1("Registered handler", typ, "with flags", flags)
 	return nil
 }
 
@@ -362,12 +362,12 @@ func (n *TreeNodeInstance) closeDispatch() error {
 			log.Error(log.Stack())
 		}
 	}()
-	log.Lvl3("Closing node", n.Info())
+	log.LLvl1("Closing node", n.Info())
 	n.msgDispatchQueueMutex.Lock()
 	n.closing = true
 	close(n.msgDispatchQueueWait)
 	n.msgDispatchQueueMutex.Unlock()
-	log.Lvl3("Closed node", n.Info())
+	log.LLvl1("Closed node", n.Info())
 	pni := n.ProtocolInstance()
 	if pni == nil {
 		return xerrors.New("Can't shutdown empty ProtocolInstance")
@@ -398,7 +398,7 @@ func (n *TreeNodeInstance) dispatchHandler(msgSlice []*ProtocolMsg) error {
 			}
 			msgs.Index(i).Set(m)
 		}
-		log.Lvl4("Dispatching aggregation to", n.ServerIdentity().Address)
+		log.LLvl1("Dispatching aggregation to", n.ServerIdentity().Address)
 		errV = f.Call([]reflect.Value{msgs})[0]
 	} else {
 		for _, msg := range msgSlice {
@@ -408,7 +408,7 @@ func (n *TreeNodeInstance) dispatchHandler(msgSlice []*ProtocolMsg) error {
 					n.Name(), reflect.TypeOf(msg.Msg),
 					errV.Interface().(error))
 			}
-			log.Lvl4("Dispatching", msg, "to", n.ServerIdentity().Address)
+			log.LLvl1("Dispatching", msg, "to", n.ServerIdentity().Address)
 			m, err := n.createValueAndVerify(to, msg)
 			if err != nil {
 				return xerrors.Errorf("processing message: %v", err)
@@ -457,16 +457,16 @@ func (n *TreeNodeInstance) dispatchChannel(msgSlice []*ProtocolMsg) error {
 	}()
 	to := reflect.TypeOf(n.channels[mt])
 	if n.hasFlag(mt, AggregateMessages) {
-		log.Lvl4("Received aggregated message of type:", mt)
+		log.LLvl1("Received aggregated message of type:", mt)
 		to = to.Elem()
 		out := reflect.MakeSlice(to, len(msgSlice), len(msgSlice))
 		for i, msg := range msgSlice {
-			log.Lvl4("Dispatching aggregated to", to)
+			log.LLvl1("Dispatching aggregated to", to)
 			m, err := n.createValueAndVerify(to.Elem(), msg)
 			if err != nil {
 				return xerrors.Errorf("processing message: %v", err)
 			}
-			log.Lvl4("Adding msg", m, "to", n.ServerIdentity().Address)
+			log.LLvl1("Adding msg", m, "to", n.ServerIdentity().Address)
 			out.Index(i).Set(m)
 		}
 		reflect.ValueOf(n.channels[mt]).Send(out)
@@ -477,7 +477,7 @@ func (n *TreeNodeInstance) dispatchChannel(msgSlice []*ProtocolMsg) error {
 			if err != nil {
 				return xerrors.Errorf("processing message: %v", err)
 			}
-			log.Lvl4(n.Name(), "Dispatching msg type", mt, " to", to, " :", m.Field(1).Interface())
+			log.LLvl1(n.Name(), "Dispatching msg type", mt, " to", to, " :", m.Field(1).Interface())
 			if out.Len() < out.Cap() {
 				n.msgDispatchQueueMutex.Lock()
 				closing := n.closing
@@ -498,11 +498,11 @@ func (n *TreeNodeInstance) dispatchChannel(msgSlice []*ProtocolMsg) error {
 // ProcessProtocolMsg takes a message and puts it into a queue for later processing.
 // This allows a protocol to have a backlog of messages.
 func (n *TreeNodeInstance) ProcessProtocolMsg(msg *ProtocolMsg) {
-	log.Lvl4(n.Info(), "Received message")
+	log.LLvl1(n.Info(), "Received message")
 	n.msgDispatchQueueMutex.Lock()
 	defer n.msgDispatchQueueMutex.Unlock()
 	if n.closing {
-		log.Lvl3("Received message for closed protocol")
+		log.LLvl1("Received message for closed protocol")
 		return
 	}
 	n.msgDispatchQueue = append(n.msgDispatchQueue, msg)
@@ -521,17 +521,17 @@ func (n *TreeNodeInstance) notifyDispatch() {
 
 func (n *TreeNodeInstance) dispatchMsgReader() {
 	log.TraceID(n.token.RoundID[:])
-	defer log.Lvl3("done tracing")
-	log.Lvl3("Starting node", n.Info())
+	defer log.LLvl1("done tracing")
+	log.LLvl1("Starting node", n.Info())
 	for {
 		n.msgDispatchQueueMutex.Lock()
 		if n.closing {
-			log.Lvl3("Closing reader")
+			log.LLvl1("Closing reader")
 			n.msgDispatchQueueMutex.Unlock()
 			return
 		}
 		if len(n.msgDispatchQueue) > 0 {
-			log.Lvl4(n.Info(), "Read message and dispatching it",
+			log.LLvl1(n.Info(), "Read message and dispatching it",
 				len(n.msgDispatchQueue))
 			msg := n.msgDispatchQueue[0]
 			n.msgDispatchQueue = n.msgDispatchQueue[1:]
@@ -543,7 +543,7 @@ func (n *TreeNodeInstance) dispatchMsgReader() {
 			}
 		} else {
 			n.msgDispatchQueueMutex.Unlock()
-			log.Lvl4(n.Info(), "Waiting for message")
+			log.LLvl1(n.Info(), "Waiting for message")
 			// Allow for closing of the channel
 			select {
 			case <-n.msgDispatchQueueWait:
@@ -554,7 +554,7 @@ func (n *TreeNodeInstance) dispatchMsgReader() {
 
 // dispatchMsgToProtocol will dispatch this onet.Data to the right instance
 func (n *TreeNodeInstance) dispatchMsgToProtocol(onetMsg *ProtocolMsg) error {
-	log.Lvl3("Dispatching", onetMsg.MsgType)
+	log.LLvl1("Dispatching", onetMsg.MsgType)
 
 	n.rx.add(uint64(onetMsg.Size))
 
@@ -563,7 +563,7 @@ func (n *TreeNodeInstance) dispatchMsgToProtocol(onetMsg *ProtocolMsg) error {
 	// if we still need to wait for additional messages, we return
 	msgType, msgs, done := n.aggregate(onetMsg)
 	if !done {
-		log.Lvl3(n.Name(), "Not done aggregating children msgs")
+		log.LLvl1(n.Name(), "Not done aggregating children msgs")
 		return nil
 	}
 	log.Lvlf5("%s->%s: Message is: %+v", onetMsg.From, n.Name(), onetMsg.Msg)
@@ -571,10 +571,10 @@ func (n *TreeNodeInstance) dispatchMsgToProtocol(onetMsg *ProtocolMsg) error {
 	var err error
 	switch {
 	case n.channels[msgType] != nil:
-		log.Lvl4(n.Name(), "Dispatching to channel")
+		log.LLvl1(n.Name(), "Dispatching to channel")
 		err = n.dispatchChannel(msgs)
 	case n.handlers[msgType] != nil:
-		log.Lvl4("Dispatching to handler", n.ServerIdentity().Address)
+		log.LLvl1("Dispatching to handler", n.ServerIdentity().Address)
 		err = n.dispatchHandler(msgs)
 	default:
 		return xerrors.Errorf("message-type not handled by the protocol: %s", reflect.TypeOf(onetMsg.Msg))
@@ -616,7 +616,7 @@ func (n *TreeNodeInstance) aggregate(onetMsg *ProtocolMsg) (network.MessageTypeI
 	}
 	msgs := append(n.msgQueue[mt], onetMsg)
 	n.msgQueue[mt] = msgs
-	log.Lvl4(n.ServerIdentity().Address, "received", len(msgs), "of", len(n.Children()), "messages")
+	log.LLvl1(n.ServerIdentity().Address, "received", len(msgs), "of", len(n.Children()), "messages")
 
 	// do we have everything yet or no
 	// get the node this host is in this tree
@@ -649,7 +649,7 @@ func (n *TreeNodeInstance) Done() {
 			return
 		}
 	}
-	log.Lvl3(n.Info(), "has finished. Deleting its resources")
+	log.LLvl1(n.Info(), "has finished. Deleting its resources")
 	n.Overlay.nodeDone(n.token)
 }
 

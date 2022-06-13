@@ -54,7 +54,7 @@ func Start(rcs ...string) {
 	if len(rcs) > 0 {
 		log.ErrFatal(err)
 		for _, rc := range rcs {
-			log.Lvl1("Running toml-file:", rc)
+			log.LLvl1("Running toml-file:", rc)
 			os.Args = []string{os.Args[0], rc}
 			Start()
 		}

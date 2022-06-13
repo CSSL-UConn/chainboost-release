@@ -140,8 +140,8 @@ func (d *Localhost) Configure(pc *Config) {
    if d.Simulation == "" {
        log.Fatal("No simulation defined in simulation")
    }
-   log.Lvl3(fmt.Sprintf("Localhost dirs: RunDir %s", d.runDir))
-   log.Lvl3("Localhost configured ...")
+   log.LLvl1(fmt.Sprintf("Localhost dirs: RunDir %s", d.runDir))
+   log.LLvl1("Localhost configured ...")
 }
 ```
 So, what we have at the end is:

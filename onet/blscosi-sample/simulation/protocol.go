@@ -99,7 +99,7 @@ func (s *SimulationProtocol) Node(config *onet.SimulationConfig) error {
 
 				switch msg.(type) {
 				case *protocol.Announcement, *protocol.Response:
-					log.Lvl1("Ignoring blscosi message for simulation on ", config.Server.ServerIdentity)
+					log.LLvl1("Ignoring blscosi message for simulation on ", config.Server.ServerIdentity)
 				default:
 					config.Overlay.Process(e)
 				}
@@ -108,16 +108,16 @@ func (s *SimulationProtocol) Node(config *onet.SimulationConfig) error {
 			break // this node has been found
 		}
 	}
-	log.Lvl3("Initializing node-index", index)
+	log.LLvl1("Initializing node-index", index)
 	return s.SimulationBFTree.Node(config)
 }
 
 // Run implements onet.Simulation.
 func (s *SimulationProtocol) Run(config *onet.SimulationConfig) error {
 	size := config.Tree.Size()
-	log.Lvl2("Size is:", size, "rounds:", s.Rounds)
+	log.LLvl1("Size is:", size, "rounds:", s.Rounds)
 	for round := 0; round < s.Rounds; round++ {
-		log.Lvl1("Starting round", round)
+		log.LLvl1("Starting round", round)
 		round := monitor.NewTimeMeasure("round")
 		blscosiService := config.GetService(blscosi.ServiceName).(*blscosi.Service)
 		blscosiService.NSubtrees = s.NSubtrees
@@ -131,7 +131,7 @@ func (s *SimulationProtocol) Run(config *onet.SimulationConfig) error {
 		}
 		serviceReply := &blscosi.SignatureResponse{}
 
-		log.Lvl1("Sending request to service...")
+		log.LLvl1("Sending request to service...")
 		err := client.SendProtobuf(config.Server.ServerIdentity, serviceReq, serviceReply)
 		if err != nil {
 			return fmt.Errorf("Cannot send:%s", err)
@@ -150,7 +150,7 @@ func (s *SimulationProtocol) Run(config *onet.SimulationConfig) error {
 		mask, err := serviceReply.Signature.GetMask(suite, publics)
 		monitor.RecordSingleMeasure("correct_nodes", float64(mask.CountEnabled()))
 
-		log.Lvl2("Signature correctly verified!")
+		log.LLvl1("Signature correctly verified!")
 	}
 	return nil
 }

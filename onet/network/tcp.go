@@ -348,6 +348,7 @@ func NewTCPListener(addr Address, s Suite) (*TCPListener, error) {
 func NewTCPListenerWithListenAddr(addr Address,
 	s Suite, listenAddr string) (*TCPListener, error) {
 	if addr.ConnType() != PlainTCP && addr.ConnType() != TLS {
+		log.LLvl1("ConnType: ", addr.ConnType(), "address: ", addr.String())
 		return nil, xerrors.New("TCPListener can only listen on TCP and TLS addresses")
 	}
 	t := &TCPListener{

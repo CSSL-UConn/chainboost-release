@@ -7,10 +7,13 @@ package MainAndSideChain
 import (
 	//"bytes"
 	//"encoding/binary"
+	"bytes"
+	"encoding/binary"
 	"time"
 
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
+	"golang.org/x/xerrors"
 	//"golang.org/x/xerrors"
 )
 
@@ -40,7 +43,7 @@ type MainChainNewRoundChan struct {
 
 func (bz *ChainBoost) StartMainChainProtocol() {
 	// the root node is filling the first block in first round
-	log.Lvl2(bz.Name(), "Filling round number ", bz.MCRoundNumber)
+	log.LLvl1(bz.Name(), "Filling round number ", bz.MCRoundNumber)
 	// for the first round we have the root node set as a round leader, so  it is true! and he takes txs from the queue
 	//----
 	bz.BCLock.Lock()
@@ -77,10 +80,10 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 		//----
 		bz.updateBCPowerRound(bz.Tree().Search(msg.LeaderTreeNodeID).Name(), false)
 		// in the case of a leader-less round
-		log.Lvl1("final result MC: leader TreeNodeID: ", msg.LeaderTreeNodeID.String(), "(root node) filled round number", bz.MCRoundNumber, "with empty block")
+		log.LLvl1("final result MC: leader TreeNodeID: ", msg.LeaderTreeNodeID.String(), "(root node) filled round number", bz.MCRoundNumber, "with empty block")
 		bz.updateMainChainBCTransactionQueueCollect()
 		bz.readBCAndSendtoOthers()
-		log.Lvl2("new round is announced")
+		log.LLvl1("new round is announced")
 		return
 	}
 	// -----------------------------------------------------
@@ -97,7 +100,7 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 			bz.wg.Add(x)
 		}
 		// ToDoRaha: later validate the leadership proof
-		log.Lvl1("final result MC: leader: ", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), " is the round leader for round number ", bz.MCRoundNumber)
+		log.LLvl1("final result MC: leader: ", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), " is the round leader for round number ", bz.MCRoundNumber)
 		// -----------------------------------------------
 		// dynamically change the side chain's committee with last main chain's leader
 		if bz.SimState == 2 { // i.e. if side chain running is set in simulation
@@ -115,35 +118,35 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 		bz.updateMainChainBCTransactionQueueTake()
 		// announce new round and give away required checkleadership info to nodes
 		bz.readBCAndSendtoOthers()
-		log.Lvl2("new round is announced")
+		log.LLvl1("new round is announced")
 	} else {
-		log.Lvl2("this round already has a leader!")
+		log.LLvl1("this round already has a leader!")
 	}
 }
 
 //
 func (bz *ChainBoost) MainChainCheckLeadership(msg MainChainNewRoundChan) error {
 	//raha: todoRaha:temp commented all verf calls
-	// var vrfOutput [64]byte
-	// toBeHashed := []byte(msg.Seed)
-	// proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
-	// if !ok {
-	// 	log.Lvl2("error while generating proof")
-	// }
-	// _, vrfOutput = bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
+	var vrfOutput [64]byte
+	toBeHashed := []byte(msg.Seed)
+	proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
+	if !ok {
+		log.LLvl1("error while generating proof")
+	}
+	_, vrfOutput = bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
 	var vrfoutputInt64 uint64
-	// buf := bytes.NewReader(vrfOutput[:])
-	// err := binary.Read(buf, binary.LittleEndian, &vrfoutputInt64)
-	// if err != nil {
-	// 	// log.Lvl2("Panic Raised:\n\n")
-	// 	// panic(err)
-	// 	return xerrors.New("problem creatde after recieving msg from MainChainNewRoundChan:   " + err.Error())
-	// }
-	// -----------
-	// the criteria for selecting the leader
+	buf := bytes.NewReader(vrfOutput[:])
+	err := binary.Read(buf, binary.LittleEndian, &vrfoutputInt64)
+	if err != nil {
+		// log.LLvl1("Panic Raised:\n\n")
+		// panic(err)
+		return xerrors.New("problem creatde after recieving msg from MainChainNewRoundChan:   " + err.Error())
+	}
+	//-----------
+	//the criteria for selecting the leader
 	if vrfoutputInt64 < msg.Power {
 		// -----------
-		log.Lvl4(bz.Name(), "I may be elected for round number ", bz.MCRoundNumber)
+		log.LLvl1(bz.Name(), "I may be elected for round number ", bz.MCRoundNumber)
 		bz.SendTo(bz.Root(), &NewLeader{LeaderTreeNodeID: bz.TreeNode().ID, MCRoundNumber: bz.MCRoundNumber})
 	}
 	return nil

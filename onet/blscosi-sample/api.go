@@ -29,7 +29,7 @@ func (c *Client) SignatureRequest(r *onet.Roster, msg []byte) (*SignatureRespons
 		return nil, errors.New("Got an empty roster-list")
 	}
 	dst := r.List[0]
-	log.Lvl4("Sending message to", dst)
+	log.LLvl1("Sending message to", dst)
 	reply := &SignatureResponse{}
 	err := c.SendProtobuf(dst, serviceReq, reply)
 

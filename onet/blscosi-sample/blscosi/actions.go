@@ -114,7 +114,7 @@ func writeSigAsJSON(res *blscosi.SignatureResponse, outW io.Writer) error {
 
 // sign takes a stream and a toml file defining the servers
 func sign(msg []byte, tomlFileName string) (*blscosi.SignatureResponse, error) {
-	log.Lvl2("Starting signature")
+	log.LLvl1("Starting signature")
 	f, err := os.Open(tomlFileName)
 	if err != nil {
 		return nil, err
@@ -127,7 +127,7 @@ func sign(msg []byte, tomlFileName string) (*blscosi.SignatureResponse, error) {
 		return nil, fmt.Errorf("Empty or invalid blscosi group file: %s", tomlFileName)
 	}
 
-	log.Lvl2("Sending signature to", g.Roster)
+	log.LLvl1("Sending signature to", g.Roster)
 	return check.SignStatement(msg, g.Roster)
 }
 
@@ -136,14 +136,14 @@ func sign(msg []byte, tomlFileName string) (*blscosi.SignatureResponse, error) {
 // assumes to find the standard signature in fileName.sig
 func verify(fileName, sigFileName, groupToml string) error {
 	// if the file hash matches the one in the signature
-	log.Lvl4("Reading file " + fileName)
+	log.LLvl1("Reading file " + fileName)
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return errors.New("Couldn't open msgFile: " + err.Error())
 	}
 
 	// Read the JSON signature file
-	log.Lvl4("Reading signature")
+	log.LLvl1("Reading signature")
 	var sigBytes []byte
 	if sigFileName == "" {
 		log.Info("[+] Reading signature from standard input ...")
@@ -155,7 +155,7 @@ func verify(fileName, sigFileName, groupToml string) error {
 		return err
 	}
 
-	log.Lvl4("Unmarshalling signature ")
+	log.LLvl1("Unmarshalling signature ")
 	sigStr := &sigHex{}
 	if err = json.Unmarshal(sigBytes, sigStr); err != nil {
 		return err
@@ -175,7 +175,7 @@ func verify(fileName, sigFileName, groupToml string) error {
 		return err
 	}
 
-	log.Lvl4("Reading group definition")
+	log.LLvl1("Reading group definition")
 	g, err := app.ReadGroupDescToml(fGroup)
 	if err != nil {
 		return err

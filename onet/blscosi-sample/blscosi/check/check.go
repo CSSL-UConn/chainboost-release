@@ -81,7 +81,7 @@ func CothorityCheck(tomlFileName string, detail bool) error {
 		if detail {
 			for i, first := range working {
 				for _, second := range working[i+1:] {
-					log.Lvl3("Testing connection between", first, second)
+					log.LLvl1("Testing connection between", first, second)
 					desc := []string{"none", "none"}
 					if d1 := group.GetDescription(first); d1 != "" {
 						desc = []string{d1, group.GetDescription(second)}
@@ -117,7 +117,7 @@ func checkRoster(ro *onet.Roster, descs []string, detail bool) error {
 		}
 		serverStr += name + " "
 	}
-	log.Lvl3("Sending message to: " + serverStr)
+	log.LLvl1("Sending message to: " + serverStr)
 	log.Lvlf3("Checking %d server(s) %s: ", len(ro.List), serverStr)
 	msg := []byte("verification")
 	sig, err := SignStatement(msg, ro)
@@ -143,7 +143,7 @@ func SignStatement(msg []byte, ro *onet.Roster) (*blscosi.SignatureResponse, err
 	pchan := make(chan *blscosi.SignatureResponse, 1)
 	echan := make(chan error, 1)
 	go func() {
-		log.Lvl3("Waiting for the response on SignRequest")
+		log.LLvl1("Waiting for the response on SignRequest")
 		response, err := client.SignatureRequest(ro, msg[:])
 		if err != nil {
 			echan <- err

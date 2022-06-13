@@ -163,9 +163,9 @@ func (c *Server) Close() error {
 	err = c.serviceManager.closeDatabase()
 	if err != nil {
 		err = xerrors.Errorf("closing db: %v", err)
-		log.Lvl3("Error closing database: " + err.Error())
+		log.LLvl1("Error closing database: " + err.Error())
 	}
-	log.Lvl3("Host Close", c.ServerIdentity.Address, "listening?", c.Router.Listening())
+	log.LLvl1("Host Close", c.ServerIdentity.Address, "listening?", c.Router.Listening())
 	return err
 }
 

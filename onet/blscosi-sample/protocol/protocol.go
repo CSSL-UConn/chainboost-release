@@ -161,7 +161,7 @@ func (p *BlsCosi) Shutdown() error {
 		close(p.FinalSignature)
 	})
 
-	log.Lvl3("BLS CoSi ends")
+	log.LLvl1("BLS CoSi ends")
 	return nil
 }
 
@@ -227,7 +227,7 @@ func (p *BlsCosi) runSubProtocols() {
 		}
 	}
 	p.subProtocolsLock.Unlock()
-	log.Lvl3(p.ServerIdentity().Address, "all protocols started")
+	log.LLvl1(p.ServerIdentity().Address, "all protocols started")
 
 	// Wait and collect all the signature responses
 	responses, err := p.collectSignatures()
@@ -236,7 +236,7 @@ func (p *BlsCosi) runSubProtocols() {
 		return
 	}
 
-	log.Lvl3(p.ServerIdentity().Address, "collected all signature responses")
+	log.LLvl1(p.ServerIdentity().Address, "collected all signature responses")
 
 	// generate root signature
 	sig, err := p.generateSignature(responses)
@@ -300,7 +300,7 @@ func (p *BlsCosi) startSubProtocol(tree *onet.Tree) (*SubBlsCosi, error) {
 	// responses. The main protocol will deal with early answers.
 	cosiSubProtocol.Threshold = tree.Size() - 1
 
-	log.Lvl4("Starting sub protocol with subleader %v", tree.Root.Children[0].ServerIdentity)
+	log.LLvl1("Starting sub protocol with subleader %v", tree.Root.Children[0].ServerIdentity)
 	err = cosiSubProtocol.Start()
 	if err != nil {
 		return nil, err

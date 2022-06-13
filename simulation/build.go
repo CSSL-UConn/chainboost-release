@@ -14,6 +14,7 @@ import (
 	"time"
 
 	//"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
+
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/simulation/monitor"
 	"github.com/chainBoostScale/ChainBoost/simulation/platform"
@@ -55,12 +56,13 @@ func startBuild() {
 	if deployP == nil {
 		log.Fatal("Platform not recognized.", platformDst)
 	}
-	log.Lvl1("Deploying to", platformDst)
+	log.LLvl1("Deploying to", platformDst)
 
 	simulations := flag.Args()
 	if len(simulations) == 0 {
 		log.Fatal("Please give a simulation to run")
 	}
+	log.LLvl1("simulations are: ", simulations)
 
 	for _, simulation := range simulations {
 		runconfigs := platform.ReadRunFile(deployP, simulation)
@@ -131,7 +133,7 @@ func startBuild() {
 			}()
 			select {
 			case <-testsDone:
-				log.Lvl1("Done with test", simulation)
+				log.LLvl1("Done with test", simulation)
 				//case <-time.After(2 * timeout):
 				//log.Fatal("Test failed to finish in", timeout)
 			}
@@ -176,13 +178,13 @@ func RunTests(deployP platform.Platform, name string, runconfigs []*platform.Run
 	for i, rc := range runconfigs {
 		// Implement a simple range-argument that will skip checks not in range
 		if i < start || i > stop {
-			log.Lvl2("Skipping", rc, "because of range")
+			log.LLvl1("Skipping", rc, "because of range")
 			continue
 		}
 
 		// run test t nTimes times
 		// take the average of all successful runs
-		log.Lvl1("Running test with config:", rc)
+		log.LLvl1("Running test with config:", rc)
 		stats, err := RunTest(deployP, rc)
 		if err != nil {
 			log.Error("Error running test:", err)
@@ -281,24 +283,10 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 			return
 		}
 
-		// --------------------------------------------
-
-		// Raha: initializing main chain's blockchain -------------------------
-		//ToDoRaha temp comment
-		// blockchain.InitializeMainChainBC(
-		// 	rc.Get("FileSizeDistributionMean"), rc.Get("FileSizeDistributionVariance"),
-		// 	rc.Get("ServAgrDurationDistributionMean"), rc.Get("ServAgrDurationDistributionVariance"),
-		// 	rc.Get("InitialPowerDistributionMean"), rc.Get("InitialPowerDistributionVariance"),
-		// 	rc.Get("Nodes"), rc.Get("SimulationSeed"))
-		// // Raha: initializing side chain's blockchain -------------------------
-		// blockchain.InitializeSideChainBC()
-
-		// --------------------------------------------
-
 		if err = deployP.Wait(); err != nil {
 			log.Error("Test failed:", err)
 			if err := deployP.Cleanup(); err != nil {
-				log.Lvl3("Couldn't cleanup platform:", err)
+				log.LLvl1("Couldn't cleanup platform:", err)
 			}
 			done <- err
 			return
@@ -412,7 +400,7 @@ func getStartStop(rcs int) (int, int) {
 			}
 		}
 	}
-	log.Lvl2("Range is", start, ":", stop)
+	log.LLvl1("Range is", start, ":", stop)
 	return start, stop
 }
 

@@ -56,7 +56,7 @@ func TestProcessor_AddMessage(t *testing.T) {
 	}
 	for _, f := range wrongFunctions {
 		fsig := reflect.TypeOf(f).String()
-		log.Lvl2("Checking function", fsig)
+		log.LLvl1("Checking function", fsig)
 		require.Error(t, p.RegisterHandler(f),
 			"Could register wrong function: "+fsig)
 	}

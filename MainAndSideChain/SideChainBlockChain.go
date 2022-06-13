@@ -20,12 +20,12 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 	// var rows *excelize.Rows
 	// var row []string
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	f, err := excelize.OpenFile("/root/remote/sidechainbc.xlsx")
 	if err != nil {
-		log.Lvl2("Raha: ", err)
+		log.LLvl1("Raha: ", err)
 		panic(err)
 	} else {
-		log.Lvl3(bz.Name(), "opening side chain bc")
+		log.LLvl1(bz.Name(), "opening side chain bc")
 	}
 
 	// --------------------------------------------------------------------
@@ -38,13 +38,13 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 	var RoundIntervalSec int
 	var roundNumber int
 	if rows1, err = f.Rows("RoundTable"); err != nil {
-		log.Lvl2("Panic Raised:\n\n")
+		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
 	for rows1.Next() {
 		rowNumber++
 		if row1, err = rows1.Columns(); err != nil {
-			log.Lvl2("Panic Raised:\n\n")
+			log.LLvl1("Panic Raised:\n\n")
 			panic(err)
 		}
 	}
@@ -74,7 +74,7 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 	// err = f.SetCellValue("RoundTable", axisBCSize, bz.SideChainBlockSize)
 	// // this value of block size is not correct if the queue gets not full sometimes, but in the evaluation sheet the value is correct
 	// if err != nil {
-	// 	log.Lvl2("Panic Raised:\n\n")
+	// 	log.LLvl1("Panic Raised:\n\n")
 	// 	panic(err)
 	// }
 	// --------------------------------------------------------------------
@@ -86,18 +86,18 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 
 	err = f.SetCellValue("RoundTable", cellStartDate, time.Now().Format(time.RFC3339))
 	if err != nil {
-		log.Lvl2("Panic Raised:\n\n")
+		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
 
 	err = f.SetCellValue("RoundTable", cellStartInterval, RoundIntervalSec)
 	if err != nil {
-		log.Lvl2("Panic Raised:\n\n")
+		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
 	err = f.SetCellValue("RoundTable", cellStartMCRN, bz.MCRoundNumber)
 	if err != nil {
-		log.Lvl2("Panic Raised:\n\n")
+		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
 
@@ -106,14 +106,14 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 	axisMiner := "C" + currentRow
 	err = f.SetCellValue("RoundTable", axisMiner, LeaderName)
 	if err != nil {
-		log.Lvl2("Panic Raised:\n\n")
+		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
 	// --------------------------------------------------------------------
 	axisSCRoundNumber := "A" + currentRow
 	err = f.SetCellValue("RoundTable", axisSCRoundNumber, bz.SCRoundNumber)
 	if err != nil {
-		log.Lvl2("Panic Raised:\n\n")
+		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
 	// --------------------------------------------------------------------
@@ -121,17 +121,17 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 		axisBlockSize := "B" + currentRow
 		err = f.SetCellValue("RoundTable", axisBlockSize, blocksize)
 		if err != nil {
-			log.Lvl2("Panic Raised:\n\n")
+			log.LLvl1("Panic Raised:\n\n")
 			panic(err)
 		}
 	}
 	// --------------------------------------------------------------------
-	err = f.SaveAs("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	err = f.SaveAs("/root/remote/sidechainbc.xlsx")
 	if err != nil {
-		log.Lvl2("Panic Raised:\n\n")
+		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.Lvl3("closing side chain  bc")
+		log.LLvl1("closing side chain  bc")
 	}
 	updateSideChainBCOverallEvaluation(currentRow, bz.SCRoundNumber)
 }
@@ -147,12 +147,12 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 	var rows *excelize.Rows
 	var row []string
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/mainchainbc.xlsx")
+	f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
 	if err != nil {
-		log.Lvl2("Raha: ", err)
+		log.LLvl1("Raha: ", err)
 		panic(err)
 	} else {
-		log.Lvl3("opening main chain bc")
+		log.LLvl1("opening main chain bc")
 	}
 	// -------------------------------------------------------------------------------
 	// each round, adding one row in power table based on the information in market matching sheet,
@@ -160,7 +160,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 	// for each storage server and each of their active contracst, add the stored file size to their current power
 	// -------------------------------------------------------------------------------
 	if rows, err = f.Rows("MarketMatching"); err != nil {
-		log.Lvl2("Panic Raised:\n\n")
+		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
 	var ServAgrDuration, ServAgrStartedMCRoundNumber, FileSize, ServAgrPublished, ServAgrID int
@@ -180,7 +180,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 		} else {
 			row, err = rows.Columns()
 			if err != nil {
-				log.Lvl2("Panic Raised:\n\n")
+				log.LLvl1("Panic Raised:\n\n")
 				panic(err)
 			} else {
 				for i, colCell := range row {
@@ -198,35 +198,35 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 					if i == 1 {
 						FileSize, err = strconv.Atoi(colCell)
 						if err != nil {
-							log.Lvl2("Panic Raised:\n\n")
+							log.LLvl1("Panic Raised:\n\n")
 							panic(err)
 						}
 					}
 					if i == 2 {
 						ServAgrDuration, err = strconv.Atoi(colCell)
 						if err != nil {
-							log.Lvl2("Panic Raised:\n\n")
+							log.LLvl1("Panic Raised:\n\n")
 							panic(err)
 						}
 					}
 					if i == 3 {
 						ServAgrStartedMCRoundNumber, err = strconv.Atoi(colCell)
 						if err != nil {
-							log.Lvl2("Panic Raised:\n\n")
+							log.LLvl1("Panic Raised:\n\n")
 							panic(err)
 						}
 					}
 					if i == 4 {
 						ServAgrID, err = strconv.Atoi(colCell)
 						if err != nil {
-							log.Lvl2("Panic Raised:\n\n")
+							log.LLvl1("Panic Raised:\n\n")
 							panic(err)
 						}
 					}
 					if i == 5 {
 						ServAgrPublished, err = strconv.Atoi(colCell)
 						if err != nil {
-							log.Lvl2("Panic Raised:\n\n")
+							log.LLvl1("Panic Raised:\n\n")
 							panic(err)
 						}
 					}
@@ -249,12 +249,12 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 		}
 	}
 	// -------------------------------------------------------------------------------
-	f1, err := excelize.OpenFile("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	f1, err := excelize.OpenFile("/root/remote/sidechainbc.xlsx")
 	if err != nil {
-		log.Lvl2("Raha: ", err)
+		log.LLvl1("Raha: ", err)
 		panic(err)
 	} else {
-		log.Lvl3("opening main chain bc")
+		log.LLvl1("opening main chain bc")
 	}
 	// ----------------------------------------------------------------------
 	// ------ add 5 types of transactions into transaction queue sheet -----
@@ -295,27 +295,27 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 		}
 		// ------ add a por tx row on top of the queue ------
 		if err = f1.InsertRow("FirstQueue", 2); err != nil {
-			log.Lvl2("Panic Raised:\n\n")
+			log.LLvl1("Panic Raised:\n\n")
 			panic(err)
 		} else {
 			if err = f1.SetSheetRow("FirstQueue", "A2", &s); err != nil {
-				log.Lvl2("Panic Raised:\n\n")
+				log.LLvl1("Panic Raised:\n\n")
 				panic(err)
 			} else {
 				if newTransactionRow[0] == "TxPor" {
-					log.Lvl3("a TxPor added to queue in sc round number: ", bz.SCRoundNumber)
+					log.LLvl1("a TxPor added to queue in sc round number: ", bz.SCRoundNumber)
 				}
 			}
 		}
 	}
 	// -------------------------------------------------------------------------------
-	err = f1.SaveAs("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	err = f1.SaveAs("/root/remote/sidechainbc.xlsx")
 	if err != nil {
-		log.Lvl2("Panic Raised:\n\n")
+		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.Lvl3("closing side bc")
-		log.Lvl2(bz.Name(), "Final result SC: finished collecting new transactions to side chain queue in round number ", bz.SCRoundNumber)
+		log.LLvl1("closing side bc")
+		log.LLvl1(bz.Name(), "Final result SC: finished collecting new transactions to side chain queue in round number ", bz.SCRoundNumber)
 	}
 }
 
@@ -329,12 +329,12 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 	// --- reset
 	bz.SideChainQueueWait = 0
 
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	f, err := excelize.OpenFile("/root/remote/sidechainbc.xlsx")
 	if err != nil {
-		log.Lvl2("Raha: ", err)
+		log.LLvl1("Raha: ", err)
 		panic(err)
 	} else {
-		log.Lvl3("opening side chain bc")
+		log.LLvl1("opening side chain bc")
 	}
 
 	var accumulatedTxSize, txsize int
@@ -358,13 +358,13 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 	rowNumber := 1
 	var roundNumber int
 	if rows1, err = f.Rows("RoundTable"); err != nil {
-		log.Lvl2("Panic Raised:\n\n")
+		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
 	for rows1.Next() {
 		rowNumber++
 		if row1, err = rows1.Columns(); err != nil {
-			log.Lvl2("Panic Raised:\n\n")
+			log.LLvl1("Panic Raised:\n\n")
 			panic(err)
 		}
 	}
@@ -387,7 +387,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 	axisQueue1IsFull := "H" + CurrentRow
 
 	if rows, err = f.GetRows("FirstQueue"); err != nil {
-		log.Lvl2("Panic Raised:\n\n")
+		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
 	// reset variables
@@ -411,20 +411,20 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 		for j, colCell := range row {
 			if j == 1 {
 				if txsize, err = strconv.Atoi(colCell); err != nil {
-					log.Lvl2("Panic Raised:\n\n")
+					log.LLvl1("Panic Raised:\n\n")
 					panic(err)
 				} else if accumulatedTxSize+txsize <= bz.SideChainBlockSize-MetaBlockSizeMinusTransactions {
 					accumulatedTxSize = accumulatedTxSize + txsize
 					if row[0] == "TxPor" {
-						log.Lvl3("a por tx added to block number", bz.MCRoundNumber, " from the queue")
+						log.LLvl1("a por tx added to block number", bz.MCRoundNumber, " from the queue")
 						numberOfPoRTx++
 					} else {
-						log.Lvl2("Panic Raised:\n\n")
+						log.LLvl1("Panic Raised:\n\n")
 						panic("the type of transaction in the queue is un-defined")
 					}
 					// row[2] is transaction's collected time
 					// if TakeTime, err = time.Parse(time.RFC3339, row[2]); err != nil {
-					// 	log.Lvl2("Panic Raised:\n\n")
+					// 	log.LLvl1("Panic Raised:\n\n")
 					// 	panic(err)
 					// }
 					// bz.SideChainQueueWait = bz.SideChainQueueWait + int(time.Now().Sub(TakeTime).Seconds())
@@ -435,11 +435,11 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 
 					// row[3] is the SCRound Number that the transaction has been issued
 					if x1, err := strconv.Atoi(row[3]); err != nil {
-						log.Lvl2("Panic Raised:\n\n")
+						log.LLvl1("Panic Raised:\n\n")
 						panic(err)
 					} else {
 						if x2, err := strconv.Atoi(row[5]); err != nil {
-							log.Lvl2("Panic Raised:\n\n")
+							log.LLvl1("Panic Raised:\n\n")
 							panic(err)
 						} else {
 							bz.SideChainQueueWait = bz.SideChainQueueWait + int(math.Abs(float64(bz.SCRoundNumber-x1))) + bz.MCRoundDuration/bz.SCRoundDuration*(bz.MCRoundNumber-x2)
@@ -448,7 +448,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 
 					// ---------- keep taken transaction's info summery --------------------
 					if serverAgrId, err := strconv.Atoi(row[4]); err != nil {
-						log.Lvl2("Panic Raised:\n\n")
+						log.LLvl1("Panic Raised:\n\n")
 						panic(err)
 					} else {
 						bz.SummPoRTxs[serverAgrId] = bz.SummPoRTxs[serverAgrId] + 1
@@ -457,7 +457,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 					f.RemoveRow("FirstQueue", i)
 				} else {
 					blockIsFull = true
-					log.Lvl3("final result SC: side chain block is full! ")
+					log.LLvl1("final result SC: side chain block is full! ")
 					f.SetCellValue("RoundTable", axisQueue1IsFull, 1)
 					break
 				}
@@ -467,7 +467,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 
 	f.SetCellValue("RoundTable", axisNumPoRTx, numberOfPoRTx)
 
-	log.Lvl2("In total in round number ", bz.SCRoundNumber,
+	log.LLvl1("In total in round number ", bz.SCRoundNumber,
 		"\n number of published PoR transactions is", numberOfPoRTx)
 	TotalNumTxsInFirstQueue := numberOfPoRTx
 
@@ -480,21 +480,21 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 		f.SetCellValue("RoundTable", axisAveFirstQueueWait, 0)
 	}
 
-	log.Lvl3("final result SC: \n", " this round's block size: ", accumulatedTxSize+MetaBlockSizeMinusTransactions)
+	log.LLvl1("final result SC: \n", " this round's block size: ", accumulatedTxSize+MetaBlockSizeMinusTransactions)
 	if err != nil {
-		log.Lvl2("Panic Raised:\n\n")
+		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
 
-	//log.Lvl3("In total in round number ", bz.SCRoundNumber+10000 * epochNumber,
+	//log.LLvl1("In total in round number ", bz.SCRoundNumber+10000 * epochNumber,
 	//	"\n number of all types of submitted txs is: ", TotalNumTxsInFirstQueue)
 	// ----
-	err = f.SaveAs("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	err = f.SaveAs("/root/remote/sidechainbc.xlsx")
 	if err != nil {
-		log.Lvl2("Panic Raised:\n\n")
+		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.Lvl3("closing side bc")
+		log.LLvl1("closing side bc")
 	}
 	// fill OverallEvaluation Sheet
 	updateSideChainBCOverallEvaluation(CurrentRow, bz.SCRoundNumber)
@@ -507,12 +507,12 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 // --------------------------------------------------------------------------------
 func updateSideChainBCOverallEvaluation(CurrentRow string, SCRoundNumber int) {
 	var err error
-	f, err := excelize.OpenFile("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	f, err := excelize.OpenFile("/root/remote/sidechainbc.xlsx")
 	if err != nil {
-		log.Lvl2("Raha: ", err)
+		log.LLvl1("Raha: ", err)
 		panic(err)
 	} else {
-		log.Lvl3("opening side chain bc")
+		log.LLvl1("opening side chain bc")
 	}
 	// ---- overall results
 	axisRound := "A" + CurrentRow
@@ -524,39 +524,39 @@ func updateSideChainBCOverallEvaluation(CurrentRow string, SCRoundNumber int) {
 
 	err = f.SetCellValue("OverallEvaluation", axisRound, SCRoundNumber)
 	if err != nil {
-		log.Lvl2("Panic Raised:\n\n")
+		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
 	FormulaString = "=SUM(RoundTable!B2:B" + CurrentRow + ")"
 	err = f.SetCellFormula("OverallEvaluation", axisBCSize, FormulaString)
 	if err != nil {
-		log.Lvl2("Panic Raised:\n\n")
+		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
 
 	FormulaString = "=SUM(RoundTable!D2:D" + CurrentRow + ")"
 	err = f.SetCellFormula("OverallEvaluation", axisOverallPoRTX, FormulaString)
 	if err != nil {
-		log.Lvl2(err)
+		log.LLvl1(err)
 	}
 
 	FormulaString = "=AVERAGE(RoundTable!F2:F" + CurrentRow + ")"
 	err = f.SetCellFormula("OverallEvaluation", axisAveWaitOtherTx, FormulaString)
 	if err != nil {
-		log.Lvl2(err)
+		log.LLvl1(err)
 	}
 	FormulaString = "=SUM(RoundTable!H2:H" + CurrentRow + ")"
 	err = f.SetCellFormula("OverallEvaluation", axisOverallBlockSpaceFull, FormulaString)
 	if err != nil {
-		log.Lvl2(err)
+		log.LLvl1(err)
 	}
 
 	// ----
-	err = f.SaveAs("/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build/sidechainbc.xlsx")
+	err = f.SaveAs("/root/remote/sidechainbc.xlsx")
 	if err != nil {
-		log.Lvl2("Panic Raised:\n\n")
+		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.Lvl3("closing side bc")
+		log.LLvl1("closing side bc")
 	}
 }

@@ -119,7 +119,7 @@ func (p *SubBlsCosi) HandleStop(stop StructStop) error {
 		log.Warn(p.ServerIdentity(), "received a Stop from node", stop.ServerIdentity,
 			"that is not the root, ignored")
 	}
-	log.Lvl3("Received stop", p.ServerIdentity())
+	log.LLvl1("Received stop", p.ServerIdentity())
 
 	return p.Shutdown()
 }
@@ -139,7 +139,7 @@ func (p *SubBlsCosi) Shutdown() error {
 
 // Start is done only by root and starts the subprotocol
 func (p *SubBlsCosi) Start() error {
-	log.Lvl3(p.ServerIdentity(), "Starting subCoSi")
+	log.LLvl1(p.ServerIdentity(), "Starting subCoSi")
 	if err := p.checkIntegrity(); err != nil {
 		p.startChan <- false
 		p.Done()

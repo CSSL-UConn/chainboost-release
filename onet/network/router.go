@@ -233,13 +233,13 @@ func (r *Router) Start() {
 		}
 
 		if err := r.registerConnection(dst, c); err != nil {
-			log.Lvl3(r.address, "does not accept incoming connection from", c.Remote(), "because it's closed")
+			log.LLvl1(r.address, "does not accept incoming connection from", c.Remote(), "because it's closed")
 			return
 		}
 		// start handleConn in a go routine that waits for incoming messages and
 		// dispatches them.
 		if err := r.launchHandleRoutine(dst, c); err != nil {
-			log.Lvl3(r.address, "does not accept incoming connection from", c.Remote(), "because it's closed")
+			log.LLvl1(r.address, "does not accept incoming connection from", c.Remote(), "because it's closed")
 			return
 		}
 	})
@@ -337,7 +337,7 @@ func (r *Router) Send(e *ServerIdentity, msgs ...Message) (uint64, error) {
 		sentLen, err := c.Send(msg)
 		totSentLen += sentLen
 		if err != nil {
-			log.Lvl2(r.address, "Couldn't send to", e, ":", err, "trying again")
+			log.LLvl1(r.address, "Couldn't send to", e, ":", err, "trying again")
 			c, sentLen, err := r.connect(e)
 			totSentLen += sentLen
 			if err != nil {
@@ -357,13 +357,13 @@ func (r *Router) Send(e *ServerIdentity, msgs ...Message) (uint64, error) {
 // connect starts a new connection and launches the listener for incoming
 // messages.
 func (r *Router) connect(si *ServerIdentity) (Conn, uint64, error) {
-	log.Lvl3(r.address, "Connecting to", si.Address)
+	log.LLvl1(r.address, "Connecting to", si.Address)
 	c, err := r.host.Connect(si)
 	if err != nil {
-		log.Lvl3("Could not connect to", si.Address, err)
+		log.LLvl1("Could not connect to", si.Address, err)
 		return nil, 0, xerrors.Errorf("connecting: %v", err)
 	}
-	log.Lvl3(r.address, "Connected to", si.Address)
+	log.LLvl1(r.address, "Connected to", si.Address)
 	var sentLen uint64
 	if sentLen, err = c.Send(r.ServerIdentity); err != nil {
 		return nil, sentLen, xerrors.Errorf("sending: %v", err)
@@ -423,10 +423,10 @@ func (r *Router) handleConn(remote *ServerIdentity, c Conn) {
 		r.traffic.updateTx(tx)
 		r.wg.Done()
 		r.removeConnection(remote, c)
-		log.Lvl4("onet close", c.Remote(), "rx", rx, "tx", tx)
+		log.LLvl1("onet close", c.Remote(), "rx", rx, "tx", tx)
 	}()
 	address := c.Remote()
-	log.Lvl3(r.address, "Handling new connection from", remote.Address)
+	log.LLvl1(r.address, "Handling new connection from", remote.Address)
 	for {
 		packet, err := c.Receive()
 
@@ -467,7 +467,7 @@ func (r *Router) handleConn(remote *ServerIdentity, c Conn) {
 				return
 			}
 			// Temporary error, continue.
-			log.Lvl3(r.ServerIdentity, "Error with connection", address, "=>", err)
+			log.LLvl1(r.ServerIdentity, "Error with connection", address, "=>", err)
 			continue
 		}
 
@@ -477,7 +477,7 @@ func (r *Router) handleConn(remote *ServerIdentity, c Conn) {
 		r.msgTraffic.updateRx(1)
 
 		if err := r.Dispatch(packet); err != nil {
-			log.Lvl3("Error dispatching:", err)
+			log.LLvl1("Error dispatching:", err)
 		}
 
 	}
@@ -499,7 +499,7 @@ func (r *Router) connection(sid ServerIdentityID) Conn {
 // real physical address of the connection and the connection itself.
 // It uses the networkLock mutex.
 func (r *Router) registerConnection(remote *ServerIdentity, c Conn) error {
-	log.Lvl4(r.address, "Registers", remote.Address)
+	log.LLvl1(r.address, "Registers", remote.Address)
 	r.Lock()
 	defer r.Unlock()
 	if r.isClosed {
@@ -613,7 +613,7 @@ func (r *Router) receiveServerIdentity(c Conn) (*ServerIdentity, error) {
 			if !pub.Equal(dst.Public) {
 				return nil, xerrors.New("mismatch between certificate CommonName and ServerIdentity.Public")
 			}
-			log.Lvl4(r.address, "Public key from CommonName and ServerIdentity match:", pub)
+			log.LLvl1(r.address, "Public key from CommonName and ServerIdentity match:", pub)
 		} else {
 			// We get here for TCPConn && !tls.Conn. Make them wish they were using TLS...
 			if !r.UnauthOk {

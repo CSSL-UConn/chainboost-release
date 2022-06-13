@@ -76,7 +76,7 @@ func main() {
 	doneHosts := make([]bool, len(hostlist))
 	log.LLvl1("Found the following hosts:", hostlist)
 	if kill {
-		log.Lvl1("Cleaning up", len(hostlist), "hosts.")
+		log.LLvl1("Cleaning up", len(hostlist), "hosts.")
 	}
 
 	for i, h := range hostlist {
@@ -84,7 +84,7 @@ func main() {
 		go func(i int, h string) {
 			defer wg.Done()
 			if kill {
-				log.Lvl3("Cleaning up host", h, ".")
+				log.LLvl1("Cleaning up host", h, ".")
 				runSSH(h, "sudo killall -9 simul scp 2>/dev/null >/dev/null")
 				time.Sleep(1 * time.Second)
 				runSSH(h, "sudo killall -9 simul 2>/dev/null >/dev/null")
@@ -94,12 +94,12 @@ func main() {
 				runSSH(h, "sudo pkill -9 -f '\\./'")
 				time.Sleep(1 * time.Second)
 				if log.DebugVisible() > 3 {
-					log.Lvl4("Cleaning report:")
+					log.LLvl1("Cleaning report:")
 					_ = platform.SSHRunStdout("", h, "ps aux")
 				}
 			} else {
 				log.LLvl1("Raha: skipping: Setting the file-limit higher")
-				// log.Lvl3("Setting the file-limit higher on", h)
+				// log.LLvl1("Setting the file-limit higher on", h)
 				// // Copy configuration file to make higher file-limits
 				// err := platform.SSHRunStdout("", h, "sudo cp remote/simul.conf /etc/security/limits.d")
 				// if err != nil {
@@ -107,7 +107,7 @@ func main() {
 				// }
 			}
 			doneHosts[i] = true
-			log.Lvl3("Host", h, "cleaned up")
+			log.LLvl1("Host", h, "cleaned up")
 		}(i, h)
 	}
 	cleanupChannel := make(chan string)
@@ -139,13 +139,13 @@ func main() {
 	//-------------------
 	// Tododraha: commented!!! why proxy why monitor?!
 	// addr, port := deter.ProxyAddress, uint16(deter.MonitorPort+1)
-	// log.Lvl2("Launching proxy redirecting to", addr, ":", port)
+	// log.LLvl1("Launching proxy redirecting to", addr, ":", port)
 	// prox, err := monitor.NewProxy(uint16(deter.MonitorPort), addr, port)
 	// if err != nil {
 	// 	log.Fatal("Couldn't start proxy:", err)
 	// }
 	// go prox.Run()
-	// log.Lvl1("starting", deter.Servers, "cothorities for a total of", deter.Hosts, "processes.")
+	// log.LLvl1("starting", deter.Servers, "cothorities for a total of", deter.Hosts, "processes.")
 	//-------------------
 	killing := false
 	for i, phys := range deter.Phys {
@@ -157,7 +157,7 @@ func main() {
 			log.LLvl1("Starting servers on physical machine ", internal, "with monitor = ",
 				monitorAddr)
 			// If PreScript is defined, run the appropriate script _before_ the simulation.
-			log.LLvl1("Raha: skipping:run the appropriate script")
+			//log.LLvl1("Raha: skipping:run the appropriate script")
 			if deter.PreScript != "" {
 				log.LLvl1("raha: deter.PreScript running?")
 				err := platform.SSHRunStdout("root", phys, "cd remote; sudo ./"+deter.PreScript+" deterlab")
@@ -200,13 +200,16 @@ func main() {
 			// Raha added this part!
 			// -----------------------------------------
 			// Copy everything over to each vm
-			log.Lvl1("Copying over to", phys)
-			err := platform.SSHRunStdout("root", phys, "mkdir remote")
-			err = platform.Rsync("root", phys, "", "~/remote/", "~/remote/")
+			log.LLvl1("Copying over to", phys)
+			err := platform.SSHRunStdout("root", phys, "mkdir -p remote")
 			if err != nil {
 				log.Fatal(err)
 			}
-			log.Lvl2("Done copying to VMs")
+			err = platform.Rsync("root", phys, "ssh", "/home/zam20015/remote", "/root/")
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.LLvl1("Done copying to VMs")
 			// -----------------------------------------
 
 			// todoraha: commeneted

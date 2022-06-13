@@ -124,7 +124,7 @@ func (p *ServiceProcessor) RegisterStreamingHandler(f interface{}) error {
 	}
 
 	cr := ft.In(0)
-	log.Lvl4("Registering streaming handler", cr.String())
+	log.LLvl1("Registering streaming handler", cr.String())
 	pm := strings.Split(cr.Elem().String(), ".")[1]
 	p.handlers[pm] = serviceHandler{f, cr.Elem(), true}
 
@@ -341,7 +341,7 @@ func createServiceHandler(f interface{}) (string, serviceHandler, error) {
 	}
 
 	cr := ft.In(0)
-	log.Lvl4("Registering handler", cr.String())
+	log.LLvl1("Registering handler", cr.String())
 	pm := strings.Split(cr.Elem().String(), ".")[1]
 
 	return pm, serviceHandler{f, cr.Elem(), false}, nil

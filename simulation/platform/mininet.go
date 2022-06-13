@@ -115,7 +115,7 @@ func newMiniNet() (m *MiniNet, err error) {
 			return nil, xerrors.Errorf("couldn't setup servers: %v", err)
 		}
 	} else {
-		log.Lvl1("Using existing 'server_list'-file")
+		log.LLvl1("Using existing 'server_list'-file")
 		if log.DebugVisible() > 1 {
 			sl, err := ioutil.ReadFile("server_list")
 			if err != nil {
@@ -123,7 +123,7 @@ func newMiniNet() (m *MiniNet, err error) {
 					err)
 			}
 			servers := strings.Replace(string(sl), "\n", " ", -1)
-			log.Lvl2("Server_list is: ", servers)
+			log.LLvl1("Server_list is: ", servers)
 		}
 	}
 	return m, nil
@@ -170,7 +170,7 @@ func (m *MiniNet) Configure(pc *Config) {
 // build is the name of the app to build
 // empty = all otherwise build specific package
 func (m *MiniNet) Build(build string, arg ...string) error {
-	log.Lvl1("Building for", m.Login, m.External, build, "simulDir=", m.simulDir)
+	log.LLvl1("Building for", m.Login, m.External, build, "simulDir=", m.simulDir)
 	start := time.Now()
 
 	// Start with a clean build-directory
@@ -181,7 +181,7 @@ func (m *MiniNet) Build(build string, arg ...string) error {
 		return xerrors.Errorf("relative path: %v", err)
 	}
 
-	log.Lvl3("Relative-path is", srcRel, ". Will build into", m.buildDir)
+	log.LLvl1("Relative-path is", srcRel, ". Will build into", m.buildDir)
 	var tags []string
 	if m.Tags != "" {
 		tags = append([]string{"-tags"}, strings.Split(m.Tags, " ")...)
@@ -192,7 +192,7 @@ func (m *MiniNet) Build(build string, arg ...string) error {
 		return xerrors.Errorf(err.Error() + " " + out)
 	}
 
-	log.Lvl1("Build is finished after", time.Since(start))
+	log.LLvl1("Build is finished after", time.Since(start))
 	return nil
 }
 
@@ -201,20 +201,20 @@ func (m *MiniNet) Cleanup() error {
 	// Cleanup eventual ssh from the proxy-forwarding to the logserver
 	err := exec.Command("pkill", "-f", "--", "-nNTf").Run()
 	if err != nil {
-		log.Lvl3("Error stopping ssh:", err)
+		log.LLvl1("Error stopping ssh:", err)
 	}
 
 	// SSH to the MiniNet-server and end all running users-processes
-	log.Lvl3("Going to stop everything")
+	log.LLvl1("Going to stop everything")
 	err = m.parseServers()
 	if err != nil {
 		return xerrors.Errorf("parsing servers: %v", err)
 	}
 	for _, h := range m.HostIPs {
-		log.Lvl3("Cleaning up server", h)
+		log.LLvl1("Cleaning up server", h)
 		_, err = SSHRun(m.Login, h, "pkill -9 -f start.py; killall sshd; pkill -f 'sshd[^ ]'; mn -c")
 		if err != nil {
-			log.Lvl2("Error while cleaning up:", err)
+			log.LLvl1("Error while cleaning up:", err)
 		}
 	}
 	return nil
@@ -223,7 +223,7 @@ func (m *MiniNet) Cleanup() error {
 // Deploy creates the appropriate configuration-files and copies everything to the
 // MiniNet-installation.
 func (m *MiniNet) Deploy(rc *RunConfig) error {
-	log.Lvl2("Localhost: Deploying and writing config-files")
+	log.LLvl1("Localhost: Deploying and writing config-files")
 	sim, err := onet.NewSimulation(m.Simulation, string(rc.Toml()))
 	if err != nil {
 		return xerrors.Errorf("creating simulation: %v", err)
@@ -249,10 +249,10 @@ func (m *MiniNet) Deploy(rc *RunConfig) error {
 	if err != nil {
 		return xerrors.Errorf("decoding toml: %v", err)
 	}
-	log.Lvl3("Writing the config file :", mininet)
+	log.LLvl1("Writing the config file :", mininet)
 	onet.WriteTomlConfig(mininet, mininetConfig, m.deployDir)
 
-	log.Lvl3("Creating hosts")
+	log.LLvl1("Creating hosts")
 	if err = m.parseServers(); err != nil {
 		return xerrors.Errorf("parsing servers: %v", err)
 	}
@@ -260,8 +260,8 @@ func (m *MiniNet) Deploy(rc *RunConfig) error {
 	if err != nil {
 		return xerrors.Errorf("hosts list: %v", err)
 	}
-	log.Lvl3("Hosts are:", hosts)
-	log.Lvl3("List is:", list)
+	log.LLvl1("Hosts are:", hosts)
+	log.LLvl1("List is:", list)
 	err = ioutil.WriteFile(m.deployDir+"/list", []byte(list), 0660)
 	if err != nil {
 		return xerrors.Errorf("writing file: %v", err)
@@ -272,12 +272,12 @@ func (m *MiniNet) Deploy(rc *RunConfig) error {
 	}
 	simulConfig.Config = string(rc.Toml())
 	m.config = simulConfig.Config
-	log.Lvl3("Saving configuration")
+	log.LLvl1("Saving configuration")
 	simulConfig.Save(m.deployDir)
 
 	// Verify the installation is correct
 	gw := m.HostIPs[0]
-	log.Lvl2("Verifying configuration on", gw)
+	log.LLvl1("Verifying configuration on", gw)
 	cmd := ssh("root", gw, "which mn")
 	out, err := cmd.Output()
 	if err != nil || !strings.HasSuffix(string(out), "mn\n") {
@@ -307,12 +307,12 @@ func (m *MiniNet) Deploy(rc *RunConfig) error {
 	}
 
 	// Copy everything over to MiniNet
-	log.Lvl1("Copying over to", m.Login, "@", m.External)
+	log.LLvl1("Copying over to", m.Login, "@", m.External)
 	err = Rsync(m.Login, m.External, "", m.deployDir+"/", "mininet_run/")
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Lvl2("Done copying")
+	log.LLvl1("Done copying")
 
 	return nil
 }
@@ -349,7 +349,7 @@ func (m *MiniNet) Start(args ...string) error {
 		sort.Strings(config)
 		err := SSHRunStdout(m.Login, m.External, "cd mininet_run; ./start.py list go")
 		if err != nil {
-			log.Lvl3(err)
+			log.LLvl1(err)
 		}
 		m.sshMininet <- "finished"
 	}()
@@ -365,16 +365,16 @@ func (m *MiniNet) Wait() error {
 		err = nil
 	}
 	if m.started {
-		log.Lvl3("Simulation is started")
+		log.LLvl1("Simulation is started")
 		select {
 		case msg := <-m.sshMininet:
 			if msg == "finished" {
-				log.Lvl3("Received finished-message, not killing users")
+				log.LLvl1("Received finished-message, not killing users")
 				return nil
 			}
-			log.Lvl1("Received out-of-line message", msg)
+			log.LLvl1("Received out-of-line message", msg)
 		case <-time.After(wait):
-			log.Lvl1("Quitting after waiting", wait)
+			log.LLvl1("Quitting after waiting", wait)
 			m.started = false
 		}
 		m.started = false
@@ -409,11 +409,11 @@ func (m *MiniNet) parseServers() error {
 				}
 				return xerrors.New("error while looking up hostname: " + err.Error())
 			}
-			log.Lvl3("Found IP for", h, ":", ips[0])
+			log.LLvl1("Found IP for", h, ":", ips[0])
 			m.HostIPs = append(m.HostIPs, net.JoinHostPort(ips[0].String(), p))
 		}
 	}
-	log.Lvl3("Nodes are:", m.HostIPs)
+	log.LLvl1("Nodes are:", m.HostIPs)
 	return nil
 }
 

@@ -161,18 +161,18 @@ func TestTCPConnReceiveRaw(t *testing.T) {
 			if n, err := c.Write(slice); err != nil || n != len(slice) {
 				t.Fatal("Could not write enough")
 			}
-			log.Lvl1(" OK")
+			log.LLvl1(" OK")
 			if !checking() {
 				t.Fatal("Already returned even if not finished")
 			}
 			time.Sleep(5 * time.Millisecond)
 		}
 		// the last one should make the other end return
-		log.Lvl1("Will write last piece...")
+		log.LLvl1("Will write last piece...")
 		if n, err := c.Write(slices[len(slices)-1]); n != len(slices[len(slices)-1]) || err != nil {
 			t.Fatal("could not send the last piece")
 		}
-		log.Lvl1(" OK")
+		log.LLvl1(" OK")
 		check <- true
 	}
 
@@ -591,7 +591,7 @@ func TestTCPHostClose(t *testing.T) {
 	if err != nil {
 		t.Fatal("Couldn't close:", err)
 	}
-	log.Lvl3("Finished first connection, starting 2nd")
+	log.LLvl1("Finished first connection, starting 2nd")
 	h3, err3 := NewTestTCPHost(2003)
 	if err3 != nil {
 		t.Fatal("Could not setup host", err)
@@ -601,7 +601,7 @@ func TestTCPHostClose(t *testing.T) {
 	if err != nil {
 		t.Fatal(h2, "Couldn Connect() to", h3)
 	}
-	log.Lvl3("Closing h3")
+	log.LLvl1("Closing h3")
 	err = h3.Stop()
 	if err != nil {
 		// try closing the underlying connection manually and fail

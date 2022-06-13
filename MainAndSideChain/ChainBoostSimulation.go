@@ -33,13 +33,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi"
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/por"
-
-	//"github.com/chainBoostScale/ChainBoost/vrf"
-
-	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi"
+	"github.com/chainBoostScale/ChainBoost/vrf"
 	"go.dedis.ch/kyber/v3/pairing"
 )
 
@@ -75,7 +73,7 @@ type HelloChan struct {
 type ChainBoost struct {
 	// the node we are represented-in
 	*onet.TreeNodeInstance
-	//ECPrivateKey vrf.VrfPrivkey
+	ECPrivateKey vrf.VrfPrivkey
 	// channel used to let all servers that the protocol has started
 	HelloChan chan HelloChan
 	// channel used by each round's leader to let all servers that a new round has come
@@ -83,7 +81,7 @@ type ChainBoost struct {
 	// channel to let nodes that the next round's leader has been specified
 	MainChainNewLeaderChan chan MainChainNewLeaderChan
 	// the suite we use
-	//  suite network.Suite
+	// suite network.Suite
 	// to match the suit in blscosi
 	Suite *pairing.SuiteBn256
 	//startBCMeasure *monitor.TimeMeasure
@@ -157,7 +155,7 @@ type ChainBoost struct {
 ------------------------------------------------------------------------ */
 func (bz *ChainBoost) Start() error {
 	bz.BCLock.Lock()
-	// update the mainchainbc file with created nodes' information
+	log.LLvl1("Updating the mainchainbc file with created nodes' information")
 	bz.finalMainChainBCInitialization()
 	bz.BCLock.Unlock()
 	bz.BlsCosiStarted = true
@@ -186,14 +184,14 @@ func (bz *ChainBoost) Dispatch() error {
 	// return nil
 	running := true
 	var err error
-
+	log.LLvl1("starting Dispatch in chainboost simuulation")
 	for running {
 		select {
 		// -----------------------------------------------------------------------------
 		// ******* ALL nodes recieve this message to join the protocol and get the config values set
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.HelloChan:
-			log.Lvl2(bz.TreeNode().Name(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
+			log.LLvl1(bz.TreeNode().Name(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
 			bz.PercentageTxPay = msg.PercentageTxPay
 			bz.MCRoundDuration = msg.MCRoundDuration
 			bz.MainChainBlockSize = msg.MainChainBlockSize
@@ -221,7 +219,7 @@ func (bz *ChainBoost) Dispatch() error {
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.MainChainNewRoundChan:
 			bz.MCRoundNumber = bz.MCRoundNumber + 1
-			log.Lvl4(bz.Name(), " round number ", bz.MCRoundNumber, " started at ", time.Now().Format(time.RFC3339))
+			log.LLvl1(bz.Name(), " round number ", bz.MCRoundNumber, " started at ", time.Now().Format(time.RFC3339))
 			go bz.MainChainCheckLeadership(msg)
 		// -----------------------------------------------------------------------------
 		// *** MC *** just the ROOT NODE (blockchain layer one) recieve this msg
@@ -232,7 +230,7 @@ func (bz *ChainBoost) Dispatch() error {
 				bz.RootPreNewRound(msg)
 				for len(bz.MainChainNewLeaderChan) > 0 {
 					a := <-bz.MainChainNewLeaderChan
-					log.Lvl1(a.LeaderTreeNodeID, " for round", a.MCRoundNumber, "popped out")
+					log.LLvl1(a.LeaderTreeNodeID, " for round", a.MCRoundNumber, "popped out")
 				}
 			}()
 		// -----------------------------------------------------------------------------
@@ -259,12 +257,12 @@ func (bz *ChainBoost) Dispatch() error {
 
 func (bz *ChainBoost) helloChainBoost() {
 	if !bz.IsRoot() {
-		log.Lvl2(bz.TreeNode().Name(), " joined to the protocol")
+		log.LLvl1(bz.TreeNode().Name(), " joined to the protocol")
 		// all nodes get here and start to listen for blscosi protocol messages
 		go func() {
 			err := bz.DispatchProtocol()
 			if err != nil {
-				log.Lvl1("protocol dispatch calling error: " + err.Error())
+				log.LLvl1("protocol dispatch calling error: " + err.Error())
 				panic("protocol dispatch calling error")
 			}
 		}()
@@ -297,7 +295,7 @@ func (bz *ChainBoost) startTimer(MCRoundNumber int) {
 		// bz.hasLeader is for when the round number has'nt changed but the leader has been announced
 		bz.MCPLock.Lock()
 		if bz.IsRoot() && bz.MCRoundNumber == MCRoundNumber && !bz.HasLeader {
-			log.Lvl2("No leader for round number ", bz.MCRoundNumber, "an empty block is added")
+			log.LLvl1("No leader for round number ", bz.MCRoundNumber, "an empty block is added")
 			bz.MainChainNewLeaderChan <- MainChainNewLeaderChan{bz.TreeNode(), NewLeader{LeaderTreeNodeID: bz.TreeNode().ID, MCRoundNumber: bz.MCRoundNumber}}
 		}
 		bz.MCPLock.Unlock()
@@ -336,7 +334,7 @@ func (bz *ChainBoost) startTimer(MCRoundNumber int) {
 			toBeHashed := []byte(seed)
 			proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
 			if !ok {
-				log.Lvl2("error while generating proof")
+				log.LLvl1("error while generating proof")
 			}
 			_, vrfOutput = bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
 
@@ -362,7 +360,7 @@ func (bz *ChainBoost) startTimer(MCRoundNumber int) {
 // 			buf := bytes.NewReader(vrfOutput[:])
 // 			err := binary.Read(buf, binary.LittleEndian, &vrfoutputInt64)
 // 			if err != nil {
-// 				log.Lvl2("Panic Raised:\n\n")
+// 				log.LLvl1("Panic Raised:\n\n")
 // 				panic(err)
 // 			}
 // 			// I want to ask the previous leader to find next leader based on its output and announce it to her via next round msg
@@ -371,13 +369,13 @@ func (bz *ChainBoost) startTimer(MCRoundNumber int) {
 // 				for _, b := range bz.Tree().List() {
 // 					err := bz.SendTo(b, &NewLeader{})
 // 					if err != nil {
-// 						log.Lvl2(bz.Info(), "can't send new round msg to", b.Name())
+// 						log.LLvl1(bz.Info(), "can't send new round msg to", b.Name())
 // 					}
 // 				}
 // 				bz.LeaderProposeChan <- true
 // 			}
 // 			//else {
-// 			// 	log.Lvl2("my power:", power, "is", vrfoutputInt64-power, "less than my vrf output :| ")
+// 			// 	log.LLvl1("my power:", power, "is", vrfoutputInt64-power, "less than my vrf output :| ")
 // 			// }
 // 		}
 // 	}
@@ -392,6 +390,6 @@ func (bz *ChainBoost) Testpor() {
 	p := por.CreatePoR(pf, bz.SectorNumber, bz.SimulationSeed)
 	d, _ := por.VerifyPoR(pk, Tau, p, bz.SectorNumber, bz.SimulationSeed)
 	if !d {
-		log.Lvl2(d)
+		log.LLvl1(d)
 	}
 }

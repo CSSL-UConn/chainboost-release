@@ -115,7 +115,7 @@ func NewWebSocket(si *network.ServerIdentity) *WebSocket {
 	log.ErrFatal(err)
 	w.mux = http.NewServeMux()
 	w.mux.HandleFunc("/ok", func(w http.ResponseWriter, r *http.Request) {
-		log.Lvl4("ok?", r.RemoteAddr)
+		log.LLvl1("ok?", r.RemoteAddr)
 		ok := []byte("ok\n")
 		w.Write(ok)
 	})
@@ -172,7 +172,7 @@ func (w *WebSocket) start() {
 	w.Lock()
 	w.started = true
 	w.server.TLSConfig = w.TLSConfig
-	log.Lvl2("Starting to listen on", w.server.Addr)
+	log.LLvl1("Starting to listen on", w.server.Addr)
 	started := make(chan bool)
 	go func() {
 		// Check if server is configured for TLS
@@ -211,7 +211,7 @@ func (w *WebSocket) stop() {
 	if !w.started {
 		return
 	}
-	log.Lvl3("Stopping", w.server.Addr)
+	log.LLvl1("Stopping", w.server.Addr)
 
 	d := time.Now().Add(100 * time.Millisecond)
 	ctx, cancel := context.WithDeadline(context.Background(), d)
@@ -236,7 +236,7 @@ func (t wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	n := 0
 
 	defer func() {
-		log.Lvl2("ws close", r.RemoteAddr, "n", n, "rx", rx, "tx", tx)
+		log.LLvl1("ws close", r.RemoteAddr, "n", n, "rx", rx, "tx", tx)
 	}()
 
 	u := websocket.Upgrader{

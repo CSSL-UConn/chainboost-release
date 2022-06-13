@@ -108,7 +108,7 @@ func (ps *protocolStorage) Register(name string, protocol NewProtocol) (Protocol
 			xerrors.Errorf("Protocol -%s- already exists - not overwriting", name)
 	}
 	ps.instantiators[name] = protocol
-	log.Lvl4("Registered", name, "to", id)
+	log.LLvl1("Registered", name, "to", id)
 	return id, nil
 }
 
@@ -256,7 +256,7 @@ func newMessageProxyStore(s network.Suite, disp network.Dispatcher, proc network
 		io := newIO()
 		pstore.protos = append(pstore.protos, io)
 		disp.RegisterProcessor(proc, io.PacketType())
-		log.Lvl3("Instantiating MessageProxy", name, "at position", len(pstore.protos))
+		log.LLvl1("Instantiating MessageProxy", name, "at position", len(pstore.protos))
 	}
 	return pstore
 }

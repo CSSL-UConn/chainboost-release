@@ -38,7 +38,6 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 	if err != nil {
 		// We probably are not needed
 		log.LLvl1(err, serverAddress)
-		log.LLvl1("Raha:1")
 		return err
 	}
 	if monitorAddress != "" {
@@ -75,7 +74,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			measures[i] = monitor.NewCounterIOMeasureWithHost("bandwidth", sc.Server, hostIndex)
 		}
 
-		log.Lvl3(serverAddress, "Starting server", server.ServerIdentity.Address)
+		log.LLvl1(serverAddress, "Starting server", server.ServerIdentity.Address)
 		// Launch a server and notifies when it's done
 		wgServer.Add(1)
 		measure := measures[i]
@@ -88,7 +87,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 				measure.Record()
 				measuresLock.Unlock()
 			}
-			log.Lvl3(serverAddress, "Simulation closed server", c.ServerIdentity)
+			log.LLvl1(serverAddress, "Simulation closed server", c.ServerIdentity)
 		}(server)
 		// wait to be sure the goroutine started
 		<-ready
@@ -119,7 +118,6 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 				_, err := scTmp.Server.Send(env.ServerIdentity, &simulInitDone{})
 				log.ErrFatal(err)
 			}()
-			log.LLvl1("Raha: is the error here?")
 			return nil
 		})
 		server.RegisterProcessorFunc(simulInitDoneID, func(env *network.Envelope) error {
@@ -130,11 +128,10 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 				measure.Reset()
 				measuresLock.Unlock()
 			}
-			log.LLvl1("Raha: is the error here?")
 			return nil
 		})
 		if server.ServerIdentity.ID.Equal(sc.Tree.Root.ServerIdentity.ID) {
-			log.Lvl2(serverAddress, "will start protocol")
+			log.LLvl1(serverAddress, "will start protocol")
 			rootSim = sim
 			rootSC = sc
 		}
@@ -143,9 +140,9 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 	var simError error
 	if rootSim != nil {
 		// If this cothority has the root-server, it will start the simulation
-		log.Lvl2("Starting protocol", simul, "on server", rootSC.Server.ServerIdentity.Address)
+		log.LLvl1("Starting protocol", simul, "on server", rootSC.Server.ServerIdentity.Address)
 		// Raha: I want to see the list of nodes!
-		log.Lvl4("Raha: Tree used in ChainBoost is", rootSC.Tree.Roster.List)
+		log.LLvl1("Raha: Tree used in ChainBoost is", rootSC.Tree.Roster.List)
 		wait := true
 		for wait {
 			// Raha: the protocols are created and instanciated here:
@@ -176,7 +173,6 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			if NbrSubTrees > 0 {
 				err := cosiProtocol.SetNbrSubTree(NbrSubTrees)
 				if err != nil {
-					log.LLvl1("Raha:2")
 					return err
 				}
 			}
@@ -260,7 +256,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 						SimState:        ChainBoostProtocol.SimState,
 					})
 					if err != nil {
-						log.Lvl1(ChainBoostProtocol.Info(), "couldn't send hello to child", child.Name())
+						log.LLvl1(ChainBoostProtocol.Info(), "couldn't send hello to child", child.Name())
 					}
 				}
 			}
@@ -268,9 +264,10 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			go func() {
 				err := ChainBoostProtocol.DispatchProtocol()
 				if err != nil {
-					log.Lvl1("protocol dispatch calling error: " + err.Error())
+					log.LLvl1("protocol dispatch calling error: " + err.Error())
 				}
 			}()
+			log.LLvl1("Starting the ChainBoost Protocol")
 			ChainBoostProtocol.Start()
 			// raha: bls cosi  start function is called inside ChainBoost protocol
 			// ---------------------------------------------------------------
@@ -278,14 +275,14 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			// ToDoRaha
 			log.LLvl1("Back to simulation module: ChainBoostProtocol.Start() returned. waiting for DoneChainBoost channel .......... ")
 			px := <-ChainBoostProtocol.DoneChainBoost
-			log.Lvl1("Back to simulation module. Final result is", px)
+			log.LLvl1("Back to simulation module. Final result is", px)
 			wait = false
 		}
 
 		//ToDoRaha: clear this section
 
 		// 	//childrenWait.Record()
-		// 	log.Lvl2("Broadcasting start, (Raha: I think its about having mutiple servers",
+		// 	log.LLvl1("Broadcasting start, (Raha: I think its about having mutiple servers",
 		// 		" which doesnt apply to when we are running a localhost simulation)")
 		// 	syncWait := monitor.NewTimeMeasure("SimulSyncWait")
 		// 	wgSimulInit.Add(len(rootSC.Tree.Roster.List))
@@ -297,7 +294,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		// 	}
 		// 	wgSimulInit.Wait()
 		// 	syncWait.Record()
-		// 	log.Lvl1("Starting new node", simul)
+		// 	log.LLvl1("Starting new node", simul)
 
 		// 	measureNet := monitor.NewCounterIOMeasure("bandwidth_root", rootSC.Server)
 		// 	simError = rootSim.Run(rootSC)
@@ -320,9 +317,9 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		//pi.Start()
 	}
 
-	//log.Lvl3(serverAddress, scs[0].Server.ServerIdentity, "is waiting for all servers to close")
+	//log.LLvl1(serverAddress, scs[0].Server.ServerIdentity, "is waiting for all servers to close")
 	//wgServer.Wait()
-	//log.Lvl2(serverAddress, "has all servers closed")
+	//log.LLvl1(serverAddress, "has all servers closed")
 	//if monitorAddress != "" {
 	//	monitor.EndAndCleanup()
 	//}

@@ -89,7 +89,7 @@ func (s *Service) SignatureRequest(req *SignatureRequest) (network.Message, erro
 	}
 
 	// start the protocol
-	log.Lvl3("Cosi Service starting up root protocol")
+	log.LLvl1("Cosi Service starting up root protocol")
 	if err = p.Start(); err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (s *Service) SignatureRequest(req *SignatureRequest) (network.Message, erro
 // the one starting the protocol) so it's the Service that will be called to
 // generate the PI on all others node.
 func (s *Service) NewProtocol(tn *onet.TreeNodeInstance, conf *onet.GenericConfig) (onet.ProtocolInstance, error) {
-	log.Lvl3("Cosi Service received on", s.ServerIdentity(), "received new protocol event-", tn.ProtocolName())
+	log.LLvl1("Cosi Service received on", s.ServerIdentity(), "received new protocol event-", tn.ProtocolName())
 	switch tn.ProtocolName() {
 	case protocol.DefaultProtocolName:
 		return protocol.NewDefaultProtocol(tn)

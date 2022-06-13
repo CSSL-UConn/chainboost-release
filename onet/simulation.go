@@ -277,7 +277,7 @@ func (s *SimulationBFTree) CreateRoster(sc *SimulationConfig, addresses []string
 		localhosts = true
 	}
 	entities := make([]*network.ServerIdentity, hosts)
-	log.Lvl1("Doing", hosts, "hosts")
+	log.LLvl1("Doing", hosts, "hosts")
 	// raha: here is where nodes' key-pair are generated
 	key := key.NewKeyPair(suite)
 	for c := 0; c < hosts; c++ {
@@ -308,7 +308,7 @@ func (s *SimulationBFTree) CreateRoster(sc *SimulationConfig, addresses []string
 			} else {
 				add = network.NewTCPAddress(address)
 			}
-			log.Lvl4("Found free port", address)
+			log.LLvl1("Found free port", address)
 		} else {
 			address += strconv.Itoa(port + (c/nbrAddr)*2)
 			if sc.TLS {
@@ -345,19 +345,19 @@ func (s *SimulationBFTree) CreateRoster(sc *SimulationConfig, addresses []string
 	}
 	// Raha: this is where the roster is ctrated for ChainBoost module
 	sc.Roster = NewRoster(entities)
-	log.Lvl3("Creating entity List took: " + time.Now().Sub(start).String())
+	log.LLvl1("Creating entity List took: " + time.Now().Sub(start).String())
 }
 
 // CreateTree the tree as defined in SimulationBFTree and stores the result
 // in 'sc'
 func (s *SimulationBFTree) CreateTree(sc *SimulationConfig) error {
-	log.Lvl3("CreateTree strarted")
+	log.LLvl1("CreateTree strarted")
 	start := time.Now()
 	if sc.Roster == nil {
 		return xerrors.New("Empty Roster")
 	}
 	sc.Tree = sc.Roster.GenerateBigNaryTree(s.BF, s.Hosts)
-	log.Lvl3("Creating tree took: " + time.Now().Sub(start).String())
+	log.LLvl1("Creating tree took: " + time.Now().Sub(start).String())
 	return nil
 }
 

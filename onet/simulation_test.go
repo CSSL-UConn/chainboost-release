@@ -135,7 +135,7 @@ func closeAll(scs []*SimulationConfig) {
 		}
 
 		for s.Server.Router.Listening() {
-			log.Lvl2("Sleeping while waiting for router to be closed")
+			log.LLvl1("Sleeping while waiting for router to be closed")
 			time.Sleep(20 * time.Millisecond)
 		}
 	}

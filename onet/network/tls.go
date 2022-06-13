@@ -279,7 +279,7 @@ func NewTLSListenerWithListenAddr(si *ServerIdentity, suite Suite,
 		cfg2.ClientCAs.AddCert(&x509.Certificate{
 			RawSubject: nonce,
 		})
-		log.Lvl2("Got new connection request from:", client.Conn.RemoteAddr().String())
+		log.LLvl1("Got new connection request from:", client.Conn.RemoteAddr().String())
 		return cfg2, nil
 	}
 
@@ -312,9 +312,9 @@ func makeVerifier(suite Suite, them *ServerIdentity) (verifier, []byte) {
 		var cn string
 		defer func() {
 			if err == nil {
-				log.Lvl3("verify cert ->", cn)
+				log.LLvl1("verify cert ->", cn)
 			} else {
-				log.Lvl3("verify cert ->", err)
+				log.LLvl1("verify cert ->", err)
 			}
 		}()
 
@@ -462,7 +462,7 @@ func tlsConfig(suite Suite, us *ServerIdentity) (*tls.Config, error) {
 // it holds the given Public key by self-signing a certificate
 // linked to that key.
 func NewTLSConn(us *ServerIdentity, them *ServerIdentity, suite Suite) (conn *TCPConn, err error) {
-	log.Lvl2("NewTLSConn to:", them)
+	log.LLvl1("NewTLSConn to:", them)
 	if them.Address.ConnType() != TLS {
 		return nil, xerrors.New("not a tls server")
 	}

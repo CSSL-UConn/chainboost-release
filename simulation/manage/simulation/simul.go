@@ -52,9 +52,9 @@ func (e *simulation) Setup(dir string, hosts []string) (
 /*
 func (e *simulation) Run(config *onet.SimulationConfig) error {
 	size := config.Tree.Size()
-	log.Lvl2("Size is:", size, "rounds:", e.Rounds)
+	log.LLvl1("Size is:", size, "rounds:", e.Rounds)
 	for round := 0; round < e.Rounds; round++ {
-		log.Lvl1("Starting round", round)
+		log.LLvl1("Starting round", round)
 		round := monitor.NewTimeMeasure("round")
 		p, err := config.Overlay.CreateProtocol("Count", config.Tree, onet.NilServiceID)
 		if err != nil {
@@ -74,9 +74,9 @@ func (e *simulation) Run(config *onet.SimulationConfig) error {
 //Raha
 func (e *simulation) Run(config *onet.SimulationConfig) error {
 	size := config.Tree.Size()
-	log.Lvl2("Size is:", size, "rounds:", e.Rounds)
+	log.LLvl1("Size is:", size, "rounds:", e.Rounds)
 	for round := 0; round < e.Rounds; round++ {
-		log.Lvl1("Starting round", round)
+		log.LLvl1("Starting round", round)
 		//round := monitor.NewTimeMeasure("round")
 		p, err := config.Overlay.CreateProtocol("ChainBoost", config.Tree, onet.NilServiceID)
 		if err != nil {
@@ -95,11 +95,19 @@ func main() {
 	//simul.Start("ChainBoost.toml")
 
 	wd, err := os.Getwd()
-	log.Lvl1("Running toml-file: ", "ChainBoost.toml")
+	log.LLvl1("Running toml-file: ", "ChainBoost.toml")
 	os.Args = []string{os.Args[0], "ChainBoost.toml"}
 	log.LLvl1("Raha: simul is not empty!")
-	err = platform.Simulate(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		"bn256.adapter", "chainboost001.csi", "ChainBoost.toml", "chainboost001.csi")
+	/*
+		func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize,
+			SectorNumber, NumberOfPayTXsUpperBound, SimulationRounds, SimulationSeed,
+			NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, MCRoundPerEpoch,
+			SimState int,
+		suite, serverAddress, simul, monitorAddress string) error
+	*/
+	//ToDoRaha: Now: these values should be read from the chainBoost toml file!
+	err = platform.Simulate(30, 180, 30000, 25000, 2, 50, 22, 5, 1, 4, 60, 5, 2, 1,
+		"bn256.adapter", "chainboost001.csi", "ChainBoost", "chainboost001.csi:22")
 	if err != nil {
 		log.LLvl1("Raha: err returned from simulate: ", err)
 	} else {
