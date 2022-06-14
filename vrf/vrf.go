@@ -1,5 +1,6 @@
 // Copyright (C) 2019-2021 Algorand, Inc.
-// This file is part of go-algorand
+// This file is part of go-algorand: https://github.com/algorand/go-algorand/blob/1504f5f39ec2893d2b0ac9b60d1b87f6e7d4e2fc/crypto/vrf.go
+
 // go-algorand is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
@@ -19,6 +20,9 @@ package vrf
 // #cgo CFLAGS: -Wall -std=c99
 // #cgo darwin,arm64 CFLAGS: -I${SRCDIR}/libs/darwin/arm64/include
 // #cgo darwin,arm64 LDFLAGS: ${SRCDIR}/libs/darwin/arm64/lib/libsodium.a
+// #cgo linux,amd64 CFLAGS: -I${SRCDIR}/libs/linux/amd64/include
+// #cgo linux,amd64 LDFLAGS: ${SRCDIR}/libs/linux/amd64/lib/libsodium.a
+// #cgo LDFLAGS: -Wl,-unresolved-symbols=ignore-all
 // #include <stdint.h>
 // #include "sodium.h"
 import "C"
