@@ -14,9 +14,9 @@ import (
 )
 
 // generateNormalValues  generates values that follow a normal distribution with specified variance and mean
-func generateNormalValues(variance, mean, nodes, SimulationSeed int) []uint64 {
+func generateNormalValues(variance, mean, nodes, SimulationSeed int) []string {
 	var list []float64
-	var intlist []uint64
+	var intlist []string
 	rand.Seed(int64(SimulationSeed))
 	for i := 1; i <= nodes; i++ {
 		list = append(list, float64(mean)+float64(variance)*rand.NormFloat64())
@@ -24,9 +24,10 @@ func generateNormalValues(variance, mean, nodes, SimulationSeed int) []uint64 {
 	for i := 0; i < len(list); i++ {
 		t := uint64(math.Round(list[i]))
 		if t == 0 {
-			intlist = append(intlist, 1)
+			intlist = append(intlist, "1")
 		} else {
-			intlist = append(intlist, t)
+			tt := strconv.Itoa(int(t))
+			intlist = append(intlist, tt)
 		}
 	}
 

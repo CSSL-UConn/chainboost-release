@@ -1,4 +1,4 @@
-prefix=/Users/raha/go-algorand/crypto/libs/darwin/arm64
+prefix=/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/vrf/libs/linux/amd64
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include

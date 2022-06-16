@@ -37,7 +37,8 @@ import (
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/por"
-	"github.com/chainBoostScale/ChainBoost/vrf"
+
+	//"github.com/chainBoostScale/ChainBoost/vrf"
 	"go.dedis.ch/kyber/v3/pairing"
 )
 
@@ -73,7 +74,8 @@ type HelloChan struct {
 type ChainBoost struct {
 	// the node we are represented-in
 	*onet.TreeNodeInstance
-	ECPrivateKey vrf.VrfPrivkey
+	//ToDoRaha: temporary use of random value instead of vrf module
+	ECPrivateKey [64]byte // vrf.VrfPrivkey
 	// channel used to let all servers that the protocol has started
 	HelloChan chan HelloChan
 	// channel used by each round's leader to let all servers that a new round has come

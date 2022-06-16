@@ -22,7 +22,6 @@ package vrf
 // #cgo darwin,arm64 LDFLAGS: ${SRCDIR}/libs/darwin/arm64/lib/libsodium.a
 // #cgo linux,amd64 CFLAGS: -I${SRCDIR}/libs/linux/amd64/include
 // #cgo linux,amd64 LDFLAGS: ${SRCDIR}/libs/linux/amd64/lib/libsodium.a
-// #cgo LDFLAGS: -Wl,-unresolved-symbols=ignore-all
 // #include <stdint.h>
 // #include "sodium.h"
 import "C"

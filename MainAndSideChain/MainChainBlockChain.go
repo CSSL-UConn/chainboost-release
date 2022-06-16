@@ -60,7 +60,8 @@ func (bz *ChainBoost) finalMainChainBCInitialization() {
 		ServAgrRow := strconv.Itoa(i)
 		cell := "E" + ServAgrRow
 		RandomServerAgreementID := r.Int()
-		if err = f.SetCellValue("MarketMatching", cell, RandomServerAgreementID); err != nil {
+		String_RandomServerAgreementID := strconv.Itoa(RandomServerAgreementID)
+		if err = f.SetCellValue("MarketMatching", cell, String_RandomServerAgreementID); err != nil {
 			log.LLvl1("Panic Raised:\n\n")
 			panic(err)
 		} else {
@@ -332,7 +333,10 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 		panic(err)
 	}
 
-	//	each round, adding one row in power table based on the information in market matching sheet,assuming that servers are honest  and have honestly publish por for their actice (not expired) ServAgrs,for each storage server and each of their active contracst, add the stored file size to their current power
+	//each round, adding one row in power table based on the information in market matching sheet,
+	// assuming that servers are honest  and have honestly publish por for their actice (not expired)
+	// ServAgrs,for each storage server and each of their active contracst,
+	// add the stored file size to their current power
 	if rows, err = f.Rows("MarketMatching"); err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
@@ -500,6 +504,8 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 						ServAgrIDString = colCell
 						ServAgrID, err = strconv.Atoi(colCell)
 						if err != nil {
+							log.LLvl1("bad colCell is:", colCell,
+								" cell row num is: ", rowNum, " and the rest of row is:", row)
 							log.LLvl1("Panic Raised:\n\n")
 							panic(err)
 						}

@@ -9,6 +9,7 @@ import (
 	//"encoding/binary"
 	"bytes"
 	"encoding/binary"
+	"math/rand"
 	"time"
 
 	"github.com/chainBoostScale/ChainBoost/onet"
@@ -124,16 +125,21 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 	}
 }
 
-//
 func (bz *ChainBoost) MainChainCheckLeadership(msg MainChainNewRoundChan) error {
-	//raha: todoRaha:temp commented all verf calls
-	var vrfOutput [64]byte
-	toBeHashed := []byte(msg.Seed)
-	proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
-	if !ok {
-		log.LLvl1("error while generating proof")
-	}
-	_, vrfOutput = bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
+	//ToDoRaha:temp commented all verf calls
+	//var vrfOutput [64]byte
+	//toBeHashed := []byte(msg.Seed)
+	// todoraha: we are skipping vrf for now
+	// proof, ok := bz.ECPrivateKey.ProveBytes(toBeHashed[:])
+	// if !ok {
+	// 	log.LLvl1("error while generating proof")
+	// }
+	// _, vrfOutput = bz.ECPrivateKey.Pubkey().VerifyBytes(proof, toBeHashed[:])
+
+	//ToDoRaha: a random 64 byte instead of vrf output
+	vrfOutput := make([]byte, 64)
+	rand.Read(vrfOutput)
+	log.LLvl1("Raha: the random gerenrated number is:", vrfOutput)
 	var vrfoutputInt64 uint64
 	buf := bytes.NewReader(vrfOutput[:])
 	err := binary.Read(buf, binary.LittleEndian, &vrfoutputInt64)

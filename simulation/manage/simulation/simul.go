@@ -106,7 +106,7 @@ func main() {
 		suite, serverAddress, simul, monitorAddress string) error
 	*/
 	//ToDoRaha: Now: these values should be read from the chainBoost toml file!
-	err = platform.Simulate(30, 180, 30000, 25000, 2, 50, 22, 5, 1, 4, 60, 5, 2, 1,
+	err = platform.Simulate(30, 10, 30000, 25000, 2, 50, 22, 9, 1, 4, 5, 5, 2, 2,
 		"bn256.adapter", "chainboost001.csi", "ChainBoost", "chainboost001.csi:22")
 	if err != nil {
 		log.LLvl1("Raha: err returned from simulate: ", err)

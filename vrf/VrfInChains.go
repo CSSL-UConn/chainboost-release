@@ -10,23 +10,23 @@
 
 package vrf
 
-import "github.com/chainBoostScale/ChainBoost/onet/log"
+//import "github.com/chainBoostScale/ChainBoost/onet/log"
 
 //Testvrf is called in Start in ChainBoost to test the VRF module
-func Testvrf() {
-	t := []byte("first test")
-	VrfPubkey, VrfPrivkey := VrfKeygen()
-	proof, ok := VrfPrivkey.ProveBytes(t)
-	if !ok {
-		log.Lvl2("error while generating proof")
-	}
-	r, _ := VrfPubkey.VerifyBytes(proof, t)
-	if r == true {
-		log.Lvl2("proof is approved")
-	} else {
-		log.Lvl2("proof is rejected")
-	}
-}
+// func Testvrf() {
+// 	t := []byte("first test")
+// 	VrfPubkey, VrfPrivkey := VrfKeygen()
+// 	proof, ok := VrfPrivkey.ProveBytes(t)
+// 	if !ok {
+// 		log.Lvl2("error while generating proof")
+// 	}
+// 	r, _ := VrfPubkey.VerifyBytes(proof, t)
+// 	if r == true {
+// 		log.Lvl2("proof is approved")
+// 	} else {
+// 		log.Lvl2("proof is rejected")
+// 	}
+// }
 
 // NextRoundSeed Algorand: "each round's seed is computed by VRF with the seed of the previous round and this is done by the leader of round r-1
 // This seed (and the corresponding VRF proof π) is included in every proposed block,

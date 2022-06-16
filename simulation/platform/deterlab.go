@@ -188,15 +188,15 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 	packages := []pkg{
 		//raha: changed
 		// deter has an amd64, linux architecture
-		//{"simul", "amd64", "linux", d.simulDir},
 		{"simul", "arm64", "darwin", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
-		//{"simul", "arm64", "linux", "/go/src/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"},
+		{"users", "amd64", "linux", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/platform", "deterlab_users")},
 		{"simul", "amd64", "linux", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
+		//{"simul", "amd64", "linux", d.simulDir},
+		//{"simul", "arm64", "linux", "/go/src/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"},
 		//{"users", "arm64", "darwin", d.simulDir},
 		//{"users", "arm64", "linux", d.simulDir},
 		//{"users", "386", "freebsd", path.Join(d.platformDir, "deterlab_users")},
 		//{"users", "arm64", "linux", path.Join(d.platformDir, "deterlab_users")},
-		{"users", "amd64", "linux", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/platform", "deterlab_users")},
 	}
 	if build == "" {
 		build = "simul,users"
