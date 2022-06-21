@@ -333,9 +333,16 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 
 	// createHosts and parseHost functions are deterlab API specific.
 	// deter.createHosts()
-	log.LLvl1("Getting the hosts (vm addresses?)")
-	deter.Phys = append(d.Phys, "192.168.0.86:22")
-	deter.Virt = append(d.Virt, "chainboost001.csi")
+	// Phys: DNS-resolvable names, Virt: VLAN-IP names (physical machines)
+	log.LLvl1("Getting the hosts (Raha: vm addresses?)")
+	deter.Phys = []string{}
+	deter.Virt = []string{}
+	//---
+	deter.Phys = append(deter.Phys, "192.168.3.189:22")
+	deter.Virt = append(deter.Virt, "192.168.3.189")
+	//---
+	deter.Phys = append(deter.Phys, "192.168.0.86:22")
+	deter.Virt = append(deter.Virt, "192.168.0.86")
 	//-----------------------------------
 
 	log.LLvl1("Writing the config file :", deter)

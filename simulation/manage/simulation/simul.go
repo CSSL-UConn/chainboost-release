@@ -1,7 +1,10 @@
 package main
 
 import (
+	"net"
 	"os"
+
+	//"os/exec"
 
 	"github.com/BurntSushi/toml"
 	"github.com/chainBoostScale/ChainBoost/onet"
@@ -101,13 +104,24 @@ func main() {
 	/*
 		func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize,
 			SectorNumber, NumberOfPayTXsUpperBound, SimulationRounds, SimulationSeed,
-			NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, MCRoundPerEpoch,
-			SimState int,
+			NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow,
+			MCRoundPerEpoch, SimState int,
 		suite, serverAddress, simul, monitorAddress string) error
 	*/
 	//ToDoRaha: Now: these values should be read from the chainBoost toml file!
+	// -------------------------------------
+	//get current vm's ip
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	log.LLvl1("cmd out:", localAddr.IP)
+	host := localAddr.IP.String()
+	// -------------------------------------
 	err = platform.Simulate(30, 10, 30000, 25000, 2, 50, 22, 9, 1, 4, 5, 5, 2, 2,
-		"bn256.adapter", "chainboost001.csi", "ChainBoost", "chainboost001.csi:22")
+		"bn256.adapter", host, "ChainBoost", host+":22")
 	if err != nil {
 		log.LLvl1("Raha: err returned from simulate: ", err)
 	} else {

@@ -132,7 +132,10 @@ func LoadSimulationConfig(s, dir, ca string) ([]*SimulationConfig, error) {
 			// 10.255.0.1 would also match 10.255.0.10 and others
 			ca += ":"
 		}
+
 		for _, e := range sc.Roster.List {
+			log.LLvl1("raha: Roster list", e.String())
+			log.LLvl1("raha 1:", e.Address.String(), " vs ", ca)
 			if strings.Contains(e.Address.String(), ca) {
 				e.SetPrivate(scf.PrivateKeys[e.Address].Private)
 				// Populate the private key in the same array order
@@ -144,13 +147,14 @@ func LoadSimulationConfig(s, dir, ca string) ([]*SimulationConfig, error) {
 					}
 					e.ServiceIdentities[i] = network.NewServiceIdentity(sid.Name, suite, sid.Public, privkey)
 				}
-
+				log.LLvl1("raha 2")
 				server := NewServerTCP(e, suite)
 				server.UnauthOk = true
 				server.Quiet = true
 				scNew := *sc
 				scNew.Server = server
 				scNew.Overlay = server.overlay
+				log.LLvl1("raha: appended")
 				ret = append(ret, &scNew)
 			}
 		}
