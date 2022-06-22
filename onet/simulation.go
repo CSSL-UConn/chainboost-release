@@ -147,7 +147,6 @@ func LoadSimulationConfig(s, dir, ca string) ([]*SimulationConfig, error) {
 					}
 					e.ServiceIdentities[i] = network.NewServiceIdentity(sid.Name, suite, sid.Public, privkey)
 				}
-				log.LLvl1("raha 2")
 				server := NewServerTCP(e, suite)
 				server.UnauthOk = true
 				server.Quiet = true

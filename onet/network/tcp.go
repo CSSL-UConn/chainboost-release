@@ -99,7 +99,7 @@ func NewTCPConn(addr Address, suite Suite) (conn *TCPConn, err error) {
 			}
 			return
 		}
-		err = xerrors.Errorf("dial: %v", err)
+		err = xerrors.Errorf("dial raha: %v", err)
 		if i < MaxRetryConnect {
 			time.Sleep(WaitRetry)
 		}
@@ -554,7 +554,7 @@ func (t *TCPHost) Connect(si *ServerIdentity) (Conn, error) {
 	case TLS:
 		c, err := NewTLSConn(t.sid, si, t.suite)
 		if err != nil {
-			return nil, xerrors.Errorf("tcp connection: %v", err)
+			return nil, xerrors.Errorf("tls connection: %v", err)
 		}
 		return c, nil
 	case InvalidConnType:

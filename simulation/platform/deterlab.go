@@ -338,8 +338,8 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	deter.Phys = []string{}
 	deter.Virt = []string{}
 	//---
-	deter.Phys = append(deter.Phys, "192.168.3.189:22")
-	deter.Virt = append(deter.Virt, "192.168.3.189")
+	deter.Phys = append(deter.Phys, "192.168.3.199:22")
+	deter.Virt = append(deter.Virt, "192.168.3.199")
 	//---
 	deter.Phys = append(deter.Phys, "192.168.0.86:22")
 	deter.Virt = append(deter.Virt, "192.168.0.86")
@@ -433,6 +433,7 @@ func (d *Deterlab) Start(args ...string) error {
 	// -n = stdout == /Dev/null, -N => no command stream, -T => no tty
 
 	//todoraha: commented temp  do we need them?
+	log.LLvl1("Setup remote port forwarding skipped")
 	// redirection := strconv.Itoa(d.MonitorPort) + ":" + d.ProxyAddress + ":" + strconv.Itoa(d.MonitorPort)
 	// cmd := []string{"-nNTf", "-o", "StrictHostKeyChecking=no", "-o", "ExitOnForwardFailure=yes", "-R",
 	// 	redirection, fmt.Sprintf("%s@%s", d.Login, d.Host)}
@@ -444,7 +445,7 @@ func (d *Deterlab) Start(args ...string) error {
 	// 	log.Fatal("ssh port forwarding exited in failure:", err)
 	// }
 	// log.LLvl1("Setup remote port forwarding", cmd)
-
+	//----------
 	go func() {
 		log.LLvl1("Raha: Running ./users on the server:", d.Login, "@", d.Host)
 		err := SSHRunStdout(d.Login, d.Host, "cd remote; ./users -suite="+d.Suite)

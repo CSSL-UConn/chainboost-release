@@ -26,6 +26,7 @@ var kill = false
 // 	flag.BoolVar(&kill, "kill", false, "kill everything (and don't start anything)")
 // 	flag.StringVar(&suite, "suite", "ed25519", "suite used for simulation")
 // }
+
 // The address of this server - if there is only one server in the config
 // file, it will be derived from it automatically
 var serverAddress string
@@ -137,7 +138,7 @@ func main() {
 	// RedirectionAddress:SinkPort-1. With remote tunnel forwarding it will
 	// be forwarded to the real sink
 	//-------------------
-	// Tododraha: commented!!! why proxy why monitor?!
+	//todoraha: what proxy and monitor port are doing?
 	// addr, port := deter.ProxyAddress, uint16(deter.MonitorPort+1)
 	// log.LLvl1("Launching proxy redirecting to", addr, ":", port)
 	// prox, err := monitor.NewProxy(uint16(deter.MonitorPort), addr, port)
@@ -211,12 +212,9 @@ func main() {
 			}
 			log.LLvl1("Done copying to VMs")
 			// -----------------------------------------
-
-			// todoraha: commeneted
 			log.LLvl1("Raha: running ./simul with non-empty simul tag!!!")
 			err = platform.SSHRunStdout("root", phys, "cd remote; sudo ./simul "+
 				args)
-
 			// -----------------------------------------
 
 			if err != nil && !killing {
