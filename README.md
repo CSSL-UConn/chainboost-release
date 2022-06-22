@@ -11,7 +11,7 @@ as well as [Cosi](https://github.com/dedis/cothority) module from Cothority.
 We used [Kyber](https://github.com/dedis/kyber) for advanced cryptographic primitives.
 
 
-## Getting Started ##
+## Getting Started ###
 note: running on an OS other than IOS needs a change in c extention config code
 
 - Install Go
