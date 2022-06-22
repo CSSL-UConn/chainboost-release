@@ -172,7 +172,7 @@ func (w *WebSocket) start() {
 	w.Lock()
 	w.started = true
 	w.server.TLSConfig = w.TLSConfig
-	log.LLvl1("Starting to listen on?", w.server.Addr)
+	log.LLvl1("Starting to listen on??", w.server.Addr)
 	started := make(chan bool)
 	go func() {
 		// Check if server is configured for TLS
