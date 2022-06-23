@@ -186,7 +186,7 @@ func (bz *ChainBoost) Dispatch() error {
 	// return nil
 	running := true
 	var err error
-	log.LLvl1("starting Dispatch in chainboost simuulation")
+	log.LLvl1("starting Dispatch in chainboost simuulation on:", bz.TreeNode().Name())
 	for running {
 		select {
 		// -----------------------------------------------------------------------------

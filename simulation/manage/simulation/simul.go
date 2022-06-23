@@ -42,6 +42,7 @@ func NewSimulation(config string) (onet.Simulation, error) {
 func (e *simulation) Setup(dir string, hosts []string) (
 	*onet.SimulationConfig, error) {
 	sc := &onet.SimulationConfig{}
+	log.LLvl1("raha: creating roster with hosts number of nodes, out of given addresses and starting from port:2000")
 	e.CreateRoster(sc, hosts, 2000)
 	err := e.CreateTree(sc)
 	if err != nil {
@@ -111,6 +112,7 @@ func main() {
 	//ToDoRaha: Now: these values should be read from the chainBoost toml file!
 	// -------------------------------------
 	//get current vm's ip
+	var serverAddress, monitorAddress string
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
 		log.Fatal(err)
@@ -119,10 +121,18 @@ func main() {
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 	log.LLvl1("cmd out:", localAddr.IP)
 	host := localAddr.IP.String()
+	if host == "192.168.3.203" {
+		serverAddress = host
+		monitorAddress = host
+	} else {
+		serverAddress = host
+		monitorAddress = "192.168.3.203"
+	}
 	// -------------------------------------
+	//todoraha: what monitor is for? what port?
 	// raha: port 2000 is bcz in start.py file they have initialized it with port 2000!
 	err = platform.Simulate(30, 10, 30000, 25000, 2, 50, 22, 9, 1, 4, 5, 5, 2, 2,
-		"bn256.adapter", host, "ChainBoost", host+":2000")
+		"bn256.adapter", serverAddress, "ChainBoost", monitorAddress+":2000")
 	if err != nil {
 		log.LLvl1("Raha: err returned from simulate: ", err)
 	} else {

@@ -319,24 +319,27 @@ func (r *Router) Send(e *ServerIdentity, msgs ...Message) (uint64, error) {
 		}
 		return sent, nil
 	}
-
+	log.LLvl1("raha: log point")
 	var totSentLen uint64
 	c := r.connection(e.GetID())
 	if c == nil {
+		log.LLvl1("raha: starting new connection for", e.Address)
 		var sentLen uint64
 		var err error
 		c, sentLen, err = r.connect(e)
 		totSentLen += sentLen
 		if err != nil {
+			log.LLvl1("raha: starting new connection err")
 			return totSentLen, xerrors.Errorf("connecting: %v", err)
 		}
 	}
-
 	for _, msg := range msgs {
-		log.LLvl1("%s sends a msg to %s", r.address, e)
+		log.LLvl1("raha: connection from ", e.Address, "attributes: remote address:", c.Remote().NetworkAddress(), " local address: ", c.Local().NetworkAddress())
+		log.LLvl1("raha: debug: for each msg: in router.send function: %s sennds a msg to %s", r.address, e)
 		sentLen, err := c.Send(msg)
 		totSentLen += sentLen
 		if err != nil {
+			log.LLvl1("raha: not here?! msg err")
 			log.LLvl1(r.address, "Couldn't send to", e, ":", err, "trying again")
 			c, sentLen, err := r.connect(e)
 			totSentLen += sentLen

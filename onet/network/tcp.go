@@ -89,7 +89,7 @@ type TCPConn struct {
 // In case of an error it returns a nil TCPConn and the error.
 func NewTCPConn(addr Address, suite Suite) (conn *TCPConn, err error) {
 	netAddr := addr.NetworkAddress()
-	log.LLvl1("raha:::: in newTCPConn function, dialing: ", netAddr)
+	log.LLvl1("raha: in newTCPConn function, dialing: ", netAddr)
 	for i := 1; i <= MaxRetryConnect; i++ {
 		var c net.Conn
 		c, err = net.DialTimeout("tcp", netAddr, dialTimeout)
@@ -224,6 +224,7 @@ func (c *TCPConn) sendRaw(b []byte) (uint64, error) {
 		if err != nil {
 			sentLen := 4 + uint64(sent)
 			c.updateTx(sentLen)
+			log.LLvl1("raha: debug: err in conn.write located in sendRaw called from conn.send")
 			return sentLen, xerrors.Errorf("sending: %w", handleError(err))
 		}
 		sent += Size(n)
