@@ -2,7 +2,7 @@
 # ChainBoost #
 <p align="center"><img width="650" height="200" src="./MainAndSideChain/chainboost.png" alt="ChainBoost logo"></p>
 
-ChainBoost's official implementation in Go.
+ChainBoost's official implementation in Go..
 
 ChainBoost is a secure performance booster for blockchain-based resource markets.
 
