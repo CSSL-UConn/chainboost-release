@@ -134,8 +134,8 @@ func LoadSimulationConfig(s, dir, ca string) ([]*SimulationConfig, error) {
 		}
 
 		for _, e := range sc.Roster.List {
-			log.LLvl1("raha: Roster list", e.String())
-			log.LLvl1("raha 1:", e.Address.String(), " vs ", ca)
+			log.LLvl1("raha: New Roster Member", e.String())
+			//log.LLvl1("raha 1:", e.Address.String(), " vs ", ca)
 			if strings.Contains(e.Address.String(), ca) {
 				e.SetPrivate(scf.PrivateKeys[e.Address].Private)
 				// Populate the private key in the same array order
@@ -153,7 +153,6 @@ func LoadSimulationConfig(s, dir, ca string) ([]*SimulationConfig, error) {
 				scNew := *sc
 				scNew.Server = server
 				scNew.Overlay = server.overlay
-				log.LLvl1("raha: appended")
 				ret = append(ret, &scNew)
 			}
 		}

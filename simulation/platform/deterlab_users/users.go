@@ -15,6 +15,7 @@ import (
 
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/simulation/monitor"
 	"github.com/chainBoostScale/ChainBoost/simulation/platform"
 )
 
@@ -139,14 +140,14 @@ func main() {
 	// be forwarded to the real sink
 	//-------------------
 	//todoraha: what proxy and monitor port are doing?
-	// addr, port := deter.ProxyAddress, uint16(deter.MonitorPort+1)
-	// log.LLvl1("Launching proxy redirecting to", addr, ":", port)
-	// prox, err := monitor.NewProxy(uint16(deter.MonitorPort), addr, port)
-	// if err != nil {
-	// 	log.Fatal("Couldn't start proxy:", err)
-	// }
-	// go prox.Run()
-	// log.LLvl1("starting", deter.Servers, "cothorities for a total of", deter.Hosts, "processes.")
+	addr, port := deter.ProxyAddress, uint16(deter.MonitorPort+1)
+	log.LLvl1("Launching proxy redirecting to", addr, ":", port)
+	prox, err := monitor.NewProxy(uint16(deter.MonitorPort), addr, port)
+	if err != nil {
+		log.Fatal("Couldn't start proxy:", err)
+	}
+	go prox.Run()
+	log.LLvl1("starting", deter.Servers, "cothorities for a total of", deter.Hosts, "processes.")
 	//-------------------
 	killing := false
 	for i, phys := range deter.Phys {

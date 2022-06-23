@@ -333,7 +333,7 @@ func (r *Router) Send(e *ServerIdentity, msgs ...Message) (uint64, error) {
 	}
 
 	for _, msg := range msgs {
-		log.Lvlf4("%s sends a msg to %s", r.address, e)
+		log.LLvl1("%s sends a msg to %s", r.address, e)
 		sentLen, err := c.Send(msg)
 		totSentLen += sentLen
 		if err != nil {

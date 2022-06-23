@@ -120,8 +120,9 @@ func main() {
 	log.LLvl1("cmd out:", localAddr.IP)
 	host := localAddr.IP.String()
 	// -------------------------------------
+	// raha: port 2000 is bcz in start.py file they have initialized it with port 2000!
 	err = platform.Simulate(30, 10, 30000, 25000, 2, 50, 22, 9, 1, 4, 5, 5, 2, 2,
-		"bn256.adapter", host, "ChainBoost", host+":22")
+		"bn256.adapter", host, "ChainBoost", host+":2000")
 	if err != nil {
 		log.LLvl1("Raha: err returned from simulate: ", err)
 	} else {

@@ -74,7 +74,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			measures[i] = monitor.NewCounterIOMeasureWithHost("bandwidth", sc.Server, hostIndex)
 		}
 
-		log.LLvl1(serverAddress, "Starting server", server.ServerIdentity.Address)
+		log.LLvl1("Raha: in function simulate, ", serverAddress, "Starting server", server.ServerIdentity.Address)
 		// Launch a server and notifies when it's done
 		wgServer.Add(1)
 		measure := measures[i]

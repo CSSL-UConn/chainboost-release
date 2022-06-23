@@ -221,8 +221,10 @@ func (c *Server) Start() {
 	go c.Router.Start()
 	go c.WebSocket.start()
 	for !c.Router.Listening() || !c.WebSocket.Listening() {
+		log.LLvl1("ToDoRaha: router or webSocket for:", c.Address().String(), " is not listening!")
 		time.Sleep(50 * time.Millisecond)
 	}
+	log.LLvl1("ToDoRaha: router or webSocket for:", c.Address().String(), " is listening!!")
 	c.Lock()
 	c.IsStarted = true
 	c.Unlock()

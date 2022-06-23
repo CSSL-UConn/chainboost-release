@@ -132,7 +132,7 @@ func (d *Deterlab) Configure(pc *Config) {
 	os.Mkdir(d.deployDir, 0770)
 	os.Mkdir(d.buildDir, 0770)
 	d.MonitorPort = pc.MonitorPort
-	log.LLvl1("Dirs are:", pwd, d.deployDir)
+	log.LLvl1("Dirs are:", pwd, d.deployDir, "configed monitor port is:", pc.MonitorPort)
 	d.loadAndCheckDeterlabVars()
 	// ------------------------------
 	// raha: adding some other system-wide configurations
@@ -338,9 +338,9 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	deter.Phys = []string{}
 	deter.Virt = []string{}
 	//---
-	deter.Phys = append(deter.Phys, "192.168.3.199:22")
-	deter.Virt = append(deter.Virt, "192.168.3.199")
-	//---
+	deter.Phys = append(deter.Phys, "192.168.3.203:22")
+	deter.Virt = append(deter.Virt, "192.168.3.203")
+	//--- the port is ssh port:22
 	deter.Phys = append(deter.Phys, "192.168.0.86:22")
 	deter.Virt = append(deter.Virt, "192.168.0.86")
 	//-----------------------------------
