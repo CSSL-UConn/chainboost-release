@@ -27,7 +27,7 @@ func TestService_SignatureRequest(t *testing.T) {
 
 	// Send a request to the service
 	msg := []byte("hello blscosi service")
-	log.LLvl1("Sending request to service...")
+	//log.LLvl3("Sending request to service...")
 
 	// empty roster should fail
 	ro1 := &onet.Roster{}

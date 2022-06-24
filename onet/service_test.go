@@ -133,13 +133,13 @@ func TestServiceProcessRequest(t *testing.T) {
 	local := NewTCPTest(tSuite)
 	hs := local.GenServers(2)
 	server := hs[0]
-	log.LLvl1("Host created and listening")
+	//log.LLvl3("Host created and listening")
 	defer local.CloseAll()
 	// Send a request to the service
 	client := NewClient(tSuite, dummyServiceName)
-	log.LLvl1("Sending request to service...")
+	//log.LLvl3("Sending request to service...")
 	_, err = client.Send(server.ServerIdentity, "nil", []byte("a"))
-	log.LLvl1("Got reply")
+	//log.LLvl3("Got reply")
 	require.Error(t, err)
 	// wait for the link
 	if <-link {
@@ -170,13 +170,13 @@ func TestServiceRequestNewProtocol(t *testing.T) {
 	ds.fakeTree = tree
 
 	// Send a request to the service
-	log.LLvl1("Sending request to service...")
+	//log.LLvl3("Sending request to service...")
 	log.ErrFatal(client.SendProtobuf(server.ServerIdentity, &DummyMsg{10}, nil))
 	// wait for the link from the
 	waitOrFatalValue(ds.link, true, t)
 
 	// Now resend the value so we instantiate using the same treenode
-	log.LLvl1("Sending request again to service...")
+	//log.LLvl3("Sending request again to service...")
 	err := client.SendProtobuf(server.ServerIdentity, &DummyMsg{10}, nil)
 	require.Error(t, err)
 	// this should fail
@@ -199,7 +199,7 @@ func TestServiceNewProtocol(t *testing.T) {
 	RegisterNewService(dummyServiceName, func(c *Context) (Service, error) {
 		countMutex.Lock()
 		defer countMutex.Unlock()
-		log.LLvl1("Creating service", count)
+		//log.LLvl3("Creating service", count)
 		var localDs *DummyService
 		switch count {
 		case 2:
@@ -222,7 +222,7 @@ func TestServiceNewProtocol(t *testing.T) {
 	hs := local.GenServers(3)
 	server1, server2 := hs[0], hs[1]
 	client := local.NewClient(dummyServiceName)
-	log.LLvl1("Host created and listening")
+	//log.LLvl3("Host created and listening")
 
 	// create the entityList and tree
 	el := NewRoster([]*network.ServerIdentity{server1.ServerIdentity, server2.ServerIdentity})
@@ -231,15 +231,15 @@ func TestServiceNewProtocol(t *testing.T) {
 	ds1.fakeTree = tree
 
 	// Send a request to the service
-	log.LLvl1("Sending request to service...")
+	//log.LLvl3("Sending request to service...")
 	log.ErrFatal(client.SendProtobuf(server1.ServerIdentity, &DummyMsg{10}, nil))
-	log.LLvl1("Waiting for end")
+	//log.LLvl3("Waiting for end")
 	// wait for the link from the protocol that Starts
 	waitOrFatalValue(ds1.link, true, t)
 	// now wait for the second link on the second HOST that the second service
 	// should have started (ds2) in ProcessRequest
 	waitOrFatalValue(ds2.link, true, t)
-	log.LLvl1("Done")
+	//log.LLvl3("Done")
 }
 
 func TestServiceProcessor(t *testing.T) {
@@ -268,9 +268,9 @@ func TestServiceProcessor(t *testing.T) {
 
 	defer UnregisterService(dummyServiceName)
 	// create two servers
-	log.LLvl1("Host created and listening")
+	//log.LLvl3("Host created and listening")
 	// create request
-	log.LLvl1("Sending request to service...")
+	//log.LLvl3("Sending request to service...")
 	sentLen, err := server2.Send(server1.ServerIdentity, &DummyMsg{10})
 	require.Nil(t, err)
 	require.NotNil(t, sentLen)
@@ -676,7 +676,7 @@ type DummyService struct {
 }
 
 func (ds *DummyService) ProcessClientRequest(req *http.Request, path string, buf []byte) ([]byte, *StreamingTunnel, error) {
-	log.LLvl1("Got called with path", path, buf)
+	//log.LLvl3("Got called with path", path, buf)
 	msg := &DummyMsg{}
 	err := protobuf.Decode(buf, msg)
 	if err != nil {
@@ -693,7 +693,7 @@ func (ds *DummyService) ProcessClientRequest(req *http.Request, path string, buf
 		ds.link <- false
 		return nil, nil, err
 	}
-	log.LLvl1("Starting protocol")
+	//log.LLvl3("Starting protocol")
 	go func() {
 		log.ErrFatal(dp.Start())
 	}()

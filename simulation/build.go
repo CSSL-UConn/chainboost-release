@@ -123,19 +123,21 @@ func startBuild() {
 			//timeout, err := getExperimentWait(runconfigs)
 			//t, err := strconv.Atoi(runconfigs[0].Get("timeout"))
 			//timeout := time.Duration(int64(t)) * time.Second
-			//if err != nil {
-			//log.Fatal("ExperimentWait:", err)
-			//	panic("Raha: set timeout for the experiment from the config file")
-			//}
+			// if err != nil {
+			// 	log.Fatal("ExperimentWait:", err)
+			// 	panic("Raha: set timeout for the experiment from the config file")
+			// }
 			go func() {
+				log.LLvl1("raha: running RunTests func")
 				RunTests(deployP, logname, runconfigs)
+				log.LLvl1("raha: RunTests func returned")
 				testsDone <- true
 			}()
 			select {
 			case <-testsDone:
 				log.LLvl1("Done with test", simulation)
-				//case <-time.After(2 * timeout):
-				//log.Fatal("Test failed to finish in", timeout)
+				// case <-time.After(timeout):
+				// 	log.Fatal("Test failed to finish (by returning from RunTests) in", timeout)
 			}
 		}
 	}
@@ -294,10 +296,10 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 		done <- nil
 	}()
 
-	timeout, err := getRunWait(rc)
-	if err != nil {
-		log.Fatal("RunWait:", err)
-	}
+	// timeout, err := getRunWait(rc)
+	// if err != nil {
+	// 	log.Fatal("RunWait:", err)
+	// }
 
 	// can timeout the command if it takes too long
 	select {
@@ -306,8 +308,8 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 			return nil, xerrors.Errorf("simulation error: %v", err)
 		}
 		return stats, nil
-	case <-time.After(2 * timeout):
-		return nil, xerrors.New("simulation timeout")
+		// case <-time.After(timeout):
+		// 	return nil, xerrors.New("simulation timeout")
 	}
 }
 

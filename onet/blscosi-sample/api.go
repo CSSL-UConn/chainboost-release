@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/chainBoostScale/ChainBoost/onet"
-	"github.com/chainBoostScale/ChainBoost/onet/log"
 )
 
 // Client is a structure to communicate with the CoSi
@@ -29,7 +28,7 @@ func (c *Client) SignatureRequest(r *onet.Roster, msg []byte) (*SignatureRespons
 		return nil, errors.New("Got an empty roster-list")
 	}
 	dst := r.List[0]
-	log.LLvl1("Sending message to", dst)
+	//log.LLvl3("Sending message to", dst)
 	reply := &SignatureResponse{}
 	err := c.SendProtobuf(dst, serviceReq, reply)
 

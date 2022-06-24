@@ -100,7 +100,7 @@ func (m *Monitor) Listen() error {
 	m.listenerLock.Lock()
 	m.listener = ln
 	m.listenerLock.Unlock()
-	log.LLvl1("Monitor listening for stats on", Sink, ":", m.SinkPort)
+	//log.LLvl3("Monitor listening for stats on", Sink, ":", m.SinkPort)
 	finished := false
 	go func() {
 		for {
@@ -114,10 +114,10 @@ func (m *Monitor) Listen() error {
 				if ok && operr.Op == "accept" {
 					break
 				}
-				log.LLvl1("Error while monitor accept connection:", operr)
+				//log.LLvl3("Error while monitor accept connection:", operr)
 				continue
 			}
-			log.LLvl1("Monitor: new connection from", conn.RemoteAddr().String())
+			//log.LLvl3("Monitor: new connection from", conn.RemoteAddr().String())
 			m.mutexConn.Lock()
 			m.conns[conn.RemoteAddr().String()] = conn
 			go m.handleConnection(conn)
@@ -132,14 +132,14 @@ func (m *Monitor) Listen() error {
 		// end of a peer conn
 		case peer := <-m.done:
 			m.mutexConn.Lock()
-			log.LLvl1("Connections left:", len(m.conns))
+			//log.LLvl3("Connections left:", len(m.conns))
 			delete(m.conns, peer)
 			// end of monitoring,
 			if len(m.conns) == 0 {
 				m.listenerLock.Lock()
 				if err := m.listener.Close(); err != nil {
-					log.LLvl1("Couldn't close listener:",
-						err)
+					//log.LLvl3("Couldn't close listener:",
+					//err)
 				}
 				m.listener = nil
 				finished = true
@@ -148,7 +148,7 @@ func (m *Monitor) Listen() error {
 			m.mutexConn.Unlock()
 		}
 	}
-	log.LLvl1("Monitor finished waiting")
+	//log.LLvl3("Monitor finished waiting")
 	m.mutexConn.Lock()
 	m.conns = make(map[string]net.Conn)
 	m.mutexConn.Unlock()
@@ -158,7 +158,7 @@ func (m *Monitor) Listen() error {
 // Stop will close every connections it has
 // And will stop updating the stats
 func (m *Monitor) Stop() {
-	log.LLvl1("Monitor Stop")
+	//log.LLvl3("Monitor Stop")
 	m.listenerLock.Lock()
 	if m.listener != nil {
 		if err := m.listener.Close(); err != nil {
@@ -188,19 +188,19 @@ func (m *Monitor) handleConnection(conn net.Conn) {
 				break
 			}
 			// otherwise log it
-			log.LLvl1("Error: monitor decoding from", conn.RemoteAddr().String(), ":", err)
+			//log.LLvl3("Error: monitor decoding from", conn.RemoteAddr().String(), ":", err)
 			nerr++
 			if nerr > 1 {
-				log.LLvl1("Monitor: too many errors from", conn.RemoteAddr().String(), ": Abort.")
+				//log.LLvl3("Monitor: too many errors from", conn.RemoteAddr().String(), ": Abort.")
 				break
 			}
 		}
 
-		log.Lvlf3("Monitor: received a Measure from %s: %+v", conn.RemoteAddr().String(), measure)
+		//log.LLvl3("Monitor: received a Measure from %s: %+v", conn.RemoteAddr().String(), measure)
 		// Special case where the measurement is indicating a FINISHED step
 		switch strings.ToLower(measure.Name) {
 		case "end":
-			log.LLvl1("Finishing monitor")
+			//log.LLvl3("Finishing monitor")
 			break
 		default:
 			m.measures <- measure

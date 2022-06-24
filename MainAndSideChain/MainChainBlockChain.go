@@ -104,6 +104,7 @@ from blockchain to check if they are next round's leader
 ------------------------------------------------------------------------ */
 func (bz *ChainBoost) readBCAndSendtoOthers() {
 	if bz.MCRoundNumber == bz.SimulationRounds {
+		log.LLvl1("ChainBoost simulation has passed the number of simulation rounds:", bz.SimulationRounds, "\n returning back to RunSimul")
 		bz.DoneChainBoost <- true
 	}
 	powers, seed := bz.readBCPowersAndSeed()

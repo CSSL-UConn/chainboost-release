@@ -145,14 +145,14 @@ func TestNewWebSocket(t *testing.T) {
 	require.NotEmpty(t, c.WebSocket.services[serviceWebSocket])
 	cl := NewClientKeep(tSuite, "WebSocket")
 	req := &SimpleResponse{}
-	msgTypeID := network.MessageType(req)
-	log.Lvlf1("Sending message Request: %x", msgTypeID[:])
+	//msgTypeID := network.MessageType(req)
+	//log.LLvl3("Sending message Request: %x", msgTypeID[:])
 	buf, err := protobuf.Encode(req)
 	require.Nil(t, err)
 	rcv, err := cl.Send(c.ServerIdentity, "SimpleResponse", buf)
 	require.Nil(t, err)
 
-	log.Lvlf1("Received reply: %x", rcv)
+	//log.LLvl3("Received reply: %x", rcv)
 	rcvMsg := &SimpleResponse{}
 	require.Nil(t, protobuf.Decode(rcv, rcvMsg))
 	require.Equal(t, int64(1), rcvMsg.Val)
@@ -178,12 +178,12 @@ func TestNewWebSocketTLS(t *testing.T) {
 	defer cl.Close()
 	cl.TLSClientConfig = &tls.Config{RootCAs: CAPool}
 	req := &SimpleResponse{}
-	msgTypeID := network.MessageType(req)
-	log.Lvlf1("Sending message Request: %x", msgTypeID[:])
+	//msgTypeID := network.MessageType(req)
+	//log.LLvl3("Sending message Request: %x", msgTypeID[:])
 	buf, err := protobuf.Encode(req)
 	require.Nil(t, err)
 	rcv, err := cl.Send(c.ServerIdentity, "SimpleResponse", buf)
-	log.Lvlf1("Received reply: %x", rcv)
+	//log.LLvl3("Received reply: %x", rcv)
 	rcvMsg := &SimpleResponse{}
 	require.Nil(t, protobuf.Decode(rcv, rcvMsg))
 	require.Equal(t, int64(1), rcvMsg.Val)
@@ -194,9 +194,9 @@ func TestNewWebSocketTLS(t *testing.T) {
 	u := &url.URL{Scheme: "https", Host: hp}
 	c.ServerIdentity.URL = u.String()
 
-	log.Lvlf1("Sending message Request: %x", msgTypeID[:])
+	//log.LLvl3("Sending message Request: %x", msgTypeID[:])
 	rcv, err = cl.Send(c.ServerIdentity, "SimpleResponse", buf)
-	log.Lvlf1("Received reply: %x", rcv)
+	//log.LLvl3("Received reply: %x", rcv)
 	require.Nil(t, protobuf.Decode(rcv, rcvMsg))
 	require.Equal(t, int64(1), rcvMsg.Val)
 }

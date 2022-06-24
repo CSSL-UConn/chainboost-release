@@ -338,14 +338,14 @@ func newServiceManager(srv *Server, o *Overlay, dbPath string, delDb bool) *serv
 	s.db = db
 
 	for name, inst := range protocols.instantiators {
-		log.LLvl1("Registering global protocol", name)
+		////log.LLvl3("Registering global protocol", name)
 		srv.ProtocolRegister(name, inst)
 	}
 
 	ids := ServiceFactory.registeredServiceIDs()
 	for _, id := range ids {
 		name := ServiceFactory.Name(id)
-		log.LLvl1("Starting service", name)
+		//log.LLvl3("Starting service", name)
 
 		cont := newContext(srv, o, id, s)
 
@@ -353,13 +353,13 @@ func newServiceManager(srv *Server, o *Overlay, dbPath string, delDb bool) *serv
 		if err != nil {
 			log.Fatalf("Trying to instantiate service %v: %+v", name, err)
 		}
-		log.LLvl1("Started Service", name)
+		//log.LLvl3("Started Service", name)
 		s.servicesMutex.Lock()
 		services[id] = srvc
 		s.servicesMutex.Unlock()
 		srv.WebSocket.registerService(name, srvc)
 	}
-	log.LLvl1(srv.Address(), "instantiated all services")
+	////log.LLvl3(srv.Address(), "instantiated all services")
 	srv.statusReporterStruct.RegisterStatusReporter("Db", s)
 	return s
 }
@@ -391,7 +391,7 @@ func (s *serviceManager) dbFileName() string {
 func (s *serviceManager) updateDbFileName() {
 	if _, err := os.Stat(s.dbFileNameOld()); err == nil {
 		// we assume the new name does not exist
-		log.LLvl1("Renaming database from", s.dbFileNameOld(), "to", s.dbFileName())
+		//log.LLvl3("Renaming database from", s.dbFileNameOld(), "to", s.dbFileName())
 		if err := os.Rename(s.dbFileNameOld(), s.dbFileName()); err != nil {
 			log.Error(err)
 		}

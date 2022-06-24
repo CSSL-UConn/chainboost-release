@@ -120,7 +120,7 @@
 // 	//test tcp connection
 // 	var dialTimeout = 1 * time.Minute
 // 	//var c net.Conn
-// 	netAddr := "192.168.3.203:2000"
+// 	netAddr := "192.168.3.212:2000"
 // 	_, err = net.DialTimeout("tcp", netAddr, dialTimeout)
 // 	if err != nil {
 // 		fmt.Println("err:", err)

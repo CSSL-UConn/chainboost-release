@@ -181,7 +181,7 @@ func (t *Tree) BinaryUnmarshaler(s network.Suite, b []byte) error {
 // Equal verifies if the given tree is equal
 func (t *Tree) Equal(t2 *Tree) bool {
 	if !t.ID.Equal(t2.ID) || !t.Roster.ID.Equal(t2.Roster.ID) {
-		log.LLvl1("Ids of trees don't match")
+		//log.LLvl3("Ids of trees don't match")
 		return false
 	}
 	return t.Root.Equal(t2.Root)
@@ -238,7 +238,7 @@ func (t *Tree) IsBinary(root *TreeNode) bool {
 func (t *Tree) IsNary(root *TreeNode, N int) bool {
 	nChild := len(root.Children)
 	if nChild != N && nChild != 0 {
-		log.LLvl1("Only", nChild, "children for", root.ID)
+		//log.LLvl3("Only", nChild, "children for", root.ID)
 		return false
 	}
 	for _, c := range root.Children {
@@ -643,7 +643,7 @@ func (ro *Roster) GenerateNaryTreeWithRoot(N int, root *network.ServerIdentity) 
 	if root != nil {
 		rootIndex, _ = ro.Search(root.ID)
 		if rootIndex < 0 {
-			log.LLvl1("Asked for non-existing root:", root, ro.List)
+			//log.LLvl3("Asked for non-existing root:", root, ro.List)
 			return nil
 		}
 	} else {
@@ -945,16 +945,16 @@ func (t *TreeNode) AddChild(c *TreeNode) {
 // Equal tests if that node is equal to the given node
 func (t *TreeNode) Equal(t2 *TreeNode) bool {
 	if !t.ID.Equal(t2.ID) || !t.ServerIdentity.ID.Equal(t2.ServerIdentity.ID) {
-		log.LLvl1("TreeNode: ids are not equal")
+		//log.LLvl3("TreeNode: ids are not equal")
 		return false
 	}
 	if len(t.Children) != len(t2.Children) {
-		log.LLvl1("TreeNode: number of children are not equal")
+		//log.LLvl3("TreeNode: number of children are not equal")
 		return false
 	}
 	for i, c := range t.Children {
 		if !c.Equal(t2.Children[i]) {
-			log.LLvl1("TreeNode: children are not equal")
+			//log.LLvl3("TreeNode: children are not equal")
 			return false
 		}
 	}

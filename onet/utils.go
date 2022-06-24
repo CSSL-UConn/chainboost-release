@@ -30,7 +30,7 @@ func ReadTomlConfig(conf interface{}, filename string, dirOpt ...string) error {
 	buf, err := ioutil.ReadFile(getFullName(filename, dirOpt...))
 	if err != nil {
 		pwd, _ := os.Getwd()
-		log.LLvl1("Didn't find", filename, "in", pwd)
+		log.LLvl3("Didn't find", filename, "in", pwd)
 		return xerrors.Errorf("reading file: %v", err)
 	}
 

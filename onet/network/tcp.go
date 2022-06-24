@@ -89,7 +89,7 @@ type TCPConn struct {
 // In case of an error it returns a nil TCPConn and the error.
 func NewTCPConn(addr Address, suite Suite) (conn *TCPConn, err error) {
 	netAddr := addr.NetworkAddress()
-	log.LLvl1("raha: in newTCPConn function, dialing: ", netAddr)
+	//log.LLvl3("raha: in newTCPConn function, dialing: ", netAddr)
 	for i := 1; i <= MaxRetryConnect; i++ {
 		var c net.Conn
 		c, err = net.DialTimeout("tcp", netAddr, dialTimeout)
@@ -224,7 +224,7 @@ func (c *TCPConn) sendRaw(b []byte) (uint64, error) {
 		if err != nil {
 			sentLen := 4 + uint64(sent)
 			c.updateTx(sentLen)
-			log.LLvl1("raha: debug: err in conn.write located in sendRaw called from conn.send")
+			//log.LLvl3("raha: debug: err in conn.write located in sendRaw called from conn.send")
 			return sentLen, xerrors.Errorf("sending: %w", handleError(err))
 		}
 		sent += Size(n)
@@ -350,7 +350,7 @@ func NewTCPListener(addr Address, s Suite) (*TCPListener, error) {
 func NewTCPListenerWithListenAddr(addr Address,
 	s Suite, listenAddr string) (*TCPListener, error) {
 	if addr.ConnType() != PlainTCP && addr.ConnType() != TLS {
-		log.LLvl1("ConnType: ", addr.ConnType(), "address: ", addr.String())
+		//log.LLvl3("ConnType: ", addr.ConnType(), "address: ", addr.String())
 		return nil, xerrors.New("TCPListener can only listen on TCP and TLS addresses")
 	}
 	t := &TCPListener{
@@ -360,7 +360,7 @@ func NewTCPListenerWithListenAddr(addr Address,
 		suite:        s,
 	}
 	listenOn, err := getListenAddress(addr, listenAddr)
-	log.LLvl1("raha: listen on:", listenOn, "for server addrs:", addr.String())
+	////log.LLvl3("raha: listen on:", listenOn, "for server addrs:", addr.String())
 	if err != nil {
 		return nil, xerrors.Errorf("listener: %v", err)
 	}

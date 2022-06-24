@@ -102,14 +102,7 @@ func main() {
 	log.LLvl1("Running toml-file: ", "ChainBoost.toml")
 	os.Args = []string{os.Args[0], "ChainBoost.toml"}
 	log.LLvl1("Raha: simul is not empty!")
-	/*
-		func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize,
-			SectorNumber, NumberOfPayTXsUpperBound, SimulationRounds, SimulationSeed,
-			NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow,
-			MCRoundPerEpoch, SimState int,
-		suite, serverAddress, simul, monitorAddress string) error
-	*/
-	//ToDoRaha: Now: these values should be read from the chainBoost toml file!
+
 	// -------------------------------------
 	//get current vm's ip
 	var serverAddress, monitorAddress string
@@ -121,14 +114,22 @@ func main() {
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 	log.LLvl1("cmd out:", localAddr.IP)
 	host := localAddr.IP.String()
-	if host == "192.168.3.203" {
+	if host == "192.168.3.212" {
 		serverAddress = host
 		monitorAddress = host
 	} else {
 		serverAddress = host
-		monitorAddress = "192.168.3.203"
+		monitorAddress = "192.168.3.212"
 	}
 	// -------------------------------------
+	/*
+		func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize,
+			SectorNumber, NumberOfPayTXsUpperBound, SimulationRounds, SimulationSeed,
+			NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow,
+			MCRoundPerEpoch, SimState int,
+		suite, serverAddress, simul, monitorAddress string) error
+	*/
+	//ToDoRaha: Now: these values should be read from the chainBoost toml file!
 	//todoraha: what monitor is for? what port?
 	// raha: port 2000 is bcz in start.py file they have initialized it with port 2000!
 	err = platform.Simulate(30, 10, 30000, 25000, 2, 50, 22, 9, 1, 4, 5, 5, 2, 2,

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/chainBoostScale/ChainBoost/onet"
-	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/pairing"
@@ -105,8 +104,8 @@ func (sig BlsSignature) VerifyWithPolicy(ps pairing.Suite, msg []byte, publics [
 		return fmt.Errorf("didn't get a valid signature: %s", err)
 	}
 
-	log.LLvl1("Signature verified and is correct!")
-	log.LLvl1("m.CountEnabled():", mask.CountEnabled())
+	//log.LLvl3("Signature verified and is correct!")
+	//log.LLvl3("m.CountEnabled():", mask.CountEnabled())
 
 	if !policy.Check(mask) {
 		return errors.New("the policy is not fulfilled")

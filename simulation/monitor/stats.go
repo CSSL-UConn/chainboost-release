@@ -217,7 +217,7 @@ func NewDataFilter(config map[string]string) DataFilter {
 	}
 	reg, err := regexp.Compile("filter_(\\w+)")
 	if err != nil {
-		log.LLvl1("DataFilter: Error compiling regexp:", err)
+		//log.LLvl3("DataFilter: Error compiling regexp:", err)
 		return df
 	}
 	// analyse the each entry
@@ -228,14 +228,14 @@ func NewDataFilter(config map[string]string) DataFilter {
 			// this value must be filtered by how many ?
 			perc, err := strconv.ParseFloat(v, 64)
 			if err != nil {
-				log.LLvl1("DataFilter: Cannot parse value for filter measure:", measure)
+				//log.LLvl3("DataFilter: Cannot parse value for filter measure:", measure)
 				continue
 			}
 			measure = strings.Replace(measure, "filter_", "", -1)
 			df.percentiles[measure] = perc
 		}
 	}
-	log.LLvl1("Filtering:", df.percentiles)
+	//log.LLvl3("Filtering:", df.percentiles)
 	return df
 }
 
@@ -248,7 +248,7 @@ func (df *DataFilter) Filter(measure string, values []float64) []float64 {
 	// Compute the percentile value
 	max, err := stats.PercentileNearestRank(values, df.percentiles[measure])
 	if err != nil {
-		log.LLvl1("Monitor: Error filtering data(", values, "):", err)
+		//log.LLvl3("Monitor: Error filtering data(", values, "):", err)
 		return values
 	}
 
@@ -261,11 +261,11 @@ func (df *DataFilter) Filter(measure string, values []float64) []float64 {
 	}
 	// check if we foud something to filter out
 	if maxIndex == -1 {
-		log.LLvl1("Filtering: nothing to filter for", measure)
+		//log.LLvl3("Filtering: nothing to filter for", measure)
 		return values
 	}
 	// return the values below the percentile
-	log.LLvl1("Filtering: filters out", measure, ":", maxIndex, "/", len(values))
+	//log.LLvl3("Filtering: filters out", measure, ":", maxIndex, "/", len(values))
 	return values[:maxIndex]
 }
 

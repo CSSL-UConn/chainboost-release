@@ -13,7 +13,6 @@ import (
 	"github.com/chainBoostScale/ChainBoost/onet"
 	app "github.com/chainBoostScale/ChainBoost/onet/app"
 	blscosi "github.com/chainBoostScale/ChainBoost/onet/blscosi-sample"
-	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"go.dedis.ch/kyber/v3/pairing"
 )
@@ -42,7 +41,7 @@ func CothorityCheck(tomlFileName string, detail bool) error {
 		return fmt.Errorf("Empty roster or invalid group defintion in: %s", tomlFileName)
 	}
 
-	log.Lvlf3("Checking roster %v", group.Roster.List)
+	//log.LLvl3("Checking roster %v", group.Roster.List)
 	var checkErr error
 	// First check all servers individually and write the working servers
 	// in a list
@@ -81,7 +80,7 @@ func CothorityCheck(tomlFileName string, detail bool) error {
 		if detail {
 			for i, first := range working {
 				for _, second := range working[i+1:] {
-					log.LLvl1("Testing connection between", first, second)
+					//log.LLvl3("Testing connection between", first, second)
 					desc := []string{"none", "none"}
 					if d1 := group.GetDescription(first); d1 != "" {
 						desc = []string{d1, group.GetDescription(second)}
@@ -117,8 +116,8 @@ func checkRoster(ro *onet.Roster, descs []string, detail bool) error {
 		}
 		serverStr += name + " "
 	}
-	log.LLvl1("Sending message to: " + serverStr)
-	log.Lvlf3("Checking %d server(s) %s: ", len(ro.List), serverStr)
+	//log.LLvl3("Sending message to: " + serverStr)
+	//log.LLvl3("Checking %d server(s) %s: ", len(ro.List), serverStr)
 	msg := []byte("verification")
 	sig, err := SignStatement(msg, ro)
 	if err != nil {
@@ -138,12 +137,12 @@ func SignStatement(msg []byte, ro *onet.Roster) (*blscosi.SignatureResponse, err
 	client := blscosi.NewClient()
 	publics := ro.ServicePublics(blscosi.ServiceName)
 
-	log.Lvlf4("Signing message %x", msg)
+	//log.LLvl3("Signing message %x", msg)
 
 	pchan := make(chan *blscosi.SignatureResponse, 1)
 	echan := make(chan error, 1)
 	go func() {
-		log.LLvl1("Waiting for the response on SignRequest")
+		//log.LLvl3("Waiting for the response on SignRequest")
 		response, err := client.SignatureRequest(ro, msg[:])
 		if err != nil {
 			echan <- err
@@ -156,7 +155,7 @@ func SignStatement(msg []byte, ro *onet.Roster) (*blscosi.SignatureResponse, err
 	case err := <-echan:
 		return nil, err
 	case response := <-pchan:
-		log.Lvlf5("Response: %x", response.Signature)
+		//log.LLvl3("Response: %x", response.Signature)
 
 		err := response.Signature.Verify(client.Suite().(*pairing.SuiteBn256), msg[:], publics)
 		if err != nil {

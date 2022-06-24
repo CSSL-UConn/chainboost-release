@@ -163,9 +163,9 @@ func (c *Server) Close() error {
 	err = c.serviceManager.closeDatabase()
 	if err != nil {
 		err = xerrors.Errorf("closing db: %v", err)
-		log.LLvl1("Error closing database: " + err.Error())
+		//log.LLvl3("Error closing database: " + err.Error())
 	}
-	log.LLvl1("Host Close", c.ServerIdentity.Address, "listening?", c.Router.Listening())
+	//log.LLvl3("Host Close", c.ServerIdentity.Address, "listening?", c.Router.Listening())
 	return err
 }
 
@@ -214,17 +214,17 @@ func (c *Server) Start() {
 	InformServerStarted()
 	c.started = time.Now()
 	if !c.Quiet {
-		log.Lvlf1("Starting server at %s on address %s",
-			c.started.Format("2006-01-02 15:04:05"),
-			c.ServerIdentity.Address)
+		//log.LLvl3("Starting server at %s on address %s",
+		//c.started.Format("2006-01-02 15:04:05"),
+		//c.ServerIdentity.Address)
 	}
 	go c.Router.Start()
 	go c.WebSocket.start()
 	for !c.Router.Listening() || !c.WebSocket.Listening() {
-		log.LLvl1("ToDoRaha: router or webSocket for:", c.Address().String(), " is not listening!")
+		//log.LLvl3("ToDoRaha: router or webSocket for:", c.Address().String(), " is not listening!")
 		time.Sleep(50 * time.Millisecond)
 	}
-	log.LLvl1("ToDoRaha: router or webSocket for:", c.Address().String(), " is listening!!")
+	//log.LLvl3("ToDoRaha: router or webSocket for:", c.Address().String(), " is listening!!")
 	c.Lock()
 	c.IsStarted = true
 	c.Unlock()

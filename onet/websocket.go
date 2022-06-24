@@ -115,7 +115,7 @@ func NewWebSocket(si *network.ServerIdentity) *WebSocket {
 	log.ErrFatal(err)
 	w.mux = http.NewServeMux()
 	w.mux.HandleFunc("/ok", func(w http.ResponseWriter, r *http.Request) {
-		log.LLvl1("ok?", r.RemoteAddr)
+		//log.LLvl3("ok?", r.RemoteAddr)
 		ok := []byte("ok\n")
 		w.Write(ok)
 	})
@@ -156,7 +156,7 @@ func NewWebSocket(si *network.ServerIdentity) *WebSocket {
 		Addr:    webHost,
 		Handler: w.mux,
 	}
-	log.LLvl1("raha: debug: does it get here?! for ", si.Address)
+	////log.LLvl3("raha: debug: does it get here?! for ", si.Address)
 	return w
 }
 
@@ -173,7 +173,7 @@ func (w *WebSocket) start() {
 	w.Lock()
 	w.started = true
 	w.server.TLSConfig = w.TLSConfig
-	log.LLvl1("raha: Starting to listen on:", w.server.Addr)
+	//log.LLvl3("raha: Starting to listen on:", w.server.Addr)
 	started := make(chan bool)
 	go func() {
 		// Check if server is configured for TLS
@@ -181,7 +181,7 @@ func (w *WebSocket) start() {
 		if w.server.TLSConfig != nil && (w.server.TLSConfig.GetCertificate != nil || len(w.server.TLSConfig.Certificates) >= 1) {
 			w.server.ListenAndServeTLS("", "")
 		} else {
-			log.LLvl1("raha: debug: ListenAndServe", w.server.Addr)
+			//log.LLvl3("raha: debug: ListenAndServe", w.server.Addr)
 			w.server.ListenAndServe()
 		}
 	}()
@@ -213,7 +213,7 @@ func (w *WebSocket) stop() {
 	if !w.started {
 		return
 	}
-	log.LLvl1("Stopping", w.server.Addr)
+	//log.LLvl3("Stopping", w.server.Addr)
 
 	d := time.Now().Add(100 * time.Millisecond)
 	ctx, cancel := context.WithDeadline(context.Background(), d)
@@ -238,7 +238,7 @@ func (t wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	n := 0
 
 	defer func() {
-		log.LLvl1("ws close", r.RemoteAddr, "n", n, "rx", rx, "tx", tx)
+		//log.LLvl3("ws close", r.RemoteAddr, "n", n, "rx", rx, "tx", tx)
 	}()
 
 	u := websocket.Upgrader{
@@ -273,7 +273,7 @@ outerReadLoop:
 		var reply []byte
 		var outChan chan []byte
 		path := strings.TrimPrefix(r.URL.Path, "/"+t.serviceName+"/")
-		log.Lvlf2("ws request from %s: %s/%s", r.RemoteAddr, t.serviceName, path)
+		//log.LLvl3("ws request from %s: %s/%s", r.RemoteAddr, t.serviceName, path)
 
 		isStreaming := false
 		bidirectionalStreamer, ok := s.(BidirectionalStreamer)

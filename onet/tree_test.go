@@ -195,7 +195,7 @@ func TestUnMarshalTree(t *testing.T) {
 		t.Fatal("Error while unmarshaling:", err)
 	}
 	if !tree.Equal(tree2) {
-		log.LLvl1(tree, "\n", tree2)
+		//log.LLvl3(tree, "\n", tree2)
 		t.Fatal("Tree and Tree2 are not identical")
 	}
 }
@@ -296,7 +296,7 @@ func TestBigNaryTree(t *testing.T) {
 	peerList := genRoster(tSuite, names)
 	tree := peerList.GenerateBigNaryTree(3, 13)
 	root := tree.Root
-	log.LLvl1(tree.Dump())
+	//log.LLvl3(tree.Dump())
 	if !tree.IsNary(root, 3) {
 		t.Fatal("Tree should be 3-ary")
 	}
@@ -349,7 +349,7 @@ func TestRosterIsUsed(t *testing.T) {
 	port := 2000
 	for hostExp := uint(2); hostExp < 8; hostExp++ {
 		hosts := (1 << hostExp) - 1
-		log.LLvl1("Trying tree with", hosts, "hosts")
+		//log.LLvl3("Trying tree with", hosts, "hosts")
 		names := make([]network.Address, hosts)
 		for i := 0; i < hosts; i++ {
 			add := "localhost" + strconv.Itoa(i/2) + ":" +
@@ -412,8 +412,8 @@ func TestTree_BinaryMarshaler(t *testing.T) {
 	if tree.Root == tree2.Root {
 		t.Fatal("Address should not be equal")
 	}
-	log.LLvl1(tree.Dump())
-	log.LLvl1(tree2.Dump())
+	//log.LLvl3(tree.Dump())
+	//log.LLvl3(tree2.Dump())
 }
 
 func TestTreeNode_SubtreeCount(t *testing.T) {

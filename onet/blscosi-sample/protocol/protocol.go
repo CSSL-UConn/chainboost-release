@@ -161,7 +161,7 @@ func (p *BlsCosi) Shutdown() error {
 		close(p.FinalSignature)
 	})
 
-	log.LLvl1("BLS CoSi ends")
+	//log.LLvl3("BLS CoSi ends")
 	return nil
 }
 
@@ -195,7 +195,7 @@ func (p *BlsCosi) Start() error {
 		return xerrors.Errorf("integrity check failed: %v", err)
 	}
 
-	log.Lvlf3("Starting BLS CoSi on %v", p.ServerIdentity())
+	//log.LLvl3("Starting BLS CoSi on %v", p.ServerIdentity())
 
 	go p.runSubProtocols()
 
@@ -217,7 +217,7 @@ func (p *BlsCosi) runSubProtocols() {
 	p.subProtocolsLock.Lock()
 	p.subProtocols = make([]*SubBlsCosi, len(p.subTrees))
 	for i, tree := range p.subTrees {
-		log.Lvlf3("Invoking start sub protocol on %v", tree.Root.ServerIdentity)
+		//log.LLvl3("Invoking start sub protocol on %v", tree.Root.ServerIdentity)
 		var err error
 		p.subProtocols[i], err = p.startSubProtocol(tree)
 		if err != nil {
@@ -227,7 +227,7 @@ func (p *BlsCosi) runSubProtocols() {
 		}
 	}
 	p.subProtocolsLock.Unlock()
-	log.LLvl1(p.ServerIdentity().Address, "all protocols started")
+	//log.LLvl3(p.ServerIdentity().Address, "all protocols started")
 
 	// Wait and collect all the signature responses
 	responses, err := p.collectSignatures()
@@ -236,7 +236,7 @@ func (p *BlsCosi) runSubProtocols() {
 		return
 	}
 
-	log.LLvl1(p.ServerIdentity().Address, "collected all signature responses")
+	//log.LLvl3(p.ServerIdentity().Address, "collected all signature responses")
 
 	// generate root signature
 	sig, err := p.generateSignature(responses)
@@ -300,7 +300,7 @@ func (p *BlsCosi) startSubProtocol(tree *onet.Tree) (*SubBlsCosi, error) {
 	// responses. The main protocol will deal with early answers.
 	cosiSubProtocol.Threshold = tree.Size() - 1
 
-	log.LLvl1("Starting sub protocol with subleader %v", tree.Root.Children[0].ServerIdentity)
+	//log.LLvl3("Starting sub protocol with subleader %v", tree.Root.Children[0].ServerIdentity)
 	err = cosiSubProtocol.Start()
 	if err != nil {
 		return nil, err
@@ -332,7 +332,7 @@ func (p *BlsCosi) collectSignatures() (ResponseMap, error) {
 					return
 				case <-subProtocol.subleaderNotResponding:
 					subleaderID := p.subTrees[i].Root.Children[0].RosterIndex
-					log.Lvlf2("(subprotocol %v) subleader with id %d failed, restarting subprotocol", i, subleaderID)
+					//log.LLvl3("(subprotocol %v) subleader with id %d failed, restarting subprotocol", i, subleaderID)
 
 					// generate new tree by adding the current subleader to the end of the
 					// leafs and taking the first leaf for the new subleader.
@@ -458,7 +458,7 @@ func (p *BlsCosi) generateSignature(responses ResponseMap) (BlsSignature, error)
 	// Aggregate all signatures
 	sig, err := p.makeAggregateResponse(p.suite, publics, responses)
 	if err != nil {
-		log.Lvlf3("%v failed to create aggregate signature", p.ServerIdentity())
+		//log.LLvl3("%v failed to create aggregate signature", p.ServerIdentity())
 		return nil, err
 	}
 
@@ -508,7 +508,7 @@ func (p *BlsCosi) makeAggregateResponse(suite pairing.Suite, publics []kyber.Poi
 		return nil, err
 	}
 
-	log.Lvlf3("%v is done aggregating signatures with total of %d signatures", p.ServerIdentity(), finalMask.CountEnabled())
+	//log.LLvl3("%v is done aggregating signatures with total of %d signatures", p.ServerIdentity(), finalMask.CountEnabled())
 
 	return append(sig, finalMask.Mask()...), nil
 }

@@ -396,13 +396,13 @@ type testService struct {
 
 func getAndVerifySignature(proto *BlsCosi, proposal []byte, policy sign.Policy) (BlsSignature, error) {
 	var signature BlsSignature
-	log.LLvl1("Waiting for Instance")
+	//log.LLvl3("Waiting for Instance")
 	select {
 	case signature = <-proto.FinalSignature:
-		log.LLvl1("Instance is done")
+		//log.LLvl3("Instance is done")
 	case <-time.After(testTimeout * 2):
 		// wait a bit longer than the protocol timeout
-		log.LLvl1("Didnt received commitment in time")
+		//log.LLvl3("Didnt received commitment in time")
 		return nil, fmt.Errorf("didn't get commitment in time")
 	}
 
@@ -420,7 +420,7 @@ func newService(c *onet.Context) (onet.Service, error) {
 
 // Store the public and private keys in the protocol
 func (s *testService) NewProtocol(tn *onet.TreeNodeInstance, conf *onet.GenericConfig) (onet.ProtocolInstance, error) {
-	log.LLvl1("Cosi Service received New Protocol event")
+	//log.LLvl3("Cosi Service received New Protocol event")
 	newProtocolMethod, ok := newProtocolMethods[tn.ProtocolName()]
 	if !ok {
 		return nil, errors.New("unknown protocol for this service")

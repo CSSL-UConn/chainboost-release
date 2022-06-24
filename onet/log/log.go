@@ -6,10 +6,10 @@
 // that are printed according to a chosen format.
 //
 // The log-level messages are:
-//	log.LLvl1("Important information")
-//	log.LLvl1("Less important information")
-//	log.LLvl1("Eventually flooding information")
-//	log.LLvl1("Definitively flooding information")
+//	//log.LLvl3("Important information")
+//	//log.LLvl3("Less important information")
+//	//log.LLvl3("Eventually flooding information")
+//	//log.LLvl3("Definitively flooding information")
 //	log.Lvl5("I hope you never need this")
 // in your program, then according to the debug-level one or more levels of
 // output will be shown. To set the debug-level, use
@@ -20,7 +20,7 @@
 // By adding a single 'L' to the method, it *always* gets printed.
 //
 // You can also add a 'f' to the name and use it like fmt.Printf:
-//	log.Lvlf1("Level: %d/%d", now, max)
+//	//log.LLvl3("Level: %d/%d", now, max)
 //
 // The common messages are:
 //	log.Print("Simple output")

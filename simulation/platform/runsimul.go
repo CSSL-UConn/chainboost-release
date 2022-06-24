@@ -94,7 +94,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 
 		// wait to be sure the goroutine started
 		<-ready
-		log.LLvl1("raha: does it get here for the buggy one?!")
+		//log.LLvl1("raha: does it get here for the buggy one?!")
 		sim, err := onet.NewSimulation(simul, sc.Config)
 		if err != nil {
 			return xerrors.New("couldn't create new simulation: " + err.Error())
@@ -146,160 +146,160 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		log.LLvl1("Starting protocol", simul, "on server", rootSC.Server.ServerIdentity.Address, "i.e. root node")
 		// Raha: I want to see the list of nodes!
 		log.LLvl1("Raha: Tree used in ChainBoost is", rootSC.Tree.Roster.List)
-		wait := true
-		for wait {
-			// Raha: the protocols are created and instanciated here:
+		//wait := true
+		//for wait {
+		// Raha: the protocols are created and instanciated here:
 
-			// ---------------------------------------------------------------
-			//     			---------- BLS CoSi protocol -------------
-			// ---------------------------------------------------------------
-			// initialization of committee members in side chain
-			log.LLvl1(rootSC.Server.ServerIdentity.Address, ": initialization of side chain attributes")
-			committeeNodes := rootSC.Tree.Roster.List[:CommitteeWindow-1]
-			committeeNodes = append([]*network.ServerIdentity{rootSC.Tree.List()[CommitteeWindow].ServerIdentity}, committeeNodes...)
-			committee := onet.NewRoster(committeeNodes)
-			var x = *rootSC.Tree.List()[CommitteeWindow]
-			x.RosterIndex = 0
-			BlsCosiSubTrees, _ := BLSCoSi.NewBlsProtocolTree(onet.NewTree(committee, &x), NbrSubTrees)
+		// ---------------------------------------------------------------
+		//     			---------- BLS CoSi protocol -------------
+		// ---------------------------------------------------------------
+		// initialization of committee members in side chain
+		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": initialization of side chain attributes")
+		committeeNodes := rootSC.Tree.Roster.List[:CommitteeWindow-1]
+		committeeNodes = append([]*network.ServerIdentity{rootSC.Tree.List()[CommitteeWindow].ServerIdentity}, committeeNodes...)
+		committee := onet.NewRoster(committeeNodes)
+		var x = *rootSC.Tree.List()[CommitteeWindow]
+		x.RosterIndex = 0
+		BlsCosiSubTrees, _ := BLSCoSi.NewBlsProtocolTree(onet.NewTree(committee, &x), NbrSubTrees)
 
-			// todoraha: message should be initialized with main chain's genesis block
+		// todoraha: message should be initialized with main chain's genesis block
 
-			// raha: BlsCosi protocol is created here => call to CreateProtocol() => call an empty Dispatch()
-			log.LLvl1(rootSC.Server.ServerIdentity.Address, ": BlsCosi protocol is created")
-			pi, err := rootSC.Overlay.CreateProtocol("bdnCoSiProto", BlsCosiSubTrees[0], onet.NilServiceID)
-			if err != nil {
-				return xerrors.New("couldn't create protocol: " + err.Error())
-			}
-			cosiProtocol := pi.(*BLSCoSi.BlsCosi)
-			cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol
-			/* Raha: it doesn't call any fuunction! just initializtion of methods that is going to be used later
-			cosiProtocol.CreateProtocol = rootService.CreateProtocol //raha: it used to be initialized by this function call
-			params from config file:
-			cosiProtocol.Timeout = time.Duration(ProtocolTimeout) * time.Second
-			*/
-			cosiProtocol.Threshold = Threshold
-			if NbrSubTrees > 0 {
-				err := cosiProtocol.SetNbrSubTree(NbrSubTrees)
-				if err != nil {
-					return err
-				}
-			}
-			// ---------------------------------------------------------------
-			//              ------   ChainBoost protocol  ------
-			// ---------------------------------------------------------------
-			// raha: ChainBoost protocol is created here => calling CreateProtocol() => calling Dispatch()
-			log.LLvl1(rootSC.Server.ServerIdentity.Address, ": ChainBoost protocol is created")
-			p, err := rootSC.Overlay.CreateProtocol("ChainBoost", rootSC.Tree, onet.NilServiceID)
-			if err != nil {
-				return xerrors.New("couldn't create protocol: " + err.Error())
-			}
-			ChainBoostProtocol := p.(*MainAndSideChain.ChainBoost)
-			//ChainBoostProtocol.SetTimeout(time.Duration(TimeOut) * time.Second)
-			// raha: finally passing our system-wide configurations to our protocol
-			log.LLvl1(rootSC.Server.ServerIdentity.Address, ": initialization of ChainBoost protocol attributes")
-			ChainBoostProtocol.PercentageTxPay = PercentageTxPay
-			ChainBoostProtocol.MCRoundDuration = MCRoundDuration
-			ChainBoostProtocol.MainChainBlockSize = MainChainBlockSize
-			ChainBoostProtocol.SideChainBlockSize = SideChainBlockSize
-			ChainBoostProtocol.SectorNumber = SectorNumber
-			ChainBoostProtocol.NumberOfPayTXsUpperBound = NumberOfPayTXsUpperBound
-			ChainBoostProtocol.SimulationRounds = SimulationRounds
-			ChainBoostProtocol.SimulationSeed = SimulationSeed
-			ChainBoostProtocol.NbrSubTrees = NbrSubTrees
-			ChainBoostProtocol.Threshold = Threshold
-			ChainBoostProtocol.SCRoundDuration = SCRoundDuration
-			ChainBoostProtocol.CommitteeWindow = CommitteeWindow
-			ChainBoostProtocol.MCRoundPerEpoch = MCRoundPerEpoch
-			ChainBoostProtocol.SimState = SimState
-			log.LLvl1("passing our system-wide configurations to the protocol",
-				"\n  PercentageTxPay: ", PercentageTxPay,
-				"\n  MCRoundDuration: ", MCRoundDuration,
-				"\n MainChainBlockSize: ", MainChainBlockSize,
-				"\n SideChainBlockSize: ", SideChainBlockSize,
-				"\n SectorNumber: ", SectorNumber,
-				"\n NumberOfPayTXsUpperBound: ", NumberOfPayTXsUpperBound,
-				"\n SimulationRounds: ", SimulationRounds,
-				"\n SimulationSeed of: ", SimulationSeed,
-				"\n nbrSubTrees of: ", NbrSubTrees,
-				"\n  threshold of: ", Threshold,
-				"\n SCRoundDuration: ", SCRoundDuration,
-				"\n CommitteeWindow: ", CommitteeWindow,
-				"\n MCRoundPerEpoch: ", MCRoundPerEpoch,
-				"\n SimState: ", SimState,
-			)
-			// ---------------------------------------------------------------
-			/* raha: initializing BLSCoSi protocol:
-			this way, the roster that runs this protocol is initiated by the main roster,
-			(the one that runs the ChainBoost protocol)
-			i.e. cosiProtocol.TreeNodeInstance = ChainBoostProtocol.TreeNodeInstance
-			*/
-			log.LLvl1(rootSC.Server.ServerIdentity.Address, ": setting BLSCoSi prootocol as an ChainBoost protocol's attribute")
-			ChainBoostProtocol.BlsCosi = cosiProtocol
-			// ---------------------------------------------------------------
-			/*
-				Raha: note that in overlay.go the CreateProtocol function will call the Dispatch() function
-				by creating a go routine.
-				that's why I call it here in a go routine too.
-
-				ToDoRaha: But I should check how this part will be doing when testing on multiple servers :|
-
-				raha: should be a single dispatch assigned for each node?! yes, it is in the ChainBoost start ..??
-
-				here, we call the "DispatchProtocol Function"
-				which handles messages in ChainBoost protocol + the finalSignature message in BlsCosi protocol
-				other messages communicated in BlsCosi protocol are handled by func (p *SubBlsCosi) Dispatch()
-				which is called when the startSubProtocol in Blscosi.go, create subprotocols => hence calls func (p *SubBlsCosi) Dispatch()
-			*/
-			// ---------------------------------------------------------------
-			log.LLvl1("Starting nodes: List of nodes (full tree is): \n")
-			for i, a := range rootSC.Tree.List() {
-				log.LLvl1(i, " :", a.Name(), ": ", a.RosterIndex, "\n")
-			}
-			for _, child := range rootSC.Tree.List() {
-				if child != ChainBoostProtocol.TreeNode() {
-					err := ChainBoostProtocol.SendTo(child, &MainAndSideChain.HelloChainBoost{
-						SimulationRounds:         ChainBoostProtocol.SimulationRounds,
-						PercentageTxPay:          ChainBoostProtocol.PercentageTxPay,
-						MCRoundDuration:          ChainBoostProtocol.MCRoundDuration,
-						MainChainBlockSize:       ChainBoostProtocol.MainChainBlockSize,
-						SideChainBlockSize:       ChainBoostProtocol.SideChainBlockSize,
-						SectorNumber:             ChainBoostProtocol.SectorNumber,
-						NumberOfPayTXsUpperBound: ChainBoostProtocol.NumberOfPayTXsUpperBound,
-						SimulationSeed:           ChainBoostProtocol.SimulationSeed,
-						// --------------------- bls cosi ------------------------
-						NbrSubTrees:     ChainBoostProtocol.NbrSubTrees,
-						Threshold:       ChainBoostProtocol.Threshold,
-						CommitteeWindow: ChainBoostProtocol.CommitteeWindow,
-						SCRoundDuration: ChainBoostProtocol.SCRoundDuration,
-						MCRoundPerEpoch: ChainBoostProtocol.MCRoundPerEpoch,
-						SimState:        ChainBoostProtocol.SimState,
-					})
-					if err != nil {
-						log.LLvl1(ChainBoostProtocol.Info(), "couldn't send hello to child", child.Name())
-					}
-				}
-			}
-
-			// Raha: it is just the root node
-			go func() {
-				log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) is calling dispatch")
-				err := ChainBoostProtocol.DispatchProtocol()
-				if err != nil {
-					log.LLvl1("protocol dispatch calling error: " + err.Error())
-				}
-			}()
-
-			log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) is Starting the ChainBoost Protocol")
-			ChainBoostProtocol.Start()
-			// raha: bls cosi  start function is called inside ChainBoost protocol
-			// ---------------------------------------------------------------
-			// when it finishes  is when:
-			// ToDoRaha
-			log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) Back to simulation module: ChainBoostProtocol.Start() returned. waiting for DoneChainBoost channel .......... ")
-			px := <-ChainBoostProtocol.DoneChainBoost
-			log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) Back to simulation module. Final result is", px)
-			wait = false
+		// raha: BlsCosi protocol is created here => call to CreateProtocol() => call an empty Dispatch()
+		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": BlsCosi protocol is created")
+		pi, err := rootSC.Overlay.CreateProtocol("bdnCoSiProto", BlsCosiSubTrees[0], onet.NilServiceID)
+		if err != nil {
+			return xerrors.New("couldn't create protocol: " + err.Error())
 		}
+		cosiProtocol := pi.(*BLSCoSi.BlsCosi)
+		cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol
+		/* Raha: it doesn't call any fuunction! just initializtion of methods that is going to be used later
+		cosiProtocol.CreateProtocol = rootService.CreateProtocol //raha: it used to be initialized by this function call
+		params from config file:
+		cosiProtocol.Timeout = time.Duration(ProtocolTimeout) * time.Second
+		*/
+		cosiProtocol.Threshold = Threshold
+		if NbrSubTrees > 0 {
+			err := cosiProtocol.SetNbrSubTree(NbrSubTrees)
+			if err != nil {
+				return err
+			}
+		}
+		// ---------------------------------------------------------------
+		//              ------   ChainBoost protocol  ------
+		// ---------------------------------------------------------------
+		// raha: ChainBoost protocol is created here => calling CreateProtocol() => calling Dispatch()
+		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": ChainBoost protocol is created")
+		p, err := rootSC.Overlay.CreateProtocol("ChainBoost", rootSC.Tree, onet.NilServiceID)
+		if err != nil {
+			return xerrors.New("couldn't create protocol: " + err.Error())
+		}
+		ChainBoostProtocol := p.(*MainAndSideChain.ChainBoost)
+		//ChainBoostProtocol.SetTimeout(time.Duration(TimeOut) * time.Second)
+		// raha: finally passing our system-wide configurations to our protocol
+		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": initialization of ChainBoost protocol attributes")
+		ChainBoostProtocol.PercentageTxPay = PercentageTxPay
+		ChainBoostProtocol.MCRoundDuration = MCRoundDuration
+		ChainBoostProtocol.MainChainBlockSize = MainChainBlockSize
+		ChainBoostProtocol.SideChainBlockSize = SideChainBlockSize
+		ChainBoostProtocol.SectorNumber = SectorNumber
+		ChainBoostProtocol.NumberOfPayTXsUpperBound = NumberOfPayTXsUpperBound
+		ChainBoostProtocol.SimulationRounds = SimulationRounds
+		ChainBoostProtocol.SimulationSeed = SimulationSeed
+		ChainBoostProtocol.NbrSubTrees = NbrSubTrees
+		ChainBoostProtocol.Threshold = Threshold
+		ChainBoostProtocol.SCRoundDuration = SCRoundDuration
+		ChainBoostProtocol.CommitteeWindow = CommitteeWindow
+		ChainBoostProtocol.MCRoundPerEpoch = MCRoundPerEpoch
+		ChainBoostProtocol.SimState = SimState
+		log.LLvl1("passing our system-wide configurations to the protocol",
+			"\n  PercentageTxPay: ", PercentageTxPay,
+			"\n  MCRoundDuration: ", MCRoundDuration,
+			"\n MainChainBlockSize: ", MainChainBlockSize,
+			"\n SideChainBlockSize: ", SideChainBlockSize,
+			"\n SectorNumber: ", SectorNumber,
+			"\n NumberOfPayTXsUpperBound: ", NumberOfPayTXsUpperBound,
+			"\n SimulationRounds: ", SimulationRounds,
+			"\n SimulationSeed of: ", SimulationSeed,
+			"\n nbrSubTrees of: ", NbrSubTrees,
+			"\n threshold of: ", Threshold,
+			"\n SCRoundDuration: ", SCRoundDuration,
+			"\n CommitteeWindow: ", CommitteeWindow,
+			"\n MCRoundPerEpoch: ", MCRoundPerEpoch,
+			"\n SimState: ", SimState,
+		)
+		// ---------------------------------------------------------------
+		/* raha: initializing BLSCoSi protocol:
+		this way, the roster that runs this protocol is initiated by the main roster,
+		(the one that runs the ChainBoost protocol)
+		i.e. cosiProtocol.TreeNodeInstance = ChainBoostProtocol.TreeNodeInstance
+		*/
+		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": setting BLSCoSi prootocol as an ChainBoost protocol's attribute")
+		ChainBoostProtocol.BlsCosi = cosiProtocol
+		// ---------------------------------------------------------------
+		/*
+			Raha: note that in overlay.go the CreateProtocol function will call the Dispatch() function
+			by creating a go routine.
+			that's why I call it here in a go routine too.
+
+			ToDoRaha: But I should check how this part will be doing when testing on multiple servers :|
+
+			raha: should be a single dispatch assigned for each node?! yes, it is in the ChainBoost start ..??
+
+			here, we call the "DispatchProtocol Function"
+			which handles messages in ChainBoost protocol + the finalSignature message in BlsCosi protocol
+			other messages communicated in BlsCosi protocol are handled by func (p *SubBlsCosi) Dispatch()
+			which is called when the startSubProtocol in Blscosi.go, create subprotocols => hence calls func (p *SubBlsCosi) Dispatch()
+		*/
+		// ---------------------------------------------------------------
+		log.LLvl1("Starting nodes: List of nodes (full tree is): \n")
+		for i, a := range rootSC.Tree.List() {
+			log.LLvl1(i, " :", a.Name(), ": ", a.RosterIndex, "\n")
+		}
+		for _, child := range rootSC.Tree.List() {
+			if child != ChainBoostProtocol.TreeNode() {
+				err := ChainBoostProtocol.SendTo(child, &MainAndSideChain.HelloChainBoost{
+					SimulationRounds:         ChainBoostProtocol.SimulationRounds,
+					PercentageTxPay:          ChainBoostProtocol.PercentageTxPay,
+					MCRoundDuration:          ChainBoostProtocol.MCRoundDuration,
+					MainChainBlockSize:       ChainBoostProtocol.MainChainBlockSize,
+					SideChainBlockSize:       ChainBoostProtocol.SideChainBlockSize,
+					SectorNumber:             ChainBoostProtocol.SectorNumber,
+					NumberOfPayTXsUpperBound: ChainBoostProtocol.NumberOfPayTXsUpperBound,
+					SimulationSeed:           ChainBoostProtocol.SimulationSeed,
+					// --------------------- bls cosi ------------------------
+					NbrSubTrees:     ChainBoostProtocol.NbrSubTrees,
+					Threshold:       ChainBoostProtocol.Threshold,
+					CommitteeWindow: ChainBoostProtocol.CommitteeWindow,
+					SCRoundDuration: ChainBoostProtocol.SCRoundDuration,
+					MCRoundPerEpoch: ChainBoostProtocol.MCRoundPerEpoch,
+					SimState:        ChainBoostProtocol.SimState,
+				})
+				if err != nil {
+					log.LLvl1(ChainBoostProtocol.Info(), "couldn't send hello to child", child.Name())
+				}
+			}
+		}
+
+		// Raha: it is just the root node
+		go func() {
+			log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) is calling dispatch")
+			err := ChainBoostProtocol.DispatchProtocol()
+			if err != nil {
+				log.LLvl1("protocol dispatch calling error: " + err.Error())
+			}
+		}()
+
+		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) is Starting the ChainBoost Protocol")
+		ChainBoostProtocol.Start()
+		// raha: bls cosi  start function is called inside ChainBoost protocol
+		// ---------------------------------------------------------------
+		// when it finishes  is when:
+		// ToDoRaha
+		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) Back to simulation module: ChainBoostProtocol.Start() returned. waiting for DoneChainBoost channel .......... ")
+		px := <-ChainBoostProtocol.DoneChainBoost
+		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) Back to simulation module. Final result is", px)
+		//wait = false
+		//}
 
 		//ToDoRaha: clear this section
 		//childrenWait.Record()
@@ -320,23 +320,21 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		// simError = rootSim.Run(rootSC)
 		// measureNet.Record()
 
-		log.LLvl1("todoraha: closs all protocol!")
-		// // Test if all ServerIdentities are used in the tree, else we'll run into
-		// // troubles with CloseAll
-		// if !rootSC.Tree.UsesList() {
-		// 	log.Error("The tree doesn't use all ServerIdentities from the list!\n" +
-		// 		"This means that the CloseAll will fail and the experiment never ends!")
-		// }
-		// // Recreate a tree out of the original roster, to be sure all nodes are included and
-		// // that the tree is easy to close.
-		// closeTree := rootSC.Roster.GenerateBinaryTree()
-		// pi, err := rootSC.Overlay.CreateProtocol("CloseAll", closeTree, onet.NilServiceID)
-		// if err != nil {
-		// 	return xerrors.New("couldn't create closeAll protocol: " + err.Error())
-		// }
-		// pi.Start()
-	} else {
-
+		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) close all other nodes!")
+		// Test if all ServerIdentities are used in the tree, else we'll run into
+		// troubles with CloseAll
+		if !rootSC.Tree.UsesList() {
+			log.Error("The tree doesn't use all ServerIdentities from the list!\n" +
+				"This means that the CloseAll will fail and the experiment never ends!")
+		}
+		// Recreate a tree out of the original roster, to be sure all nodes are included and
+		// that the tree is easy to close.
+		closeTree := rootSC.Roster.GenerateBinaryTree()
+		piC, err := rootSC.Overlay.CreateProtocol("CloseAll", closeTree, onet.NilServiceID)
+		if err != nil {
+			return xerrors.New("couldn't create closeAll protocol: " + err.Error())
+		}
+		piC.Start()
 	}
 	//todoraha:
 	log.LLvl1(serverAddress, scs[0].Server.ServerIdentity, "is waiting for all servers to close")

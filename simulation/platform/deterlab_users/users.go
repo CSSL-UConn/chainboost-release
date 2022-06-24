@@ -71,12 +71,13 @@ func main() {
 	// 	log.Fatal("Deterlab experiment", deter.Project+"/"+deter.Experiment, "tttt seems not to be swapped in. Aborting.")
 	// 	os.Exit(-1)
 	// }
-	hosts := "csi-lab-ssh.engr.uconn.edu:22"
+	//hosts := "csi-lab-ssh.engr.uconn.edu"
+	hosts := "csi-lab-ssh.engr.uconn.edu"
 	hostsTrimmed := strings.TrimSpace(re.ReplaceAllString(string(hosts), " "))
 	hostlist := strings.Split(hostsTrimmed, " ")
 
 	doneHosts := make([]bool, len(hostlist))
-	log.LLvl1("Found the following hosts:", hostlist)
+	log.LLvl1("Found the following hosts:", hostlist, " to clean!")
 	if kill {
 		log.LLvl1("Cleaning up", len(hostlist), "hosts.")
 	}
@@ -178,27 +179,6 @@ func main() {
 			log.LLvl1("Args is", args)
 
 			// -----------------------------------------
-			// d, _ := os.Getwd()
-			// log.LLvl1("Raha:" + d)
-			// cmd := exec.Command("ls")
-			// cmd.Stdout = os.Stdout
-			// cmd.Stderr = os.Stderr
-			// err := cmd.Run()
-			// if err != nil {
-			// 	log.LLvl1("err")
-			// }
-			// //cd is ~/remote;!
-
-			// cmd := exec.Command("./simul", " -simul=", deter.Simulation)
-			// // log.LLvl1(cmd)
-			// cmd.Stdout = os.Stdout
-			// cmd.Stderr = os.Stderr
-			// err := cmd.Run()
-			// if err != nil {
-			// 	log.LLvl1("err: ", err)
-			// }
-
-			// -----------------------------------------
 			// Raha added this part!
 			// -----------------------------------------
 			// Copy everything over to each vm
@@ -217,7 +197,6 @@ func main() {
 			err = platform.SSHRunStdout("root", phys, "cd remote; sudo ./simul "+
 				args)
 			// -----------------------------------------
-
 			if err != nil && !killing {
 				log.LLvl1("Error starting simul - will kill all others:", err, internal)
 				killing = true
@@ -232,7 +211,7 @@ func main() {
 	// wait for the servers to finish before stopping
 	wg.Wait()
 	//totdoraha: commented
-	//prox.Stop()
+	prox.Stop()
 }
 
 // Reads in the deterlab-config and drops out if there is an error
@@ -255,6 +234,6 @@ func deterFromConfig(name ...string) *platform.Deterlab {
 // Runs a command on the remote host and outputs an eventual error if debug level >= 3
 func runSSH(host, cmd string) {
 	if _, err := platform.SSHRun("", host, cmd); err != nil {
-		log.Lvlf3("Host %s got error %s while running [%s]", host, err.Error(), cmd)
+		//log.LLvl3("Host %s got error %s while running [%s]", host, err.Error(), cmd)
 	}
 }

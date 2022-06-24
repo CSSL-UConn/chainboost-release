@@ -149,17 +149,17 @@ func TestTreeNodeProtocolHandlers(t *testing.T) {
 	local := NewLocalTest(tSuite)
 	_, _, tree := local.GenTree(3, true)
 	defer local.CloseAll()
-	log.LLvl1("Sending to children")
+	//log.LLvl3("Sending to children")
 	IncomingHandlers = make(chan *TreeNodeInstance, 2)
 	p, err := local.CreateProtocol(ProtocolHandlersName, tree)
 	if err != nil {
 		t.Fatal(err)
 	}
 	go p.Start()
-	log.LLvl1("Waiting for response from child 1/2")
+	//log.LLvl3("Waiting for response from child 1/2")
 	child1 := <-IncomingHandlers
 	defer child1.Done()
-	log.LLvl1("Waiting for response from child 2/2")
+	//log.LLvl3("Waiting for response from child 2/2")
 	child2 := <-IncomingHandlers
 	defer child2.Done()
 
@@ -167,7 +167,7 @@ func TestTreeNodeProtocolHandlers(t *testing.T) {
 		t.Fatal("Both entities should be different")
 	}
 
-	log.LLvl1("Sending to parent")
+	//log.LLvl3("Sending to parent")
 
 	tni := p.(*ProtocolHandlers).TreeNodeInstance
 	require.Nil(t, child1.SendTo(tni.TreeNode(), &NodeTestAggMsg{}))
@@ -193,7 +193,7 @@ func TestTreeNodeMsgAggregation(t *testing.T) {
 	// Wait for both children to be up
 	<-Incoming
 	<-Incoming
-	log.LLvl1("Both children are up")
+	//log.LLvl3("Both children are up")
 	child1 := local.GetTreeNodeInstances(tree.Root.Children[0].ServerIdentity.ID)[0]
 	child2 := local.GetTreeNodeInstances(tree.Root.Children[1].ServerIdentity.ID)[0]
 
@@ -340,7 +340,7 @@ func (p *ProtocolHandlers) HandleMessageAggregate(msg []struct {
 	*TreeNode
 	NodeTestAggMsg
 }) error {
-	log.LLvl1("Received message")
+	//log.LLvl3("Received message")
 	IncomingHandlers <- p.TreeNodeInstance
 	p.Done()
 	return nil
@@ -388,7 +388,7 @@ func TestNodeBlocking(t *testing.T) {
 	// Release p2
 	p2.stopBlockChan <- true
 	<-p2.doneChan
-	log.LLvl1("Node 2 done")
+	//log.LLvl3("Node 2 done")
 	p1.stopBlockChan <- true
 	<-p1.doneChan
 
@@ -430,10 +430,10 @@ func (bp *BlockingProtocol) Start() error {
 func (bp *BlockingProtocol) Dispatch() error {
 	// first wait on stopBlockChan
 	<-bp.stopBlockChan
-	log.LLvl1("BlockingProtocol: will continue")
+	//log.LLvl3("BlockingProtocol: will continue")
 	// Then wait on the actual message
 	<-bp.Incoming
-	log.LLvl1("BlockingProtocol: received message => signal Done")
+	//log.LLvl3("BlockingProtocol: received message => signal Done")
 	// then signal that you are done
 	bp.doneChan <- true
 	return nil

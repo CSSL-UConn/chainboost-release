@@ -47,8 +47,7 @@ import (
 
 // Hello is sent down the tree from the root node, every node who gets it starts the protocol and send it to its children
 type HelloChainBoost struct {
-	SimulationRounds int
-	//---- ToDoRaha: Do i need timeout?
+	SimulationRounds         int
 	PercentageTxPay          int
 	MCRoundDuration          int
 	SideChainBlockSize       int

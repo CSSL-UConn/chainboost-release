@@ -3,7 +3,6 @@ package onet
 import (
 	"io/ioutil"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -98,7 +97,7 @@ type SimulationConfigFile struct {
 func LoadSimulationConfig(s, dir, ca string) ([]*SimulationConfig, error) {
 	// Have all servers created by NewServerTCP below put their
 	// db's into this simulation directory.
-	os.Setenv("CONODE_SERVICE_PATH", dir)
+	//os.Setenv("CONODE_SERVICE_PATH", dir)
 
 	// TODO: Figure this out from the incoming simulation file somehow
 	suite := suites.MustFind(s)
@@ -125,6 +124,7 @@ func LoadSimulationConfig(s, dir, ca string) ([]*SimulationConfig, error) {
 		return nil, xerrors.Errorf("making tree: %v", err)
 	}
 
+	//log.LLvl3("raha: instantiating host: ", ca)
 	var ret []*SimulationConfig
 	if ca != "" {
 		if !strings.Contains(ca, ":") {
@@ -134,9 +134,9 @@ func LoadSimulationConfig(s, dir, ca string) ([]*SimulationConfig, error) {
 		}
 
 		for _, e := range sc.Roster.List {
-			//log.LLvl1("raha 1:", e.Address.String(), " vs ", ca)
+			////log.LLvl3("raha 1:", e.Address.String(), " vs ", ca)
 			if strings.Contains(e.Address.String(), ca) {
-				log.LLvl1("raha: New Roster Member", e.String())
+				////log.LLvl3("raha: New Roster Member", e.String())
 				e.SetPrivate(scf.PrivateKeys[e.Address].Private)
 				// Populate the private key in the same array order
 				for i, privkey := range scf.PrivateKeys[e.Address].Services {
@@ -279,7 +279,7 @@ func (s *SimulationBFTree) CreateRoster(sc *SimulationConfig, addresses []string
 		localhosts = true
 	}
 	entities := make([]*network.ServerIdentity, hosts)
-	log.LLvl1("Doing", hosts, "hosts")
+	//log.LLvl3("Doing", hosts, "hosts")
 	// raha: here is where nodes' key-pair are generated
 	key := key.NewKeyPair(suite)
 	for c := 0; c < hosts; c++ {
@@ -310,7 +310,7 @@ func (s *SimulationBFTree) CreateRoster(sc *SimulationConfig, addresses []string
 			} else {
 				add = network.NewTCPAddress(address)
 			}
-			log.LLvl1("Found free port", address)
+			//log.LLvl3("Found free port", address)
 		} else {
 			address += strconv.Itoa(port + (c/nbrAddr)*2)
 			if sc.TLS {
@@ -347,19 +347,19 @@ func (s *SimulationBFTree) CreateRoster(sc *SimulationConfig, addresses []string
 	}
 	// Raha: this is where the roster is ctrated for ChainBoost module
 	sc.Roster = NewRoster(entities)
-	log.LLvl1("Creating entity List took: " + time.Now().Sub(start).String())
+	log.LLvl3("Creating entity List took: " + time.Now().Sub(start).String())
 }
 
 // CreateTree the tree as defined in SimulationBFTree and stores the result
 // in 'sc'
 func (s *SimulationBFTree) CreateTree(sc *SimulationConfig) error {
-	log.LLvl1("CreateTree strarted")
+	//log.LLvl3("CreateTree strarted")
 	start := time.Now()
 	if sc.Roster == nil {
 		return xerrors.New("Empty Roster")
 	}
 	sc.Tree = sc.Roster.GenerateBigNaryTree(s.BF, s.Hosts)
-	log.LLvl1("Creating tree took: " + time.Now().Sub(start).String())
+	log.LLvl3("Creating tree took: " + time.Now().Sub(start).String())
 	return nil
 }
 

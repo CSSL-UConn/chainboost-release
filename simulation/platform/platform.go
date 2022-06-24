@@ -122,7 +122,7 @@ func NewPlatform(t string) Platform {
 func ReadRunFile(p Platform, filename string) []*RunConfig {
 	var runconfigs []*RunConfig
 	masterConfig := NewRunConfig()
-	log.LLvl1("Reading file", filename)
+	//log.LLvl3("Reading file", filename)
 
 	file, err := os.Open(filename)
 	defer func() {
@@ -141,7 +141,7 @@ func ReadRunFile(p Platform, filename string) []*RunConfig {
 	for scanner.Scan() {
 		text := scanner.Text()
 		line++
-		log.LLvl1("Decoding", text)
+		//log.LLvl3("Decoding", text)
 		// end of the first part
 		if text == "" {
 			break
@@ -161,7 +161,7 @@ func ReadRunFile(p Platform, filename string) []*RunConfig {
 		if _, err := toml.Decode(text, p); err != nil {
 			log.Error("Error decoding", text)
 		}
-		log.Lvlf5("Platform is now %+v", p)
+		//log.LLvl3("Platform is now %+v", p)
 	}
 
 	for scanner.Scan() {

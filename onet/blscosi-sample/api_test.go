@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/chainBoostScale/ChainBoost/onet"
-	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,7 +21,7 @@ func TestClient_SignatureRequest(t *testing.T) {
 
 	for _, dst := range roster.List {
 		newRoster := roster.NewRosterWithRoot(dst)
-		log.Lvlf1("Sending request to service... %v", dst)
+		//log.LLvl3("Sending request to service... %v", dst)
 		reply, err := client.SignatureRequest(newRoster, msg)
 		require.Nil(t, err, "Couldn't send")
 

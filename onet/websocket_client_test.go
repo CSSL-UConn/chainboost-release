@@ -163,7 +163,7 @@ func TestClient_Parallel(t *testing.T) {
 	for i := 0; i < nbrParallel; i++ {
 		go func(i int) {
 			defer wg.Done()
-			log.LLvl1("Starting message", i)
+			//log.LLvl3("Starting message", i)
 			r := &SimpleRequest{
 				ServerIdentities: el,
 				Val:              int64(10 * i),
@@ -173,7 +173,7 @@ func TestClient_Parallel(t *testing.T) {
 			err := client.SendProtobuf(servers[0].ServerIdentity, r, sr)
 			require.Nil(t, err)
 			require.Equal(t, int64(10*i), sr.Val)
-			log.LLvl1("Done with message", i)
+			//log.LLvl3("Done with message", i)
 		}(i)
 	}
 	wg.Wait()
@@ -208,7 +208,7 @@ func TestClientTLS_Parallel(t *testing.T) {
 	for i := 0; i < nbrParallel; i++ {
 		go func(i int) {
 			defer wg.Done()
-			log.LLvl1("Starting message", i)
+			//log.LLvl3("Starting message", i)
 			r := &SimpleRequest{
 				ServerIdentities: el,
 				Val:              int64(10 * i),
@@ -218,7 +218,7 @@ func TestClientTLS_Parallel(t *testing.T) {
 			sr := &SimpleResponse{}
 			require.Nil(t, client.SendProtobuf(servers[0].ServerIdentity, r, sr))
 			require.Equal(t, int64(10*i), sr.Val)
-			log.LLvl1("Done with message", i)
+			//log.LLvl3("Done with message", i)
 		}(i)
 	}
 	wg.Wait()
@@ -346,7 +346,7 @@ func TestWebSocket_Streaming_normal(t *testing.T) {
 		Val:              int64(n),
 	}
 
-	log.LLvl1("Happy-path testing")
+	//log.LLvl3("Happy-path testing")
 	conn, err := client.Stream(servers[0].ServerIdentity, r)
 	require.NoError(t, err)
 
@@ -359,7 +359,7 @@ func TestWebSocket_Streaming_normal(t *testing.T) {
 	// Using the same client (connection) to repeat the same request should
 	// fail because the connection should be closed by the service when
 	// there are no more messages.
-	log.LLvl1("Fail on re-use")
+	//log.LLvl3("Fail on re-use")
 	sr := &SimpleResponse{}
 	require.Error(t, conn.ReadMessage(sr))
 	require.NoError(t, client.Close())
@@ -602,7 +602,7 @@ func TestWebSocket_Streaming_early_service(t *testing.T) {
 
 	// Have the service terminate early. The client should stop receiving
 	// messages.
-	log.LLvl1("Service terminate early")
+	//log.LLvl3("Service terminate early")
 	stopAt := 1
 	client = local.NewClientKeep(serName)
 	services := local.GetServices(servers, serID)
@@ -749,14 +749,14 @@ func TestClient_SendProtobufParallel(t *testing.T) {
 	tests := 10
 	firstNodes := make([]*network.ServerIdentity, tests)
 	for i := 0; i < tests; i++ {
-		log.LLvl1("Sending", i)
+		//log.LLvl3("Sending", i)
 		var err error
 		firstNodes[i], err = cl.SendProtobufParallel(roster.List, &SimpleResponse{}, nil, nil)
 		require.Nil(t, err)
 	}
 
 	for flags := 0; flags < 8; flags++ {
-		log.LLvl1("Count errors over all services with error-flags", flags)
+		//log.LLvl3("Count errors over all services with error-flags", flags)
 		_, err := cl.SendProtobufParallel(roster.List, &ErrorRequest{
 			Roster: *roster,
 			Flags:  flags,
@@ -813,7 +813,7 @@ type DummyService3 struct {
 }
 
 func (ds *DummyService3) ProcessClientRequest(req *http.Request, path string, buf []byte) ([]byte, *StreamingTunnel, error) {
-	log.LLvl1("Got called with path", path, buf)
+	//log.LLvl3("Got called with path", path, buf)
 	return []byte(path), nil, nil
 }
 

@@ -2,7 +2,7 @@ Servers = 1
 Simulation = "ChainBoost"
 BF = 2
 Rounds = 0
-timeout = 900000
+timeout = 120
 RunWait = "600000s"
 Suite = "bn256.adapter"
 NbrSubTrees = 1
@@ -25,7 +25,7 @@ NumberOfPayTXsUpperBound = 50
 PercentageTxPay = 30
 SimState = 1
 SimulationSeed = 5
-SimulationRounds = 22
+SimulationRounds = 5
 
 Hosts
 50

@@ -119,7 +119,7 @@ func (p *SubBlsCosi) HandleStop(stop StructStop) error {
 		log.Warn(p.ServerIdentity(), "received a Stop from node", stop.ServerIdentity,
 			"that is not the root, ignored")
 	}
-	log.LLvl1("Received stop", p.ServerIdentity())
+	//log.LLvl3("Received stop", p.ServerIdentity())
 
 	return p.Shutdown()
 }
@@ -127,7 +127,7 @@ func (p *SubBlsCosi) HandleStop(stop StructStop) error {
 // Shutdown closes the different channel to stop the current work
 func (p *SubBlsCosi) Shutdown() error {
 	p.stoppedOnce.Do(func() {
-		log.Lvlf3("Subprotocol shut down on %v", p.ServerIdentity())
+		//log.LLvl3("Subprotocol shut down on %v", p.ServerIdentity())
 		// Only this channel is closed to cut off expensive operations
 		// and select statements but we let other channels be cleaned
 		// by the GC to avoid sending to closed channel
@@ -139,7 +139,7 @@ func (p *SubBlsCosi) Shutdown() error {
 
 // Start is done only by root and starts the subprotocol
 func (p *SubBlsCosi) Start() error {
-	log.LLvl1(p.ServerIdentity(), "Starting subCoSi")
+	//log.LLvl3(p.ServerIdentity(), "Starting subCoSi")
 	if err := p.checkIntegrity(); err != nil {
 		p.startChan <- false
 		p.Done()
@@ -254,7 +254,7 @@ func (p *SubBlsCosi) dispatchSubLeader() error {
 
 	own, err := p.makeResponse()
 	if ok := p.verificationFn(p.Msg, p.Data); ok {
-		log.Lvlf3("Subleader %v signed", p.ServerIdentity())
+		//log.LLvl3("Subleader %v signed", p.ServerIdentity())
 		_, index := searchPublicKey(p.TreeNodeInstance, p.ServerIdentity())
 		if index != -1 {
 			responses[index] = own
@@ -306,8 +306,8 @@ func (p *SubBlsCosi) dispatchSubLeader() error {
 				log.Warnf("Duplicate refusal from %v", reply.ServerIdentity)
 			}
 		case <-timeout:
-			log.Lvlf3("Subleader reached timeout waiting for children"+
-				" responses: %v", p.ServerIdentity())
+			//log.LLvl3("Subleader reached timeout waiting for children"+
+			//" responses: %v", p.ServerIdentity())
 			// Use whatever we received until then to try to finish
 			// the protocol
 			done = len(p.Children())
@@ -320,7 +320,7 @@ func (p *SubBlsCosi) dispatchSubLeader() error {
 		return err
 	}
 
-	log.Lvlf3("Subleader %v sent its reply with mask %b", p.ServerIdentity(), r.Mask)
+	//log.LLvl3("Subleader %v sent its reply with mask %b", p.ServerIdentity(), r.Mask)
 	return p.SendToParent(r)
 }
 
@@ -345,13 +345,13 @@ func (p *SubBlsCosi) dispatchLeaf() error {
 		var r interface{}
 		var err error
 		if ok {
-			log.Lvlf3("Leaf %v signed", p.ServerIdentity())
+			//log.LLvl3("Leaf %v signed", p.ServerIdentity())
 			r, err = p.makeResponse()
 			if err != nil {
 				return err
 			}
 		} else {
-			log.Lvlf3("Leaf %v refused to sign", p.ServerIdentity())
+			//log.LLvl3("Leaf %v refused to sign", p.ServerIdentity())
 			r, err = p.makeRefusal(a.Nonce)
 			if err != nil {
 				return err

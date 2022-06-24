@@ -440,15 +440,16 @@ func testRouterSendMsgDuplex(t *testing.T, fac routerFactory) {
 	require.Nil(t, err, "Couldn't send message from h1 to h2")
 	require.NotZero(t, sentLen)
 
-	msg := <-proc.relay
-	log.LLvl1("Received msg h1 -> h2", msg)
+	//msg := <-proc.relay
+	//log.LLvl3("Received msg h1 -> h2", msg)
 
 	sentLen, err = h2.Send(h1.ServerIdentity, msgSimple)
 	require.Nil(t, err, "Couldn't send message from h2 to h1")
 	require.NotZero(t, sentLen)
 
-	msg = <-proc.relay
-	log.LLvl1("Received msg h2 -> h1", msg)
+	//msg = <-proc.relay
+	_ = <-proc.relay
+	//log.LLvl3("Received msg h2 -> h1", msg)
 }
 
 func TestRouterFilterConnectionsIncomingInvalid(t *testing.T) {
@@ -535,7 +536,7 @@ func TestRouterExchange(t *testing.T) {
 	require.NotZero(t, sentLen)
 
 	// triggers the dispatching conditional branch error router.go:
-	//  `log.LLvl1("Error dispatching:", err)`
+	//  `//log.LLvl3("Error dispatching:", err)`
 	sentLen, err = router2.Send(router1.ServerIdentity, &SimpleMessage{12})
 	require.Nil(t, err, "Could not send")
 	require.NotZero(t, sentLen)
@@ -552,7 +553,7 @@ func TestRouterExchange(t *testing.T) {
 	require.NotNil(t, err, "negotiation should have aborted")
 
 	// stop everything
-	log.LLvl1("Closing connections")
+	//log.LLvl3("Closing connections")
 	if err := router2.Stop(); err != nil {
 		t.Fatal("Couldn't close host", err)
 	}
@@ -586,7 +587,7 @@ func TestRouterRxTx(t *testing.T) {
 	router1.Lock()
 	var si2 ServerIdentityID
 	for si2 = range router1.connections {
-		log.LLvl1("Connection:", si2)
+		//log.LLvl3("Connection:", si2)
 	}
 	router1.Unlock()
 	router2.Stop()

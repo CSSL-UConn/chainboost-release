@@ -338,8 +338,8 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	deter.Phys = []string{}
 	deter.Virt = []string{}
 	//---
-	deter.Phys = append(deter.Phys, "192.168.3.203:22")
-	deter.Virt = append(deter.Virt, "192.168.3.203")
+	deter.Phys = append(deter.Phys, "192.168.3.212:22")
+	deter.Virt = append(deter.Virt, "192.168.3.212")
 	//--- the port is ssh port:22
 	deter.Phys = append(deter.Phys, "192.168.0.86:22")
 	deter.Virt = append(deter.Virt, "192.168.0.86")

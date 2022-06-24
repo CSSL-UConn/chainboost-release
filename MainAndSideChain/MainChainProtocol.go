@@ -5,8 +5,6 @@ package MainAndSideChain
 // ----------------------------------------------------------------------------------------------
 
 import (
-	//"bytes"
-	//"encoding/binary"
 	"bytes"
 	"encoding/binary"
 	"math/rand"
@@ -15,7 +13,6 @@ import (
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"golang.org/x/xerrors"
-	//"golang.org/x/xerrors"
 )
 
 /* ----------------------------------------- TYPES -------------------------------------------------
