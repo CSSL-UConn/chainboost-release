@@ -106,6 +106,7 @@ func (bz *ChainBoost) readBCAndSendtoOthers() {
 	if bz.MCRoundNumber == bz.SimulationRounds {
 		log.LLvl1("ChainBoost simulation has passed the number of simulation rounds:", bz.SimulationRounds, "\n returning back to RunSimul")
 		bz.DoneChainBoost <- true
+		return
 	}
 	powers, seed := bz.readBCPowersAndSeed()
 	log.LLvl1("incerasing mc round number:", bz.MCRoundNumber)
