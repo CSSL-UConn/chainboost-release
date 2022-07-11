@@ -9,3 +9,5 @@ All Algorand users execute cryptographic sortition to determine if they are sele
 ---------------------------------
 - [ ] In ByzcoinX: RandHound leader is selected by the VRF-based leader election
 - [ ] in Algorand: Election of the committee is private and totally random (via the VRF based technique combined with proof of stake)
+
+The VRF module is brought from (https://github.com/algorand/go-algorand/pull/2310) which is a pure Go VRF, aand a pull request to Algorand not yet approved/merged.
