@@ -16,7 +16,7 @@
 //	log.SetDebugVisible(3)
 // which will show all `Lvl1`, `Lvl2`, and `Lvl3`. If you want to turn
 // on just one output, you can use
-//	log.LLvl2("Less important information")
+//	log.LLvl4("Less important information")
 // By adding a single 'L' to the method, it *always* gets printed.
 //
 // You can also add a 'f' to the name and use it like fmt.Printf:

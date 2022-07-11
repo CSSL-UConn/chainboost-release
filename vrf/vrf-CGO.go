@@ -17,6 +17,7 @@
 
 package vrf
 
+/*
 // #cgo CFLAGS: -Wall -std=c99
 // #cgo darwin,arm64 CFLAGS: -I${SRCDIR}/libs/darwin/arm64/include
 // #cgo darwin,arm64 LDFLAGS: ${SRCDIR}/libs/darwin/arm64/lib/libsodium.a
@@ -71,6 +72,7 @@ type (
 	// The VRF scheme guarantees that such output will be unique
 	VrfOutput [64]byte
 )
+
 
 // VrfKeygenFromSeed deterministically generates a VRF keypair from 32 bytes of (secret) entropy.
 func VrfKeygenFromSeed(seed [32]byte) (pub VrfPubkey, priv VrfPrivkey) {
@@ -135,3 +137,4 @@ func (pk VrfPubkey) VerifyBytes(proof VrfProof, msg []byte) (bool, VrfOutput) {
 func (pk VrfPubkey) Verify(p VrfProof, message Hashable) (bool, VrfOutput) {
 	return pk.VerifyBytes(p, hashRep(message))
 }
+*/

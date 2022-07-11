@@ -339,10 +339,10 @@ func (p *BlsCosi) collectSignatures() (ResponseMap, error) {
 					// quick answer/failure
 					return
 				case <-subProtocol.subleaderNotResponding:
-					x1 := p.SubTrees[i].Root
-					x2 := p.SubTrees[i].Root.Children[0]
-					x3 := p.SubTrees[i].Root.Children[0].RosterIndex
-					log.LLvl1(x1, ":", x2, ":", x3)
+					// x1 := p.SubTrees[i].Root
+					// x2 := p.SubTrees[i].Root.Children[0]
+					// x3 := p.SubTrees[i].Root.Children[0].RosterIndex
+					// log.LLvl1(x1, ":", x2, ":", x3)
 
 					subleaderID := p.SubTrees[i].Root.Children[0].RosterIndex
 					log.Lvlf2("(subprotocol %v) subleader with id %d failed, restarting subprotocol", i, subleaderID)

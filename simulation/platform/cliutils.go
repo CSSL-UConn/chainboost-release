@@ -63,8 +63,10 @@ func Rsync(username, host, SSHString, file, dest string) error {
 	var cmd *exec.Cmd
 	if SSHString != "" {
 		cmd = exec.Command("rsync", "-Pauz", "-e", SSHString, file, addr)
+		log.LLvl3("Command: ", cmd)
 	} else {
 		cmd = exec.Command("rsync", "-Pauz", "-e", file, addr)
+		log.LLvl3("Command: ", cmd)
 	}
 
 	cmd.Stderr = os.Stderr
@@ -150,6 +152,12 @@ func Build(path, out, goarch, goos string, buildArgs ...string) (string, error) 
 		cmd := exec.Command("go", []string{"env", "GOROOT"}...)
 		gosrcB, err := cmd.Output()
 		if err == nil {
+			//ToDoRahaNow!!!
+			cmd = exec.Command("EXPORT CGO_CFLAGS=-I${SRCDIR}/libs/linux/amd64/include")
+			cmd.Run()
+			cmd = exec.Command("EXPORT CGO_LDFLAGS=-L${SRCDIR}/libs/linux/amd64/lib/libsodium.a")
+			cmd.Run()
+
 			gosrcB := bytes.TrimRight(gosrcB, "\n\r")
 			gosrc := filepath.Join(string(gosrcB), "src")
 			cmd = exec.Command("go", []string{"install", "./..."}...)

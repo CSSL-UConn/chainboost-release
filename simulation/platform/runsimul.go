@@ -1,6 +1,7 @@
 package platform
 
 import (
+	"math/rand"
 	"sync"
 
 	"github.com/BurntSushi/toml"
@@ -10,11 +11,8 @@ import (
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"github.com/chainBoostScale/ChainBoost/simulation/monitor"
-
-	//"github.com/chainBoostScale/ChainBoost/vrf"
+	"github.com/chainBoostScale/ChainBoost/vrf"
 	"go.dedis.ch/kyber/v3/pairing"
-
-	//"go.dedis.ch/kyber/v3/sign/bls"
 	"golang.org/x/xerrors"
 )
 
@@ -40,13 +38,14 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		log.LLvl1(err, serverAddress)
 		return err
 	}
-	if monitorAddress != "" {
-		log.LLvl1("raha: connecting to monitor: ", monitorAddress)
-		if err := monitor.ConnectSink(monitorAddress); err != nil {
-			log.Error("Couldn't connect monitor to sink:", err)
-			return xerrors.New("couldn't connect monitor to sink: " + err.Error())
-		}
-	}
+	//todoraha
+	// if monitorAddress != "" {
+	// 	log.LLvl1("raha: connecting to monitor: ", monitorAddress)
+	// 	if err := monitor.ConnectSink(monitorAddress); err != nil {
+	// 		log.Error("Couldn't connect monitor to sink:", err)
+	// 		return xerrors.New("couldn't connect monitor to sink: " + err.Error())
+	// 	}
+	// }
 	sims := make([]onet.Simulation, len(scs))
 	simulInitID := network.RegisterMessage(simulInit{})
 	simulInitDoneID := network.RegisterMessage(simulInitDone{})
@@ -424,8 +423,15 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 	bz.CommitteeNodesTreeNodeID = make([]onet.TreeNodeID, bz.CommitteeWindow)
 	bz.SummPoRTxs = make(map[int]int)
 	// bls key pair for each node for VRF
-	//raha todo temp comment
-	//_, bz.ECPrivateKey = vrf.VrfKeygen()
+	// ToDoraha: temp commented
+	// do I need to bring this seed from config? check what it is used for?
+	rand.Seed(int64(bz.TreeNodeInstance.Index()))
+	seed := make([]byte, 32)
+	rand.Read(seed)
+	tempSeed := (*[32]byte)(seed[:32])
+	log.LLvl1("raha:debug:seed for the VRF is:", seed, "the tempSeed value is:", tempSeed)
+	_, bz.ECPrivateKey = vrf.VrfKeygenFromSeedGo(*tempSeed)
+	log.LLvl1("raha:debug: the ECprivate Key is:", bz.ECPrivateKey)
 	// --------------------------------------- blscosi -------------------
 	if err := n.RegisterChannel(&bz.RtLSideChainNewRoundChan); err != nil {
 		return bz, err

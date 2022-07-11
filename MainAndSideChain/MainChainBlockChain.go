@@ -26,7 +26,7 @@ func (bz *ChainBoost) finalMainChainBCInitialization() {
 	var err error
 
 	pwd, _ := os.Getwd()
-	log.LLvl1("opening bc in:", pwd)
+	log.Lvl4("opening bc in:", pwd)
 
 	f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
 	if err != nil {
@@ -93,7 +93,7 @@ func (bz *ChainBoost) finalMainChainBCInitialization() {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("closing bc")
+		log.LLvl1("bc Successfully closed")
 	}
 }
 
@@ -140,7 +140,7 @@ func (bz *ChainBoost) readBCPowersAndSeed() (powers map[string]uint64, seed stri
 		log.LLvl1("Raha: ", err)
 		panic(err)
 	} else {
-		log.LLvl1("opening bc")
+		log.LLvl1("bc Successfully opened")
 	}
 	//var err error
 	var rows *excelize.Rows
@@ -254,7 +254,7 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 		log.LLvl1("Raha: ", err)
 		panic(err)
 	} else {
-		log.LLvl1(bz.Name(), "opening bc")
+		log.LLvl1("bc Successfully opened")
 	}
 
 	// looking for last round's seed in the round table sheet in the mainchainbc file
@@ -422,7 +422,7 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("closing bc")
+		log.LLvl1("bc Successfully closed")
 	}
 }
 
@@ -439,7 +439,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 		log.LLvl1("Raha: ", err)
 		panic(err)
 	} else {
-		log.LLvl1("opening bc")
+		log.LLvl1("bc Successfully opened")
 	}
 	// -------------------------------------------------------------------------------
 	// each round, adding one row in power table based on the information in market matching sheet,
@@ -619,11 +619,11 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 				panic(err)
 			} else {
 				if newTransactionRow[0] == "TxPor" {
-					log.LLvl1("a TxPor added to queue in round number", bz.MCRoundNumber)
+					log.Lvl4("a TxPor added to queue in round number", bz.MCRoundNumber)
 				} else if newTransactionRow[0] == "TxStoragePayment" {
-					log.LLvl1("a TxStoragePayment added to queue in round number", bz.MCRoundNumber)
+					log.Lvl4("a TxStoragePayment added to queue in round number", bz.MCRoundNumber)
 				} else if newTransactionRow[0] == "TxServAgrPropose" {
-					log.LLvl1("a TxServAgrPropose added to queue in round number", bz.MCRoundNumber)
+					log.Lvl4("a TxServAgrPropose added to queue in round number", bz.MCRoundNumber)
 				}
 			}
 		}
@@ -649,7 +649,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 					panic(err)
 				} else {
 					addCommitTx = false
-					log.LLvl1("a TxServAgrCommit added to queue in round number", bz.MCRoundNumber)
+					log.Lvl4("a TxServAgrCommit added to queue in round number", bz.MCRoundNumber)
 				}
 			}
 		}
@@ -688,7 +688,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 				log.LLvl1("Panic Raised:\n\n")
 				panic(err)
 			} else {
-				log.LLvl1("a regular payment transaction added to queue in round number", bz.MCRoundNumber)
+				log.Lvl4("a regular payment transaction added to queue in round number", bz.MCRoundNumber)
 			}
 		}
 	}
@@ -700,7 +700,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("closing bc")
+		log.LLvl1("bc Successfully closed")
 		log.LLvl1(bz.Name(), " finished collecting new transactions to queue in round number ", bz.MCRoundNumber)
 	}
 }
@@ -720,7 +720,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		log.LLvl1("Raha: ", err)
 		panic(err)
 	} else {
-		log.LLvl1("opening bc")
+		log.LLvl1("bc Successfully opened")
 	}
 
 	var accumulatedTxSize, txsize int
@@ -761,7 +761,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 					numberOfRegPayTx++
 					/* transaction name in transaction queue payment is just "TxPayment"
 					the transactions are just removed from queue and their size are added to included transactions' size in block */
-					log.LLvl1("a regular payment transaction added to block number", bz.MCRoundNumber, " from the queue")
+					log.Lvl4("a regular payment transaction added to block number", bz.MCRoundNumber, " from the queue")
 
 					// row[1] is transaction's collected time
 					// if TakeTime, err = time.Parse(time.RFC3339, row[1]); err != nil {
@@ -863,27 +863,27 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 									log.LLvl1("Panic Raised:\n\n")
 									panic(err)
 								} else {
-									log.LLvl1("a TxServAgrCommit tx added to block number", bz.MCRoundNumber, " from the queue")
+									log.Lvl4("a TxServAgrCommit tx added to block number", bz.MCRoundNumber, " from the queue")
 									numberOfServAgrCommitTx++
 								}
 							}
 						}
 					} else if row[0] == "TxStoragePayment" {
-						log.LLvl1("a TxStoragePayment tx added to block number", bz.MCRoundNumber, " from the queue")
+						log.Lvl4("a TxStoragePayment tx added to block number", bz.MCRoundNumber, " from the queue")
 						numberOfStoragePayTx++
 						// && bz.SimState == 1 is for backup check - the first condition shouldn't be true if the second one isn't
 					} else if row[0] == "TxPor" && bz.SimState == 1 {
-						log.LLvl1("a por tx added to block number", bz.MCRoundNumber, " from the queue")
+						log.Lvl4("a por tx added to block number", bz.MCRoundNumber, " from the queue")
 						numberOfPoRTx++
 					} else if row[0] == "TxServAgrPropose" {
-						log.LLvl1("a TxServAgrPropose tx added to block number", bz.MCRoundNumber, " from the queue")
+						log.Lvl4("a TxServAgrPropose tx added to block number", bz.MCRoundNumber, " from the queue")
 						numberOfServAgrProposeTx++
 					} else if row[0] == "TxSync" {
-						log.LLvl1("a sync tx added to block number", bz.MCRoundNumber, " from the queue")
+						log.Lvl4("a sync tx added to block number", bz.MCRoundNumber, " from the queue")
 						numberOfSyncTx++
 						numberOfPoRTx, _ = strconv.Atoi(row[4])
 					} else {
-						log.LLvl1("Panic Raised:\n\n")
+						log.Lvl4("Panic Raised:\n\n")
 						panic("the type of transaction in the queue is un-defined")
 					}
 
@@ -1021,8 +1021,8 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("closing bc")
-		log.LLvl1(bz.Name(), " Finished taking transactions from queue (FIFO) into new block in round number ", bz.MCRoundNumber)
+		log.LLvl1("bc Successfully closed")
+		log.Lvl4(bz.Name(), " Finished taking transactions from queue (FIFO) into new block in round number ", bz.MCRoundNumber)
 	}
 }
 
@@ -1032,7 +1032,7 @@ func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
 		log.LLvl1("Raha: ", err)
 		panic(err)
 	} else {
-		log.LLvl1("opening bc")
+		log.LLvl1("bc Successfully opened")
 	}
 	// ----------------------------------------------------------------------
 	// ------ adding sync transaction into transaction queue sheet -----
@@ -1065,7 +1065,7 @@ func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
 	//measuring summery block size
 	SummeryBlockSizeMinusTransactions, _ := blockchain.SCBlockMeasurement()
 	// --------------- adding bls signature size  -----------------
-	log.LLvl1("Size of bls signature:", len(bz.SCSig))
+	log.Lvl4("Size of bls signature:", len(bz.SCSig))
 	SummeryBlockSizeMinusTransactions = SummeryBlockSizeMinusTransactions + len(bz.SCSig)
 	// ------------------------------------------------------------
 	SummTxsSizeInSummBlock := blockchain.SCSummeryTxMeasurement(SummTxNum)
@@ -1098,7 +1098,7 @@ func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("closing mainchain bc")
+		log.LLvl1("mc bc Successfully closed")
 		log.LLvl1(bz.Name(), " finished collecting new sync transactions to queue in round number ", bz.MCRoundNumber)
 	}
 

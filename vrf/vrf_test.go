@@ -37,15 +37,14 @@ func testVector(t *testing.T, skHex, pkHex, alphaHex, piHex, betaHex string) {
 	// our "secret keys" are 64 bytes: the spec's 32-byte "secret keys" (which we call the "seed") followed by the 32-byte precomputed public key
 	// so the 32-byte "SK" in the test vectors is not directly decoded into a VrfPrivkey, it instead has to go through VrfKeypairFromSeed()
 
-/*	var pk algorandcrypto.VrfPubkey
-	var alpha []byte
-	var pi algorandcrypto.VrfProof
-	var beta algorandcrypto.VrfOutput*/
+	/*	var pk algorandcrypto.VrfPubkey
+		var alpha []byte
+		var pi algorandcrypto.VrfProof
+		var beta algorandcrypto.VrfOutput*/
 	var pk VrfPubkey
 	var alpha []byte
 	var pi VrfProof
 	var beta VrfOutput
-
 
 	// Decode hex
 	mustDecode(t, seed[:], skHex)
@@ -57,12 +56,12 @@ func testVector(t *testing.T, skHex, pkHex, alphaHex, piHex, betaHex string) {
 	mustDecode(t, alpha, alphaHex)
 
 	//pkTest, sk := algorandcrypto.VrfKeygenFromSeed(seed)
-	pkTest, sk := VrfKeygenFromSeed(seed)
+	pkTest, sk := VrfKeygenFromSeedGo(seed)
 	if pkTest != pk {
 		t.Errorf("Computed public key does not match the test vector")
 	}
 
-	piTest, ok := sk.ProveBytes(alpha)
+	piTest, ok := sk.ProveBytesGo(alpha)
 	if !ok {
 		t.Errorf("Failed to produce a proof")
 	}
@@ -70,7 +69,7 @@ func testVector(t *testing.T, skHex, pkHex, alphaHex, piHex, betaHex string) {
 		t.Errorf("Proof produced by Prove() does not match the test vector")
 	}
 
-	ok, betaTest := pk.VerifyBytes(pi, alpha)
+	ok, betaTest := pk.VerifyBytesGo(pi, alpha)
 	if !ok {
 		t.Errorf("Verify() fails on proof from the test vector")
 	}
@@ -105,14 +104,16 @@ func BenchmarkVrfVerify(b *testing.B) {
 	proofs := make([]VrfProof, b.N)
 	for i := 0; i < b.N; i++ {
 		var sk VrfPrivkey
-		pks[i], sk = VrfKeygen()
+		//todoraha: fix this later!
+		var seed [32]byte
+		pks[i], sk = VrfKeygenFromSeedGo(seed)
 		strs[i] = make([]byte, 100)
 		_, err := rand.Read(strs[i])
 		if err != nil {
 			panic(err)
 		}
 		var ok bool
-		proofs[i], ok = sk.ProveBytes(strs[i])
+		proofs[i], ok = sk.ProveBytesGo(strs[i])
 		if !ok {
 			panic("Failed to construct VRF proof")
 		}
@@ -121,6 +122,6 @@ func BenchmarkVrfVerify(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _ = pks[i].VerifyBytes(proofs[i], strs[i])
+		_, _ = pks[i].VerifyBytesGo(proofs[i], strs[i])
 	}
 }

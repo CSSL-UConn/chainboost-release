@@ -37,8 +37,7 @@ import (
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/por"
-
-	//"github.com/chainBoostScale/ChainBoost/vrf"
+	"github.com/chainBoostScale/ChainBoost/vrf"
 	"go.dedis.ch/kyber/v3/pairing"
 )
 
@@ -73,8 +72,7 @@ type HelloChan struct {
 type ChainBoost struct {
 	// the node we are represented-in
 	*onet.TreeNodeInstance
-	//ToDoRaha: temporary use of random value instead of vrf module
-	ECPrivateKey [64]byte // vrf.VrfPrivkey
+	ECPrivateKey vrf.VrfPrivkey
 	// channel used to let all servers that the protocol has started
 	HelloChan chan HelloChan
 	// channel used by each round's leader to let all servers that a new round has come
@@ -87,7 +85,7 @@ type ChainBoost struct {
 	Suite *pairing.SuiteBn256
 	//startBCMeasure *monitor.TimeMeasure
 	// onDoneCallback is the callback that will be called at the end of the protocol
-	//onDoneCallback func() //ToDoRaha: define this function and call it when you want to finish the protocol + check when should it be called
+	// onDoneCallback func() //ToDoRaha: define this function and call it when you want to finish the protocol + check when should it be called
 	// channel to notify when we are done -- when a message is sent through this channel the runsimul.go file will catch it and finish the protocol.
 	DoneChainBoost chan bool
 	// ---------------------------------
@@ -185,7 +183,7 @@ func (bz *ChainBoost) Dispatch() error {
 	// return nil
 	running := true
 	var err error
-	log.LLvl1("starting Dispatch in chainboost simuulation on:", bz.TreeNode().Name())
+	log.LLvl1("starting Dispatch in chainboost simulation on:", bz.TreeNode().Name())
 	for running {
 		select {
 		// -----------------------------------------------------------------------------

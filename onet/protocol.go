@@ -133,7 +133,7 @@ func GlobalProtocolRegister(name string, protocol NewProtocol) (ProtocolID, erro
 	if err != nil {
 		return id, xerrors.Errorf("registering protocol: %v", err)
 	} else {
-		//log.LLvl2("Protocol ", name, "is registered.")
+		//log.Lvl4("Protocol ", name, "is registered.")
 	}
 	return id, nil
 }

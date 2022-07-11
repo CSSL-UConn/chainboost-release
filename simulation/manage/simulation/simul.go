@@ -114,16 +114,12 @@ func main() {
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 	log.LLvl1("cmd out:", localAddr.IP)
 	host := localAddr.IP.String()
-	if host == "192.168.3.212" {
-		serverAddress = host
-		monitorAddress = host
-	} else {
-		serverAddress = host
-		monitorAddress = "192.168.3.212"
-	}
+	serverAddress = host
+	monitorAddress = "192.168.3.220"
 	// -------------------------------------
 	/*
-		func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize,
+		func Simulate(
+			PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize,
 			SectorNumber, NumberOfPayTXsUpperBound, SimulationRounds, SimulationSeed,
 			NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow,
 			MCRoundPerEpoch, SimState int,
@@ -133,7 +129,11 @@ func main() {
 	//todoraha: what monitor is for? what port?
 	// raha: port 2000 is bcz in start.py file they have initialized it with port 2000!
 
-	err = platform.Simulate(30, 10, 30000, 25000, 2, 50, 40, 9, 1, 4, 5, 5, 5, 2,
+	err = platform.Simulate(
+		30, 10, 30000, 25000,
+		2, 50, 10, 9,
+		1, 4, 5, 5,
+		5, 2,
 		"bn256.adapter", serverAddress, "ChainBoost", monitorAddress+":2000")
 	if err != nil {
 		log.LLvl1("Raha: err returned from simulate: ", err)

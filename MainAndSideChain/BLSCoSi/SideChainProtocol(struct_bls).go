@@ -106,7 +106,7 @@ func (sig BlsSignature) VerifyWithPolicy(ps pairing.Suite, msg []byte, publics [
 	}
 
 	log.LLvl1("Signature verified and is correct!")
-	log.LLvl1("m.CountEnabled():", mask.CountEnabled())
+	//log.LLvl1("m.CountEnabled():", mask.CountEnabled())
 
 	if !policy.Check(mask) {
 		return errors.New("the policy is not fulfilled")

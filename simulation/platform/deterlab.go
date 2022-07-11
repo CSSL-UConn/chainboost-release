@@ -338,11 +338,14 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	deter.Phys = []string{}
 	deter.Virt = []string{}
 	//---
-	deter.Phys = append(deter.Phys, "192.168.3.212:22")
-	deter.Virt = append(deter.Virt, "192.168.3.212")
-	//--- the port is ssh port:22
-	deter.Phys = append(deter.Phys, "192.168.0.86:22")
-	deter.Virt = append(deter.Virt, "192.168.0.86")
+	deter.Phys = append(deter.Phys, "192.168.3.220:22")
+	deter.Virt = append(deter.Virt, "192.168.3.220")
+	deter.Phys = append(deter.Phys, "192.168.3.221:22")
+	deter.Virt = append(deter.Virt, "192.168.3.221")
+	deter.Phys = append(deter.Phys, "192.168.3.222:22")
+	deter.Virt = append(deter.Virt, "192.168.3.222")
+	deter.Phys = append(deter.Phys, "192.168.3.223:22")
+	deter.Virt = append(deter.Virt, "192.168.3.223")
 	//-----------------------------------
 
 	log.LLvl1("Writing the config file :", deter)

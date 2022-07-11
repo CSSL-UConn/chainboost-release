@@ -25,7 +25,7 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 		log.LLvl1("Raha: ", err)
 		panic(err)
 	} else {
-		log.LLvl1(bz.Name(), "opening side chain bc")
+		log.LLvl1(bz.Name(), "sc bc successfully opened")
 	}
 
 	// --------------------------------------------------------------------
@@ -131,7 +131,7 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("closing side chain  bc")
+		log.LLvl1("sc bc successfully closed")
 	}
 	updateSideChainBCOverallEvaluation(currentRow, bz.SCRoundNumber)
 }
@@ -152,7 +152,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 		log.LLvl1("Raha: ", err)
 		panic(err)
 	} else {
-		log.LLvl1("opening main chain bc")
+		log.LLvl1("mc bc successfully opened")
 	}
 	// -------------------------------------------------------------------------------
 	// each round, adding one row in power table based on the information in market matching sheet,
@@ -254,7 +254,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 		log.LLvl1("Raha: ", err)
 		panic(err)
 	} else {
-		log.LLvl1("opening main chain bc")
+		log.LLvl1("mc bc successfully opened")
 	}
 	// ----------------------------------------------------------------------
 	// ------ add 5 types of transactions into transaction queue sheet -----
@@ -303,7 +303,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 				panic(err)
 			} else {
 				if newTransactionRow[0] == "TxPor" {
-					log.LLvl1("a TxPor added to queue in sc round number: ", bz.SCRoundNumber)
+					log.Lvl4("a TxPor added to queue in sc round number: ", bz.SCRoundNumber)
 				}
 			}
 		}
@@ -314,8 +314,8 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("closing side bc")
-		log.LLvl1(bz.Name(), "Final result SC: finished collecting new transactions to side chain queue in round number ", bz.SCRoundNumber)
+		log.LLvl1("sc bc successfully closed")
+		log.Lvl4(bz.Name(), "Final result SC: finished collecting new transactions to side chain queue in round number ", bz.SCRoundNumber)
 	}
 }
 
@@ -341,7 +341,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 	blockIsFull := false
 	_, MetaBlockSizeMinusTransactions := blockchain.SCBlockMeasurement()
 	// --------------- adding bls signature size  -----------------
-	log.LLvl1("Size of bls signature:", len(bz.SCSig))
+	log.Lvl4("Size of bls signature:", len(bz.SCSig))
 	MetaBlockSizeMinusTransactions = MetaBlockSizeMinusTransactions + len(bz.SCSig)
 	// ------------------------------------------------------------
 	//var TakeTime time.Time
@@ -416,7 +416,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 				} else if accumulatedTxSize+txsize <= bz.SideChainBlockSize-MetaBlockSizeMinusTransactions {
 					accumulatedTxSize = accumulatedTxSize + txsize
 					if row[0] == "TxPor" {
-						log.LLvl1("a por tx added to block number", bz.MCRoundNumber, " from the queue")
+						log.Lvl4("a por tx added to block number", bz.MCRoundNumber, " from the queue")
 						numberOfPoRTx++
 					} else {
 						log.LLvl1("Panic Raised:\n\n")
@@ -428,10 +428,6 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 					// 	panic(err)
 					// }
 					// bz.SideChainQueueWait = bz.SideChainQueueWait + int(time.Now().Sub(TakeTime).Seconds())
-
-					if bz.MCRoundNumber == 10 {
-						log.LLvl1("wait")
-					}
 
 					// row[3] is the SCRound Number that the transaction has been issued
 					if x1, err := strconv.Atoi(row[3]); err != nil {
@@ -494,7 +490,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("closing side bc")
+		log.LLvl1("sc bc successfully closed")
 	}
 	// fill OverallEvaluation Sheet
 	updateSideChainBCOverallEvaluation(CurrentRow, bz.SCRoundNumber)
@@ -512,7 +508,7 @@ func updateSideChainBCOverallEvaluation(CurrentRow string, SCRoundNumber int) {
 		log.LLvl1("Raha: ", err)
 		panic(err)
 	} else {
-		log.LLvl1("opening side chain bc")
+		log.LLvl1("sc bc successfully opened")
 	}
 	// ---- overall results
 	axisRound := "A" + CurrentRow
@@ -557,6 +553,6 @@ func updateSideChainBCOverallEvaluation(CurrentRow string, SCRoundNumber int) {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("closing side bc")
+		log.LLvl1("sc bc successfully closed")
 	}
 }

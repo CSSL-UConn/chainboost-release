@@ -200,7 +200,7 @@ func main() {
 			if err != nil && !killing {
 				log.LLvl1("Error starting simul - will kill all others:", err, internal)
 				killing = true
-				err := exec.Command("killall", "ssh").Run()
+				err := exec.Command("kill", "-9", "-1").Run()
 				if err != nil {
 					log.Fatal("Couldn't killall ssh:", err)
 				}
