@@ -182,7 +182,7 @@ func (c *Client) Send(dst *network.ServerIdentity, path string, buf []byte) ([]b
 		c.Unlock()
 	}()
 
-	log.Lvlf4("Sending %x to %s/%s", buf, c.service, path)
+	//log.LLvl3("Sending %x to %s/%s", buf, c.service, path)
 	if err := conn.WriteMessage(websocket.BinaryMessage, buf); err != nil {
 		return nil, xerrors.Errorf("connection write: %v", err)
 	}
@@ -341,13 +341,13 @@ func (c *Client) SendProtobufParallelWithDecoder(nodes []*network.ServerIdentity
 		default:
 			select {
 			case node := <-nodesChan:
-				log.Lvlf3("Asking %T from: %v - %v", msg, node.Address, node.URL)
+				//log.LLvl3("Asking %T from: %v - %v", msg, node.Address, node.URL)
 				reply, err := c.Send(node, path, buf)
 				if err != nil {
-					log.Lvl2("Error while sending to node:", node, err)
+					//log.LLvl3("Error while sending to node:", node, err)
 					errChan <- err
 				} else {
-					log.Lvl3("Done asking node", node, len(reply))
+					//log.LLvl3("Done asking node", node, len(reply))
 					decoding.Lock()
 					select {
 					case <-done:
@@ -621,5 +621,6 @@ func getWSHostPort(si *network.ServerIdentity, global bool) (string, error) {
 	}
 
 	portFormatted := strconv.FormatUint(uint64(port), 10)
+	////log.LLvl3("raha: debug: here?")
 	return net.JoinHostPort(hostname, portFormatted), nil
 }

@@ -16,6 +16,7 @@ import (
 	"os"
 
 	"github.com/chainBoostScale/ChainBoost/onet/log"
+	"github.com/chainBoostScale/ChainBoost/simulation/platform"
 )
 
 // The address of this server - if there is only one server in the config
@@ -53,7 +54,7 @@ func Start(rcs ...string) {
 	if len(rcs) > 0 {
 		log.ErrFatal(err)
 		for _, rc := range rcs {
-			log.Lvl1("Running toml-file:", rc)
+			log.LLvl1("Running toml-file:", rc)
 			os.Args = []string{os.Args[0], rc}
 			Start()
 		}
@@ -61,10 +62,12 @@ func Start(rcs ...string) {
 	}
 	flag.Parse()
 	if simul == "" {
+		log.LLvl1("Raha: simul is empty")
 		startBuild()
 	} else {
-		//raha: commented next line
-		//err := platform.Simulate(suite, serverAddress, simul, monitorAddress)
+		log.LLvl1("Raha: simul is not empty!")
+		err := platform.Simulate(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			suite, serverAddress, simul, monitorAddress)
 		log.ErrFatal(err)
 	}
 	os.Chdir(wd)

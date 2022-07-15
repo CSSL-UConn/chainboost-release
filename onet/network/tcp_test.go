@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/kyber/v3/util/key"
@@ -156,23 +155,24 @@ func TestTCPConnReceiveRaw(t *testing.T) {
 		// send the size first
 		binary.Write(c, globalOrder, Size(len(buff)))
 		// then send pieces and check if the other side already returned or not
-		for i, slice := range slices[:len(slices)-1] {
-			log.Lvlf1("Will write slice %d/%d...", i+1, len(slices))
+		//for i, slice := range slices[:len(slices)-1] {
+		for _, slice := range slices[:len(slices)-1] {
+			//log.LLvl3("Will write slice %d/%d...", i+1, len(slices))
 			if n, err := c.Write(slice); err != nil || n != len(slice) {
 				t.Fatal("Could not write enough")
 			}
-			log.Lvl1(" OK")
+			//log.LLvl3(" OK")
 			if !checking() {
 				t.Fatal("Already returned even if not finished")
 			}
 			time.Sleep(5 * time.Millisecond)
 		}
 		// the last one should make the other end return
-		log.Lvl1("Will write last piece...")
+		//log.LLvl3("Will write last piece...")
 		if n, err := c.Write(slices[len(slices)-1]); n != len(slices[len(slices)-1]) || err != nil {
 			t.Fatal("could not send the last piece")
 		}
-		log.Lvl1(" OK")
+		//log.LLvl3(" OK")
 		check <- true
 	}
 
@@ -591,7 +591,7 @@ func TestTCPHostClose(t *testing.T) {
 	if err != nil {
 		t.Fatal("Couldn't close:", err)
 	}
-	log.Lvl3("Finished first connection, starting 2nd")
+	//log.LLvl3("Finished first connection, starting 2nd")
 	h3, err3 := NewTestTCPHost(2003)
 	if err3 != nil {
 		t.Fatal("Could not setup host", err)
@@ -601,7 +601,7 @@ func TestTCPHostClose(t *testing.T) {
 	if err != nil {
 		t.Fatal(h2, "Couldn Connect() to", h3)
 	}
-	log.Lvl3("Closing h3")
+	//log.LLvl3("Closing h3")
 	err = h3.Stop()
 	if err != nil {
 		// try closing the underlying connection manually and fail

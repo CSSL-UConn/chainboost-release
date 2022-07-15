@@ -33,25 +33,47 @@ func Scp(username, host, file, dest string) error {
 	return nil
 }
 
-// Rsync copies files or directories to the remote host. If the DebugVisible
-// is > 1, the rsync-operation is displayed on screen.
-func Rsync(username, host, file, dest string) error {
-	h, p, err := net.SplitHostPort(host)
+func Rsync(username, host, SSHString, file, dest string) error {
+	//-----
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		log.LLvl3("homeDir: ", homeDir)
+	}
+	h, _, err := net.SplitHostPort(host)
 	if err != nil {
 		if !strings.Contains(err.Error(), "missing port in address") {
 			return err
 		}
-		p = "22"
 	}
+
 	addr := h + ":" + dest
 	if username != "" {
 		addr = username + "@" + addr
 	}
-	cmd := exec.Command("rsync", "-Pauz", "-e", fmt.Sprintf("ssh -T -o Compression=no -x -p %s", p), file, addr)
+	//cmd := exec.Command("rsync", "-Pauz", "-e", fmt.Sprintf("ssh -T -o Compression=no -x -p %s", p), file, addr)
+	//SSHString := "ssh -i '/Users/raha/.ssh/chainboostTest.pem'"
+	//Raha: -i is required just if the key is not on default (~/.ssh) directory
+
+	//file = "/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/deploy/"
+	//addr = "ubuntu@ec2-3-87-13-148.compute-1.amazonaws.com:"
+	//cmd := exec.Command( /*"sudo", "-S",*/ "rsync", "-Pauz", "-e", SSHString, file, addr)
+	//cmd.Stdin = strings.NewReader("pass")
+	var cmd *exec.Cmd
+	if SSHString != "" {
+		cmd = exec.Command("rsync", "-Pauz", "-e", SSHString, file, addr)
+		log.LLvl3("Command: ", cmd)
+	} else {
+		cmd = exec.Command("rsync", "-Pauz", "-e", file, addr)
+		log.LLvl3("Command: ", cmd)
+	}
+
 	cmd.Stderr = os.Stderr
 	if log.DebugVisible() > 1 {
 		cmd.Stdout = os.Stdout
 	}
+	//log.LLvl3("command: ", cmd)
 	err = cmd.Run()
 	if err != nil {
 		return xerrors.Errorf("cmd: %v", err)
@@ -61,14 +83,25 @@ func Rsync(username, host, file, dest string) error {
 
 // SSHRun runs a command on the remote host
 func SSHRun(username, host, command string) ([]byte, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(homeDir)
+
 	addr := host
 	if username != "" {
 		addr = username + "@" + addr
 	}
-
-	log.Lvl2("Going to ssh to", addr, command)
-	cmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", addr,
-		"eval '"+command+"'")
+	//log.LLvl3("Going to ssh to", addr, command)
+	// todoRaha: put the key somewhere safe
+	//cmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-i", "'~/Documents/GitHub/chainBoostScale/chainboostTest.pem'",
+	//	addr) //, "eval '"+command+"'")
+	//, "-o", "StrictHostKeyChecking=no"
+	// todoRaha: temp comment command
+	//cmd := exec.Command("ssh", "-i", "~/.ssh/chainboostTest.pem", addr, "eval '"+command+"'")
+	cmd := exec.Command("ssh", addr, "eval '"+command+"'")
 	buf, err := cmd.Output()
 	if err != nil {
 		return nil, xerrors.Errorf("cmd: %v", err)
@@ -91,9 +124,12 @@ func SSHRunStdout(username, host, command string) error {
 		addr = username + "@" + h
 	}
 
-	log.Lvl4("Going to ssh to", addr, command)
+	//log.LLvl3("Going to ssh to", addr, command)
+	//cmd := exec.Command("ssh", "-i", "~/.ssh/chainboostTest.pem", "-o", "StrictHostKeyChecking=no", "-p", p, addr,
+	//	"eval '"+command+"'")
 	cmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-p", p, addr,
 		"eval '"+command+"'")
+
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	err = cmd.Run()
@@ -116,13 +152,19 @@ func Build(path, out, goarch, goos string, buildArgs ...string) (string, error) 
 		cmd := exec.Command("go", []string{"env", "GOROOT"}...)
 		gosrcB, err := cmd.Output()
 		if err == nil {
+			//ToDoRahaNow!!!
+			cmd = exec.Command("EXPORT CGO_CFLAGS=-I${SRCDIR}/libs/linux/amd64/include")
+			cmd.Run()
+			cmd = exec.Command("EXPORT CGO_LDFLAGS=-L${SRCDIR}/libs/linux/amd64/lib/libsodium.a")
+			cmd.Run()
+
 			gosrcB := bytes.TrimRight(gosrcB, "\n\r")
 			gosrc := filepath.Join(string(gosrcB), "src")
 			cmd = exec.Command("go", []string{"install", "./..."}...)
-			log.Lvl4("Installing cross-compilation stdlib in", gosrc)
+			//log.LLvl3("Installing cross-compilation stdlib in", gosrc)
 			cmd.Env = append([]string{"GOOS=" + goos, "GOARCH=" + goarch}, os.Environ()...)
 			cmd.Dir = gosrc
-			log.Lvl4("Command:", cmd.Args, "in directory", gosrc)
+			//log.LLvl3("Command:", cmd.Args, "in directory", gosrc)
 			// Ignore errors from here; perhaps we didn't have rights to write.
 			cmd.Run()
 		}
@@ -131,8 +173,8 @@ func Build(path, out, goarch, goos string, buildArgs ...string) (string, error) 
 	var cmd *exec.Cmd
 	var b bytes.Buffer
 	buildBuffer := bufio.NewWriter(&b)
-	wd, _ := os.Getwd()
-	log.Lvl4("In directory", wd)
+	//wd, _ := os.Getwd()
+	//log.LLvl3("In directory", wd)
 	var args []string
 	args = append(args, "build", "-v")
 	args = append(args, buildArgs...)
@@ -141,18 +183,18 @@ func Build(path, out, goarch, goos string, buildArgs ...string) (string, error) 
 	// we have to change the working directory to do the build when using
 	// go modules, not sure about the exact reason for this behaviour yet
 	cmd.Dir = path
-	log.Lvl4("Building", cmd.Args, "in", path)
+	//log.LLvl3("Building", cmd.Args, "in", path)
 	cmd.Stdout = buildBuffer
 	cmd.Stderr = buildBuffer
 	cmd.Env = append([]string{"GOOS=" + goos, "GOARCH=" + goarch}, os.Environ()...)
-	wd, err := os.Getwd()
-	log.Lvl4(wd)
-	log.Lvl4("Command:", cmd.Args)
-	err = cmd.Run()
+	//wd, err := os.Getwd()
+	//log.LLvl3(wd)
+	//log.LLvl3("Command:", cmd.Args)
+	err := cmd.Run()
 	if err != nil {
 		err = xerrors.Errorf("cmd: %v", err)
 	}
-	log.Lvl4(b.String())
+	//log.LLvl3(b.String())
 	return b.String(), err
 }
 
@@ -160,6 +202,6 @@ func Build(path, out, goarch, goos string, buildArgs ...string) (string, error) 
 func KillGo() {
 	cmd := exec.Command("killall", "go")
 	if err := cmd.Run(); err != nil {
-		log.Lvl3("Couldn't kill all go instances:", err)
+		//log.LLvl3("Couldn't kill all go instances:", err)
 	}
 }

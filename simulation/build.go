@@ -8,10 +8,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
+	//"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
 
 	"math"
 	"time"
+
+	//"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
 
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/simulation/monitor"
@@ -19,11 +21,13 @@ import (
 	"golang.org/x/xerrors"
 )
 
+// todoRaha: change it to ghada lab later
 // Configuration-variables
-var platformDst = "localhost"
+//var platformDst = "localhost"
+var platformDst = "deterlab"
 var nobuild = false
 var clean = true
-var build = ""
+var build = "simul"
 var machines = 3
 var monitorPort = monitor.DefaultSinkPort
 var simRange = ""
@@ -52,12 +56,13 @@ func startBuild() {
 	if deployP == nil {
 		log.Fatal("Platform not recognized.", platformDst)
 	}
-	log.Lvl1("Deploying to", platformDst)
+	log.LLvl1("Deploying to", platformDst)
 
 	simulations := flag.Args()
 	if len(simulations) == 0 {
 		log.Fatal("Please give a simulation to run")
 	}
+	log.LLvl1("simulations are: ", simulations)
 
 	for _, simulation := range simulations {
 		runconfigs := platform.ReadRunFile(deployP, simulation)
@@ -118,19 +123,21 @@ func startBuild() {
 			//timeout, err := getExperimentWait(runconfigs)
 			//t, err := strconv.Atoi(runconfigs[0].Get("timeout"))
 			//timeout := time.Duration(int64(t)) * time.Second
-			//if err != nil {
-			//log.Fatal("ExperimentWait:", err)
-			//	panic("Raha: set timeout for the experiment from the config file")
-			//}
+			// if err != nil {
+			// 	log.Fatal("ExperimentWait:", err)
+			// 	panic("Raha: set timeout for the experiment from the config file")
+			// }
 			go func() {
+				log.LLvl1("raha: running RunTests func")
 				RunTests(deployP, logname, runconfigs)
+				log.LLvl1("raha: RunTests func returned")
 				testsDone <- true
 			}()
 			select {
 			case <-testsDone:
-				log.Lvl1("Done with test", simulation)
-				//case <-time.After(2 * timeout):
-				//log.Fatal("Test failed to finish in", timeout)
+				log.LLvl1("Done with test", simulation)
+				// case <-time.After(timeout):
+				// 	log.Fatal("Test failed to finish (by returning from RunTests) in", timeout)
 			}
 		}
 	}
@@ -173,13 +180,13 @@ func RunTests(deployP platform.Platform, name string, runconfigs []*platform.Run
 	for i, rc := range runconfigs {
 		// Implement a simple range-argument that will skip checks not in range
 		if i < start || i > stop {
-			log.Lvl2("Skipping", rc, "because of range")
+			log.LLvl1("Skipping", rc, "because of range")
 			continue
 		}
 
 		// run test t nTimes times
 		// take the average of all successful runs
-		log.Lvl1("Running test with config:", rc)
+		log.LLvl1("Running test with config:", rc)
 		stats, err := RunTest(deployP, rc)
 		if err != nil {
 			log.Error("Error running test:", err)
@@ -229,10 +236,12 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 		monitor.NewStats(rc.Map(), "hosts", "bf"),
 	}
 
-	if err := deployP.Cleanup(); err != nil {
-		log.Error(err)
-		return nil, xerrors.Errorf("cleanup: %v", err)
-	}
+	//todoRaha : temp commented
+
+	// if err := deployP.Cleanup(); err != nil {
+	// 	log.Error(err)
+	// 	return nil, xerrors.Errorf("cleanup: %v", err)
+	// }
 
 	if err := deployP.Deploy(rc); err != nil {
 		log.Error(err)
@@ -267,19 +276,10 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 	}()
 
 	go func() {
+		var err error
 		// Start monitor before so ssh tunnel can connect to the monitor
 		// in case of deterlab.
-		err := deployP.Start()
-		// Raha: initializing main chain's blockchain -------------------------
-		blockchain.InitializeMainChainBC(
-			rc.Get("FileSizeDistributionMean"), rc.Get("FileSizeDistributionVariance"),
-			rc.Get("ServAgrDurationDistributionMean"), rc.Get("ServAgrDurationDistributionVariance"),
-			rc.Get("InitialPowerDistributionMean"), rc.Get("InitialPowerDistributionVariance"),
-			rc.Get("Nodes"), rc.Get("SimulationSeed"))
-		// Raha: initializing side chain's blockchain -------------------------
-		blockchain.InitializeSideChainBC()
-
-		// --------------------------------------------
+		err = deployP.Start()
 		if err != nil {
 			done <- err
 			return
@@ -288,7 +288,7 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 		if err = deployP.Wait(); err != nil {
 			log.Error("Test failed:", err)
 			if err := deployP.Cleanup(); err != nil {
-				log.Lvl3("Couldn't cleanup platform:", err)
+				log.LLvl1("Couldn't cleanup platform:", err)
 			}
 			done <- err
 			return
@@ -296,10 +296,10 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 		done <- nil
 	}()
 
-	timeout, err := getRunWait(rc)
-	if err != nil {
-		log.Fatal("RunWait:", err)
-	}
+	// timeout, err := getRunWait(rc)
+	// if err != nil {
+	// 	log.Fatal("RunWait:", err)
+	// }
 
 	// can timeout the command if it takes too long
 	select {
@@ -308,8 +308,8 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 			return nil, xerrors.Errorf("simulation error: %v", err)
 		}
 		return stats, nil
-	case <-time.After(2 * timeout):
-		return nil, xerrors.New("simulation timeout")
+		// case <-time.After(timeout):
+		// 	return nil, xerrors.New("simulation timeout")
 	}
 }
 
@@ -402,7 +402,7 @@ func getStartStop(rcs int) (int, int) {
 			}
 		}
 	}
-	log.Lvl2("Range is", start, ":", stop)
+	log.LLvl1("Range is", start, ":", stop)
 	return start, stop
 }
 

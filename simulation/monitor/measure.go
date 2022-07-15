@@ -76,12 +76,12 @@ func ConnectSink(addr string) error {
 	if global.connection != nil {
 		return xerrors.New("Already connected to an endpoint")
 	}
-	log.Lvl1("Connecting to:", addr)
+	//log.LLvl3("Connecting to:", addr)
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return xerrors.Errorf("dial: %v", err)
 	}
-	log.Lvl3("Connected to sink:", addr)
+	//log.LLvl3("Connected to sink:", addr)
 	global.sink = addr
 	global.connection = conn
 	global.encoder = json.NewEncoder(conn)
@@ -262,7 +262,7 @@ func send(v interface{}) error {
 			ok = true
 			break
 		}
-		log.Lvl1("Couldn't send to monitor-sink:", err)
+		//log.LLvl3("Couldn't send to monitor-sink:", err)
 		time.Sleep(time.Duration(wait) * time.Millisecond)
 		continue
 	}

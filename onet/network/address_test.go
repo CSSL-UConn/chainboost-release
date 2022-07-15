@@ -5,7 +5,6 @@ import (
 
 	"net"
 
-	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -85,7 +84,7 @@ func TestAddress(t *testing.T) {
 	}
 
 	for i, str := range tests {
-		log.Lvlf1("Testing %+v", str)
+		//log.LLvl3("Testing %+v", str)
 		add := Address(str.Value)
 		require.Equal(t, str.Valid, add.Valid(), "Address (%d) %s", i, str.Value)
 		require.Equal(t, str.Type, add.ConnType(), "Address (%d) %s", i, str.Value)

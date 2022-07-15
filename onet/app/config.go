@@ -510,7 +510,7 @@ func parseServiceConfig(configs map[string]ServiceConfig) []network.ServiceIdent
 		if err != nil {
 			// You might try to parse a toml file for a single service so
 			// you can ignore other pairs
-			log.Lvlf2("Service `%s` not registered. Ignoring the key pair.", name)
+			//log.LLvl3("Service `%s` not registered. Ignoring the key pair.", name)
 		} else {
 			si = append(si, sid)
 		}
@@ -528,7 +528,7 @@ func parseServerServiceConfig(configs map[string]ServerServiceConfig) []network.
 		if err != nil {
 			// You might try to parse a toml file for a single service so
 			// you can ignore other pairs
-			log.Lvlf2("Service `%s` not registered. Ignoring the key pair.", name)
+			//log.LLvl3("Service `%s` not registered. Ignoring the key pair.", name)
 		} else {
 			si = append(si, sid)
 		}

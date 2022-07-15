@@ -6,21 +6,21 @@
 // that are printed according to a chosen format.
 //
 // The log-level messages are:
-//	log.Lvl1("Important information")
-//	log.Lvl2("Less important information")
-//	log.Lvl3("Eventually flooding information")
-//	log.Lvl4("Definitively flooding information")
+//	//log.LLvl3("Important information")
+//	//log.LLvl3("Less important information")
+//	//log.LLvl3("Eventually flooding information")
+//	//log.LLvl3("Definitively flooding information")
 //	log.Lvl5("I hope you never need this")
 // in your program, then according to the debug-level one or more levels of
 // output will be shown. To set the debug-level, use
 //	log.SetDebugVisible(3)
 // which will show all `Lvl1`, `Lvl2`, and `Lvl3`. If you want to turn
 // on just one output, you can use
-//	log.LLvl2("Less important information")
+//	log.LLvl4("Less important information")
 // By adding a single 'L' to the method, it *always* gets printed.
 //
 // You can also add a 'f' to the name and use it like fmt.Printf:
-//	log.Lvlf1("Level: %d/%d", now, max)
+//	//log.LLvl3("Level: %d/%d", now, max)
 //
 // The common messages are:
 //	log.Print("Simple output")

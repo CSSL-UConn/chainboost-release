@@ -1,7 +1,7 @@
 package onet
 
 import (
-	"fmt"
+	//"fmt"
 	"sync"
 	"time"
 
@@ -130,7 +130,7 @@ func (o *Overlay) TransmitMsg(onetMsg *ProtocolMsg, io MessageProxy) error {
 	if onetMsg != nil && onetMsg.From != nil {
 		log.TraceID(onetMsg.From.RoundID[:])
 	}
-	log.Lvl3("got new message of type:", onetMsg.MsgType)
+	//log.LLvl3("got new message of type:", onetMsg.MsgType)
 	// Get the tree if it exists and prevent any pending deletion
 	// if required. The tree will be clean when this instance is
 	// over (or the last instance using the tree).
@@ -160,7 +160,7 @@ func (o *Overlay) TransmitMsg(onetMsg *ProtocolMsg, io MessageProxy) error {
 	// if the TreeNodeInstance is not there, creates it
 	if !ok {
 		log.Lvl5("###################### Raha: the TreeNodeInstance is not there, creates it!!\n ")
-		log.Lvlf4("Creating TreeNodeInstance at %s %x", o.server.ServerIdentity, onetMsg.To.ID())
+		//log.LLvl3("Creating TreeNodeInstance at %s %x", o.server.ServerIdentity, onetMsg.To.ID())
 		tn, err := o.TreeNodeFromTree(tree, onetMsg.To.TreeNodeID)
 		if err != nil {
 			return xerrors.New("No TreeNode defined in this tree here")
@@ -210,13 +210,13 @@ func (o *Overlay) TransmitMsg(onetMsg *ProtocolMsg, io MessageProxy) error {
 			return xerrors.New("Error Binding TreeNodeInstance and ProtocolInstance:" +
 				err.Error())
 		}
-		log.Lvl4(o.server.Address(), "Overlay created new ProtocolInstace msg => ",
-			fmt.Sprintf("%+v", onetMsg.To))
+		//log.LLvl3(o.server.Address(), "Overlay created new ProtocolInstace msg => ",
+		//fmt.Sprintf("%+v", onetMsg.To))
 	}
 	// TODO Check if TreeNodeInstance is already Done
-	log.Lvl4("starting ProcessProtocolMsg")
+	////log.LLvl3("starting ProcessProtocolMsg")
 	pi.ProcessProtocolMsg(onetMsg)
-	log.Lvl4("done with ProcessProtocolMsg")
+	////log.LLvl3("done with ProcessProtocolMsg")
 	return nil
 }
 
@@ -451,7 +451,7 @@ func (o *Overlay) handleSendTreeMarshal(si *network.ServerIdentity, tm *TreeMars
 	}
 
 	if ro == nil {
-		log.Lvl1("unknown roster")
+		//log.LLvl3("unknown roster")
 		msg, err := io.Wrap(nil, &OverlayMsg{
 			RequestRoster: &RequestRoster{tm.RosterID},
 		})
@@ -494,7 +494,7 @@ func (o *Overlay) handleSendTree(si *network.ServerIdentity, rt *ResponseTree, i
 		log.Error("Couldn't create tree:", err)
 		return
 	}
-	log.Lvl4("Received new tree")
+	//log.LLvl3("Received new tree")
 	o.RegisterTree(tree)
 }
 
@@ -504,7 +504,7 @@ func (o *Overlay) handleRequestRoster(si *network.ServerIdentity, req *RequestRo
 
 	if ro == nil {
 		// XXX Bad reaction to request...
-		log.Lvl2("Requested roster that we don't have")
+		//log.LLvl3("Requested roster that we don't have")
 		ro = &Roster{}
 	}
 
@@ -614,10 +614,10 @@ func (o *Overlay) nodeDelete(token *Token) {
 	tok := token.ID()
 	tni, ok := o.instances[tok]
 	if !ok {
-		log.Lvlf3("Node %s already gone", tok)
+		//log.LLvl3("Node %s already gone", tok)
 		return
 	}
-	log.Lvl4("Closing node", tok)
+	//log.LLvl3("Closing node", tok)
 	err := tni.closeDispatch()
 	if err != nil {
 		log.Error("Error while closing node:", err)
@@ -657,7 +657,7 @@ func (o *Overlay) Close() {
 	o.instancesLock.Lock()
 	defer o.instancesLock.Unlock()
 	for _, tni := range o.instances {
-		log.Lvl4(o.server.Address(), "Closing TNI", tni.TokenID())
+		//log.LLvl3(o.server.Address(), "Closing TNI", tni.TokenID())
 		o.nodeDelete(tni.Token())
 	}
 
@@ -798,7 +798,7 @@ func (o *Overlay) RegisterProtocolInstance(pi ProtocolInstance) error {
 
 	tni.bind(pi)
 	o.protocolInstances[tok.ID()] = pi
-	log.Lvlf4("%s registered ProtocolInstance %x", o.server.Address(), tok.ID())
+	//log.LLvl3("%s registered ProtocolInstance %x", o.server.Address(), tok.ID())
 	return nil
 }
 

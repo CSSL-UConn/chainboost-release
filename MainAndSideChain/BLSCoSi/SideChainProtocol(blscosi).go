@@ -167,7 +167,7 @@ func (p *BlsCosi) Shutdown() error {
 		close(p.FinalSignature)
 	})
 
-	log.Lvl3("BLS CoSi ends")
+	log.LLvl1("BLS CoSi ends")
 	return nil
 }
 
@@ -234,7 +234,7 @@ func (p *BlsCosi) runSubProtocols() {
 		}
 	}
 	p.SubProtocolsLock.Unlock()
-	log.Lvl3(p.ServerIdentity().Address, "all (raha: sub bls) protocols started")
+	log.LLvl1(p.ServerIdentity().Address, "all (raha: sub bls) protocols started")
 
 	// Wait and collect all the signature responses
 	responses, err := p.collectSignatures()
@@ -243,7 +243,7 @@ func (p *BlsCosi) runSubProtocols() {
 		return
 	}
 
-	log.Lvl3(p.ServerIdentity().Address, "collected all signature responses")
+	log.LLvl1(p.ServerIdentity().Address, "collected all signature responses")
 
 	// generate root signature
 	sig, err := p.generateSignature(responses)
@@ -307,13 +307,13 @@ func (p *BlsCosi) startSubProtocol(tree *onet.Tree) (*SubBlsCosi, error) {
 	// responses. The main protocol will deal with early answers.
 	cosiSubProtocol.Threshold = tree.Size() - 1
 
-	log.Lvl4("Starting sub protocol with subleader %v", tree.Root.Children[0].ServerIdentity)
+	log.LLvl1("Starting sub protocol with subleader %v", tree.Root.Children[0].ServerIdentity)
 	err = cosiSubProtocol.Start()
 	if err != nil {
 		return nil, err
 	}
 	// Raha: I want to see the list of nodes!
-	log.Lvl4("Raha: Tree used in SubBlsCosi is", tree.Roster.List)
+	log.LLvl1("Raha: Tree used in SubBlsCosi is", tree.Roster.List)
 	return cosiSubProtocol, err
 }
 
@@ -339,10 +339,10 @@ func (p *BlsCosi) collectSignatures() (ResponseMap, error) {
 					// quick answer/failure
 					return
 				case <-subProtocol.subleaderNotResponding:
-					x1 := p.SubTrees[i].Root
-					x2 := p.SubTrees[i].Root.Children[0]
-					x3 := p.SubTrees[i].Root.Children[0].RosterIndex
-					log.Lvl1(x1, ":", x2, ":", x3)
+					// x1 := p.SubTrees[i].Root
+					// x2 := p.SubTrees[i].Root.Children[0]
+					// x3 := p.SubTrees[i].Root.Children[0].RosterIndex
+					// log.LLvl1(x1, ":", x2, ":", x3)
 
 					subleaderID := p.SubTrees[i].Root.Children[0].RosterIndex
 					log.Lvlf2("(subprotocol %v) subleader with id %d failed, restarting subprotocol", i, subleaderID)

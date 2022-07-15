@@ -38,14 +38,14 @@ func NewProtocolTest(n *TreeNodeInstance) (ProtocolInstance, error) {
 // Dispatch is used to send the messages further - here everything is
 // copied to /dev/null
 func (p *ProtocolTest) Dispatch() error {
-	log.Lvl2("ProtocolTest.Dispatch()")
+	//log.LLvl3("ProtocolTest.Dispatch()")
 	p.DispMsg <- "Dispatch"
 	p.Done()
 	return nil
 }
 
 func (p *ProtocolTest) Start() error {
-	log.Lvl2("ProtocolTest.Start()")
+	//log.LLvl3("ProtocolTest.Start()")
 	p.StartMsg <- "Start"
 	p.Done()
 	return nil

@@ -231,7 +231,7 @@ func Lvlf5(f string, args ...interface{}) {
 // LLvl1 *always* prints
 func LLvl1(args ...interface{}) { lvld(-1, args...) }
 
-// LLvl2 *always* prints
+// LLvl4 *always* prints
 func LLvl2(args ...interface{}) { lvld(-2, args...) }
 
 // LLvl3 *always* prints

@@ -25,13 +25,15 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"strconv"
+
+	//"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/BurntSushi/toml"
 	//"github.com/chainBoostScale/ChainBoost/onet/app"
+	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/app"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
@@ -94,6 +96,23 @@ type Deterlab struct {
 	PreScript string
 	// Tags to use when compiling
 	Tags string
+
+	// raha: adding some other system-wide configurations
+	MCRoundDuration          int
+	PercentageTxPay          int
+	MainChainBlockSize       int
+	SideChainBlockSize       int
+	SectorNumber             int
+	NumberOfPayTXsUpperBound int
+	SimulationRounds         int
+	SimulationSeed           int
+	//-- bls cosi
+	NbrSubTrees     int
+	Threshold       int
+	SCRoundDuration int
+	CommitteeWindow int
+	MCRoundPerEpoch int
+	SimState        int
 }
 
 var simulConfig *onet.SimulationConfig
@@ -113,9 +132,25 @@ func (d *Deterlab) Configure(pc *Config) {
 	os.Mkdir(d.deployDir, 0770)
 	os.Mkdir(d.buildDir, 0770)
 	d.MonitorPort = pc.MonitorPort
-	log.Lvl3("Dirs are:", pwd, d.deployDir)
+	log.LLvl1("Dirs are:", pwd, d.deployDir, "configed monitor port is:", pc.MonitorPort)
 	d.loadAndCheckDeterlabVars()
-
+	// ------------------------------
+	// raha: adding some other system-wide configurations
+	d.MCRoundDuration = pc.MCRoundDuration
+	d.PercentageTxPay = pc.PercentageTxPay
+	d.MainChainBlockSize = pc.MainChainBlockSize
+	d.SideChainBlockSize = pc.SideChainBlockSize
+	d.SectorNumber = pc.SectorNumber
+	d.NumberOfPayTXsUpperBound = pc.NumberOfPayTXsUpperBound
+	d.SimulationRounds = pc.SimulationRounds
+	d.SimulationSeed = pc.SimulationSeed
+	d.NbrSubTrees = pc.NbrSubTrees
+	d.Threshold = pc.Threshold
+	d.SCRoundDuration = pc.SCRoundDuration
+	d.CommitteeWindow = pc.CommitteeWindow
+	d.MCRoundPerEpoch = pc.MCRoundPerEpoch
+	d.SimState = pc.SimState
+	// ------------------------------
 	d.Debug = pc.Debug
 	if d.Simulation == "" {
 		log.Fatal("No simulation defined in runconfig")
@@ -136,7 +171,7 @@ type pkg struct {
 // If 'build' is empty, all binaries are created, else only
 // the ones indicated. Either "simul" or "users"
 func (d *Deterlab) Build(build string, arg ...string) error {
-	log.Lvl1("Building for", d.Login, d.Host, d.Project, build, "simulDir=", d.simulDir)
+	log.LLvl1("Building for", d.Login, d.Host, d.Project, build, "simulDir=", d.simulDir)
 	start := time.Now()
 
 	var wg sync.WaitGroup
@@ -151,8 +186,17 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 	// start building the necessary binaries - it's always the same,
 	// but built for another architecture.
 	packages := []pkg{
-		{"simul", "amd64", "linux", d.simulDir},
-		{"users", "386", "freebsd", path.Join(d.platformDir, "deterlab_users")},
+		//raha: changed
+		// deter has an amd64, linux architecture
+		{"simul", "arm64", "darwin", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
+		{"users", "amd64", "linux", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/platform", "deterlab_users")},
+		{"simul", "amd64", "linux", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
+		//{"simul", "amd64", "linux", d.simulDir},
+		//{"simul", "arm64", "linux", "/go/src/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"},
+		//{"users", "arm64", "darwin", d.simulDir},
+		//{"users", "arm64", "linux", d.simulDir},
+		//{"users", "386", "freebsd", path.Join(d.platformDir, "deterlab_users")},
+		//{"users", "arm64", "linux", path.Join(d.platformDir, "deterlab_users")},
 	}
 	if build == "" {
 		build = "simul,users"
@@ -161,25 +205,34 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 	if d.Tags != "" {
 		tags = append([]string{"-tags"}, strings.Split(d.Tags, " ")...)
 	}
-	log.Lvl3("Starting to build all executables", packages)
+	log.LLvl1("Starting to build all executables", packages)
 	for _, p := range packages {
 		if !strings.Contains(build, p.name) {
-			log.Lvl2("Skipping build of", p.name)
+			log.LLvl1("Skipping build of", p.name)
 			continue
 		}
-		log.Lvl3("Building", p)
+		log.LLvl1("Building", p)
 		wg.Add(1)
 		go func(p pkg) {
 			defer wg.Done()
 			dst := path.Join(d.buildDir, p.name)
-			path, err := filepath.Rel(d.simulDir, p.path)
+			//raha
+			var path string
+			var err error
+
+			d.simulDir = "/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"
+			d.platformDir = "/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/platform"
+
+			path, err = filepath.Rel(d.simulDir, p.path)
 			log.ErrFatal(err)
-			// deter has an amd64, linux architecture
+
 			var out string
 			if p.name == "simul" {
+				log.LLvl1("Building: simul")
 				out, err = Build(path, dst,
 					p.processor, p.system, append(arg, tags...)...)
 			} else {
+				log.LLvl1("Building: users")
 				out, err = Build(path, dst,
 					p.processor, p.system, arg...)
 			}
@@ -192,7 +245,7 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 	}
 	// wait for the build to finish
 	wg.Wait()
-	log.Lvl1("Build is finished after", time.Since(start))
+	log.LLvl1("Build is finished after", time.Since(start))
 	return nil
 }
 
@@ -201,22 +254,22 @@ func (d *Deterlab) Cleanup() error {
 	// Cleanup eventual ssh from the proxy-forwarding to the logserver
 	err := exec.Command("pkill", "-9", "-f", "ssh -nNTf").Run()
 	if err != nil {
-		log.Lvl3("Error stopping ssh:", err)
+		log.LLvl1("Error stopping ssh:", err)
 	}
 
 	// SSH to the deterlab-server and end all running users-processes
-	log.Lvl3("Going to kill everything")
+	log.LLvl1("Going to kill everything")
 	var sshKill chan string
 	sshKill = make(chan string)
 	go func() {
 		// Cleanup eventual residues of previous round - users and sshd
 		if _, err := SSHRun(d.Login, d.Host, "killall -9 users sshd"); err != nil {
-			log.Lvl3("Error while cleaning up:", err)
+			log.LLvl1("Error while cleaning up:", err)
 		}
 
 		err := SSHRunStdout(d.Login, d.Host, "test -f remote/users && ( cd remote; ./users -kill )")
 		if err != nil {
-			log.Lvl1("NOT-Normal error from cleanup", err.Error())
+			log.LLvl1("NOT-Normal error from cleanup", err.Error())
 			sshKill <- "error"
 		}
 		sshKill <- "stopped"
@@ -226,12 +279,12 @@ func (d *Deterlab) Cleanup() error {
 		select {
 		case msg := <-sshKill:
 			if msg == "stopped" {
-				log.Lvl3("Users stopped")
+				log.LLvl1("Users stopped")
 				return nil
 			}
-			log.Lvl2("Received other command", msg, "probably the app didn't quit correctly")
+			log.LLvl1("Received other command", msg, "probably the app didn't quit correctly")
 		case <-time.After(time.Second * 20):
-			log.Lvl3("Timeout error when waiting for end of ssh")
+			log.LLvl1("Timeout error when waiting for end of ssh")
 			return nil
 		}
 	}
@@ -260,7 +313,7 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 
 	// deploy will get rsync to /remote on the NFS
 
-	log.Lvl2("Localhost: Deploying and writing config-files")
+	log.LLvl1("Deterlab: Deploying and writing config-files")
 	sim, err := onet.NewSimulation(d.Simulation, string(rc.Toml()))
 	if err != nil {
 		return xerrors.Errorf("simulation: %v", err)
@@ -274,9 +327,28 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	if err != nil {
 		return xerrors.Errorf("decoding toml: %v", err)
 	}
-	log.Lvl3("Creating hosts")
-	deter.createHosts()
-	log.Lvl3("Writing the config file :", deter)
+	//-----------------------------------
+	// ToDoRaha: filling 2 attributes in deter struct: deter.Virt, deter.Phys
+	// by an "string array of IPs and DNS resolvable host names"
+
+	// createHosts and parseHost functions are deterlab API specific.
+	// deter.createHosts()
+	// Phys: DNS-resolvable names, Virt: VLAN-IP names (physical machines)
+	log.LLvl1("Getting the hosts (Raha: vm addresses?)")
+	deter.Phys = []string{}
+	deter.Virt = []string{}
+	//---
+	deter.Phys = append(deter.Phys, "192.168.3.220:22")
+	deter.Virt = append(deter.Virt, "192.168.3.220")
+	deter.Phys = append(deter.Phys, "192.168.3.221:22")
+	deter.Virt = append(deter.Virt, "192.168.3.221")
+	deter.Phys = append(deter.Phys, "192.168.3.222:22")
+	deter.Virt = append(deter.Virt, "192.168.3.222")
+	deter.Phys = append(deter.Phys, "192.168.3.223:22")
+	deter.Virt = append(deter.Virt, "192.168.3.223")
+	//-----------------------------------
+
+	log.LLvl1("Writing the config file :", deter)
 	onet.WriteTomlConfig(deter, deterConfig, d.deployDir)
 
 	simulConfig, err = sim.Setup(d.deployDir, deter.Virt)
@@ -284,7 +356,7 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 		return xerrors.Errorf("simulation setup: %v", err)
 	}
 	simulConfig.Config = string(rc.Toml())
-	log.Lvl3("Saving configuration")
+	log.LLvl1("Saving configuration")
 	if err := simulConfig.Save(d.deployDir); err != nil {
 		log.Error("Couldn't save configuration:", err)
 	}
@@ -292,6 +364,42 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	// Copy limit-files for more connections
 	ioutil.WriteFile(path.Join(d.deployDir, "simul.conf"),
 		[]byte(simulConnectionsConf), 0444)
+
+	// --------------------------------------------
+
+	// Raha: initializing main chain's blockchain -------------------------
+	log.LLvl1("Initializing main chain's blockchain")
+	blockchain.InitializeMainChainBC(
+		rc.Get("FileSizeDistributionMean"), rc.Get("FileSizeDistributionVariance"),
+		rc.Get("ServAgrDurationDistributionMean"), rc.Get("ServAgrDurationDistributionVariance"),
+		rc.Get("InitialPowerDistributionMean"), rc.Get("InitialPowerDistributionVariance"),
+		rc.Get("Nodes"), rc.Get("SimulationSeed"))
+	// Raha: initializing side chain's blockchain -------------------------
+	blockchain.InitializeSideChainBC()
+
+	// --------------------------------------------
+	//ToDoraha : is it the best way to do so?!
+	// Copying central bc files to deploy-directory so it gets transferred to distributed servers
+	err = exec.Command("cp", d.simulDir+"/"+"mainchainbc.xlsx", d.deployDir).Run()
+	if err != nil {
+		log.Fatal("error copying mainchainbc.xlsx: ", err)
+	}
+	err = exec.Command("cp", d.simulDir+"/"+"sidechainbc.xlsx", d.deployDir).Run()
+	if err != nil {
+		log.Fatal("error copying sidechainbc.xlsx: ", err)
+	}
+
+	//ToDoraha : is it the best way to do so?!
+	// Copying chainBoost.toml file to deploy-directory so it gets transferred to distributed servers
+	err = exec.Command("cp", d.simulDir+"/"+d.Simulation+".toml", d.deployDir).Run()
+	if err != nil {
+		log.Fatal("error copying chainBoost.toml-file:", d.simulDir, d.Simulation+".toml to ", d.deployDir, err)
+	}
+
+	err = exec.Command("cp", d.simulDir+"/"+"simul.go", d.deployDir).Run()
+	if err != nil {
+		log.Fatal("error copying chainBoost.toml-file:", d.simulDir, d.Simulation+".toml", d.deployDir, err)
+	}
 
 	// Copying build-files to deploy-directory
 	build, err := ioutil.ReadDir(d.buildDir)
@@ -302,13 +410,17 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 		}
 	}
 
-	// Copy everything over to Deterlab
-	log.Lvl1("Copying over to", d.Login, "@", d.Host)
-	err = Rsync(d.Login, d.Host, d.deployDir+"/", "remote/")
+	// Copy everything over to uconn's gateway server
+	log.LLvl1("Copying over to", d.Login, "@", d.Host)
+
+	// rahatodo: it works with out id_rsa now but I am not sure how I am authenticated to the gateway, will I need it or not!, I will keep it for now
+	SSHString := "ssh -i '/Users/raha/.ssh/id_rsa'"
+	//ToDoRaha: fix this later
+	err = Rsync(d.Login, d.Host, SSHString, d.deployDir+"/", "~/remote/")
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Lvl2("Done copying")
+	log.LLvl1("Done copying")
 
 	return nil
 }
@@ -322,21 +434,26 @@ func (d *Deterlab) Start(args ...string) error {
 	// proxy => the proxy redirects packets to the same port the sink is
 	// listening.
 	// -n = stdout == /Dev/null, -N => no command stream, -T => no tty
-	redirection := strconv.Itoa(d.MonitorPort) + ":" + d.ProxyAddress + ":" + strconv.Itoa(d.MonitorPort)
-	cmd := []string{"-nNTf", "-o", "StrictHostKeyChecking=no", "-o", "ExitOnForwardFailure=yes", "-R",
-		redirection, fmt.Sprintf("%s@%s", d.Login, d.Host)}
-	exCmd := exec.Command("ssh", cmd...)
-	if err := exCmd.Start(); err != nil {
-		log.Fatal("Failed to start the ssh port forwarding:", err)
-	}
-	if err := exCmd.Wait(); err != nil {
-		log.Fatal("ssh port forwarding exited in failure:", err)
-	}
-	log.Lvl3("Setup remote port forwarding", cmd)
+
+	//todoraha: commented temp  do we need them?
+	log.LLvl1("Setup remote port forwarding skipped")
+	// redirection := strconv.Itoa(d.MonitorPort) + ":" + d.ProxyAddress + ":" + strconv.Itoa(d.MonitorPort)
+	// cmd := []string{"-nNTf", "-o", "StrictHostKeyChecking=no", "-o", "ExitOnForwardFailure=yes", "-R",
+	// 	redirection, fmt.Sprintf("%s@%s", d.Login, d.Host)}
+	// exCmd := exec.Command("ssh", cmd...)
+	// if err := exCmd.Start(); err != nil {
+	// 	log.Fatal("Failed to start the ssh port forwarding:", err)
+	// }
+	// if err := exCmd.Wait(); err != nil {
+	// 	log.Fatal("ssh port forwarding exited in failure:", err)
+	// }
+	// log.LLvl1("Setup remote port forwarding", cmd)
+	//----------
 	go func() {
+		log.LLvl1("Raha: Running ./users on the server:", d.Login, "@", d.Host)
 		err := SSHRunStdout(d.Login, d.Host, "cd remote; ./users -suite="+d.Suite)
 		if err != nil {
-			log.Lvl3(err)
+			log.LLvl1(err)
 		}
 		d.sshDeter <- "finished"
 	}()
@@ -352,81 +469,20 @@ func (d *Deterlab) Wait() error {
 		err = nil
 	}
 	if d.started {
-		log.Lvl3("Simulation is started")
+		log.LLvl1("Simulation is started")
 		select {
 		case msg := <-d.sshDeter:
 			if msg == "finished" {
-				log.Lvl3("Received finished-message, not killing users")
+				log.LLvl1("Received finished-message, not killing users")
 				return nil
 			}
-			log.Lvl1("Received out-of-line message", msg)
+			log.LLvl1("Received out-of-line message", msg)
 		case <-time.After(wait):
-			log.Lvl1("Quitting after waiting", wait)
+			log.LLvl1("Quitting after waiting", wait)
 			d.started = false
 		}
 		d.started = false
 	}
-	return nil
-}
-
-// Write the hosts.txt file automatically
-// from project name and number of servers
-func (d *Deterlab) createHosts() {
-	// Query deterlab's API for servers
-	log.Lvl2("Querying Deterlab's API to retrieve server names and addresses")
-	command := fmt.Sprintf("/usr/testbed/bin/expinfo -l -e %s,%s", d.Project, d.Experiment)
-	apiReply, err := SSHRun(d.Login, d.Host, command)
-	if err != nil {
-		log.Fatal("Error while querying Deterlab:", err)
-	}
-	log.ErrFatal(d.parseHosts(string(apiReply)))
-}
-
-func (d *Deterlab) parseHosts(str string) error {
-	// Get the link-information, which is the second block in `expinfo`-output
-	infos := strings.Split(str, "\n\n")
-	if len(infos) < 2 {
-		return xerrors.New("didn't recognize output of 'expinfo'")
-	}
-	linkInfo := infos[1]
-	// Test for correct version in case the API-output changes
-	if !strings.HasPrefix(linkInfo, "Virtual Lan/Link Info:") {
-		return xerrors.New("didn't recognize output of 'expinfo'")
-	}
-	linkLines := strings.Split(linkInfo, "\n")
-	if len(linkLines) < 5 {
-		return xerrors.New("didn't recognice output of 'expinfo'")
-	}
-	nodes := linkLines[3:]
-
-	d.Phys = []string{}
-	d.Virt = []string{}
-	names := make(map[string]bool)
-
-	for i, node := range nodes {
-		if i%2 == 1 {
-			continue
-		}
-		matches := strings.Fields(node)
-		if len(matches) != 6 {
-			return xerrors.New("expinfo-output seems to have changed")
-		}
-		// Convert client-0:0 to client-0
-		name := strings.Split(matches[1], ":")[0]
-		ip := matches[2]
-
-		fullName := fmt.Sprintf("%s.%s.%s.isi.deterlab.net", name, d.Experiment, d.Project)
-		log.Lvl3("Discovered", fullName, "on ip", ip)
-
-		if _, exists := names[fullName]; !exists {
-			d.Phys = append(d.Phys, fullName)
-			d.Virt = append(d.Virt, ip)
-			names[fullName] = true
-		}
-	}
-
-	log.Lvl2("Physical:", d.Phys)
-	log.Lvl2("Internal:", d.Virt)
 	return nil
 }
 
@@ -442,11 +498,11 @@ func (d *Deterlab) loadAndCheckDeterlabVars() {
 		deter.ProxyAddress, deter.MonitorAddress
 
 	if err != nil {
-		log.Lvl1("Couldn't read config-file - asking for default values")
+		log.LLvl1("Couldn't read config-file - asking for default values")
 	}
 
 	if d.Host == "" {
-		d.Host = readString("Please enter the hostname of deterlab", "users.deterlab.net")
+		d.Host = readString("Please enter the hostname of deterlab", "csi-lab-ssh.engr.uconn.edu")
 	}
 
 	login, err := user.Current()
@@ -464,7 +520,7 @@ func (d *Deterlab) loadAndCheckDeterlabVars() {
 	}
 
 	if d.MonitorAddress == "" {
-		d.MonitorAddress = readString("Please enter the Monitor address (where clients will connect)", "users.isi.deterlab.net")
+		d.MonitorAddress = readString("Please enter the Monitor address (where clients will connect)", "csi-lab-ssh.engr.uconn.edu:22")
 	}
 	if d.ProxyAddress == "" {
 		d.ProxyAddress = readString("Please enter the proxy redirection address", "localhost")
@@ -492,3 +548,58 @@ const simulConnectionsConf = `
 * soft nofile 128000
 * hard nofile 128000
 `
+
+// Write the hosts.txt file automatically
+// from project name and number of servers
+// func (d *Deterlab) createHosts() {
+// 	// Query deterlab's API for servers
+// 	log.LLvl1("Querying Deterlab's API to retrieve server names and addresses")
+// 	command := fmt.Sprintf("/usr/testbed/bin/expinfo -l -e %s,%s", d.Project, d.Experiment)
+// 	apiReply, err := SSHRun(d.Login, d.Host, command)
+// 	if err != nil {
+// 		log.Fatal("Error while querying Deterlab:", err)
+// 	}
+// 	log.ErrFatal(d.parseHosts(string(apiReply)))
+// }
+// func (d *Deterlab) parseHosts(str string) error {
+// 	// Get the link-information, which is the second block in `expinfo`-output
+// 	infos := strings.Split(str, "\n\n")
+// 	if len(infos) < 2 {
+// 		return xerrors.New("didn't recognize output of 'expinfo'")
+// 	}
+// 	linkInfo := infos[1]
+// 	// Test for correct version in case the API-output changes
+// 	if !strings.HasPrefix(linkInfo, "Virtual Lan/Link Info:") {
+// 		return xerrors.New("didn't recognize output of 'expinfo'")
+// 	}
+// 	linkLines := strings.Split(linkInfo, "\n")
+// 	if len(linkLines) < 5 {
+// 		return xerrors.New("didn't recognice output of 'expinfo'")
+// 	}
+// 	nodes := linkLines[3:]
+// 	d.Phys = []string{}
+// 	d.Virt = []string{}
+// 	names := make(map[string]bool)
+// 	for i, node := range nodes {
+// 		if i%2 == 1 {
+// 			continue
+// 		}
+// 		matches := strings.Fields(node)
+// 		if len(matches) != 6 {
+// 			return xerrors.New("expinfo-output seems to have changed")
+// 		}
+// 		// Convert client-0:0 to client-0
+// 		name := strings.Split(matches[1], ":")[0]
+// 		ip := matches[2]
+// 		fullName := fmt.Sprintf("%s.%s.%s.isi.deterlab.net", name, d.Experiment, d.Project)
+// 		log.LLvl1("Discovered", fullName, "on ip", ip)
+// 		if _, exists := names[fullName]; !exists {
+// 			d.Phys = append(d.Phys, fullName)
+// 			d.Virt = append(d.Virt, ip)
+// 			names[fullName] = true
+// 		}
+// 	}
+// 	log.LLvl1("Physical:", d.Phys)
+// 	log.LLvl1("Internal:", d.Virt)
+// 	return nil
+// }

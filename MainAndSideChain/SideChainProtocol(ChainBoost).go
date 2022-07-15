@@ -51,7 +51,7 @@ func (bz *ChainBoost) DispatchProtocol() error {
 		// --------------------------------------------------------
 		case sig := <-bz.BlsCosi.FinalSignature:
 			if err := BLSCoSi.BdnSignature(sig).Verify(bz.BlsCosi.Suite, bz.BlsCosi.Msg, bz.BlsCosi.SubTrees[0].Roster.Publics()); err == nil {
-				log.LLvl2("final result SC:", bz.Name(), " : ", bz.BlsCosi.BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
+				log.Lvl4("final result SC:", bz.Name(), " : ", bz.BlsCosi.BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
 				err := bz.SendTo(bz.Root(), &LtRSideChainNewRound{
 					NewRound:      true,
 					SCRoundNumber: bz.SCRoundNumber,
@@ -79,12 +79,14 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	bz.CommitteeNodesTreeNodeID = msg.CommitteeNodesTreeNodeID
 	var CommitteeNodesServerIdentity []*network.ServerIdentity
 	if bz.SCRoundNumber == 1 {
+		//todoraha: a out of range bug happens sometimes!
+		log.LLvl1("raha: debug:", bz.CommitteeWindow-1)
 		for _, a := range bz.CommitteeNodesTreeNodeID[0 : bz.CommitteeWindow-1] {
 			CommitteeNodesServerIdentity = append(CommitteeNodesServerIdentity, bz.Tree().Search(a).ServerIdentity)
 		}
-		log.Lvl1("final result SC: ", bz.Name(), " is running next side chain's epoch with new committee")
+		log.LLvl1("final result SC: ", bz.Name(), " is running next side chain's epoch with new committee")
 		for i, a := range bz.CommitteeNodesTreeNodeID {
-			log.Lvl2("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
+			log.LLvl1("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
 		}
 	} else {
 		//log.LLvl1(len(bz.CommitteeNodesTreeNodeID))
@@ -92,9 +94,9 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 		for _, a := range bz.CommitteeNodesTreeNodeID[len(bz.CommitteeNodesTreeNodeID)-(bz.CommitteeWindow):] {
 			CommitteeNodesServerIdentity = append(CommitteeNodesServerIdentity, bz.Tree().Search(a).ServerIdentity)
 		}
-		log.Lvl1("final result SC: ", bz.Name(), " is running next side chain's epoch with the same committee members:")
+		log.LLvl1("final result SC: ", bz.Name(), " is running next side chain's epoch with the same committee members:")
 		for i, a := range CommitteeNodesServerIdentity {
-			log.Lvl2("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", a.Address)
+			log.LLvl1("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", a.Address)
 		}
 	}
 	if bz.SCRoundNumber == 0 {
@@ -110,7 +112,7 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	bz.BlsCosi.SubTrees, err = BLSCoSi.NewBlsProtocolTree(onet.NewTree(committeeRoster, &x), bz.NbrSubTrees)
 	if err == nil {
 		if bz.SCRoundNumber == 1 {
-			log.Lvl1("final result SC: Next bls cosi tree is: ", bz.BlsCosi.SubTrees[0].Roster.List,
+			log.LLvl1("final result SC: Next bls cosi tree is: ", bz.BlsCosi.SubTrees[0].Roster.List,
 				" with ", bz.Name(), " as Root \n running BlsCosi round number", bz.SCRoundNumber)
 		}
 	} else {
@@ -159,9 +161,9 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 		bz.NextSideChainLeader = bz.CommitteeNodesTreeNodeID[0]
 		// changing side chain's committee to last miners in the main chain's window of miners
 		bz.CommitteeNodesTreeNodeID = bz.CommitteeNodesTreeNodeID[0:bz.CommitteeWindow]
-		log.Lvl1("final result SC: BlsCosi: next side chain's epoch leader is: ", bz.Tree().Search(bz.NextSideChainLeader).Name())
+		log.LLvl1("final result SC: BlsCosi: next side chain's epoch leader is: ", bz.Tree().Search(bz.NextSideChainLeader).Name())
 		for i, a := range bz.CommitteeNodesTreeNodeID {
-			log.Lvl2("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
+			log.LLvl1("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
 		}
 		bz.wg.Done()
 	} else {
@@ -185,7 +187,7 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 		blocksize:                blocksize,
 	})
 	if err != nil {
-		log.Lvl2(bz.Name(), "can't send new side chain round msg to", bz.Tree().Search(bz.NextSideChainLeader).Name())
+		log.LLvl1(bz.Name(), "can't send new side chain round msg to", bz.Tree().Search(bz.NextSideChainLeader).Name())
 		return xerrors.New("can't send new side chain round msg to next leader" + err.Error())
 	}
 	return nil
@@ -216,7 +218,7 @@ func (bz *ChainBoost) StartSideChainProtocol() {
 		CommitteeNodesTreeNodeID: bz.CommitteeNodesTreeNodeID,
 	})
 	if err != nil {
-		log.Lvl2(bz.Name(), "can't send new side chain round msg to", bz.Tree().Search(bz.NextSideChainLeader).Name())
+		log.LLvl1(bz.Name(), "can't send new side chain round msg to", bz.Tree().Search(bz.NextSideChainLeader).Name())
 		panic("can't send new side chain round msg to the first leader")
 	}
 	//
@@ -243,16 +245,16 @@ func (bz *ChainBoost) UpdateSideChainCommittee(msg MainChainNewLeaderChan) {
 		}
 	}
 	if t != len(bz.CommitteeNodesTreeNodeID) {
-		log.Lvl1("final result SC:", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), " is already in the committee")
+		log.LLvl1("final result SC:", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), " is already in the committee")
 		for i, a := range bz.CommitteeNodesTreeNodeID {
-			log.Lvl2("final result SC: BlsCosi committee queue: ", i, ":", bz.Tree().Search(a).Name())
+			log.LLvl1("final result SC: BlsCosi committee queue: ", i, ":", bz.Tree().Search(a).Name())
 		}
 	} else {
 		NextSideChainLeaderTreeNodeID := msg.LeaderTreeNodeID
 		bz.CommitteeNodesTreeNodeID = append([]onet.TreeNodeID{NextSideChainLeaderTreeNodeID}, bz.CommitteeNodesTreeNodeID...)
-		log.Lvl1("final result SC:", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), "is added to side chain for the next epoch's committee")
+		log.LLvl1("final result SC:", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), "is added to side chain for the next epoch's committee")
 		for i, a := range bz.CommitteeNodesTreeNodeID {
-			log.Lvl2("final result SC: BlsCosi committee queue: ", i, ":", bz.Tree().Search(a).Name())
+			log.LLvl1("final result SC: BlsCosi committee queue: ", i, ":", bz.Tree().Search(a).Name())
 		}
 	}
 }
@@ -283,14 +285,14 @@ func (bz *ChainBoost) UpdateSideChainCommittee(msg MainChainNewLeaderChan) {
 	// ---
 	bz.BlsCosi.SubTrees, err = protocol.NewBlsProtocolTree(onet.NewTree(committeeRoster, &x), bz.NbrSubTrees)
 	if err == nil {
-		log.Lvl1("final result: BlsCosi: First bls cosi tree is: ", bz.BlsCosi.SubTrees[0].Roster.List,
+		log.LLvl1("final result: BlsCosi: First bls cosi tree is: ", bz.BlsCosi.SubTrees[0].Roster.List,
 			" with ", bz.BlsCosi.Name(), " as Root starting BlsCosi")
 	} else {
-		log.Lvl1("Raha: error: ", err)
+		log.LLvl1("Raha: error: ", err)
 	}
 	// ------------------------------------------
 	err = bz.BlsCosi.Start() // first leader in side chain is this node
 	if err != nil {
-		log.Lvl1(bz.Info(), "couldn't start side chain")
+		log.LLvl1(bz.Info(), "couldn't start side chain")
 	}
 } */

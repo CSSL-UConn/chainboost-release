@@ -66,7 +66,7 @@ func TestGenLocalHost(t *testing.T) {
 	hosts := l.genLocalHosts(2)
 	defer l.CloseAll()
 
-	log.Lvl4("Hosts are:", hosts[0].Address(), hosts[1].Address())
+	//log.LLvl3("Hosts are:", hosts[0].Address(), hosts[1].Address())
 	if hosts[0].Address() == hosts[1].Address() {
 		t.Fatal("Both addresses are equal")
 	}
@@ -159,13 +159,13 @@ type SimpleMessage2 struct{}
 type RawMessage struct{}
 
 func (c *clientService) SimpleMessage(msg *SimpleMessage) (network.Message, error) {
-	log.Lvl3("Got request", msg)
+	//log.LLvl3("Got request", msg)
 	c.cl.SendProtobuf(c.ServerIdentity(), &SimpleMessage2{}, nil)
 	return nil, nil
 }
 
 func (c *clientService) SimpleMessage2(msg *SimpleMessage2) (network.Message, error) {
-	log.Lvl3("Got request", msg)
+	//log.LLvl3("Got request", msg)
 	return nil, nil
 }
 

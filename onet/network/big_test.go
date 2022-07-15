@@ -74,10 +74,10 @@ func TestTCPHugeConnections(t *testing.T) {
 					t.Fatal("CRC is wrong")
 				}
 				// And send it back
-				log.Lvl3(h, "sends it back")
+				//log.LLvl3(h, "sends it back")
 
 				go func(h int) {
-					log.Lvl3(h, "Sending back")
+					//log.LLvl3(h, "Sending back")
 					sentLen, err := c.Send(&big)
 					if err != nil {
 						t.Fatal(h, "couldn't send message:", err)
@@ -86,7 +86,7 @@ func TestTCPHugeConnections(t *testing.T) {
 						t.Fatal("sentLen is zero")
 					}
 				}(h)
-				log.Lvl3(h, "done sending messages")
+				//log.LLvl3(h, "done sending messages")
 			})
 			if err != nil {
 				t.Fatal("Couldn't receive msg:", err)
@@ -113,7 +113,7 @@ func TestTCPHugeConnections(t *testing.T) {
 			c := conns[i][j]
 			go func(conn Conn, i, j int) {
 				defer wg.Done()
-				log.Lvl3("Sending from", i, "to", j, ":")
+				//log.LLvl3("Sending from", i, "to", j, ":")
 				sentLen, err := conn.Send(&big)
 				if err != nil {
 					t.Fatal(i, j, "Couldn't send:", err)
@@ -132,7 +132,7 @@ func TestTCPHugeConnections(t *testing.T) {
 				if bc.Pcrc != 25 {
 					t.Fatal(i, j, "CRC is wrong")
 				}
-				log.Lvl3(i, j, "Done")
+				//log.LLvl3(i, j, "Done")
 			}(c, i, j)
 		}
 	}
