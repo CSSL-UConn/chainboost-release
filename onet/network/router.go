@@ -452,14 +452,14 @@ func (r *Router) handleConn(remote *ServerIdentity, c Conn) {
 
 		if err != nil {
 			if xerrors.Is(err, ErrTimeout) {
-				//log.LLvl3("%s drops %s connection: timeout", r.ServerIdentity.Address, remote.Address)
+				log.Lvl1("%s drops %s connection: timeout", r.ServerIdentity.Address, remote.Address)
 				r.triggerConnectionErrorHandlers(remote)
 				return
 			}
 
 			if xerrors.Is(err, ErrClosed) || xerrors.Is(err, ErrEOF) {
 				// Connection got closed.
-				//log.LLvl3("%s drops %s connection: closed", r.ServerIdentity.Address, remote.Address)
+				log.Lvl1("%s drops %s connection: closed", r.ServerIdentity.Address, remote.Address)
 				r.triggerConnectionErrorHandlers(remote)
 				return
 			}

@@ -68,6 +68,15 @@ type HelloChan struct {
 	HelloChainBoost
 }
 
+// joined is sent to root to let the root node that this node is joined to the simulation
+type JoinedWGChan struct {
+	*onet.TreeNode
+	Joined
+}
+type Joined struct {
+	IsJoined bool
+}
+
 //  ChainBoost is the main struct that has required parameters for running both protocols ------------
 type ChainBoost struct {
 	// the node we are represented-in
@@ -95,6 +104,11 @@ type ChainBoost struct {
 	MCPLock sync.Mutex
 	// for root node to wait for a specific number of side chain rounds before proceeding to next main chain's round
 	wg sync.WaitGroup
+	// for root node to wait for all nodes join the simulation (the point that start listening on dispatch on hellochainboost function)
+	// before starting the ptocols
+	JoinedWG sync.WaitGroup
+	// channel that all nodes can use to announce root node they have joined the simulation
+	JoinedWGChan chan JoinedWGChan
 	// channel to notify leader elected
 	LeaderProposeChan chan bool
 	MCRoundNumber     int
@@ -154,12 +168,13 @@ type ChainBoost struct {
 ------------------------------------------------------------------------ */
 func (bz *ChainBoost) Start() error {
 	bz.BCLock.Lock()
-	log.LLvl1("Updating the mainchainbc file with created nodes' information")
+	log.Lvl1("Updating the mainchainbc file with created nodes' information")
 	bz.finalMainChainBCInitialization()
 	bz.BCLock.Unlock()
 	bz.BlsCosiStarted = true
 	// ------------------------------------------------------------------------------
-	// config params are sent from the leader to the other nodes in helloBasedDfs function
+	// config params are sent from the leader to the other nodes after
+	// creating the protocols and the tree out of all nodes in simulate function in runsimul.go
 	bz.helloChainBoost()
 
 	//------- testing message sending ------
@@ -183,14 +198,22 @@ func (bz *ChainBoost) Dispatch() error {
 	// return nil
 	running := true
 	var err error
-	log.LLvl1("starting Dispatch in chainboost simulation on:", bz.TreeNode().Name())
+	numberOfJoinedNodes := len(bz.Tree().List())
+
+	log.Lvlf5("starting Dispatch in chainboost simulation on:", bz.TreeNode().Name())
 	for running {
 		select {
 		// -----------------------------------------------------------------------------
 		// ******* ALL nodes recieve this message to join the protocol and get the config values set
 		// -----------------------------------------------------------------------------
+		case msg := <-bz.JoinedWGChan:
+			if bz.IsRoot() && msg.IsJoined {
+				numberOfJoinedNodes--
+				log.Lvl1("1 node has joined the simulation:", numberOfJoinedNodes, "is remained.")
+				bz.JoinedWG.Done()
+			}
 		case msg := <-bz.HelloChan:
-			log.LLvl1(bz.TreeNode().Name(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
+			log.Lvlf4(bz.TreeNode().Name(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
 			bz.PercentageTxPay = msg.PercentageTxPay
 			bz.MCRoundDuration = msg.MCRoundDuration
 			bz.MainChainBlockSize = msg.MainChainBlockSize
@@ -218,7 +241,7 @@ func (bz *ChainBoost) Dispatch() error {
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.MainChainNewRoundChan:
 			bz.MCRoundNumber = bz.MCRoundNumber + 1
-			log.LLvl1(bz.Name(), " round number ", bz.MCRoundNumber, " started at ", time.Now().Format(time.RFC3339))
+			log.Lvlf3(bz.Name(), " round number ", bz.MCRoundNumber, " started at ", time.Now().Format(time.RFC3339))
 			go bz.MainChainCheckLeadership(msg)
 		// -----------------------------------------------------------------------------
 		// *** MC *** just the ROOT NODE (blockchain layer one) recieve this msg
@@ -256,7 +279,7 @@ func (bz *ChainBoost) Dispatch() error {
 
 func (bz *ChainBoost) helloChainBoost() {
 	if !bz.IsRoot() {
-		log.LLvl1(bz.TreeNode().Name(), " joined to the protocol")
+		log.Lvl3(bz.TreeNode().Name(), " joined to the protocol")
 		// all nodes get here and start to listen for blscosi protocol messages
 		go func() {
 			err := bz.DispatchProtocol()
@@ -265,9 +288,15 @@ func (bz *ChainBoost) helloChainBoost() {
 				panic("protocol dispatch calling error")
 			}
 		}()
+		err := bz.SendTo(bz.Root(), &Joined{IsJoined: true})
+		if err != nil {
+			log.Lvl1(bz.Name(), "can't announce joining to root node")
+		}
 	}
 
 	if bz.IsRoot() && bz.BlsCosiStarted {
+		bz.JoinedWG.Wait()
+		log.Lvl1("All nodes joined  the simulation, Done waiting, The Root node will start the protocol(s)")
 		if bz.SimState == 2 {
 			go bz.StartMainChainProtocol()
 			go bz.StartSideChainProtocol()

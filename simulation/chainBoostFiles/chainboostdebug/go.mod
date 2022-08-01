@@ -1,5 +1,5 @@
-module root/go/chainboostdebug
+module root/chainboostdebug
 
 go 1.13
 
-require github.com/360EntSecGroup-Skylar/excelize v1.4.1 // indirect
+require github.com/xuri/excelize/v2 v2.6.0

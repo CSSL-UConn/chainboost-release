@@ -2,7 +2,9 @@ package MainAndSideChain
 
 import (
 	"math"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
@@ -20,12 +22,17 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 	// var rows *excelize.Rows
 	// var row []string
 
-	f, err := excelize.OpenFile("/root/remote/sidechainbc.xlsx")
+	pwd, _ := os.Getwd()
+	log.Lvl4("opening sidechainbc in:", pwd)
+	//bcDirectory := strings.Split(pwd, "/build")
+	bcDirectory := strings.Split(pwd, "/build")[0] + "/sidechainbc.xlsx"
+	log.Lvl4("opening sidechainbc in:", bcDirectory)
+	//f, err := excelize.OpenFile("/root/remote/sidechainbc.xlsx")
+	f, err := excelize.OpenFile(bcDirectory)
 	if err != nil {
-		log.LLvl1("Raha: ", err)
-		panic(err)
+		log.Fatal("problem while opening sidechainbc: " + err.Error())
 	} else {
-		log.LLvl1(bz.Name(), "sc bc successfully opened")
+		log.LLvl1("sidechainbc Successfully opened")
 	}
 
 	// --------------------------------------------------------------------
@@ -126,7 +133,9 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 		}
 	}
 	// --------------------------------------------------------------------
-	err = f.SaveAs("/root/remote/sidechainbc.xlsx")
+	//err = f.SaveAs("/root/remote/sidechainbc.xlsx")
+	err = f.SaveAs(bcDirectory)
+
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
@@ -147,13 +156,19 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 	var rows *excelize.Rows
 	var row []string
 
-	f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
+	pwd, _ := os.Getwd()
+	log.Lvl4("opening mainchainbc in:", pwd)
+	//bcDirectory := strings.Split(pwd, "/build")
+	bcDirectory := strings.Split(pwd, "/build")[0] + "/mainchainbc.xlsx"
+	log.Lvl4("opening mainchainbc in:", bcDirectory)
+	//f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
+	f, err := excelize.OpenFile(bcDirectory)
 	if err != nil {
-		log.LLvl1("Raha: ", err)
-		panic(err)
+		log.Fatal("problem while opening mainchainbc: " + err.Error())
 	} else {
-		log.LLvl1("mc bc successfully opened")
+		log.LLvl1("mainchainbc Successfully opened")
 	}
+
 	// -------------------------------------------------------------------------------
 	// each round, adding one row in power table based on the information in market matching sheet,
 	// assuming that servers are honest and have honestly publish por for their actice (not expired) ServAgrs,
@@ -249,13 +264,20 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 		}
 	}
 	// -------------------------------------------------------------------------------
-	f1, err := excelize.OpenFile("/root/remote/sidechainbc.xlsx")
+
+	pwd, _ = os.Getwd()
+	log.Lvl4("opening sidechainbc in:", pwd)
+	//bcDirectory := strings.Split(pwd, "/build")
+	bcDirectory = strings.Split(pwd, "/build")[0] + "/sidechainbc.xlsx"
+	log.Lvl4("opening sidechainbc in:", bcDirectory)
+	//f, err := excelize.OpenFile("/root/remote/sidechainbc.xlsx")
+	f1, err := excelize.OpenFile(bcDirectory)
 	if err != nil {
-		log.LLvl1("Raha: ", err)
-		panic(err)
+		log.Fatal("problem while opening sidechainbc: " + err.Error())
 	} else {
-		log.LLvl1("mc bc successfully opened")
+		log.LLvl1("sidechainbc Successfully opened")
 	}
+
 	// ----------------------------------------------------------------------
 	// ------ add 5 types of transactions into transaction queue sheet -----
 	// ----------------------------------------------------------------------
@@ -309,7 +331,9 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 		}
 	}
 	// -------------------------------------------------------------------------------
-	err = f1.SaveAs("/root/remote/sidechainbc.xlsx")
+	//err = f1.SaveAs("/root/remote/sidechainbc.xlsx")
+	err = f1.SaveAs(bcDirectory)
+
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
@@ -329,12 +353,17 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 	// --- reset
 	bz.SideChainQueueWait = 0
 
-	f, err := excelize.OpenFile("/root/remote/sidechainbc.xlsx")
+	pwd, _ := os.Getwd()
+	log.Lvl4("opening sidechainbc in:", pwd)
+	//bcDirectory := strings.Split(pwd, "/build")
+	bcDirectory := strings.Split(pwd, "/build")[0] + "/sidechainbc.xlsx"
+	log.Lvl4("opening sidechainbc in:", bcDirectory)
+	//f, err := excelize.OpenFile("/root/remote/sidechainbc.xlsx")
+	f, err := excelize.OpenFile(bcDirectory)
 	if err != nil {
-		log.LLvl1("Raha: ", err)
-		panic(err)
+		log.Fatal("problem while opening sidechainbc: " + err.Error())
 	} else {
-		log.LLvl1("opening side chain bc")
+		log.LLvl1("sidechainbc Successfully opened")
 	}
 
 	var accumulatedTxSize, txsize int
@@ -375,7 +404,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 			roundNumber, _ = strconv.Atoi(colCell)
 		}
 	}
-	log.LLvl5("side chain's current round number:", roundNumber)
+	log.Lvlf5("side chain's current round number:", roundNumber)
 	CurrentRow := strconv.Itoa(rowNumber - 1) // last row that has some columns filled
 	//NextRow := strconv.Itoa(rowNumber + 1)
 	// ---
@@ -453,7 +482,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 					f.RemoveRow("FirstQueue", i)
 				} else {
 					blockIsFull = true
-					log.LLvl1("final result SC: side chain block is full! ")
+					log.Lvl1("final result SC: side chain block is full! ")
 					f.SetCellValue("RoundTable", axisQueue1IsFull, 1)
 					break
 				}
@@ -476,7 +505,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 		f.SetCellValue("RoundTable", axisAveFirstQueueWait, 0)
 	}
 
-	log.LLvl1("final result SC: \n", " this round's block size: ", accumulatedTxSize+MetaBlockSizeMinusTransactions)
+	log.Lvl1("final result SC: \n", " this round's block size: ", accumulatedTxSize+MetaBlockSizeMinusTransactions)
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
@@ -485,7 +514,9 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 	//log.LLvl1("In total in round number ", bz.SCRoundNumber+10000 * epochNumber,
 	//	"\n number of all types of submitted txs is: ", TotalNumTxsInFirstQueue)
 	// ----
-	err = f.SaveAs("/root/remote/sidechainbc.xlsx")
+	//err = f.SaveAs("/root/remote/sidechainbc.xlsx")
+	err = f.SaveAs(bcDirectory)
+
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
@@ -503,13 +534,20 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 // --------------------------------------------------------------------------------
 func updateSideChainBCOverallEvaluation(CurrentRow string, SCRoundNumber int) {
 	var err error
-	f, err := excelize.OpenFile("/root/remote/sidechainbc.xlsx")
+
+	pwd, _ := os.Getwd()
+	log.Lvl4("opening sidechainbc in:", pwd)
+	//bcDirectory := strings.Split(pwd, "/build")
+	bcDirectory := strings.Split(pwd, "/build")[0] + "/sidechainbc.xlsx"
+	log.Lvl4("opening sidechainbc in:", bcDirectory)
+	//f, err := excelize.OpenFile("/root/remote/sidechainbc.xlsx")
+	f, err := excelize.OpenFile(bcDirectory)
 	if err != nil {
-		log.LLvl1("Raha: ", err)
-		panic(err)
+		log.Fatal("problem while opening sidechainbc: " + err.Error())
 	} else {
-		log.LLvl1("sc bc successfully opened")
+		log.LLvl1("sidechainbc Successfully opened")
 	}
+
 	// ---- overall results
 	axisRound := "A" + CurrentRow
 	axisBCSize := "B" + CurrentRow
@@ -548,7 +586,9 @@ func updateSideChainBCOverallEvaluation(CurrentRow string, SCRoundNumber int) {
 	}
 
 	// ----
-	err = f.SaveAs("/root/remote/sidechainbc.xlsx")
+	//err = f.SaveAs("/root/remote/sidechainbc.xlsx")
+	err = f.SaveAs(bcDirectory)
+
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)

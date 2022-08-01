@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
@@ -27,8 +28,11 @@ func (bz *ChainBoost) finalMainChainBCInitialization() {
 
 	pwd, _ := os.Getwd()
 	log.Lvl4("opening bc in:", pwd)
-
-	f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
+	//bcDirectory := strings.Split(pwd, "/build")
+	bcDirectory := strings.Split(pwd, "/build")[0] + "/mainchainbc.xlsx"
+	log.Lvl4("opening bc in:", bcDirectory)
+	//f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
+	f, err := excelize.OpenFile(bcDirectory)
 	if err != nil {
 		log.Fatal("problem while opening bc: " + err.Error())
 	} else {
@@ -88,7 +92,9 @@ func (bz *ChainBoost) finalMainChainBCInitialization() {
 		panic(err)
 	}
 
-	err = f.SaveAs("/root/remote/mainchainbc.xlsx")
+	//err = f.SaveAs("/root/remote/mainchainbc.xlsx")
+	err = f.SaveAs(bcDirectory)
+
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
@@ -135,7 +141,16 @@ func (bz *ChainBoost) readBCAndSendtoOthers() {
 /* ----------------------------------------------------------------------*/
 func (bz *ChainBoost) readBCPowersAndSeed() (powers map[string]uint64, seed string) {
 	minerspowers := make(map[string]uint64)
-	f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
+
+	pwd, _ := os.Getwd()
+	log.Lvl4("opening bc in:", pwd)
+	//bcDirectory := strings.Split(pwd, "/build")
+	bcDirectory := strings.Split(pwd, "/build")[0] + "/mainchainbc.xlsx"
+	log.Lvl4("opening bc in:", bcDirectory)
+
+	//f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
+	f, err := excelize.OpenFile(bcDirectory)
+
 	if err != nil {
 		log.LLvl1("Raha: ", err)
 		panic(err)
@@ -249,10 +264,15 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 	var seed string
 	rowNumber := 0
 
-	f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
+	pwd, _ := os.Getwd()
+	log.Lvl4("opening bc in:", pwd)
+	//bcDirectory := strings.Split(pwd, "/build")
+	bcDirectory := strings.Split(pwd, "/build")[0] + "/mainchainbc.xlsx"
+	log.Lvl4("opening bc in:", bcDirectory)
+	//f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
+	f, err := excelize.OpenFile(bcDirectory)
 	if err != nil {
-		log.LLvl1("Raha: ", err)
-		panic(err)
+		log.Fatal("problem while opening bc: " + err.Error())
 	} else {
 		log.LLvl1("bc Successfully opened")
 	}
@@ -335,7 +355,7 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 		panic(err)
 	}
 
-	//each round, adding one row in power table based on the information in market matching sheet,
+	// each round, adding one row in power table based on the information in market matching sheet,
 	// assuming that servers are honest  and have honestly publish por for their actice (not expired)
 	// ServAgrs,for each storage server and each of their active contracst,
 	// add the stored file size to their current power
@@ -417,7 +437,9 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 		panic(err)
 	}
 	// ----
-	err = f.SaveAs("/root/remote/mainchainbc.xlsx")
+	//err = f.SaveAs("/root/remote/mainchainbc.xlsx")
+	err = f.SaveAs(bcDirectory)
+
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
@@ -434,13 +456,19 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 	var rows *excelize.Rows
 	var row []string
 
-	f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
+	pwd, _ := os.Getwd()
+	log.Lvl4("opening bc in:", pwd)
+	//bcDirectory := strings.Split(pwd, "/build")
+	bcDirectory := strings.Split(pwd, "/build")[0] + "/mainchainbc.xlsx"
+	log.Lvl4("opening bc in:", bcDirectory)
+	//f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
+	f, err := excelize.OpenFile(bcDirectory)
 	if err != nil {
-		log.LLvl1("Raha: ", err)
-		panic(err)
+		log.Fatal("problem while opening bc: " + err.Error())
 	} else {
 		log.LLvl1("bc Successfully opened")
 	}
+
 	// -------------------------------------------------------------------------------
 	// each round, adding one row in power table based on the information in market matching sheet,
 	// assuming that servers are honest and have honestly publish por for their actice (not expired) ServAgrs,
@@ -695,7 +723,9 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 	// -------------------------------------------------------------------------------
 
 	// ---
-	err = f.SaveAs("/root/remote/mainchainbc.xlsx")
+	//err = f.SaveAs("/root/remote/mainchainbc.xlsx")
+	err = f.SaveAs(bcDirectory)
+
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
@@ -706,7 +736,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 }
 
 /* ----------------------------------------------------------------------
-    updateBC: this is a connection between first layer of blockchain - ROOT NODE - on the second layer - xlsx file -
+    updateBC: this is a connection between first layer of blockchain - ROOT NODE - and the second layer - xlsx file -
 ------------------------------------------------------------------------ */
 func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	var err error
@@ -715,16 +745,22 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	bz.FirstQueueWait = 0
 	bz.SecondQueueWait = 0
 
-	f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
+	pwd, _ := os.Getwd()
+	log.Lvl4("opening bc in:", pwd)
+	//bcDirectory := strings.Split(pwd, "/build")
+	bcDirectory := strings.Split(pwd, "/build")[0] + "/mainchainbc.xlsx"
+	log.Lvl4("opening bc in:", bcDirectory)
+	//f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
+	f, err := excelize.OpenFile(bcDirectory)
 	if err != nil {
-		log.LLvl1("Raha: ", err)
-		panic(err)
+		log.Fatal("problem while opening bc: " + err.Error())
 	} else {
 		log.LLvl1("bc Successfully opened")
 	}
 
 	var accumulatedTxSize, txsize int
 	blockIsFull := false
+	regPayshareIsFull := false
 	NextRow := strconv.Itoa(bz.MCRoundNumber + 2)
 
 	axisNumRegPayTx := "E" + NextRow
@@ -734,8 +770,8 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 
 	numberOfRegPayTx := 0
 	BlockSizeMinusTransactions := blockchain.BlockMeasurement()
-	//var TakeTime time.Time
-
+	var takenTime time.Time
+	regPayShare := (bz.PercentageTxPay) * (bz.MainChainBlockSize - BlockSizeMinusTransactions)
 	/* -----------------------------------------------------------------------------
 		-- take regular payment transactions from sheet: SecondQueue
 	----------------------------------------------------------------------------- */
@@ -743,8 +779,8 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
-
-	for i := len(rows); i > 1 && !blockIsFull; i-- {
+	takenTime = time.Now()
+	for i := len(rows); i > 1 && !regPayshareIsFull; i-- {
 		row := rows[i-1][:]
 		/* each transaction has the following column stored on the Transaction Queue Payment sheet:
 		0) size
@@ -756,7 +792,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 				if txsize, err = strconv.Atoi(colCell); err != nil {
 					log.LLvl1("Panic Raised:\n\n")
 					panic(err)
-				} else if 100*(accumulatedTxSize+txsize) <= (bz.PercentageTxPay)*(bz.MainChainBlockSize-BlockSizeMinusTransactions) {
+				} else if 100*(accumulatedTxSize+txsize) <= regPayShare {
 					accumulatedTxSize = accumulatedTxSize + txsize
 					numberOfRegPayTx++
 					/* transaction name in transaction queue payment is just "TxPayment"
@@ -779,24 +815,21 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 					}
 
 					f.RemoveRow("SecondQueue", i)
+					log.Lvl1("1 reg pay tx is taken.")
 				} else {
-					blockIsFull = true
-					log.LLvl1("final result MC: regular  payment share is full!")
+					regPayshareIsFull = true
+					log.Lvl1("final result MC: regular  payment share is full!")
 					f.SetCellValue("RoundTable", axisQueue2IsFull, 1)
 					break
 				}
 			}
 		}
 	}
+	log.Lvl1("reg pay tx.s taking took:", time.Since(takenTime).String())
 	allocatedBlockSizeForRegPayTx := accumulatedTxSize
 	/* -----------------------------------------------------------------------------
 		 -- take 5 types of transactions from sheet: FirstQueue
 	----------------------------------------------------------------------------- */
-
-	if rows, err = f.GetRows("FirstQueue"); err != nil {
-		log.LLvl1("Panic Raised:\n\n")
-		panic(err)
-	}
 	// reset variables
 	txsize = 0
 	blockIsFull = false
@@ -822,6 +855,12 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	axisAveFirstQueueWait := "L" + NextRow
 	axisAveSecondQueueWait := "M" + NextRow
 
+	takenTime = time.Now()
+
+	if rows, err = f.GetRows("FirstQueue"); err != nil {
+		log.LLvl1("Panic Raised:\n\n")
+		panic(err)
+	}
 	for i := len(rows); i > 1 && !blockIsFull; i-- {
 		row := rows[i-1][:]
 		/* each transaction has the following column stored on the transaction queue sheet:
@@ -903,15 +942,17 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 					}
 					// remove transaction from the top of the queue (older ones)
 					f.RemoveRow("FirstQueue", i)
+					log.Lvl1("1 other tx is taken.")
 				} else {
 					blockIsFull = true
-					log.LLvl1("final result MC: block is full! ")
+					log.Lvl1("final result MC: block is full! ")
 					f.SetCellValue("RoundTable", axisQueue1IsFull, 1)
 					break
 				}
 			}
 		}
 	}
+	log.Lvl1("other tx.s taking took:", time.Since(takenTime).String())
 
 	f.SetCellValue("RoundTable", axisNumPoRTx, numberOfPoRTx)
 	f.SetCellValue("RoundTable", axisNumStoragePayTx, numberOfStoragePayTx)
@@ -941,7 +982,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		f.SetCellValue("RoundTable", axisAveSecondQueueWait, float64(bz.SecondQueueWait)/float64(numberOfRegPayTx))
 	}
 
-	log.LLvl1("final result MC: \n", allocatedBlockSizeForRegPayTx,
+	log.Lvl1("final result MC: \n", allocatedBlockSizeForRegPayTx,
 		" for regular payment txs,\n and ", accumulatedTxSize, " for other types of txs")
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
@@ -1016,7 +1057,9 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		log.LLvl1(err)
 	}
 	// ----
-	err = f.SaveAs("/root/remote/mainchainbc.xlsx")
+	//err = f.SaveAs("/root/remote/mainchainbc.xlsx")
+	err = f.SaveAs(bcDirectory)
+
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
@@ -1027,13 +1070,20 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 }
 
 func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
-	f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
+
+	pwd, _ := os.Getwd()
+	log.Lvl4("opening bc in:", pwd)
+	//bcDirectory := strings.Split(pwd, "/build")
+	bcDirectory := strings.Split(pwd, "/build")[0] + "/mainchainbc.xlsx"
+	log.Lvl4("opening bc in:", bcDirectory)
+	//f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
+	f, err := excelize.OpenFile(bcDirectory)
 	if err != nil {
-		log.LLvl1("Raha: ", err)
-		panic(err)
+		log.Fatal("problem while opening bc: " + err.Error())
 	} else {
 		log.LLvl1("bc Successfully opened")
 	}
+
 	// ----------------------------------------------------------------------
 	// ------ adding sync transaction into transaction queue sheet -----
 	// ----------------------------------------------------------------------
@@ -1093,7 +1143,9 @@ func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
 	}
 
 	// -------------------------------------------------------------------------------
-	err = f.SaveAs("/root/remote/mainchainbc.xlsx")
+	//err = f.SaveAs("/root/remote/mainchainbc.xlsx")
+	err = f.SaveAs(bcDirectory)
+
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)

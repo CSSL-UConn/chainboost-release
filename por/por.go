@@ -17,6 +17,20 @@ The information that a miner will need to verify a por:
 The round seed should generate identical query (with the one that storage server got its challenged)
 */
 
+/*
+At the 128-bit security level, a nearly optimal choice for
+a pairing-friendly curve is a Barreto-Naehrig (BN) curve over
+a prime field of size roughly 256 bits with embedding degree k= 12.
+bits of security: 128 bits / 124 bits.
+
+the bn256 implemented in kyber is from paper "ew software speed
+records for cryptographic pairings" which gives us:
+- BN curve over a prime field Fp of size 257 bits.
+- The prime p is given by the BN polynomial parametrization p = 36u4+36u3+24u2+6u+1,
+where u = v3 and v = 1966080.
+The curve equation is E : y2 = x3 +17.
+*/
+
 //ToDoRaha: Random Query and File tag should be generated and parsed from the current round's seed as a source of randomness
 package por
 
@@ -41,27 +55,20 @@ import (
 //const S = 1 // number of sectors in eac block (sys. par.)
 // Each sector is one element of Zp, and there are s sectors per block.
 // If the processed file is b bits long,then there are n = [b/s lg p] blocks.
-const n = 1000 // number of blocks
-const l = 5    //size of query set (i<n)
+
+// number of blocks
+const n = 1000
+
+//size of query set (i<n)
+const l = 5
+
 var Suite = pairing.NewSuiteBn256()
 
-/*
-At the 128-bit security level, a nearly optimal choice for
-a pairing-friendly curve is a Barreto-Naehrig (BN) curve over
-a prime field of size roughly 256 bits with embedding degree k= 12.
-bits of security: 128 bits / 124 bits.
-the bn256 implemented in kyber is from paper "ew software speed
-records for cryptographic pairings" which gives us:
-- BN curve over a prime field Fp of size 257 bits.
-- The prime p is given by the BN polynomial parametrization p = 36u4+36u3+24u2+6u+1,
-where u = v3 and v = 1966080.
-The curve equation is E : y2 = x3 +17.
-*/
-
+//
 var TauSize int
 
 //-----------------------------------------------------------------------
-//sigma_i is an element of G
+// sigma_i is an element of G
 // the length of sigma array is equal to n value
 // (number of blocks in each file which is a function of file size and sector number)
 // this is the storage overhead!
@@ -184,6 +191,11 @@ func RandomizedFileStoring(sk PrivateKey, initialfile initialFile, SectorNumber 
 	sg, _ := schnorr.Sign(onet.Suite, sk.ssk, Tau0.Bytes())
 	Tau := append(Tau0.Bytes(), sg...)
 	TauSize = len(Tau)
+
+	// we need a BLS hash here. I brought this from kyber.bls.sign
+	// todoraha: check this to be the right method
+	// https://github.com/dedis/kyber/blob/b627bb323bc7380f4c09d803208a18b7624e1ec1/sign/bls/bls.go
+
 	// ----  isn't there another way?---------------------------------------
 	type hashablePoint interface {
 		Hash([]byte) kyber.Point

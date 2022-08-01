@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"os"
 
 	//"os"
 	"os/exec"
@@ -15,7 +16,8 @@ import (
 
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
-	"github.com/chainBoostScale/ChainBoost/simulation/monitor"
+
+	//"github.com/chainBoostScale/ChainBoost/simulation/monitor"
 	"github.com/chainBoostScale/ChainBoost/simulation/platform"
 )
 
@@ -56,7 +58,7 @@ func init() {
 // - copy the simulation-files to the server
 // - start the simulation
 func main() {
-	log.LLvl1("Raha: ./users file is called on th server and is running the main function in users.go file")
+	log.LLvl1("Raha: ./users file is called on the gateway server and is running the users exe, hence the main function in users.go file")
 	// //raha: why?!!! commented next line
 	// //log.Fatal("De")
 
@@ -72,56 +74,68 @@ func main() {
 	// 	os.Exit(-1)
 	// }
 	//hosts := "csi-lab-ssh.engr.uconn.edu"
-	hosts := "csi-lab-ssh.engr.uconn.edu"
+	//todoraha: change this list based on list of VMs or make it dynamic later
+	hosts := "192.168.3.220:22 192.168.3.221:22 192.168.3.222:22 192.168.3.223:22"
 	hostsTrimmed := strings.TrimSpace(re.ReplaceAllString(string(hosts), " "))
 	hostlist := strings.Split(hostsTrimmed, " ")
 
 	doneHosts := make([]bool, len(hostlist))
-	log.LLvl1("Found the following hosts:", hostlist, " to clean!")
-	if kill {
-		log.LLvl1("Cleaning up", len(hostlist), "hosts.")
-	}
+	log.LLvl1("Found the following hosts:", hostlist)
+	//raha: commented
+	//if kill {
+	log.LLvl1("Cleaning up", len(hostlist), "hosts.")
+	//}
 
 	for i, h := range hostlist {
 		wg.Add(1)
 		go func(i int, h string) {
 			defer wg.Done()
-			if kill {
-				log.LLvl1("Cleaning up host", h, ".")
-				runSSH(h, "sudo killall -9 simul scp 2>/dev/null >/dev/null")
-				time.Sleep(1 * time.Second)
-				runSSH(h, "sudo killall -9 simul 2>/dev/null >/dev/null")
-				time.Sleep(1 * time.Second)
-				// Also kill all other process that start with "./" and are probably
-				// locally started processes
-				runSSH(h, "sudo pkill -9 -f '\\./'")
-				time.Sleep(1 * time.Second)
-				if log.DebugVisible() > 3 {
-					log.LLvl1("Cleaning report:")
-					_ = platform.SSHRunStdout("", h, "ps aux")
-				}
+			//raha: commented
+			//if kill {
+			log.LLvl1("Cleaning up host", h, ".")
+			//raha commented
+			//runSSH(h, "sudo killall -9 simul scp 2>/dev/null >/dev/null")
+			s := strings.Split(h, ":")
+			hs := s[0]
+			runSSH(hs, "kill -9 -1")
+			time.Sleep(1 * time.Second)
+			// raha commented
+			//runSSH(h, "sudo killall -9 simul 2>/dev/null >/dev/null")
+			//time.Sleep(1 * time.Second)
+			// Also kill all other process that start with "./" and are probably
+			// locally started processes
+			//runSSH(h, "sudo pkill -9 -f '\\./'")
+			//time.Sleep(1 * time.Second)
+			// if log.DebugVisible() > 3 {
+			// 	log.LLvl1("Cleaning report:")
+			// 	_ = platform.SSHRunStdout("", h, "ps aux")
+			// }
+			//log.Lvl1("Host", h, "cleaned up")
+			//} else {
+			//log.LLvl1("Raha: skipping: Setting the file-limit higher")
+			log.LLvl1("Setting the file-limit higher on", h)
+			// Copy configuration file to make higher file-limits
+			err := platform.SSHRunStdout("root", h, "sudo cp remote/simul.conf /etc/security/limits.d")
+			if err != nil {
+				log.Fatal("Couldn't copy limit-file:", err)
 			} else {
-				log.LLvl1("Raha: skipping: Setting the file-limit higher")
-				// log.LLvl1("Setting the file-limit higher on", h)
-				// // Copy configuration file to make higher file-limits
-				// err := platform.SSHRunStdout("", h, "sudo cp remote/simul.conf /etc/security/limits.d")
-				// if err != nil {
-				// 	log.Fatal("Couldn't copy limit-file:", err)
-				// }
+				log.Lvl1("successfully copied limit-file")
 			}
+			//}
 			doneHosts[i] = true
-			log.LLvl1("Host", h, "cleaned up")
 		}(i, h)
 	}
 	cleanupChannel := make(chan string)
 	go func() {
 		wg.Wait()
 		log.LLvl1("Done waiting")
+		//todoraha: we will need it once I figure out how to use flags!
 		cleanupChannel <- "done"
 	}()
 	select {
 	case msg := <-cleanupChannel:
 		log.LLvl1("Received msg from cleanupChannel", msg)
+	//todoraha now: is it a good wait out time for us?
 	case <-time.After(time.Second * 20000):
 		for i, m := range doneHosts {
 			if !m {
@@ -141,14 +155,14 @@ func main() {
 	// be forwarded to the real sink
 	//-------------------
 	//todoraha: what proxy and monitor port are doing?
-	addr, port := deter.ProxyAddress, uint16(deter.MonitorPort+1)
-	log.LLvl1("Launching proxy redirecting to", addr, ":", port)
-	prox, err := monitor.NewProxy(uint16(deter.MonitorPort), addr, port)
-	if err != nil {
-		log.Fatal("Couldn't start proxy:", err)
-	}
-	go prox.Run()
-	log.LLvl1("starting", deter.Servers, "cothorities for a total of", deter.Hosts, "processes.")
+	// addr, port := deter.ProxyAddress, uint16(deter.MonitorPort+1)
+	// log.LLvl1("Launching proxy redirecting to", addr, ":", port)
+	// prox, err := monitor.NewProxy(uint16(deter.MonitorPort), addr, port)
+	// if err != nil {
+	// 	log.Fatal("Couldn't start proxy:", err)
+	// }
+	// go prox.Run()
+	// log.LLvl1("starting", deter.Servers, "cothorities for a total of", deter.Hosts, "processes.")
 	//-------------------
 	killing := false
 	for i, phys := range deter.Phys {
@@ -174,7 +188,8 @@ func main() {
 				" -simul=" + deter.Simulation +
 				" -monitor=" + monitorAddr +
 				//todoraha
-				" -debug=" + strconv.Itoa(log.DebugVisible()) +
+				//" -debug=" + strconv.Itoa(log.DebugVisible()) +
+				" -debug= 5" +
 				" -suite=" + suite
 			log.LLvl1("Args is", args)
 
@@ -194,15 +209,22 @@ func main() {
 			log.LLvl1("Done copying to VMs")
 			// -----------------------------------------
 			log.LLvl1("Raha: running ./simul with non-empty simul tag!!!")
-			err = platform.SSHRunStdout("root", phys, "cd remote; sudo ./simul "+
-				args)
+			err = platform.SSHRunStdout("root", phys, "cd remote; sudo ./simul "+args)
 			// -----------------------------------------
 			if err != nil && !killing {
 				log.LLvl1("Error starting simul - will kill all others:", err, internal)
 				killing = true
-				err := exec.Command("kill", "-9", "-1").Run()
+				cmd := exec.Command("kill", "-9", "-1")
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				var err error
+				go func() {
+					err = cmd.Run()
+				}()
 				if err != nil {
-					log.Fatal("Couldn't killall ssh:", err)
+					log.Fatal("Raha: CMD: Couldn't killall listening threads:", err)
+				} else {
+					log.LLvl1("Raha: all listener on VM", internal, "are killed.")
 				}
 			}
 			log.LLvl1("Finished with simul on", internal)
@@ -211,7 +233,7 @@ func main() {
 	// wait for the servers to finish before stopping
 	wg.Wait()
 	//totdoraha: commented
-	prox.Stop()
+	//prox.Stop()
 }
 
 // Reads in the deterlab-config and drops out if there is an error
@@ -233,7 +255,10 @@ func deterFromConfig(name ...string) *platform.Deterlab {
 
 // Runs a command on the remote host and outputs an eventual error if debug level >= 3
 func runSSH(host, cmd string) {
-	if _, err := platform.SSHRun("", host, cmd); err != nil {
-		//log.LLvl3("Host %s got error %s while running [%s]", host, err.Error(), cmd)
+	if _, err := platform.SSHRun("root", host, cmd); err != nil {
+		// ToDoRaha: it gives error but let's wait for repeating the open listener err
+		log.Lvl1("Host", host, "got error", err.Error(), "while running", cmd)
+	} else {
+		log.Lvl1("Host", host, "cleaned up")
 	}
 }

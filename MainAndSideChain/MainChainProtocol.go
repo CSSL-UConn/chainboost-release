@@ -119,7 +119,7 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 		bz.readBCAndSendtoOthers()
 		log.LLvl1("new round is announced")
 	} else {
-		log.LLvl1("this round already has a leader!")
+		log.Lvlf3("this round already has a leader!")
 	}
 }
 
@@ -155,12 +155,12 @@ func (bz *ChainBoost) MainChainCheckLeadership(msg MainChainNewRoundChan) error 
 		// panic(err)
 		return xerrors.New("problem created after recieving msg from MainChainNewRoundChan:   " + err.Error())
 	}
-	log.LLvl1("VRF output:", vrfoutputInt64)
+	log.Lvlf5("VRF output:", vrfoutputInt64)
 	//-----------
 	//the criteria for selecting potential leaders
 	if vrfoutputInt64 < msg.Power {
 		// -----------
-		log.LLvl1(bz.Name(), "I may be elected for round number ", bz.MCRoundNumber, "with power: ", msg.Power, "and vrf output of:", vrfoutputInt64)
+		log.Lvlf3(bz.Name(), "I may be elected for round number ", bz.MCRoundNumber, "with power: ", msg.Power, "and vrf output of:", vrfoutputInt64)
 		bz.SendTo(bz.Root(), &NewLeader{LeaderTreeNodeID: bz.TreeNode().ID, MCRoundNumber: bz.MCRoundNumber})
 	}
 	return nil

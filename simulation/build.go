@@ -24,7 +24,8 @@ import (
 // todoRaha: change it to ghada lab later
 // Configuration-variables
 //var platformDst = "localhost"
-var platformDst = "deterlab"
+//var platformDst = "deterlab"
+var platformDst string
 var nobuild = false
 var clean = true
 var build = "simul"
@@ -50,7 +51,8 @@ func init() {
 }
 
 // Reads in the platform that we want to use and prepares for the tests
-func startBuild() {
+func startBuild(customPlatform string) {
+	platformDst = customPlatform
 	flag.Parse()
 	deployP := platform.NewPlatform(platformDst)
 	if deployP == nil {

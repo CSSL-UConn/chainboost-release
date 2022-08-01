@@ -31,7 +31,8 @@ func init() {
 	log.ErrFatal(err)
 }
 
-const DefaultTimeout = 10 * time.Second
+//todoraha:  changed default time out from 10 sec
+const DefaultTimeout = 100 * time.Second
 const DefaultSubleaderFailures = 2
 
 // VerificationFn is called on every node. Where msg is the message that is
@@ -313,7 +314,7 @@ func (p *BlsCosi) startSubProtocol(tree *onet.Tree) (*SubBlsCosi, error) {
 		return nil, err
 	}
 	// Raha: I want to see the list of nodes!
-	log.LLvl1("Raha: Tree used in SubBlsCosi is", tree.Roster.List)
+	log.Lvl3("Raha: Tree used in SubBlsCosi is", tree.Roster.List)
 	return cosiSubProtocol, err
 }
 

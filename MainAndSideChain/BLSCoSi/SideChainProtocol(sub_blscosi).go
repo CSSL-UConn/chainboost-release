@@ -120,7 +120,7 @@ func (p *SubBlsCosi) HandleStop(stop StructStop) error {
 		log.Warn(p.ServerIdentity(), "received a Stop from node", stop.ServerIdentity,
 			"that is not the root, ignored")
 	}
-	log.LLvl1("Received stop", p.ServerIdentity())
+	log.Lvl5("Received stop", p.ServerIdentity())
 
 	return p.Shutdown()
 }

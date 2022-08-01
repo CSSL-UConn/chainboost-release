@@ -126,8 +126,8 @@ func (d *Localhost) Configure(pc *Config) {
 	if d.Simulation == "" {
 		log.Fatal("No simulation defined in simulation")
 	}
-	//log.LLvl3(fmt.Sprintf("Localhost dirs: RunDir %s", d.runDir))
-	//log.LLvl3("Localhost configured ...")
+	//log.Lvlf3(fmt.Sprintf("Localhost dirs: RunDir %s", d.runDir))
+	//log.Lvlf3("Localhost configured ...")
 }
 
 // Build does nothing, as we're using our own binary, no need to build
@@ -137,7 +137,7 @@ func (d *Localhost) Build(build string, arg ...string) error {
 
 // Cleanup kills all running cothority-binaryes
 func (d *Localhost) Cleanup() error {
-	//log.LLvl3("Nothing to clean up")
+	//log.Lvlf3("Nothing to clean up")
 	return nil
 }
 
@@ -182,7 +182,7 @@ func (d *Localhost) Deploy(rc *RunConfig) error {
 	}
 
 	d.servers, _ = strconv.Atoi(rc.Get("servers"))
-	//log.LLvl3("Localhost: Deploying and writing config-files for", d.servers, "servers")
+	//log.Lvlf3("Localhost: Deploying and writing config-files for", d.servers, "servers")
 	sim, err := onet.NewSimulation(d.Simulation, string(rc.Toml()))
 	if err != nil {
 		return xerrors.Errorf("simulation error: %v", err)
@@ -199,7 +199,7 @@ func (d *Localhost) Deploy(rc *RunConfig) error {
 	if err := d.sc.Save(d.runDir); err != nil {
 		return xerrors.Errorf("saving folder: %v", err)
 	}
-	//log.LLvl3("Localhost: Done deploying")
+	//log.Lvlf3("Localhost: Done deploying")
 	d.wgRun.Add(d.servers)
 	// add one to the channel length to indicate it's done
 	d.errChan = make(chan error, d.servers+1)
@@ -214,20 +214,20 @@ func (d *Localhost) Start(args ...string) error {
 	if err := os.Chdir(d.runDir); err != nil {
 		return err
 	}
-	//log.LLvl3("Localhost: chdir into", d.runDir)
+	//log.Lvlf3("Localhost: chdir into", d.runDir)
 	//ex := d.runDir + "/" + d.Simulation
 	d.running = true
-	//log.LLvl3("Starting", d.servers, "applications of", ex)
+	//log.Lvlf3("Starting", d.servers, "applications of", ex)
 	time.Sleep(100 * time.Millisecond)
 
-	//log.LLvl3("If PreScript is defined, running the appropriate script_before_the simulation")
+	//log.Lvlf3("If PreScript is defined, running the appropriate script_before_the simulation")
 	if d.PreScript != "" {
 		out, err := exec.Command("sh", "-c", "./"+d.PreScript+" localhost").CombinedOutput()
 		outStr := strings.TrimRight(string(out), "\n")
 		if err != nil {
 			return xerrors.Errorf("error deploying PreScript: " + err.Error() + " " + outStr)
 		}
-		////log.LLvl3(outStr)
+		////log.Lvlf3(outStr)
 	}
 	// raha: commented. can we uste monitor  or not?!
 	// err := monitor.ConnectSink("localhost:" + strconv.Itoa(d.monitorPort))
@@ -236,11 +236,11 @@ func (d *Localhost) Start(args ...string) error {
 	// }
 
 	for index := 0; index < d.servers; index++ {
-		////log.LLvl3("Starting server number: ", index)
+		////log.Lvlf3("Starting server number: ", index)
 		host := "127.0.0." + strconv.Itoa(index+1)
 		go func(i int, h string) {
-			//log.LLvl3("Localhost: will start host", i, h)
-			//log.LLvl3("raha: adding some other system-wide configurations")
+			//log.Lvlf3("Localhost: will start host", i, h)
+			//log.Lvlf3("raha: adding some other system-wide configurations")
 
 			err := Simulate(d.PercentageTxPay, d.MCRoundDuration, d.MainChainBlockSize, d.SideChainBlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.SimulationRounds,
 				d.SimulationSeed, d.NbrSubTrees, d.Threshold, d.SCRoundDuration, d.CommitteeWindow, d.MCRoundPerEpoch, d.SimState,
@@ -250,7 +250,7 @@ func (d *Localhost) Start(args ...string) error {
 				d.errChan <- err
 			}
 			d.wgRun.Done()
-			//log.LLvl3("host (index", i, ")", h, "done")
+			//log.Lvlf3("host (index", i, ")", h, "done")
 		}(index, host)
 	}
 	return nil
@@ -260,7 +260,7 @@ func (d *Localhost) Start(args ...string) error {
 func (d *Localhost) Wait() error {
 	d.Lock()
 	defer d.Unlock()
-	//log.LLvl3("Waiting for processes to finish")
+	//log.Lvlf3("Waiting for processes to finish")
 
 	wait, err := time.ParseDuration(d.RunWait)
 	if err != nil || wait == 0 {
@@ -270,7 +270,7 @@ func (d *Localhost) Wait() error {
 
 	go func() {
 		d.wgRun.Wait()
-		//log.LLvl3("WaitGroup is 0")
+		//log.Lvlf3("WaitGroup is 0")
 		// write to error channel when done:
 		d.errChan <- nil
 	}()
@@ -278,7 +278,7 @@ func (d *Localhost) Wait() error {
 	// if one of the hosts fails, stop waiting and return the error:
 	select {
 	case e := <-d.errChan:
-		//log.LLvl3("Finished waiting for hosts:", e)
+		//log.Lvlf3("Finished waiting for hosts:", e)
 		if e != nil {
 			if err := d.Cleanup(); err != nil {
 				log.Errorf("Couldn't cleanup running instances: %+v", err)
@@ -286,7 +286,7 @@ func (d *Localhost) Wait() error {
 			err = xerrors.Errorf("localhost error: %v", err)
 		}
 	case <-time.After(wait):
-		//log.LLvl3("Quitting after waiting", wait)
+		//log.Lvlf3("Quitting after waiting", wait)
 	}
 
 	errCleanup := os.Chdir(d.localDir)
@@ -295,6 +295,6 @@ func (d *Localhost) Wait() error {
 	}
 	// raha: commented
 	//monitor.EndAndCleanup()
-	//log.LLvl3("Processes finished")
+	//log.Lvlf3("Processes finished")
 	return err
 }

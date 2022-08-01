@@ -39,7 +39,6 @@ func init() {
 	flag.StringVar(&simul, "simul", "", "start simulating that protocol")
 	flag.StringVar(&monitorAddress, "monitor", "", "remote monitor")
 	flag.StringVar(&suite, "suite", "Ed25519", "cryptographic suite to use")
-
 }
 
 // Start has to be called by the main-file that imports the protocol and/or the
@@ -49,21 +48,45 @@ func init() {
 // simulation to run.
 // If given an array of rcs, each element will be interpreted as a .toml-file
 // to load and simulate.
-func Start(rcs ...string) {
+func StartLocalSimulation(rcs ...string) {
 	wd, err := os.Getwd()
 	if len(rcs) > 0 {
 		log.ErrFatal(err)
 		for _, rc := range rcs {
 			log.LLvl1("Running toml-file:", rc)
 			os.Args = []string{os.Args[0], rc}
-			Start()
+			StartLocalSimulation()
 		}
 		return
 	}
 	flag.Parse()
 	if simul == "" {
 		log.LLvl1("Raha: simul is empty")
-		startBuild()
+		startBuild("localhost")
+	} else {
+		log.LLvl1("Raha: simul is not empty!")
+		err := platform.Simulate(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			suite, serverAddress, simul, monitorAddress)
+		log.ErrFatal(err)
+	}
+	os.Chdir(wd)
+}
+
+func StartDistributedSimulation(rcs ...string) {
+	wd, err := os.Getwd()
+	if len(rcs) > 0 {
+		log.ErrFatal(err)
+		for _, rc := range rcs {
+			log.LLvl1("Running toml-file:", rc)
+			os.Args = []string{os.Args[0], rc}
+			StartDistributedSimulation()
+		}
+		return
+	}
+	flag.Parse()
+	if simul == "" {
+		log.LLvl1("Raha: simul is empty")
+		startBuild("deterlab")
 	} else {
 		log.LLvl1("Raha: simul is not empty!")
 		err := platform.Simulate(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

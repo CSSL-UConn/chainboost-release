@@ -544,7 +544,7 @@ func SCBlockMeasurement() (SummeryBlockSizeMinusTransactions int, MetaBlockSizeM
 		SCBlockHeader:                 x10,
 		SCSummeryBlockTransactionList: x12,
 	}
-	log.LLvl5(x13)
+	log.Lvl5(x13)
 	SummeryBlockSizeMinusTransactions = len(BlockSizeSample) + //x13: SCSummeryBlock
 		len(SCRoundNumberSample) + /*len(nextroundseed) + len(VrfProof) +*/ len(hashSample) + len(timeSample) + len(hashSample) +
 		len(Version) + len(samplePublicKey) + //x10: SCBlockHeader

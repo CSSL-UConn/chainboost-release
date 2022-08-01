@@ -231,7 +231,7 @@ func (l *LocalTest) GenRosterFromHost(servers ...*Server) *Roster {
 	for i := range servers {
 		entities = append(entities, servers[i].ServerIdentity)
 	}
-	//log.LLvl3("wait!")
+	//log.Lvlf3("wait!")
 	// Raha: this is where the roster is ctrated for BLSCoSi module
 	return NewRoster(entities)
 }
@@ -273,7 +273,7 @@ func (l *LocalTest) WaitDone(t time.Duration) error {
 
 // CloseAll closes all the servers.
 func (l *LocalTest) CloseAll() {
-	//log.LLvl3("Stopping all")
+	//log.Lvlf3("Stopping all")
 	if err := l.WaitDone(time.Second); err != nil {
 		log.Warn("Some things still running:", err)
 	}
@@ -326,7 +326,7 @@ func (l *LocalTest) CloseAll() {
 	}
 
 	for _, node := range l.Nodes {
-		//log.LLvl3("Closing node", node)
+		//log.Lvlf3("Closing node", node)
 		err := node.closeDispatch()
 		if err != nil {
 			log.Error("Error while closing dispatcher:", err)
@@ -338,7 +338,7 @@ func (l *LocalTest) CloseAll() {
 	for _, srv := range l.Servers {
 		sd.Add(1)
 		go func(server *Server) {
-			//log.LLvl3("Closing server", server.ServerIdentity.Address)
+			//log.Lvlf3("Closing server", server.ServerIdentity.Address)
 			err := server.Close()
 			if err != nil {
 				log.Error("Closing server", server.ServerIdentity.Address,
@@ -346,7 +346,7 @@ func (l *LocalTest) CloseAll() {
 			}
 
 			for server.Listening() {
-				//log.LLvl3("Sleeping while waiting to close...")
+				//log.Lvlf3("Sleeping while waiting to close...")
 				time.Sleep(10 * time.Millisecond)
 			}
 			sd.Done()
@@ -525,7 +525,7 @@ func newTCPServer(s network.Suite, port int, path string, wantsTLS bool) *Server
 			l.Close()
 			break
 		}
-		//log.LLvl3("Found closed port:", addrWS)
+		//log.Lvlf3("Found closed port:", addrWS)
 	}
 	scheme := "http"
 	if wantsTLS {
