@@ -94,6 +94,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		// wait to be sure the goroutine started
 		<-ready
 		//log.LLvl1("raha: does it get here for the buggy one?!")
+		log.Lvl5("Raha: simul flag value is:", simul)
 		sim, err := onet.NewSimulation(simul, sc.Config)
 		if err != nil {
 			return xerrors.New("couldn't create new simulation: " + err.Error())
@@ -257,6 +258,10 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		// ----
 		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) will start the protocol but will wait until all nodes join it")
 		ChainBoostProtocol.JoinedWG.Add(len(rootSC.Tree.Roster.List))
+		// to keep a telorance for nodes who can't join
+		for z := 1; z <= int(len(rootSC.Tree.Roster.List)/100); z++ {
+			ChainBoostProtocol.JoinedWG.Done()
+		}
 		// root node is already joined :)
 		ChainBoostProtocol.JoinedWG.Done()
 		// ----
@@ -280,26 +285,26 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 					SimState:        ChainBoostProtocol.SimState,
 				})
 				if err != nil {
-					log.Lvl1(ChainBoostProtocol.Info(), "couldn't send hello to child", child.Name())
+					log.Lvl1(ChainBoostProtocol.Info(), "couldn't send hello to child", child.Name(), "with err:", err)
 				}
 			}
 		}
 
 		// Raha: it is just the root node
 		go func() {
-			log.Lvl1(rootSC.Server.ServerIdentity.Address, ": (root node) is calling dispatch")
+			log.Lvl1(rootSC.Server.ServerIdentity.Address, ": root node is calling dispatch")
 			err := ChainBoostProtocol.DispatchProtocol()
 			if err != nil {
 				log.Lvl1("protocol dispatch calling error: " + err.Error())
 			}
 		}()
-		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) is Starting the ChainBoost Protocol")
+		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": root node is Starting the ChainBoost Protocol")
 		ChainBoostProtocol.Start()
 		// raha: bls cosi  start function is called inside ChainBoost protocol
 		// ---------------------------------------------------------------
 		// when it finishes  is when:
 		// ToDoRaha
-		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) Back to simulation module: ChainBoostProtocol.Start() returned. waiting for DoneChainBoost channel .......... ")
+		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) Back to simulation module: ChainBoostProtocol.Start() returned. waiting for DoneChainBoost channel")
 		px := <-ChainBoostProtocol.DoneChainBoost
 		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) Back to simulation module. Final result is", px)
 		//wait = false
@@ -338,6 +343,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		if err != nil {
 			return xerrors.New("couldn't create closeAll protocol: " + err.Error())
 		}
+		log.Lvl1("Raha: Starting the close all protocol to close all nodes by  the returned root node at the end of simulation")
 		piC.Start()
 	}
 	//todoraha:
@@ -401,7 +407,6 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 		LeaderProposeChan:  make(chan bool, 1),
 		MCRoundNumber:      1,
 		SCRoundNumber:      1,
-		HasLeader:          false,
 		FirstQueueWait:     0,
 		SideChainQueueWait: 0,
 		FirstSCQueueWait:   0,
@@ -428,9 +433,10 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 		log.Error("Couldn't register channel:    ", err)
 	}
 
-	//ToDoRaha: what exactly does this sentence do?! do we need it?!
+	//ToDoRaha: what exactly does this sentence do?! do we need it?! nil array vs empty array?
 	bz.CommitteeNodesTreeNodeID = make([]onet.TreeNodeID, bz.CommitteeWindow)
 	bz.SummPoRTxs = make(map[int]int)
+
 	// bls key pair for each node for VRF
 	// ToDoraha: temp commented
 	// do I need to bring this seed from config? check what it is used for?

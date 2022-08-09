@@ -7,21 +7,21 @@ import (
 	simul "github.com/chainBoostScale/ChainBoost/simulation"
 )
 
-func TestLocalSimulation(t *testing.T) {
+func TestSimulation(t *testing.T) {
 	log.SetDebugVisible(1)
 	//log.SetUseColors(true)
 	//log.SetPadding(true)
-	simul.StartLocalSimulation("ChainBoost.toml")
+	simul.Start("ChainBoost.toml")
 	//simul.Start("deter.toml")
 }
 
-func TestDistributedSimulation(t *testing.T) {
-	log.SetDebugVisible(1)
-	//log.SetUseColors(true)
-	//log.SetPadding(true)
-	simul.StartDistributedSimulation("ChainBoost.toml")
-	//simul.Start("deter.toml")
-}
+// func TestDistributedSimulation(t *testing.T) {
+// 	log.SetDebugVisible(3)
+// 	//log.SetUseColors(true)
+// 	//log.SetPadding(true)
+// 	simul.StartDistributedSimulation("ChainBoost.toml")
+// 	//simul.Start("deter.toml")
+// }
 
 /*
 func TestSimulation_IndividualStats(t *testing.T) {

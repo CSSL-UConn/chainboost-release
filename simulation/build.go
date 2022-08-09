@@ -22,10 +22,7 @@ import (
 )
 
 // todoRaha: change it to ghada lab later
-// Configuration-variables
-//var platformDst = "localhost"
-//var platformDst = "deterlab"
-var platformDst string
+
 var nobuild = false
 var clean = true
 var build = "simul"
@@ -36,8 +33,12 @@ var race = false
 var runWait = 180 * time.Second
 var experimentWait = 0 * time.Second
 
+// ??
+//var platformDst = "localhost"
+//var platformDst = "deterlab"
+var platformDst string //= "deterlab"
+
 func init() {
-	flag.StringVar(&platformDst, "platform", platformDst, "platform to deploy to [localhost,mininet,deterlab]")
 	flag.BoolVar(&nobuild, "nobuild", false, "Don't rebuild all helpers")
 	flag.BoolVar(&clean, "clean", false, "Only clean platform")
 	flag.StringVar(&build, "build", "", "List of packages to build")
@@ -47,13 +48,16 @@ func init() {
 	flag.StringVar(&simRange, "range", simRange, "Range of simulations to run. 0: or 3:4 or :4")
 	flag.DurationVar(&runWait, "runwait", runWait, "How long to wait for each simulation to finish - overwrites .toml-value")
 	flag.DurationVar(&experimentWait, "experimentwait", experimentWait, "How long to wait for the whole experiment to finish")
+	flag.StringVar(&platformDst, "platform", platformDst, "platform to deploy to [localhost,mininet,deterlab]")
 	log.RegisterFlags()
 }
 
 // Reads in the platform that we want to use and prepares for the tests
-func startBuild(customPlatform string) {
-	platformDst = customPlatform
+//func startBuild(customPlatform string) {
+func startBuild() {
+	//platformDst = customPlatform
 	flag.Parse()
+	log.Lvl1("platformDst is:", platformDst)
 	deployP := platform.NewPlatform(platformDst)
 	if deployP == nil {
 		log.Fatal("Platform not recognized.", platformDst)

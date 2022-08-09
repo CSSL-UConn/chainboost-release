@@ -30,24 +30,36 @@ func (bz *ChainBoost) finalMainChainBCInitialization() {
 	log.Lvl4("opening bc in:", pwd)
 	//bcDirectory := strings.Split(pwd, "/build")
 	bcDirectory := strings.Split(pwd, "/build")[0] + "/mainchainbc.xlsx"
-	log.Lvl4("opening bc in:", bcDirectory)
+	log.Lvl1("opening bc in:", bcDirectory)
 	//f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
 	f, err := excelize.OpenFile(bcDirectory)
 	if err != nil {
 		log.Fatal("problem while opening bc: " + err.Error())
 	} else {
-		log.LLvl1("bc Successfully opened")
+		log.Lvl2("bc Successfully opened")
 	}
 
 	// --- market matching sheet
 	index := f.GetSheetIndex("MarketMatching")
 	f.SetActiveSheet(index)
-	// fill nodes info
+	// fill nodes info and get the maximum file size
+	maxFileSize := 0
 	for i := 2; i <= len(NodeInfoRow)+1; i++ {
 		ServAgrRow := strconv.Itoa(i)
 		t := "A" + ServAgrRow
 		err = f.SetCellValue("MarketMatching", t, NodeInfoRow[i-2])
+		k := "B" + ServAgrRow
+		if fileSize, err := f.GetCellValue("MarketMatching", k); err != nil {
+			log.LLvl1("Panic Raised:\n\n")
+			panic(err)
+		} else if intFileSize, err := strconv.Atoi(fileSize); err != nil {
+			log.LLvl1("Panic Raised:\n\n")
+			panic(err)
+		} else if maxFileSize < intFileSize {
+			maxFileSize = intFileSize
+		}
 	}
+	bz.maxFileSize = maxFileSize
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
@@ -59,17 +71,23 @@ func (bz *ChainBoost) finalMainChainBCInitialization() {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
-	r := rand.New(rand.NewSource(int64(bz.SimulationSeed)))
+
+	//r := rand.New(rand.NewSource(int64(bz.SimulationSeed)))
 	for i := 2; i <= len(NodeInfoRow)+1; i++ { // len(NodeInfoRow) has been used to reflecvt number of nodes 1<->1 number of agreemenets
 		ServAgrRow := strconv.Itoa(i)
 		cell := "E" + ServAgrRow
-		RandomServerAgreementID := r.Int()
-		String_RandomServerAgreementID := strconv.Itoa(RandomServerAgreementID)
-		if err = f.SetCellValue("MarketMatching", cell, String_RandomServerAgreementID); err != nil {
+		//todoraha: use unique increasing int values for each server 1<->1 contract instead of random values
+		// this int value as serverAgreementID points to the rownumber in marketmatching sheet that maintain the corresponding contract's info
+
+		//RandomServerAgreementID := r.Int()
+		//String_RandomServerAgreementID := strconv.Itoa(serverAgreementID)
+		serverAgreementID := i
+		String_serverAgreementID := strconv.Itoa(serverAgreementID)
+		if err = f.SetCellValue("MarketMatching", cell, String_serverAgreementID); err != nil {
 			log.LLvl1("Panic Raised:\n\n")
 			panic(err)
 		} else {
-			bz.SummPoRTxs[RandomServerAgreementID] = 0
+			bz.SummPoRTxs[serverAgreementID] = 0
 		}
 	}
 	// --- sum of server agreement file size
@@ -99,7 +117,7 @@ func (bz *ChainBoost) finalMainChainBCInitialization() {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("bc Successfully closed")
+		log.Lvl2("bc Successfully closed")
 	}
 }
 
@@ -114,34 +132,45 @@ func (bz *ChainBoost) readBCAndSendtoOthers() {
 		bz.DoneChainBoost <- true
 		return
 	}
+	takenTime := time.Now()
 	powers, seed := bz.readBCPowersAndSeed()
-	log.LLvl1("incerasing mc round number:", bz.MCRoundNumber)
 	bz.MCRoundNumber = bz.MCRoundNumber + 1
-	bz.HasLeader = false
+	// ---
+	//bz.MCLeader.MCPLock.Lock()
+	bz.MCLeader.HasLeader = false
+	//bz.MCLeader.MCPLock.Unlock()
+	// ---
 	for _, b := range bz.Tree().List() {
-		//log.LLvl1(b.Name())
 		power, found := powers[b.ServerIdentity.String()]
 		//log.LLvl1(power, "::", found)
 		if found && !b.IsRoot() {
-			//go func() {
 			err := bz.SendTo(b, &NewRound{
-				Seed:  seed,
-				Power: power})
+				Seed:        seed,
+				Power:       power,
+				MaxFileSize: bz.maxFileSize,
+			})
 			if err != nil {
 				log.LLvl1(bz.Info(), "can't send new round msg to", b.Name())
 				panic(err)
+			} else {
+				log.Lvl5(b.Name(), "recieved NewRound from", bz.TreeNode().Name(), "with maxFileSize value of:", bz.maxFileSize)
 			}
-			//}()
 		}
 	}
 	// detecting leader-less in next round
 	go bz.startTimer(bz.MCRoundNumber)
+	log.Lvl1("readBCAndSendtoOthers took:", time.Since(takenTime).String(), "for round number", bz.MCRoundNumber)
+
 }
 
 /* ----------------------------------------------------------------------*/
-func (bz *ChainBoost) readBCPowersAndSeed() (powers map[string]uint64, seed string) {
-	minerspowers := make(map[string]uint64)
-
+func (bz *ChainBoost) readBCPowersAndSeed() (minerspowers map[string]int, seed string) {
+	var err error
+	var rows [][]string
+	var row []string
+	rowNumber := 0
+	minerspowers = make(map[string]int) // this convert the declared nil map to an empty map
+	takenTime := time.Now()
 	pwd, _ := os.Getwd()
 	log.Lvl4("opening bc in:", pwd)
 	//bcDirectory := strings.Split(pwd, "/build")
@@ -152,102 +181,159 @@ func (bz *ChainBoost) readBCPowersAndSeed() (powers map[string]uint64, seed stri
 	f, err := excelize.OpenFile(bcDirectory)
 
 	if err != nil {
-		log.LLvl1("Raha: ", err)
+		log.Lvl1("Panic Raised: ", err)
 		panic(err)
 	} else {
-		log.LLvl1("bc Successfully opened")
+		log.Lvl2("bc Successfully opened")
 	}
-	//var err error
-	var rows *excelize.Rows
-	var row []string
-	rowNumber := 0
+	//-------------------------------------------------------------------------------------------
 	// looking for last round's seed in the round table sheet in the mainchainbc file
-	if rows, err = f.Rows("RoundTable"); err != nil {
+
+	/* --- RoundTable:
+	i = 0 is (next) round number,
+	i = 1 is (next) round seed,
+	i = 2 is blockchain size (empty now, will be updated by the leader) */
+
+	if rows, err = f.GetRows("RoundTable"); err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
+	} else {
+		u := len(rows)
+		row = rows[u-1][:]
+		seed = row[1]
 	}
-	for rows.Next() {
-		rowNumber++
-		if row, err = rows.Columns(); err != nil {
-			log.LLvl1("Panic Raised:\n\n")
-			panic(err)
-		}
-	}
+
+	// ----------------------
+	//tododraha: check if works remove this later
+	// ----------------------
+	// if rows, err = f.Rows("RoundTable"); err != nil {
+	// 	log.LLvl1("Panic Raised:\n\n")
+	// 	panic(err)
+	// }
+	// for rows.Next() {
+	// 	rowNumber++
+	// 	if row, err = rows.Columns(); err != nil {
+	// 		log.LLvl1("Panic Raised:\n\n")
+	// 		panic(err)
+	// 	}
+	// }
 	// last row:
-	for i, colCell := range row {
-		// --- in RoundTable: i = 0 is (next) round number, i = 1 is (next) round seed, i=2 is blockchain size (empty now, will be updated by the leader)
-		// if i == 0 {
-		// 	if bz.MCRoundNumber, err = strconv.Atoi(colCell); err != nil {
-		// 		log.LLvl1("Panic Raised:\n\n")
-		// 		panic(err)
-		// 	}
-		// }
-		if i == 1 {
-			seed = colCell // last round's seed
-		}
-	}
+	//for i, colCell := range row {
+	// if i == 0 {
+	// 	if bz.MCRoundNumber, err = strconv.Atoi(colCell); err != nil {
+	// 		log.LLvl1("Panic Raised:\n\n")
+	// 		panic(err)
+	// 	}
+	// }
+	// 	if i == 1 {
+	// 		seed = colCell // last round's seed
+	// 	}
+	// }
+	//-------------------------------------------------------------------------------------------
 	// looking for all nodes' power in the last round in the power table sheet in the mainchainbc file
-	rowNumber = 0 //ToDoRaha: later it can go straight to last row based on the round number found in round table
-	if rows, err = f.Rows("PowerTable"); err != nil {
-		log.LLvl1("Panic Raised:\n\n")
-		panic(err)
-	}
-	for rows.Next() {
-		rowNumber++
-	}
+	// rowNumber = 0 //ToDoRaha: later it can go straight to last row based on the round number found in round table
+	// rowNum := 0
+	// if rows, err = f.Rows("PowerTable"); err != nil {
+	// 	log.LLvl1("Panic Raised:\n\n")
+	// 	panic(err)
+	// }
+	// for rows.Next() {
+	// 	rowNumber++
+	// }
 	// last row in power table:
 	// if row, err = rows.Columns(); err != nil {
 	// 	log.LLvl1("Panic Raised:\n\n")
 	// 	panic(err)
 	// }
+	// ----------------------
 
-	for _, a := range bz.Roster().List {
-		var myColumnHeader []string
-		var myCell string
-		var myColumn string
-		myColumnHeader, err = f.SearchSheet("PowerTable", a.Address.String())
-		if err != nil {
-			log.LLvl1("Panic Raised:\n\n")
-			panic(err)
-		}
-		for _, character := range myColumnHeader[0] {
-			if character >= 'A' && character <= 'Z' { // a-z isn't needed! just to make sure
-				myColumn = myColumn + string(character)
-			}
-		}
-
-		myCell = myColumn + strconv.Itoa(rowNumber) //such as A2,B3,C3..
-		var p string
-		p, err = f.GetCellValue("PowerTable", myCell)
-		if err != nil {
-			log.LLvl1("Panic Raised:\n\n")
-			panic(err)
-		}
-		var t int
-		t, err = strconv.Atoi(p)
-		if err != nil {
-			log.LLvl1("Panic Raised:\n\n")
-			panic(err)
-		}
-		minerspowers[a.Address.String()] = uint64(t)
-		// add accumulated power to recently added power in last round
-		for i := 2; i < rowNumber; i++ {
-			upperPowerCell := myColumn + strconv.Itoa(i)
-			p, err = f.GetCellValue("PowerTable", upperPowerCell)
-			if err != nil {
-				log.LLvl1("Panic Raised:\n\n")
-				panic(err)
-			}
-			t, er := strconv.Atoi(p)
+	//-------------------------------------------------------------------------------------------
+	// looking for all nodes' power in the last round in the power table sheet in the mainchainbc file
+	if rows, err = f.GetRows("PowerTable"); err != nil {
+		log.LLvl1("Panic Raised:\n\n")
+		panic(err)
+	} else {
+		u := len(rows)
+		rowNumber = u - 1
+		row = rows[u-1][:]
+		for i, a := range bz.Roster().List { // 0 < i < len(roster)
+			powerCell, er := strconv.Atoi(row[i+1])
 			if er != nil {
-				log.LLvl1("Panic Raised:\n\n")
+				log.LLvl1("Panic Raised:\n\n", er)
 				panic(er)
 			}
-			upperPower := uint64(t)
-			minerspowers[a.Address.String()] = minerspowers[a.Address.String()] + upperPower
+			minerspowers[a.Address.String()] = powerCell
+			log.Lvl4(i+1, "-th miner in roster list:", a.Address.String(), "\ngot power of", powerCell, "\nin row number:", rowNumber, "and round number:", bz.MCRoundNumber)
 		}
 	}
 
+	// ----------------------
+	//tododraha: check if works remove this later
+	// ----------------------
+	//for _, a := range bz.Tree().List(){
+	//var myColumnHeader []string
+	// var myColumn string
+	// var myCell string
+	//myColumnHeader, err = f.SearchSheet("PowerTable", a.Address.String())
+	// if err != nil {
+	// 	log.LLvl1("Panic Raised:\n\n")
+	// 	panic(err)
+	// }
+	// for _, character := range myColumnHeader[0] {
+	// 	if character >= 'A' && character <= 'Z' { // a-z isn't needed! just to make sure
+	// 		myColumn = myColumn + string(character)
+	// 	}
+	// }
+	// if rows, err = f.Rows("PowerTable"); err != nil {
+	// 	log.LLvl1("Panic Raised:\n\n")
+	// 	panic(err)
+	// } else if rowNum == rowNumber-1 {
+	// 	row, err = rows.Columns()
+	// 	for colVal, error := range row {
+	// 		if error == "" {
+	// 			t, er := strconv.Atoi(colVal)
+	// 			if er != nil {
+	// 				log.LLvl1("Panic Raised:\n\n")
+	// 				panic(er)
+	// 			}
+	// 			currentPower := uint64(t)
+	// 			minerspowers[a.Address.String()] = currentPower
+	// 		} else {
+	// 			log.LLvl1("Panic Raised:\n\n")
+	// 			panic(err)
+	// 		}
+	// }
+	// myCell = myColumn + strconv.Itoa(rowNumber) //such as A2,B3,C3..
+	// var p string
+	// p, err = f.GetCellValue("PowerTable", myCell)
+	// if err != nil {
+	// 	log.LLvl1("Panic Raised:\n\n")
+	// 	panic(err)
+	// }
+	// var t int
+	// t, err = strconv.Atoi(p)
+	// if err != nil {
+	// 	log.LLvl1("Panic Raised:\n\n")
+	// 	panic(err
+	// }
+	// minerspowers[a.Address.String()] = uint64(t)
+	// --------   add accumulated power to recently added power in last round  ----------
+	// for i := 2; i < rowNumber; i++ {
+	// 	upperPowerCell := myColumn + strconv.Itoa(i)
+	// 	p, err = f.GetCellValue("PowerTable", upperPowerCell)
+	// 	if err != nil {
+	// 		log.LLvl1("Panic Raised:\n\n")
+	// 		panic(err)
+	// 	}
+	// 	t, er := strconv.Atoi(p)
+	// 	if er != nil {
+	// 		log.LLvl1("Panic Raised:\n\n")
+	// 		panic(er)
+	// 	}
+	// 	upperPower := uint64(t)
+	// 	minerspowers[a.Address.String()] = minerspowers[a.Address.String()] + upperPower
+	// }
+	log.Lvl1("readBCPowersAndSeed took:", time.Since(takenTime).String(), "for round number", bz.MCRoundNumber+1)
 	return minerspowers, seed
 }
 
@@ -259,10 +345,12 @@ func (bz *ChainBoost) readBCPowersAndSeed() (powers map[string]uint64, seed stri
  ----------------------------------------------------------------------*/
 func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 	var err error
-	var rows *excelize.Rows
+	var rowsRoundTable [][]string
+	var rowsMarketMatching *excelize.Rows
 	var row []string
 	var seed string
-	rowNumber := 0
+	takenTime := time.Now()
+	//rowNumber := 0
 
 	pwd, _ := os.Getwd()
 	log.Lvl4("opening bc in:", pwd)
@@ -274,34 +362,36 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 	if err != nil {
 		log.Fatal("problem while opening bc: " + err.Error())
 	} else {
-		log.LLvl1("bc Successfully opened")
+		log.Lvl2("bc Successfully opened")
 	}
 
+	//-------------------------------------------------------------------------------------------
 	// looking for last round's seed in the round table sheet in the mainchainbc file
-	if rows, err = f.Rows("RoundTable"); err != nil {
+
+	/* --- RoundTable:
+	i = 0 is (next) round number,
+	i = 1 is (next) round seed,
+	i = 2 is blockchain size (empty now, will be updated by the leader) */
+
+	if rowsRoundTable, err = f.GetRows("RoundTable"); err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
+	} else {
+		u := len(rowsRoundTable)
+		row = rowsRoundTable[u-1][:]
+		seed = row[1]
 	}
-	for rows.Next() {
-		rowNumber++
-		if row, err = rows.Columns(); err != nil {
-			log.LLvl1("Panic Raised:\n\n")
-			panic(err)
-		}
-	}
-	for i, colCell := range row {
-		// --- in RoundTable: i = 0 is (next) round number, i = 1 is (next) round seed, i=2 is blockchain size (empty now, will be updated by the leader)
-		//if i == 0 {if bz.MCRoundNumber,err = strconv.Atoi(colCell); err!=nil {log.LLvl1(err)}}  // i dont want to change the round number now, even if it is changed, i will re-check it at the end!
-		if i == 1 {
-			seed = colCell
-		} // next round's seed is the hash of this seed
-	}
+
 	// --------------------------------------------------------------------
 	// updating the current last row in the "BCsize" column
 
 	// no longer nodes read from mainchainbc file, instead the round are determined by their local round number variable
-	currentRow := strconv.Itoa(rowNumber)
-	nextRow := strconv.Itoa(rowNumber + 1) //ToDoRaha: remove these, use bz.MCRoundNumber instead!
+	//currentRow := strconv.Itoa(rowNumber)
+	//nextRow := strconv.Itoa(rowNumber + 1) //ToDoRaha: remove these, use bz.MCRoundNumber instead!
+
+	// including header row: round 1 is on row number 2
+	currentRow := strconv.Itoa(bz.MCRoundNumber + 1)
+	nextRow := strconv.Itoa(bz.MCRoundNumber + 2)
 	// ---
 	axisBCSize := "C" + currentRow
 	err = f.SetCellValue("RoundTable", axisBCSize, bz.MainChainBlockSize)
@@ -355,11 +445,11 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 		panic(err)
 	}
 
-	// each round, adding one row in power table based on the information in market matching sheet,
+	// Each round, adding one row in power table based on the information in market matching sheet,
 	// assuming that servers are honest  and have honestly publish por for their actice (not expired)
 	// ServAgrs,for each storage server and each of their active contracst,
 	// add the stored file size to their current power
-	if rows, err = f.Rows("MarketMatching"); err != nil {
+	if rowsMarketMatching, err = f.Rows("MarketMatching"); err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
@@ -367,12 +457,12 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 	var MinerServer string
 	rowNum := 0
 	MinerServers := make(map[string]int)
-	for rows.Next() {
+	for rowsMarketMatching.Next() {
 		rowNum++
 		if rowNum == 1 {
-			row, _ = rows.Columns()
+			row, _ = rowsMarketMatching.Columns()
 		} else {
-			row, err = rows.Columns()
+			row, err = rowsMarketMatching.Columns()
 			if err != nil {
 				log.LLvl1("Panic Raised:\n\n")
 				panic(err)
@@ -415,7 +505,10 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 			}
 		}
 	}
+
+	// ---------------------------------------------------------------------
 	// --- Power Table sheet  ----------------------------------------------
+	// ---------------------------------------------------------------------
 	index := f.GetSheetIndex("PowerTable")
 	f.SetActiveSheet(index)
 	var PowerInfoRow []int
@@ -444,7 +537,9 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("bc Successfully closed")
+		log.Lvl2("bc Successfully closed")
+		log.Lvl1("updateBCPowerRound took:", time.Since(takenTime).String(), "for round number", bz.MCRoundNumber)
+
 	}
 }
 
@@ -466,9 +561,11 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 	if err != nil {
 		log.Fatal("problem while opening bc: " + err.Error())
 	} else {
-		log.LLvl1("bc Successfully opened")
+		log.Lvl2("bc Successfully opened")
 	}
-
+	// -------------------------------------------------------------------------------
+	var takenTime time.Time
+	takenTime = time.Now()
 	// -------------------------------------------------------------------------------
 	// each round, adding one row in power table based on the information in market matching sheet,
 	// assuming that servers are honest and have honestly publish por for their actice (not expired) ServAgrs,
@@ -483,9 +580,9 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 
 	rowNum := 0
 	transactionQueue := make(map[string][5]int)
-	// first int: stored file size in this round,
+	// first int:  stored file size in this round,
 	// second int: corresponding ServAgr id
-	// third int: TxServAgrPropose required
+	// third int:  TxServAgrPropose required
 	// fourth int: TxStoragePayment required
 	for rows.Next() {
 		rowNum++
@@ -498,14 +595,16 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 				panic(err)
 			} else {
 				for i, colCell := range row {
+
 					/* --- in MarketMatching:
 					i = 0 is Server's Info,
 					i = 1 is FileSize,
-					i=2 is ServAgrDuration,
-					i=3 is MCRoundNumber,
-					i=4 is ServAgrID,
-					i=5 is Client's PK,
+					i = 2 is ServAgrDuration,
+					i = 3 is MCRoundNumber,
+					i = 4 is ServAgrID,
+					i = 5 is Client's PK,
 					i = 6 is ServAgrPublished */
+
 					if i == 0 {
 						MinerServer = colCell
 					}
@@ -571,17 +670,22 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 				transactionQueue[MinerServer] = t
 			} else if bz.MCRoundNumber-ServAgrStartedMCRoundNumber > ServAgrDuration {
 				// Set ServAgrPublished to false
-				if ServAgrIdCellMarketMatching, err := f.SearchSheet("MarketMatching", ServAgrIDString); err != nil {
+				// ----
+				// todoraha: check if works file, remove it later
+				// ----
+				// if ServAgrIdCellMarketMatching, err := f.SearchSheet("MarketMatching", ServAgrIDString); err != nil {
+				// 	log.LLvl1("Panic Raised:\n\n")
+				// 	panic(err)
+				// } else {
+				//publishedCellMarketMatching := "F" + ServAgrIdCellMarketMatching[0][1:]
+				// ----
+				publishedCellMarketMatching := "F" + ServAgrIDString
+				err = f.SetCellValue("MarketMatching", publishedCellMarketMatching, 0)
+				if err != nil {
 					log.LLvl1("Panic Raised:\n\n")
 					panic(err)
-				} else {
-					publishedCellMarketMatching := "F" + ServAgrIdCellMarketMatching[0][1:]
-					err = f.SetCellValue("MarketMatching", publishedCellMarketMatching, 0)
-					if err != nil {
-						log.LLvl1("Panic Raised:\n\n")
-						panic(err)
-					}
 				}
+				//}
 				// Add TxStoragePayment
 				t[3] = 1
 				transactionQueue[MinerServer] = t
@@ -633,6 +737,8 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 			newTransactionRow[0] = "TxPor"
 			newTransactionRow[1] = strconv.Itoa(int(PorTxSize))
 			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
+		} else {
+			continue
 		}
 
 		for i, v := range newTransactionRow {
@@ -730,8 +836,9 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("bc Successfully closed")
-		log.LLvl1(bz.Name(), " finished collecting new transactions to queue in round number ", bz.MCRoundNumber)
+		log.Lvl2("bc Successfully closed")
+		log.Lvl1(bz.Name(), " finished collecting new transactions to queue in round number ", bz.MCRoundNumber)
+		log.Lvl1("Collecting tx.s took:", time.Since(takenTime).String())
 	}
 }
 
@@ -755,7 +862,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	if err != nil {
 		log.Fatal("problem while opening bc: " + err.Error())
 	} else {
-		log.LLvl1("bc Successfully opened")
+		log.Lvl2("bc Successfully opened")
 	}
 
 	var accumulatedTxSize, txsize int
@@ -771,7 +878,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	numberOfRegPayTx := 0
 	BlockSizeMinusTransactions := blockchain.BlockMeasurement()
 	var takenTime time.Time
-	regPayShare := (bz.PercentageTxPay) * (bz.MainChainBlockSize - BlockSizeMinusTransactions)
+	regPayTxShare := (bz.PercentageTxPay) * (bz.MainChainBlockSize - BlockSizeMinusTransactions)
 	/* -----------------------------------------------------------------------------
 		-- take regular payment transactions from sheet: SecondQueue
 	----------------------------------------------------------------------------- */
@@ -787,46 +894,52 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		1) time
 		2) issuedMCRoundNumber */
 
-		for j, colCell := range row {
-			if j == 0 {
-				if txsize, err = strconv.Atoi(colCell); err != nil {
-					log.LLvl1("Panic Raised:\n\n")
-					panic(err)
-				} else if 100*(accumulatedTxSize+txsize) <= regPayShare {
-					accumulatedTxSize = accumulatedTxSize + txsize
-					numberOfRegPayTx++
-					/* transaction name in transaction queue payment is just "TxPayment"
-					the transactions are just removed from queue and their size are added to included transactions' size in block */
-					log.Lvl4("a regular payment transaction added to block number", bz.MCRoundNumber, " from the queue")
+		// ----------------
+		//todoraha: check if works fine, remove this part later
+		// ----------------
+		// for j, colCell := range row {
+		// 	if j == 0 {
+		// ----------------
 
-					// row[1] is transaction's collected time
-					// if TakeTime, err = time.Parse(time.RFC3339, row[1]); err != nil {
-					// 	log.LLvl1("Panic Raised:\n\n")
-					// 	panic(err)
-					// }
-					//bz.SecondQueueWait = bz.SecondQueueWait + int(time.Now().Sub(TakeTime).Seconds())
+		if txsize, err = strconv.Atoi(row[0]); err != nil {
+			log.LLvl1("Panic Raised:\n\n")
+			panic(err)
+		} else if 100*(accumulatedTxSize+txsize) <= regPayTxShare {
+			accumulatedTxSize = accumulatedTxSize + txsize
 
-					// row[2] is the MCRound Number that the transaction has been issued
-					if x, err := strconv.Atoi(row[2]); err != nil {
-						log.LLvl1("Panic Raised:\n\n")
-						panic(err)
-					} else {
-						bz.SecondQueueWait = bz.SecondQueueWait + bz.MCRoundNumber - x
-					}
+			// row[1] is transaction's collected time
+			// if TakeTime, err = time.Parse(time.RFC3339, row[1]); err != nil {
+			// 	log.LLvl1("Panic Raised:\n\n")
+			// 	panic(err)
+			// }
+			//bz.SecondQueueWait = bz.SecondQueueWait + int(time.Now().Sub(TakeTime).Seconds())
 
-					f.RemoveRow("SecondQueue", i)
-					log.Lvl1("1 reg pay tx is taken.")
-				} else {
-					regPayshareIsFull = true
-					log.Lvl1("final result MC: regular  payment share is full!")
-					f.SetCellValue("RoundTable", axisQueue2IsFull, 1)
-					break
-				}
+			// x is row[2] which is the MCRound Number that the transaction has been issued
+			var x int
+			if x, err = strconv.Atoi(row[2]); err != nil {
+				log.LLvl1("Panic Raised:\n\n")
+				panic(err)
+			} else {
+				bz.SecondQueueWait = bz.SecondQueueWait + bz.MCRoundNumber - x
 			}
+
+			numberOfRegPayTx++
+			/* transaction name in transaction queue payment is just "TxPayment"
+			the transactions are just removed from queue and their size are added to included transactions' size in block */
+			f.RemoveRow("SecondQueue", i)
+			log.Lvl2("a regular payment transaction added to block number", bz.MCRoundNumber, " from the queue")
+		} else {
+			regPayshareIsFull = true
+			log.Lvl1("Final result MC: \n regular  payment share is full!")
+			f.SetCellValue("RoundTable", axisQueue2IsFull, 1)
+			break
 		}
+		//}
+		//}
 	}
 	log.Lvl1("reg pay tx.s taking took:", time.Since(takenTime).String())
 	allocatedBlockSizeForRegPayTx := accumulatedTxSize
+	otherTxsShare := bz.MainChainBlockSize - BlockSizeMinusTransactions - allocatedBlockSizeForRegPayTx
 	/* -----------------------------------------------------------------------------
 		 -- take 5 types of transactions from sheet: FirstQueue
 	----------------------------------------------------------------------------- */
@@ -835,7 +948,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	blockIsFull = false
 	accumulatedTxSize = 0
 	// new variables for first queue
-	var ServAgrIdCellMarketMatching []string
+	//var ServAgrIdCellMarketMatching []string
 
 	numberOfPoRTx := 0
 	numberOfStoragePayTx := 0
@@ -844,13 +957,11 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	numberOfSyncTx := 0
 
 	axisBlockSize := "C" + NextRow
-
 	axisNumPoRTx := "F" + NextRow
 	axisNumStoragePayTx := "G" + NextRow
 	axisNumServAgrProposeTx := "H" + NextRow
 	axisNumServAgrCommitTx := "I" + NextRow
 	axisNumSyncTx := "P" + NextRow
-
 	axisTotalTxsNum := "K" + NextRow
 	axisAveFirstQueueWait := "L" + NextRow
 	axisAveSecondQueueWait := "M" + NextRow
@@ -868,89 +979,116 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		1) size
 		2) time
 		3) issuedMCRoundNumber
-		4) ServAgrId */
-		for j, colCell := range row {
-			if j == 1 {
-				if txsize, err = strconv.Atoi(colCell); err != nil {
+		4) ServAgrId (In case that the transaction type is a Sync transaction,
+		the 4th column will be the number of por transactions summerized in
+		the sync tx) */
+
+		// ----------------
+		//todoraha: check if works fine, remove this part later
+		// ----------------
+		//for j, colCell := range row {
+		//if j == 1 {
+		// ----------------
+
+		if txsize, err = strconv.Atoi(row[1]); err != nil {
+			log.LLvl1("Panic Raised:\n\n")
+			panic(err)
+		} else if accumulatedTxSize+txsize <= otherTxsShare {
+			accumulatedTxSize = accumulatedTxSize + txsize
+			/* transaction name in transaction queue can be
+			"TxServAgrCommit",
+			"TxServAgrPropose",
+			"TxStoragePayment", or
+			"TxPor"
+			in case of "TxServAgrCommit":
+			1) The corresponding ServAgr in marketmatching should be updated to published //ToDoRaha: replace the word "published" with "active"
+			2) set start round number to current round
+			other transactions are just removed from queue and their size are added to included transactions' size in block */
+
+			switch row[0] {
+			case "TxServAgrCommit":
+				/* when tx TxServAgrCommit left queue:
+				1) set ServAgrPublished to True
+				2) set start round number to current round */
+				cid := row[4]
+
+				// ------------------------------
+				// todoraha: check and remove it later if works fine
+				// ------------------------------
+				// if ServAgrIdCellMarketMatching, err = f.SearchSheet("MarketMatching", cid); err != nil {
+				// 	log.LLvl1("Panic Raised:\n\n")
+				// 	panic(err)
+				// } else {
+				//publishedCellMarketMatching := "F" + ServAgrIdCellMarketMatching[0][1:]
+				// ------------------------------
+
+				// Raha: cid is the unique increasing int contract id which points to the row number of corresponding contract in the market matching sheet
+				publishedCellMarketMatching := "F" + cid
+				err = f.SetCellValue("MarketMatching", publishedCellMarketMatching, 1)
+				if err != nil {
 					log.LLvl1("Panic Raised:\n\n")
 					panic(err)
-				} else if accumulatedTxSize+txsize <= bz.MainChainBlockSize-BlockSizeMinusTransactions-allocatedBlockSizeForRegPayTx {
-					accumulatedTxSize = accumulatedTxSize + txsize
-					/* transaction name in transaction queue can be "TxServAgrPropose", "TxStoragePayment", or "TxPor"
-					in case of "TxServAgrCommit":
-					1) The corresponding ServAgr in marketmatching should be updated to published //ToDoRaha: replace the word "published" with "active"
-					2) set start round number to current round
-					other transactions are just removed from queue and their size are added to included transactions' size in block */
-					if row[0] == "TxServAgrCommit" {
-						/* when tx TxServAgrCommit left queue:
-						1) set ServAgrPublished to True
-						2) set start round number to current round */
-						cid := row[4]
-						if ServAgrIdCellMarketMatching, err = f.SearchSheet("MarketMatching", cid); err != nil {
-							log.LLvl1("Panic Raised:\n\n")
-							panic(err)
-						} else {
-							publishedCellMarketMatching := "F" + ServAgrIdCellMarketMatching[0][1:]
-							err = f.SetCellValue("MarketMatching", publishedCellMarketMatching, 1)
-							if err != nil {
-								log.LLvl1("Panic Raised:\n\n")
-								panic(err)
-							} else {
-								startRoundCellMarketMatching := "D" + ServAgrIdCellMarketMatching[0][1:]
-								err = f.SetCellValue("MarketMatching", startRoundCellMarketMatching, bz.MCRoundNumber)
-								if err != nil {
-									log.LLvl1("Panic Raised:\n\n")
-									panic(err)
-								} else {
-									log.Lvl4("a TxServAgrCommit tx added to block number", bz.MCRoundNumber, " from the queue")
-									numberOfServAgrCommitTx++
-								}
-							}
-						}
-					} else if row[0] == "TxStoragePayment" {
-						log.Lvl4("a TxStoragePayment tx added to block number", bz.MCRoundNumber, " from the queue")
-						numberOfStoragePayTx++
-						// && bz.SimState == 1 is for backup check - the first condition shouldn't be true if the second one isn't
-					} else if row[0] == "TxPor" && bz.SimState == 1 {
-						log.Lvl4("a por tx added to block number", bz.MCRoundNumber, " from the queue")
-						numberOfPoRTx++
-					} else if row[0] == "TxServAgrPropose" {
-						log.Lvl4("a TxServAgrPropose tx added to block number", bz.MCRoundNumber, " from the queue")
-						numberOfServAgrProposeTx++
-					} else if row[0] == "TxSync" {
-						log.Lvl4("a sync tx added to block number", bz.MCRoundNumber, " from the queue")
-						numberOfSyncTx++
-						numberOfPoRTx, _ = strconv.Atoi(row[4])
-					} else {
-						log.Lvl4("Panic Raised:\n\n")
-						panic("the type of transaction in the queue is un-defined")
-					}
-
-					// when performance was being measured based on time!
-					// if TakeTime, err = time.Parse(time.RFC3339, row[2]); err != nil {
-					// 	log.LLvl1("Panic Raised:\n\n")
-					// 	panic(err)
-					// }
-					//bz.FirstQueueWait = bz.FirstQueueWait + int(time.Now().Sub(TakeTime).Seconds())
-
-					// row[3] is the MCRound Number that the transaction has been issued
-					if x, err := strconv.Atoi(row[3]); err != nil {
+				} else {
+					//startRoundCellMarketMatching := "D" + ServAgrIdCellMarketMatching[0][1:]
+					startRoundCellMarketMatching := "D" + cid
+					err = f.SetCellValue("MarketMatching", startRoundCellMarketMatching, bz.MCRoundNumber)
+					if err != nil {
 						log.LLvl1("Panic Raised:\n\n")
 						panic(err)
 					} else {
-						bz.FirstQueueWait = bz.FirstQueueWait + bz.MCRoundNumber - x
+						log.Lvl4("a TxServAgrCommit tx added to block number", bz.MCRoundNumber, " from the queue")
+						numberOfServAgrCommitTx++
 					}
-					// remove transaction from the top of the queue (older ones)
-					f.RemoveRow("FirstQueue", i)
-					log.Lvl1("1 other tx is taken.")
-				} else {
-					blockIsFull = true
-					log.Lvl1("final result MC: block is full! ")
-					f.SetCellValue("RoundTable", axisQueue1IsFull, 1)
-					break
 				}
+				//}
+			case "TxStoragePayment":
+				log.Lvl4("a TxStoragePayment tx added to block number", bz.MCRoundNumber, " from the queue")
+				numberOfStoragePayTx++
+				// && bz.SimState == 1 is for backup check - the first condition shouldn't be true if the second one isn't
+			case "TxPor":
+				if bz.SimState == 1 {
+					log.Lvl4("a por tx added to block number", bz.MCRoundNumber, " from the queue")
+					numberOfPoRTx++
+				}
+			case "TxServAgrPropose":
+				log.Lvl4("a TxServAgrPropose tx added to block number", bz.MCRoundNumber, " from the queue")
+				numberOfServAgrProposeTx++
+			case "TxSync":
+				log.Lvl4("a sync tx added to block number", bz.MCRoundNumber, " from the queue")
+				numberOfSyncTx++
+				numberOfPoRTx, _ = strconv.Atoi(row[4]) //In case that the transaction type is a Sync transaction,
+				// the 4th column will be the number of por transactions summerized in
+				// the sync tx
+			default:
+				log.Lvl4("Panic Raised:\n\n")
+				panic("the type of transaction in the queue is un-defined")
 			}
+
+			// when performance was being measured based on time!
+			// if TakeTime, err = time.Parse(time.RFC3339, row[2]); err != nil {
+			// 	log.LLvl1("Panic Raised:\n\n")
+			// 	panic(err)
+			// }
+			//bz.FirstQueueWait = bz.FirstQueueWait + int(time.Now().Sub(TakeTime).Seconds())
+
+			// row[3] is the MCRound Number that the transaction has been issued
+			if x, err := strconv.Atoi(row[3]); err != nil {
+				log.LLvl1("Panic Raised:\n\n")
+				panic(err)
+			} else {
+				bz.FirstQueueWait = bz.FirstQueueWait + bz.MCRoundNumber - x
+			}
+			// remove transaction from the top of the queue (older ones)
+			f.RemoveRow("FirstQueue", i)
+			log.Lvl2("1 other tx is taken.")
+		} else {
+			blockIsFull = true
+			log.Lvl1("Final result MC: \n block is full! ")
+			f.SetCellValue("RoundTable", axisQueue1IsFull, 1)
+			break
 		}
+		//}
+		//}
 	}
 	log.Lvl1("other tx.s taking took:", time.Since(takenTime).String())
 
@@ -960,7 +1098,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	f.SetCellValue("RoundTable", axisNumServAgrCommitTx, numberOfServAgrCommitTx)
 	f.SetCellValue("RoundTable", axisNumSyncTx, numberOfSyncTx)
 
-	log.LLvl1("In total in round number ", bz.MCRoundNumber,
+	log.Lvl2("In total in round number ", bz.MCRoundNumber,
 		"\n number of published PoR transactions is", numberOfPoRTx,
 		"\n number of published Storage payment transactions is", numberOfStoragePayTx,
 		"\n number of published Propose ServAgr transactions is", numberOfServAgrProposeTx,
@@ -982,14 +1120,14 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		f.SetCellValue("RoundTable", axisAveSecondQueueWait, float64(bz.SecondQueueWait)/float64(numberOfRegPayTx))
 	}
 
-	log.Lvl1("final result MC: \n", allocatedBlockSizeForRegPayTx,
+	log.Lvl2("Final result MC: \n Block size allocation:\n", allocatedBlockSizeForRegPayTx,
 		" for regular payment txs,\n and ", accumulatedTxSize, " for other types of txs")
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
 
-	log.LLvl1("In total in round number ", bz.MCRoundNumber,
+	log.Lvl1("In total in round number ", bz.MCRoundNumber,
 		"\n number of all types of submitted txs is", TotalNumTxsInBothQueue)
 
 	// ---- overall results
@@ -1064,13 +1202,13 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("bc Successfully closed")
-		log.Lvl4(bz.Name(), " Finished taking transactions from queue (FIFO) into new block in round number ", bz.MCRoundNumber)
+		log.Lvl2("bc Successfully closed")
+		log.Lvl1(bz.Name(), " Finished taking transactions from queue (FIFO) into new block in round number ", bz.MCRoundNumber)
 	}
 }
 
 func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
-
+	takenTime := time.Now()
 	pwd, _ := os.Getwd()
 	log.Lvl4("opening bc in:", pwd)
 	//bcDirectory := strings.Split(pwd, "/build")
@@ -1081,7 +1219,7 @@ func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
 	if err != nil {
 		log.Fatal("problem while opening bc: " + err.Error())
 	} else {
-		log.LLvl1("bc Successfully opened")
+		log.Lvl2("bc Successfully opened")
 	}
 
 	// ----------------------------------------------------------------------
@@ -1138,7 +1276,7 @@ func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
 			log.LLvl1("Panic Raised:\n\n")
 			panic(err)
 		} else {
-			log.LLvl1("a Sync tx added to queue in round number", bz.MCRoundNumber)
+			log.Lvl1("Final result MC:\n a Sync tx added to queue in round number", bz.MCRoundNumber)
 		}
 	}
 
@@ -1150,8 +1288,10 @@ func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("mc bc Successfully closed")
-		log.LLvl1(bz.Name(), " finished collecting new sync transactions to queue in round number ", bz.MCRoundNumber)
+		log.Lvl2("mc bc Successfully closed")
+		log.Lvl1("Final result MC:", bz.Name(), " finished collecting new sync transactions to queue in round number ", bz.MCRoundNumber)
+		log.Lvl1("syncMainChainBCTransactionQueueCollect took:", time.Since(takenTime).String(), "for round number", bz.MCRoundNumber)
+
 	}
 
 	return blocksize

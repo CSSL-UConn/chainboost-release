@@ -12,8 +12,8 @@ import (
 	"time"
 
 	//"github.com/chainBoostScale/ChainBoost/onet/app"
+	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
 	"github.com/chainBoostScale/ChainBoost/onet"
-	"github.com/chainBoostScale/ChainBoost/onet/app"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 
 	//"github.com/chainBoostScale/ChainBoost/simulation/monitor"
@@ -166,20 +166,37 @@ func (d *Localhost) Deploy(rc *RunConfig) error {
 		}
 	}
 
+	// --------------------------------------------
+	// Raha: initializing main chain's blockchain -------------------------
+	log.LLvl1("Initializing main chain's blockchain")
+	blockchain.InitializeMainChainBC(
+		rc.Get("FileSizeDistributionMean"), rc.Get("FileSizeDistributionVariance"),
+		rc.Get("ServAgrDurationDistributionMean"), rc.Get("ServAgrDurationDistributionVariance"),
+		rc.Get("InitialPowerDistributionMean"), rc.Get("InitialPowerDistributionVariance"),
+		rc.Get("Nodes"), rc.Get("SimulationSeed"))
+	// Raha: initializing side chain's blockchain -------------------------
+	blockchain.InitializeSideChainBC()
+	// --------------------------------------------
+
+	// ------------------------------------------------------------------
+	//todoraha: we don't need prescript to creat bc files,
+	// it will be created in deploy inside the InitializeMainChainBC and InitializeSideChainBCfunction invokation
+	// but we can use this option whenever we need to runn a command before starting the simulation
 	// Check for PreScript and copy it to the deploy-dir
-	d.PreScript = rc.Get("PreScript")
-	if d.PreScript != "" {
-		//raha added next 2 line
-		//ToDoRaha: what?!!!!!!
-		pwd := "/deterlab_users/GitHub/chainBoostScale/ChainBoost/simulation/chainBoostFiles/"
-		pwd = pwd + d.PreScript
-		_, err := os.Stat(pwd /*d.PreScript*/)
-		if !os.IsNotExist(err) {
-			if err := app.Copy(d.runDir, pwd /*d.PreScript*/); err != nil {
-				return xerrors.Errorf("copying: %v", err)
-			}
-		}
-	}
+	// d.PreScript = rc.Get("PreScript")
+	// if d.PreScript != "" {
+	// 	//raha added next 2 line
+	// 	//ToDoRaha: what?!!!!!!
+	// 	pwd := "/deterlab_users/GitHub/chainBoostScale/ChainBoost/simulation/chainBoostFiles/"
+	// 	pwd = pwd + d.PreScript
+	// 	_, err := os.Stat(pwd /*d.PreScript*/)
+	// 	if !os.IsNotExist(err) {
+	// 		if err := app.Copy(d.runDir, pwd /*d.PreScript*/); err != nil {
+	// 			return xerrors.Errorf("copying: %v", err)
+	// 		}
+	// 	}
+	// }
+	// ------------------------------------------------------------------
 
 	d.servers, _ = strconv.Atoi(rc.Get("servers"))
 	//log.Lvlf3("Localhost: Deploying and writing config-files for", d.servers, "servers")
@@ -220,15 +237,19 @@ func (d *Localhost) Start(args ...string) error {
 	//log.Lvlf3("Starting", d.servers, "applications of", ex)
 	time.Sleep(100 * time.Millisecond)
 
+	//todoraha: we don't need prescript to creat bc files,
+	// it will be created in deploy inside the InitializeMainChainBC and InitializeSideChainBCfunction invokation
+	// but we can use this option whenever we need to runn a command before starting the simulation
+
 	//log.Lvlf3("If PreScript is defined, running the appropriate script_before_the simulation")
-	if d.PreScript != "" {
-		out, err := exec.Command("sh", "-c", "./"+d.PreScript+" localhost").CombinedOutput()
-		outStr := strings.TrimRight(string(out), "\n")
-		if err != nil {
-			return xerrors.Errorf("error deploying PreScript: " + err.Error() + " " + outStr)
-		}
-		////log.Lvlf3(outStr)
-	}
+	// if d.PreScript != "" {
+	// 	out, err := exec.Command("sh", "-c", "./"+d.PreScript+" localhost").CombinedOutput()
+	// 	outStr := strings.TrimRight(string(out), "\n")
+	// 	if err != nil {
+	// 		return xerrors.Errorf("error deploying PreScript: " + err.Error() + " " + outStr)
+	// 	}
+	// 	////log.Lvlf3(outStr)
+	// }
 	// raha: commented. can we uste monitor  or not?!
 	// err := monitor.ConnectSink("localhost:" + strconv.Itoa(d.monitorPort))
 	// if err != nil {

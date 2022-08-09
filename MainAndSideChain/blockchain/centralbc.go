@@ -574,7 +574,7 @@ for i := 1;i<=len(FileSizeColumn);i++ {
 
 // InitializeSideChainBC function is called in simulation level (build.go)
 func InitializeSideChainBC() {
-	f := excelize.NewFile() //ToDoRaha: we don't need to create a new file here!!! the file is created bt prescript!! Has it?!
+	f := excelize.NewFile()
 	var err error
 	style, _ := f.NewStyle(&excelize.Style{
 		Alignment: &excelize.Alignment{

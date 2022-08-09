@@ -1,16 +1,15 @@
 package main
 
 import (
-	"net"
-	"os"
 
 	//"os/exec"
+
+	"flag"
 
 	"github.com/BurntSushi/toml"
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
-	"github.com/chainBoostScale/ChainBoost/simulation/platform"
-
+	simul "github.com/chainBoostScale/ChainBoost/simulation"
 	"golang.org/x/xerrors"
 )
 
@@ -93,53 +92,8 @@ func (e *simulation) Run(config *onet.SimulationConfig) error {
 }
 
 func main() {
-	log.LLvl1("running ./simul exe in: main package, main function")
-
-	//raha commented
-	//simul.Start("ChainBoost.toml")
-
-	wd, err := os.Getwd()
-	log.LLvl1("Running toml-file: ", "ChainBoost.toml")
-	os.Args = []string{os.Args[0], "ChainBoost.toml"}
-	//log.LLvl1("Raha: simul is not empty!")
-
-	// -------------------------------------
-	//get current vm's ip
-	var serverAddress, monitorAddress string
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
-	log.LLvl1("localAddr.IP:", localAddr.IP)
-	host := localAddr.IP.String()
-	serverAddress = host
-	monitorAddress = "192.168.3.220"
-	// -------------------------------------
-	/*
-		func Simulate(
-			PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize,
-			SectorNumber, NumberOfPayTXsUpperBound, SimulationRounds, SimulationSeed,
-			NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow,
-			MCRoundPerEpoch, SimState int,
-			suite, serverAddress, simul, monitorAddress string) error
-	*/
-	//ToDoRaha: Now: these values should be read from the chainBoost toml file!
-	//todoraha: what monitor is for? what port?
-	// raha: port 2000 is bcz in start.py file they have initialized it with port 2000!
-
-	err = platform.Simulate(
-		30, 10, 2000000, 500000,
-		2, 1000, 5, 9,
-		1, 40, 5, 50,
-		5, 2,
-		"bn256.adapter", serverAddress, "ChainBoost", monitorAddress+":2000")
-	if err != nil {
-		log.LLvl1("Raha: err returned from simulate: ", err)
-	} else {
-		log.LLvl1("Raha: func simulate returned without err")
-	}
-	log.ErrFatal(err)
-	os.Chdir(wd)
+	log.LLvl1("running ./simul exe in: \n main package, main function, simul.go file")
+	log.Lvl1("calling simul.Start in \n simul package in simul.go file")
+	flag.Parse()
+	simul.Start("ChainBoost.toml")
 }

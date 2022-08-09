@@ -21,24 +21,7 @@ import (
 	"github.com/chainBoostScale/ChainBoost/simulation/platform"
 )
 
-//todoraha: commeneted: why!!!
 var kill = false
-
-//var suite string
-// func init() {
-// 	flag.BoolVar(&kill, "kill", false, "kill everything (and don't start anything)")
-// 	flag.StringVar(&suite, "suite", "ed25519", "suite used for simulation")
-// }
-
-// The address of this server - if there is only one server in the config
-// file, it will be derived from it automatically
-var serverAddress string
-
-// ip addr of the logger to connect to
-var monitorAddress string
-
-// Simul is != "" if this node needs to start a simulation of that protocol
-var simul string
 
 // suite is Ed25519 by default
 var suite string
@@ -47,9 +30,6 @@ var suite string
 // to 'Flag'
 func init() {
 	flag.BoolVar(&kill, "kill", false, "kill everything (and don't start anything)")
-	flag.StringVar(&serverAddress, "address", "", "our address to use")
-	flag.StringVar(&simul, "simul", "", "start simulating that protocol")
-	flag.StringVar(&monitorAddress, "monitor", "", "remote monitor")
 	flag.StringVar(&suite, "suite", "Ed25519", "cryptographic suite to use")
 
 }
@@ -184,20 +164,11 @@ func main() {
 			} else {
 				log.LLvl1("raha: deter.PreScript is empty.")
 			}
-			args := " -address=" + internal +
-				" -simul=" + deter.Simulation +
-				" -monitor=" + monitorAddr +
-				//todoraha
-				//" -debug=" + strconv.Itoa(log.DebugVisible()) +
-				" -debug= 5" +
-				" -suite=" + suite
-			log.LLvl1("Args is", args)
-
 			// -----------------------------------------
 			// Raha added this part!
 			// -----------------------------------------
 			// Copy everything over to each vm
-			log.LLvl1("Copying over to", phys)
+			log.Lvl1("Copying over to", phys)
 			err := platform.SSHRunStdout("root", phys, "mkdir -p remote")
 			if err != nil {
 				log.Fatal(err)
@@ -206,13 +177,23 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			log.LLvl1("Done copying to VMs")
+			log.Lvl1("Done copying to VMs")
 			// -----------------------------------------
-			log.LLvl1("Raha: running ./simul with non-empty simul tag!!!")
+			log.Lvl1("Raha: running ./simul with non-empty simul tag!!!")
+			args := " -address=" + internal +
+				" -simul=" + deter.Simulation +
+				" -monitor=" + monitorAddr +
+				//todoraha
+				//" -debug=" + strconv.Itoa(log.DebugVisible()) +
+				" -debug=1" +
+				" -suite=" + suite +
+				" -platform=deterlab"
+
+			log.Lvl1("Args is", args)
 			err = platform.SSHRunStdout("root", phys, "cd remote; sudo ./simul "+args)
 			// -----------------------------------------
 			if err != nil && !killing {
-				log.LLvl1("Error starting simul - will kill all others:", err, internal)
+				log.Lvl1("Error starting simul - will kill all others:", err, internal)
 				killing = true
 				cmd := exec.Command("kill", "-9", "-1")
 				cmd.Stdout = os.Stdout
@@ -224,7 +205,7 @@ func main() {
 				if err != nil {
 					log.Fatal("Raha: CMD: Couldn't killall listening threads:", err)
 				} else {
-					log.LLvl1("Raha: all listener on VM", internal, "are killed.")
+					log.Lvl1("Raha: all listener on VM", internal, "are killed.")
 				}
 			}
 			log.LLvl1("Finished with simul on", internal)

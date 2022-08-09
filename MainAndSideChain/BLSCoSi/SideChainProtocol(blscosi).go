@@ -308,7 +308,7 @@ func (p *BlsCosi) startSubProtocol(tree *onet.Tree) (*SubBlsCosi, error) {
 	// responses. The main protocol will deal with early answers.
 	cosiSubProtocol.Threshold = tree.Size() - 1
 
-	log.LLvl1("Starting sub protocol with subleader %v", tree.Root.Children[0].ServerIdentity)
+	log.Lvl2("Starting sub protocol with subleader", tree.Root.Children[0].ServerIdentity)
 	err = cosiSubProtocol.Start()
 	if err != nil {
 		return nil, err

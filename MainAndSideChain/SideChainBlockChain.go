@@ -21,7 +21,7 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 	var err error
 	// var rows *excelize.Rows
 	// var row []string
-
+	takenTime := time.Now()
 	pwd, _ := os.Getwd()
 	log.Lvl4("opening sidechainbc in:", pwd)
 	//bcDirectory := strings.Split(pwd, "/build")
@@ -32,7 +32,7 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 	if err != nil {
 		log.Fatal("problem while opening sidechainbc: " + err.Error())
 	} else {
-		log.LLvl1("sidechainbc Successfully opened")
+		log.Lvl2("sidechainbc Successfully opened")
 	}
 
 	// --------------------------------------------------------------------
@@ -65,7 +65,7 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 			RoundIntervalSec = int(time.Now().Sub(TakeTime).Seconds())
 		}
 	}
-	log.LLvl1("round number: ", roundNumber, "took ", RoundIntervalSec, " seconds in total")
+	log.Lvl3("Final result SC: round number: ", roundNumber, "took ", RoundIntervalSec, " seconds in total")
 	currentRow := strconv.Itoa(rowNumber)
 	//nextRow := strconv.Itoa(rowNumber + 1)
 	// ---
@@ -140,9 +140,10 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("sc bc successfully closed")
+		log.Lvl2("sc bc successfully closed")
 	}
 	updateSideChainBCOverallEvaluation(currentRow, bz.SCRoundNumber)
+	log.Lvl1("updateSideChainBCRound took:", time.Since(takenTime).String(), "for sc round number", bz.MCRoundNumber)
 }
 
 /* ----------------------------------------------------------------------
@@ -151,196 +152,196 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 	the por tx.s are collected based on the service agreement status read from main chain blockchain
 ------------------------------------------------------------------------ */
 func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
-	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.MCRoundPerEpoch)))
-	var err error
-	var rows *excelize.Rows
-	var row []string
 
-	pwd, _ := os.Getwd()
-	log.Lvl4("opening mainchainbc in:", pwd)
-	//bcDirectory := strings.Split(pwd, "/build")
-	bcDirectory := strings.Split(pwd, "/build")[0] + "/mainchainbc.xlsx"
-	log.Lvl4("opening mainchainbc in:", bcDirectory)
-	//f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
-	f, err := excelize.OpenFile(bcDirectory)
-	if err != nil {
-		log.Fatal("problem while opening mainchainbc: " + err.Error())
-	} else {
-		log.LLvl1("mainchainbc Successfully opened")
-	}
+	// var err error
+	// var rows *excelize.Rows
+	// var row []string
+	// takenTime := time.Now()
 
-	// -------------------------------------------------------------------------------
-	// each round, adding one row in power table based on the information in market matching sheet,
-	// assuming that servers are honest and have honestly publish por for their actice (not expired) ServAgrs,
-	// for each storage server and each of their active contracst, add the stored file size to their current power
-	// -------------------------------------------------------------------------------
-	if rows, err = f.Rows("MarketMatching"); err != nil {
-		log.LLvl1("Panic Raised:\n\n")
-		panic(err)
-	}
-	var ServAgrDuration, ServAgrStartedMCRoundNumber, FileSize, ServAgrPublished, ServAgrID int
-	var MinerServer string
+	// pwd, _ := os.Getwd()
+	// log.Lvl4("opening mainchainbc in:", pwd)
+	// //bcDirectory := strings.Split(pwd, "/build")
+	// bcDirectory := strings.Split(pwd, "/build")[0] + "/mainchainbc.xlsx"
+	// log.Lvl4("opening mainchainbc in:", bcDirectory)
+	// //f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
+	// f, err := excelize.OpenFile(bcDirectory)
+	// if err != nil {
+	// 	log.Fatal("problem while opening mainchainbc: " + err.Error())
+	// } else {
+	// 	log.Lvl2("mainchainbc Successfully opened")
+	// }
 
-	rowNum := 0
-	transactionQueue := make(map[string][5]int)
-	// first int: stored file size in this round,
-	// second int: corresponding ServAgr id
-	// third int: TxServAgrPropose required
-	// fourth int: TxStoragePayment required
-	// fifth int: TxPor required
-	for rows.Next() {
-		rowNum++
-		if rowNum == 1 { // first row is header
-			_, _ = rows.Columns()
-		} else {
-			row, err = rows.Columns()
-			if err != nil {
-				log.LLvl1("Panic Raised:\n\n")
-				panic(err)
-			} else {
-				for i, colCell := range row {
-					/* --- in MarketMatching:
-					i = 0 is Server's Info,
-					i = 1 is FileSize,
-					i=2 is ServAgrDuration,
-					i=3 is MCRoundNumber,
-					i=4 is ServAgrID,
-					i=5 is Client's PK,
-					i = 6 is ServAgrPublished */
-					if i == 0 {
-						MinerServer = colCell
-					}
-					if i == 1 {
-						FileSize, err = strconv.Atoi(colCell)
-						if err != nil {
-							log.LLvl1("Panic Raised:\n\n")
-							panic(err)
-						}
-					}
-					if i == 2 {
-						ServAgrDuration, err = strconv.Atoi(colCell)
-						if err != nil {
-							log.LLvl1("Panic Raised:\n\n")
-							panic(err)
-						}
-					}
-					if i == 3 {
-						ServAgrStartedMCRoundNumber, err = strconv.Atoi(colCell)
-						if err != nil {
-							log.LLvl1("Panic Raised:\n\n")
-							panic(err)
-						}
-					}
-					if i == 4 {
-						ServAgrID, err = strconv.Atoi(colCell)
-						if err != nil {
-							log.LLvl1("Panic Raised:\n\n")
-							panic(err)
-						}
-					}
-					if i == 5 {
-						ServAgrPublished, err = strconv.Atoi(colCell)
-						if err != nil {
-							log.LLvl1("Panic Raised:\n\n")
-							panic(err)
-						}
-					}
-				}
-			}
-			t := [5]int{0, ServAgrID, 0, 0, 0}
-			// map transactionQueue:
-			// t[0]: stored file size in this round,
-			// t[1]: corresponding ServAgr id
-			// t[2]: TxServAgrPropose required
-			// t[3]: TxStoragePayment required
-			// t[4]: TxPor required
-			if ServAgrPublished == 1 && bz.MCRoundNumber-ServAgrStartedMCRoundNumber <= ServAgrDuration {
-				// ServAgr is not expired
-				t[0] = FileSize //if each server one ServAgr
-				// Add TxPor
-				t[4] = 1
-				transactionQueue[MinerServer] = t
-			}
-		}
-	}
-	// -------------------------------------------------------------------------------
+	// // -------------------------------------------------------------------------------
+	// // each round, .... based on the information in market matching sheet,
+	// // -------------------------------------------------------------------------------
+	// if rows, err = f.Rows("MarketMatching"); err != nil {
+	// 	log.LLvl1("Panic Raised:\n\n")
+	// 	panic(err)
+	// }
+	// var ServAgrDuration, ServAgrStartedMCRoundNumber, FileSize, ServAgrPublished, ServAgrID int
+	// var MinerServer string
 
-	pwd, _ = os.Getwd()
-	log.Lvl4("opening sidechainbc in:", pwd)
-	//bcDirectory := strings.Split(pwd, "/build")
-	bcDirectory = strings.Split(pwd, "/build")[0] + "/sidechainbc.xlsx"
-	log.Lvl4("opening sidechainbc in:", bcDirectory)
-	//f, err := excelize.OpenFile("/root/remote/sidechainbc.xlsx")
-	f1, err := excelize.OpenFile(bcDirectory)
-	if err != nil {
-		log.Fatal("problem while opening sidechainbc: " + err.Error())
-	} else {
-		log.LLvl1("sidechainbc Successfully opened")
-	}
+	// rowNum := 0
+	// transactionQueue := make(map[string][5]int)
+	// // first int: stored file size in this round,
+	// // second int: corresponding ServAgr id
+	// // third int: TxServAgrPropose required
+	// // fourth int: TxStoragePayment required
+	// // fifth int: TxPor required
+	// for rows.Next() {
+	// 	rowNum++
+	// 	if rowNum == 1 { // first row is header
+	// 		_, _ = rows.Columns()
+	// 	} else {
+	// 		row, err = rows.Columns()
+	// 		if err != nil {
+	// 			log.LLvl1("Panic Raised:\n\n")
+	// 			panic(err)
+	// 		} else {
+	// 			for i, colCell := range row {
+	// 				/* --- in MarketMatching:
+	// 				i = 0 is Server's Info,
+	// 				i = 1 is FileSize,
+	// 				i=2 is ServAgrDuration,
+	// 				i=3 is MCRoundNumber,
+	// 				i=4 is ServAgrID,
+	// 				i=5 is Client's PK,
+	// 				i = 6 is ServAgrPublished */
+	// 				if i == 0 {
+	// 					MinerServer = colCell
+	// 				}
+	// 				if i == 1 {
+	// 					FileSize, err = strconv.Atoi(colCell)
+	// 					if err != nil {
+	// 						log.LLvl1("Panic Raised:\n\n")
+	// 						panic(err)
+	// 					}
+	// 				}
+	// 				if i == 2 {
+	// 					ServAgrDuration, err = strconv.Atoi(colCell)
+	// 					if err != nil {
+	// 						log.LLvl1("Panic Raised:\n\n")
+	// 						panic(err)
+	// 					}
+	// 				}
+	// 				if i == 3 {
+	// 					ServAgrStartedMCRoundNumber, err = strconv.Atoi(colCell)
+	// 					if err != nil {
+	// 						log.LLvl1("Panic Raised:\n\n")
+	// 						panic(err)
+	// 					}
+	// 				}
+	// 				if i == 4 {
+	// 					ServAgrID, err = strconv.Atoi(colCell)
+	// 					if err != nil {
+	// 						log.LLvl1("Panic Raised:\n\n")
+	// 						panic(err)
+	// 					}
+	// 				}
+	// 				if i == 5 {
+	// 					ServAgrPublished, err = strconv.Atoi(colCell)
+	// 					if err != nil {
+	// 						log.LLvl1("Panic Raised:\n\n")
+	// 						panic(err)
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 		t := [5]int{0, ServAgrID, 0, 0, 0}
+	// 		// map transactionQueue:
+	// 		// t[0]: stored file size in this round,
+	// 		// t[1]: corresponding ServAgr id
+	// 		// t[2]: TxServAgrPropose required
+	// 		// t[3]: TxStoragePayment required
+	// 		// t[4]: TxPor required
+	// 		if ServAgrPublished == 1 && bz.MCRoundNumber-ServAgrStartedMCRoundNumber <= ServAgrDuration {
+	// 			// ServAgr is not expired
+	// 			t[0] = FileSize //if each server one ServAgr
+	// 			// Add TxPor
+	// 			t[4] = 1
+	// 			transactionQueue[MinerServer] = t
+	// 		}
+	// 	}
+	// }
+	// // -------------------------------------------------------------------------------
 
-	// ----------------------------------------------------------------------
-	// ------ add 5 types of transactions into transaction queue sheet -----
-	// ----------------------------------------------------------------------
-	/* each transaction has the following column stored on the transaction queue sheet:
-	0) name
-	1) size
-	2) time
-	3) issuedMCRoundNumber
-	4) ServAgrId */
+	// pwd, _ = os.Getwd()
+	// log.Lvl4("opening sidechainbc in:", pwd)
+	// //bcDirectory := strings.Split(pwd, "/build")
+	// bcDirectory = strings.Split(pwd, "/build")[0] + "/sidechainbc.xlsx"
+	// log.Lvl4("opening sidechainbc in:", bcDirectory)
+	// //f, err := excelize.OpenFile("/root/remote/sidechainbc.xlsx")
+	// f1, err := excelize.OpenFile(bcDirectory)
+	// if err != nil {
+	// 	log.Fatal("problem while opening sidechainbc: " + err.Error())
+	// } else {
+	// 	log.Lvl2("sidechainbc Successfully opened")
+	// }
 
-	var newTransactionRow [6]string
-	s := make([]interface{}, len(newTransactionRow)) //ToDoRaha:  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
+	// // ----------------------------------------------------------------------
+	// // ------ add 5 types of transactions into transaction queue sheet -----
+	// // ----------------------------------------------------------------------
+	// /* each transaction has the following column stored on the transaction queue sheet:
+	// 0) name
+	// 1) size
+	// 2) time
+	// 3) issuedMCRoundNumber
+	// 4) ServAgrId */
 
-	// this part can be moved to protocol initialization
-	var PorTxSize uint32
-	PorTxSize, _, _, _, _ = blockchain.TransactionMeasurement(bz.SectorNumber, bz.SimulationSeed)
-	// ---
-	// map transactionQueue:
-	// [0]: stored file size in this round,
-	// [1]: corresponding ServAgr id
-	// [2]: TxServAgrPropose required
-	// [3]: TxStoragePayment required
-	// [4]: TxPor required
-	for _, a := range bz.Roster().List {
-		if transactionQueue[a.Address.String()][4] == 1 { // TxPor required
-			newTransactionRow[2] = time.Now().Format(time.RFC3339)
-			// 50008 means 50000 + 8 which means epoch number 5 scround number 8
-			newTransactionRow[3] = strconv.Itoa(bz.SCRoundNumber)
-			newTransactionRow[0] = "TxPor"
-			newTransactionRow[1] = strconv.Itoa(int(PorTxSize))
-			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
-			newTransactionRow[5] = strconv.Itoa(bz.MCRoundNumber)
-		}
+	// var newTransactionRow [6]string
+	// s := make([]interface{}, len(newTransactionRow)) //ToDoRaha:  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
 
-		for i, v := range newTransactionRow {
-			s[i] = v
-		}
-		// ------ add a por tx row on top of the queue ------
-		if err = f1.InsertRow("FirstQueue", 2); err != nil {
-			log.LLvl1("Panic Raised:\n\n")
-			panic(err)
-		} else {
-			if err = f1.SetSheetRow("FirstQueue", "A2", &s); err != nil {
-				log.LLvl1("Panic Raised:\n\n")
-				panic(err)
-			} else {
-				if newTransactionRow[0] == "TxPor" {
-					log.Lvl4("a TxPor added to queue in sc round number: ", bz.SCRoundNumber)
-				}
-			}
-		}
-	}
-	// -------------------------------------------------------------------------------
-	//err = f1.SaveAs("/root/remote/sidechainbc.xlsx")
-	err = f1.SaveAs(bcDirectory)
+	// // this part can be moved to protocol initialization
+	// var PorTxSize uint32
+	// PorTxSize, _, _, _, _ = blockchain.TransactionMeasurement(bz.SectorNumber, bz.SimulationSeed)
+	// // ---
+	// // map transactionQueue:
+	// // [0]: stored file size in this round,
+	// // [1]: corresponding ServAgr id
+	// // [2]: TxServAgrPropose required
+	// // [3]: TxStoragePayment required
+	// // [4]: TxPor required
+	// for _, a := range bz.Roster().List {
+	// 	if transactionQueue[a.Address.String()][4] == 1 { // TxPor required
+	// 		newTransactionRow[2] = time.Now().Format(time.RFC3339)
+	// 		// 50008 means 50000 + 8 which means epoch number 5 scround number 8
+	// 		newTransactionRow[3] = strconv.Itoa(bz.SCRoundNumber)
+	// 		newTransactionRow[0] = "TxPor"
+	// 		newTransactionRow[1] = strconv.Itoa(int(PorTxSize))
+	// 		newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
+	// 		newTransactionRow[5] = strconv.Itoa(bz.MCRoundNumber)
+	// 	}
 
-	if err != nil {
-		log.LLvl1("Panic Raised:\n\n")
-		panic(err)
-	} else {
-		log.LLvl1("sc bc successfully closed")
-		log.Lvl4(bz.Name(), "Final result SC: finished collecting new transactions to side chain queue in round number ", bz.SCRoundNumber)
-	}
+	// 	for i, v := range newTransactionRow {
+	// 		s[i] = v
+	// 	}
+	// 	// ------ add a por tx row on top of the queue ------
+	// 	if err = f1.InsertRow("FirstQueue", 2); err != nil {
+	// 		log.LLvl1("Panic Raised:\n\n")
+	// 		panic(err)
+	// 	} else {
+	// 		if err = f1.SetSheetRow("FirstQueue", "A2", &s); err != nil {
+	// 			log.LLvl1("Panic Raised:\n\n")
+	// 			panic(err)
+	// 		} else {
+	// 			if newTransactionRow[0] == "TxPor" {
+	// 				log.Lvl4("a TxPor added to queue in sc round number: ", bz.SCRoundNumber)
+	// 			}
+	// 		}
+	// 	}
+	// }
+	// // -------------------------------------------------------------------------------
+	// //err = f1.SaveAs("/root/remote/sidechainbc.xlsx")
+	// err = f1.SaveAs(bcDirectory)
+
+	// if err != nil {
+	// 	log.LLvl1("Panic Raised:\n\n")
+	// 	panic(err)
+	// } else {
+	// 	log.Lvl2("sc bc successfully closed")
+	// 	log.Lvl4(bz.Name(), "Final result SC: finished collecting new transactions to side chain queue in round number ", bz.SCRoundNumber)
+	// 	log.Lvl1("updateSideChainBCTransactionQueueCollect took:", time.Since(takenTime).String())
+	// }
 }
 
 /* ----------------------------------------------------------------------
@@ -349,6 +350,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 	var err error
 	var rows [][]string
+	takenTime := time.Now()
 	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.MCRoundPerEpoch)))
 	// --- reset
 	bz.SideChainQueueWait = 0
@@ -363,7 +365,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 	if err != nil {
 		log.Fatal("problem while opening sidechainbc: " + err.Error())
 	} else {
-		log.LLvl1("sidechainbc Successfully opened")
+		log.Lvl2("sidechainbc Successfully opened")
 	}
 
 	var accumulatedTxSize, txsize int
@@ -521,11 +523,12 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("sc bc successfully closed")
+		log.Lvl2("sc bc successfully closed")
 	}
 	// fill OverallEvaluation Sheet
 	updateSideChainBCOverallEvaluation(CurrentRow, bz.SCRoundNumber)
 	blocksize := accumulatedTxSize + MetaBlockSizeMinusTransactions
+	log.Lvl1("updateSideChainBCTransactionQueueTake took:", time.Since(takenTime).String())
 	return blocksize
 }
 
@@ -534,7 +537,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 // --------------------------------------------------------------------------------
 func updateSideChainBCOverallEvaluation(CurrentRow string, SCRoundNumber int) {
 	var err error
-
+	takenTime := time.Now()
 	pwd, _ := os.Getwd()
 	log.Lvl4("opening sidechainbc in:", pwd)
 	//bcDirectory := strings.Split(pwd, "/build")
@@ -545,7 +548,7 @@ func updateSideChainBCOverallEvaluation(CurrentRow string, SCRoundNumber int) {
 	if err != nil {
 		log.Fatal("problem while opening sidechainbc: " + err.Error())
 	} else {
-		log.LLvl1("sidechainbc Successfully opened")
+		log.Lvl2("sidechainbc Successfully opened")
 	}
 
 	// ---- overall results
@@ -593,6 +596,7 @@ func updateSideChainBCOverallEvaluation(CurrentRow string, SCRoundNumber int) {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.LLvl1("sc bc successfully closed")
+		log.Lvl2("sc bc successfully closed")
+		log.Lvl1("updateSideChainBCOverallEvaluation took:", time.Since(takenTime).String())
 	}
 }

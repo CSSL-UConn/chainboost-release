@@ -1,6 +1,8 @@
 package MainAndSideChain
 
 import (
+	"time"
+
 	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi"
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
@@ -73,6 +75,7 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	var err error
 	bz.SCRoundNumber = msg.SCRoundNumber
 	bz.BlsCosi.Msg = []byte{0xFF}
+	takenTime := time.Now()
 	// -----------------------------------------------
 	// --- updating the next side chain's leader
 	// -----------------------------------------------
@@ -128,6 +131,7 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	// ----
 	//go func() error {
 	bz.BlsCosi.Start()
+	log.Lvl1("SideChainLeaderPreNewRound took:", time.Since(takenTime).String(), "for sc round number", bz.SCRoundNumber)
 	//	if err != nil {
 	//		return xerrors.New("Problem in cosi protocol run:   " + err.Error())
 	//	}
@@ -142,44 +146,61 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 	bz.SCRoundNumber = msg.SCRoundNumber
 	bz.SCSig = msg.SCSig
 	var blocksize int
-	//----
-	bz.BCLock.Lock()
-	defer bz.BCLock.Unlock()
-	//----
-	if bz.MCRoundDuration*bz.MCRoundPerEpoch/bz.SCRoundDuration == bz.SCRoundNumber {
+	// --------------------------------------------------------------------
+	if bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration) == bz.SCRoundNumber {
 		bz.BlsCosi.BlockType = "Summery Block" // just to know!
+		// ---
+		bz.BCLock.Lock()
+		// ---
 		// issueing a sync transaction from last submitted summery block to the main chain
 		blocksize = bz.syncMainChainBCTransactionQueueCollect()
 		//update the last row in round table with summery block's size
 		// in this round in which a summery block will be generated, new transactions will be added to the queue but not taken
 		bz.updateSideChainBCRound(msg.Name(), blocksize)
 		bz.updateSideChainBCTransactionQueueCollect()
+		// ---
+		bz.BCLock.Unlock()
+		// ---
 		// reset side chain round number
 		bz.SCRoundNumber = 1 // in side chain round number zero the summery blocks are published in side chain
 		// ------------- Epoch changed -----------
 		// i.e. the current published block on side chain is summery block
 		// change committee:
-		log.Lvl1("final result SC: BlsCosi: the Summery Block was for epoch number: ", bz.MCRoundNumber/bz.MCRoundPerEpoch)
+		log.Lvl1("Final result SC: BlsCosi: the Summery Block was for epoch number: ", bz.MCRoundNumber/bz.MCRoundPerEpoch)
 		// changing next side chain's leader for the next epoch rounds from the last miner in the main chain's window of miners
 		bz.NextSideChainLeader = bz.CommitteeNodesTreeNodeID[0]
 		// changing side chain's committee to last miners in the main chain's window of miners
 		bz.CommitteeNodesTreeNodeID = bz.CommitteeNodesTreeNodeID[0:bz.CommitteeWindow]
-		log.Lvl1("final result SC: BlsCosi: next side chain's epoch leader is: ", bz.Tree().Search(bz.NextSideChainLeader).Name())
+		log.Lvl1("Final result SC: BlsCosi: next side chain's epoch leader is: ", bz.Tree().Search(bz.NextSideChainLeader).Name())
 		for i, a := range bz.CommitteeNodesTreeNodeID {
-			log.Lvl3("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
+			log.Lvl3("Final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
 		}
-		bz.wg.Done()
+		log.Lvl1("Raha Debug: wgSCRound.Done")
+		bz.wgSCRound.Done()
+		// --------------------------------------------------------------------
+		log.Lvl1("Raha Debug: wgMCRound.Wait")
+		bz.wgMCRound.Wait()
+		log.Lvl1("Raha Debug: wgMCRound.Wait: PASSED")
+		// each epoch this number of mc rounds should be passed
+		log.Lvl1("Raha Debug: wgMCRound.Add(", bz.MCRoundPerEpoch, ")")
+		bz.wgMCRound.Add(bz.MCRoundPerEpoch)
 	} else {
+		// ---
+		bz.BCLock.Lock()
+		// ---
 		// next meta block on side chain blockchian is added by the root node
 		bz.updateSideChainBCRound(msg.Name(), 0) // we dont use blocksize param bcz when we are generating meta block
 		// the block size is measured and added in the func: updateSideChainBCTransactionQueueTake
 		bz.updateSideChainBCTransactionQueueCollect()
 		blocksize = bz.updateSideChainBCTransactionQueueTake()
 		bz.BlsCosi.BlockType = "Meta Block" // just to know!
-
+		// ---
+		bz.BCLock.Unlock()
+		// ---
 		// increase side chain round number
 		bz.SCRoundNumber = bz.SCRoundNumber + 1
-		bz.wg.Done()
+		log.Lvl1("Raha Debug: wgSCRound.Done")
+		bz.wgSCRound.Done()
 	}
 	// --------------------------------------------------------------------
 	//triggering next side chain round leader to run next round of blscosi
@@ -224,9 +245,6 @@ func (bz *ChainBoost) StartSideChainProtocol() {
 		log.LLvl1(bz.Name(), "can't send new side chain round msg to", bz.Tree().Search(bz.NextSideChainLeader).Name())
 		panic("can't send new side chain round msg to the first leader")
 	}
-	//
-	x := int(bz.MCRoundDuration / bz.SCRoundDuration)
-	bz.wg.Add(x)
 }
 
 /* -----------------------------------------------

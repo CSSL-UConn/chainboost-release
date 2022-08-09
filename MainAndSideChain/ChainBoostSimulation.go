@@ -77,8 +77,19 @@ type Joined struct {
 	IsJoined bool
 }
 
+// to let the  first leader run main chain protocol and ignore the rest
+type MCLeader struct {
+	HasLeader bool
+	MCPLock   sync.Mutex
+}
+
 //  ChainBoost is the main struct that has required parameters for running both protocols ------------
 type ChainBoost struct {
+	// what if we could have two types of node structures: root node and simple nodes
+	// then the simple nodes would be much lighter.
+	// ToDoRaha: test it to communicate from a root node struct to simple node and vice versa
+	// ToDoRaha: Lots of these items can be transfered into outside! or even removed from the structure
+
 	// the node we are represented-in
 	*onet.TreeNodeInstance
 	ECPrivateKey vrf.VrfPrivkey
@@ -98,12 +109,15 @@ type ChainBoost struct {
 	// channel to notify when we are done -- when a message is sent through this channel the runsimul.go file will catch it and finish the protocol.
 	DoneChainBoost chan bool
 	// ---------------------------------
+
 	// to avoid conflict while modifying bc files
 	BCLock sync.Mutex
-	// to let the  first leader run main chian protocol and ignore the rest
-	MCPLock sync.Mutex
+	// to let the  first leader run main chain protocol and ignore the rest
+	MCLeader *MCLeader
 	// for root node to wait for a specific number of side chain rounds before proceeding to next main chain's round
-	wg sync.WaitGroup
+	wgSCRound sync.WaitGroup
+	// for root node to wait for a specific number of main chain rounds before proceeding to next side chain's round
+	wgMCRound sync.WaitGroup
 	// for root node to wait for all nodes join the simulation (the point that start listening on dispatch on hellochainboost function)
 	// before starting the ptocols
 	JoinedWG sync.WaitGroup
@@ -113,7 +127,6 @@ type ChainBoost struct {
 	LeaderProposeChan chan bool
 	MCRoundNumber     int
 	SCRoundNumber     int
-	HasLeader         bool
 	// --- just root node use these - these are used for delay evaluation
 	FirstQueueWait  int
 	SecondQueueWait int
@@ -143,6 +156,8 @@ type ChainBoost struct {
 	Threshold       int
 	SCRoundDuration int
 	CommitteeWindow int //ToDoRaha: go down
+	// ---
+	maxFileSize int
 	/* ------------------------------------------------------------------
 	 ---------------------------  bls cosi protocol  ---------------
 	--------------------------------------------------------------------- */
@@ -155,8 +170,9 @@ type ChainBoost struct {
 	LtRSideChainNewRoundChan chan LtRSideChainNewRoundChan
 	// it is initiated in the start function by root node
 	BlsCosiStarted bool
-	// -- meta block temp summery
-	SummPoRTxs map[int]int // server agreement ID --> number of not summerized submitted PoRs in the meta blocks for this agreement
+	// -- meta block temp summery.
+	// server agreement ID --> number of not summerized submitted PoRs in the meta blocks for this agreement
+	SummPoRTxs map[int]int
 	SCSig      BLSCoSi.BlsSignature
 }
 
@@ -171,6 +187,9 @@ func (bz *ChainBoost) Start() error {
 	log.Lvl1("Updating the mainchainbc file with created nodes' information")
 	bz.finalMainChainBCInitialization()
 	bz.BCLock.Unlock()
+	//---
+	bz.MCLeader = &MCLeader{}
+	//---
 	bz.BlsCosiStarted = true
 	// ------------------------------------------------------------------------------
 	// config params are sent from the leader to the other nodes after
@@ -196,6 +215,8 @@ func (bz *ChainBoost) Dispatch() error {
 	// 	return nil
 	// }
 	// return nil
+
+	// todoraha: I remember some where in byzcoin the running variable was set to false. look for it later!
 	running := true
 	var err error
 	numberOfJoinedNodes := len(bz.Tree().List())
@@ -206,12 +227,6 @@ func (bz *ChainBoost) Dispatch() error {
 		// -----------------------------------------------------------------------------
 		// ******* ALL nodes recieve this message to join the protocol and get the config values set
 		// -----------------------------------------------------------------------------
-		case msg := <-bz.JoinedWGChan:
-			if bz.IsRoot() && msg.IsJoined {
-				numberOfJoinedNodes--
-				log.Lvl1("1 node has joined the simulation:", numberOfJoinedNodes, "is remained.")
-				bz.JoinedWG.Done()
-			}
 		case msg := <-bz.HelloChan:
 			log.Lvlf4(bz.TreeNode().Name(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
 			bz.PercentageTxPay = msg.PercentageTxPay
@@ -237,24 +252,49 @@ func (bz *ChainBoost) Dispatch() error {
 			}
 			go bz.helloChainBoost()
 		// -----------------------------------------------------------------------------
+		// ******* ALL nodes that recieve helloChainBoost send this message to the ROOT node to let it know they have joined the protocol
+		// -----------------------------------------------------------------------------
+		case msg := <-bz.JoinedWGChan:
+			if bz.IsRoot() && msg.IsJoined {
+				numberOfJoinedNodes--
+				log.Lvl1(msg.TreeNode.Name(), "has joined the simulation:", numberOfJoinedNodes, "is remained.")
+				if numberOfJoinedNodes > int(len(bz.Roster().List)/100) {
+					bz.JoinedWG.Done()
+				}
+			}
+		// -----------------------------------------------------------------------------
 		// *** MC *** ALL nodes recieve this message to sync rounds
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.MainChainNewRoundChan:
 			bz.MCRoundNumber = bz.MCRoundNumber + 1
-			log.Lvlf3(bz.Name(), " round number ", bz.MCRoundNumber, " started at ", time.Now().Format(time.RFC3339))
+			log.Lvl3(bz.Name(), " round number ", bz.MCRoundNumber, " started at ", time.Now().Format(time.RFC3339))
 			go bz.MainChainCheckLeadership(msg)
 		// -----------------------------------------------------------------------------
 		// *** MC *** just the ROOT NODE (blockchain layer one) recieve this msg
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.MainChainNewLeaderChan:
-			go func() {
-				time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
-				bz.RootPreNewRound(msg)
-				for len(bz.MainChainNewLeaderChan) > 0 {
-					a := <-bz.MainChainNewLeaderChan
-					log.LLvl1(a.LeaderTreeNodeID, " for round", a.MCRoundNumber, "popped out")
-				}
-			}()
+			if !bz.MCLeader.HasLeader || msg.TreeNode == bz.TreeNode() {
+				go func() {
+					bz.MCLeader.MCPLock.Lock()
+					if bz.MCLeader.HasLeader && msg.TreeNode != bz.TreeNode() {
+						bz.MCLeader.MCPLock.Unlock()
+						return
+					}
+					log.Lvl1("the first leader is:", msg.TreeNode.Name())
+					bz.MCLeader.HasLeader = true
+					bz.MCLeader.MCPLock.Unlock()
+					// ---
+					time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
+					bz.RootPreNewRound(msg)
+
+					//
+					// log.Lvl1(len(bz.MainChainNewLeaderChan), "leaders were selected for round number", bz.MCRoundNumber, "too late!")
+					// for len(bz.MainChainNewLeaderChan) > 0 {
+					// 	a := <-bz.MainChainNewLeaderChan
+					// 	log.Lvl5(a.LeaderTreeNodeID, " for round", a.MCRoundNumber, "popped out")
+					// }
+				}()
+			}
 		// -----------------------------------------------------------------------------
 		// *** SC *** next side chain's leader recieves this message
 		// -----------------------------------------------------------------------------
@@ -285,7 +325,7 @@ func (bz *ChainBoost) helloChainBoost() {
 			err := bz.DispatchProtocol()
 			if err != nil {
 				log.LLvl1("protocol dispatch calling error: " + err.Error())
-				panic("protocol dispatch calling error")
+				//panic("protocol dispatch calling error")
 			}
 		}()
 		err := bz.SendTo(bz.Root(), &Joined{IsJoined: true})
@@ -298,6 +338,21 @@ func (bz *ChainBoost) helloChainBoost() {
 		bz.JoinedWG.Wait()
 		log.Lvl1("All nodes joined  the simulation, Done waiting, The Root node will start the protocol(s)")
 		if bz.SimState == 2 {
+			//--------------------------------------------------
+			// this equation result has to be int!
+			if int(bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration)) != bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration) {
+				log.LLvl1("Panic Raised:\n\n")
+				panic("err in setting config params: {bz.MCRoundPerEpoch*(bz.MCRoundDuration / bz.SCRoundDuration)} has to be int")
+			}
+			//--------------------------------------------------
+			// each epoch this number of sc rounds should be passed
+			log.Lvl1("Raha Debug: wgSCRound.Add(", bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration), ")")
+			bz.wgSCRound.Add(bz.MCRoundPerEpoch * (bz.MCRoundDuration / bz.SCRoundDuration))
+			//--------------------------------------------------
+			// each epoch this number of sc rounds should be passed
+			log.Lvl1("Raha Debug: wgMCRound.Add(", bz.MCRoundPerEpoch, ")")
+			bz.wgMCRound.Add(bz.MCRoundPerEpoch)
+			//--------------------------------------------------
 			go bz.StartMainChainProtocol()
 			go bz.StartSideChainProtocol()
 		} else if bz.SimState == 1 {
@@ -321,12 +376,13 @@ func (bz *ChainBoost) startTimer(MCRoundNumber int) {
 		// bz.IsRoot() is here just to make sure!,
 		// bz.MCRoundNumber == MCRoundNumber is for when the round number has changed!,
 		// bz.hasLeader is for when the round number has'nt changed but the leader has been announced
-		bz.MCPLock.Lock()
-		if bz.IsRoot() && bz.MCRoundNumber == MCRoundNumber && !bz.HasLeader {
-			log.LLvl1("No leader for round number ", bz.MCRoundNumber, "an empty block is added")
+		bz.MCLeader.MCPLock.Lock()
+		if bz.IsRoot() && bz.MCRoundNumber == MCRoundNumber && !bz.MCLeader.HasLeader {
+			log.Lvl1("No leader for round number ", bz.MCRoundNumber, "an empty block is added")
+			bz.MCLeader.HasLeader = true
 			bz.MainChainNewLeaderChan <- MainChainNewLeaderChan{bz.TreeNode(), NewLeader{LeaderTreeNodeID: bz.TreeNode().ID, MCRoundNumber: bz.MCRoundNumber}}
 		}
-		bz.MCPLock.Unlock()
+		bz.MCLeader.MCPLock.Unlock()
 	}
 }
 
