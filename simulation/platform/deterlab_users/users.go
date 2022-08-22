@@ -16,6 +16,7 @@ import (
 
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
+	simul "github.com/chainBoostScale/ChainBoost/simulation"
 
 	//"github.com/chainBoostScale/ChainBoost/simulation/monitor"
 	"github.com/chainBoostScale/ChainBoost/simulation/platform"
@@ -24,14 +25,12 @@ import (
 var kill = false
 
 // suite is Ed25519 by default
-var suite string
+//var suite string
 
 // Initialize before 'init' so we can directly use the fields as parameters
 // to 'Flag'
 func init() {
 	flag.BoolVar(&kill, "kill", false, "kill everything (and don't start anything)")
-	flag.StringVar(&suite, "suite", "Ed25519", "cryptographic suite to use")
-
 }
 
 // DeterlabUsers is called on the users.deterlab.net-server and will:
@@ -92,15 +91,16 @@ func main() {
 			// }
 			//log.Lvl1("Host", h, "cleaned up")
 			//} else {
-			//log.LLvl1("Raha: skipping: Setting the file-limit higher")
-			log.LLvl1("Setting the file-limit higher on", h)
+
+			log.LLvl1("Raha: skipping: Setting the file-limit higher")
+			//log.LLvl1("Setting the file-limit higher on", h)
 			// Copy configuration file to make higher file-limits
-			err := platform.SSHRunStdout("root", h, "sudo cp remote/simul.conf /etc/security/limits.d")
-			if err != nil {
-				log.Fatal("Couldn't copy limit-file:", err)
-			} else {
-				log.Lvl1("successfully copied limit-file")
-			}
+			// err := platform.SSHRunStdout("root", h, "sudo cp remote/simul.conf /etc/security/limits.d")
+			// if err != nil {
+			// 	log.Fatal("Couldn't copy limit-file:", err)
+			// } else {
+			// 	log.Lvl1("successfully copied limit-file")
+			// }
 			//}
 			doneHosts[i] = true
 		}(i, h)
@@ -180,14 +180,51 @@ func main() {
 			log.Lvl1("Done copying to VMs")
 			// -----------------------------------------
 			log.Lvl1("Raha: running ./simul with non-empty simul tag!!!")
+			// ------------------------------------------
+			// -------------------------------------
+			// Raha: chainboost dynamic config variables
+			// these variables are initialzied in [not in config(?) file for now] simul.go file
+			// which has a start function that when we call ./simul exe
+			// this start function is called afterward and start the simulation
+			/* -------------------------------------
+			PercentageTxPay
+			MCRoundDuration       	//sec
+			MainChainBlockSize  	//byte
+			SideChainBlockSize
+			SectorNumber
+			NumberOfPayTXsUpperBound
+			SimulationRounds
+			SimulationSeed
+			NbrSubTrees
+			Threshold 			    //out of committee nodes
+			SCRoundDuration
+			CommitteeWindow		    //nodes
+			MCRoundPerEpoch
+			SimState
+			*/
+
 			args := " -address=" + internal +
 				" -simul=" + deter.Simulation +
 				" -monitor=" + monitorAddr +
 				//todoraha
 				//" -debug=" + strconv.Itoa(log.DebugVisible()) +
-				" -debug=1" +
-				" -suite=" + suite +
-				" -platform=deterlab"
+				" -Debug=" + strconv.Itoa(simul.Debug) +
+				" -suite=" + simul.Suite +
+				// ----- ChainBoost Config Variables
+				" -PercentageTxPay=" + strconv.Itoa(deter.PercentageTxPay) + //strconv.Itoa(simul.PercentageTxPay) +
+				" -MCRoundDuration=" + strconv.Itoa(simul.MCRoundDuration) +
+				" -MainChainBlockSize=" + strconv.Itoa(simul.MainChainBlockSize) +
+				" -SideChainBlockSize=" + strconv.Itoa(simul.SideChainBlockSize) +
+				" -SectorNumber=" + strconv.Itoa(simul.SectorNumber) +
+				" -NumberOfPayTXsUpperBound=" + strconv.Itoa(simul.NumberOfPayTXsUpperBound) +
+				" -SimulationRounds=" + strconv.Itoa(simul.SimulationRounds) +
+				" -SimulationSeed=" + strconv.Itoa(simul.SimulationSeed) +
+				" -NbrSubTrees=" + strconv.Itoa(simul.NbrSubTrees) +
+				" -Threshold=" + strconv.Itoa(simul.Threshold) +
+				" -SCRoundDuration=" + strconv.Itoa(simul.SCRoundDuration) +
+				" -CommitteeWindow=" + strconv.Itoa(simul.CommitteeWindow) +
+				" -MCRoundPerEpoch=" + strconv.Itoa(simul.MCRoundPerEpoch) +
+				" -SimState=" + strconv.Itoa(simul.SimState)
 
 			log.Lvl1("Args is", args)
 			err = platform.SSHRunStdout("root", phys, "cd remote; sudo ./simul "+args)

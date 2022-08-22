@@ -1,6 +1,8 @@
 package MainAndSideChain
 
 import (
+	"math"
+	"math/rand"
 	"time"
 
 	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi"
@@ -53,7 +55,7 @@ func (bz *ChainBoost) DispatchProtocol() error {
 		// --------------------------------------------------------
 		case sig := <-bz.BlsCosi.FinalSignature:
 			if err := BLSCoSi.BdnSignature(sig).Verify(bz.BlsCosi.Suite, bz.BlsCosi.Msg, bz.BlsCosi.SubTrees[0].Roster.Publics()); err == nil {
-				log.Lvl4("final result SC:", bz.Name(), " : ", bz.BlsCosi.BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
+				log.Lvl1("final result SC:", bz.Name(), " : ", bz.BlsCosi.BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
 				err := bz.SendTo(bz.Root(), &LtRSideChainNewRound{
 					NewRound:      true,
 					SCRoundNumber: bz.SCRoundNumber,
@@ -70,7 +72,7 @@ func (bz *ChainBoost) DispatchProtocol() error {
 	return err
 }
 
-//SideChainLeaderPreNewRound:
+//SideChainLeaderPreNewRound is run by the side chain's leader
 func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) error {
 	var err error
 	bz.SCRoundNumber = msg.SCRoundNumber
@@ -85,7 +87,6 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 		//todoraha: a out of range bug happens sometimes!
 		//log.LLvl1("raha: debug:", bz.CommitteeWindow-1)
 		log.Lvl2("raha: debug:", bz.CommitteeWindow)
-
 		//for _, a := range bz.CommitteeNodesTreeNodeID[0 : bz.CommitteeWindow-1] {
 		for _, a := range bz.CommitteeNodesTreeNodeID[0:bz.CommitteeWindow] {
 			CommitteeNodesServerIdentity = append(CommitteeNodesServerIdentity, bz.Tree().Search(a).ServerIdentity)
@@ -119,14 +120,14 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	if err == nil {
 		if bz.SCRoundNumber == 1 {
 			log.Lvl3("final result SC: Next bls cosi tree is: ", bz.BlsCosi.SubTrees[0].Roster.List,
-				" with ", bz.Name(), " as Root \n running BlsCosi round number", bz.SCRoundNumber)
+				" with ", bz.Name(), " as Root \n running BlsCosi sc round number", bz.SCRoundNumber)
 		}
 	} else {
 		return xerrors.New("Problem in cosi protocol run:   " + err.Error())
 	}
 	// ---
 	// from bc: update msg size with next block size on side chain
-	s := make([]byte, msg.blocksize, msg.blocksize)
+	s := make([]byte, msg.blocksize)
 	bz.BlsCosi.Msg = append(bz.BlsCosi.Msg, s...) // Msg is the meta block
 	// ----
 	//go func() error {
@@ -157,7 +158,6 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 		//update the last row in round table with summery block's size
 		// in this round in which a summery block will be generated, new transactions will be added to the queue but not taken
 		bz.updateSideChainBCRound(msg.Name(), blocksize)
-		bz.updateSideChainBCTransactionQueueCollect()
 		// ---
 		bz.BCLock.Unlock()
 		// ---
@@ -191,7 +191,6 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 		// next meta block on side chain blockchian is added by the root node
 		bz.updateSideChainBCRound(msg.Name(), 0) // we dont use blocksize param bcz when we are generating meta block
 		// the block size is measured and added in the func: updateSideChainBCTransactionQueueTake
-		bz.updateSideChainBCTransactionQueueCollect()
 		blocksize = bz.updateSideChainBCTransactionQueueTake()
 		bz.BlsCosi.BlockType = "Meta Block" // just to know!
 		// ---
@@ -222,11 +221,29 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 // ----------------------------------------------------------------------------------------------
 func (bz *ChainBoost) StartSideChainProtocol() {
 	var err error
+
+	bz.BCLock.Lock()
+	bz.updateSideChainBCTransactionQueueCollect()
+	bz.BCLock.Unlock()
+
 	// -----------------------------------------------
 	// --- initializing side chain's msg and side chain's committee roster index for the second run and the next runs
 	// -----------------------------------------------
+	rand := rand.New(rand.NewSource(int64(bz.SimulationSeed)))
+	var r []int
+	var d int
 	for i := 0; i < bz.CommitteeWindow; i++ {
-		bz.CommitteeNodesTreeNodeID = append(bz.CommitteeNodesTreeNodeID, bz.Tree().List()[i].ID)
+		d = int(math.Abs(float64(int(rand.Uint64())))) % len(bz.Tree().List())
+		if !contains(r, d) {
+			r = append(r, d)
+		} else {
+			i--
+		}
+	}
+
+	for i := 0; i < bz.CommitteeWindow; i++ {
+		d := r[i]
+		bz.CommitteeNodesTreeNodeID = append(bz.CommitteeNodesTreeNodeID, bz.Tree().List()[d].ID)
 	}
 	bz.BlsCosi.Msg = []byte{0xFF}
 	// -----------------------------------------------
@@ -251,7 +268,8 @@ func (bz *ChainBoost) StartSideChainProtocol() {
 dynamically change the side chain's committee with last main chain's leader
 the committee nodes is shifted by one and the new leader is added to be used for next epoch's side chain's committee
 Note that: for now we are considering the last w distinct leaders in the committee which means
-if a leader is selected multiple times during an epoch, he will nnot be added multiple times
+if a leader is selected multiple times during an epoch, he will not be added multiple times,
+//todoraha: the new leader can be moved to be the first in the committee to be atleast be the next sc's leader
 -----------------------------------------------
 --- updating the CommitteeNodesTreeNodeID
 ----------------------------------------------- */
@@ -262,20 +280,21 @@ func (bz *ChainBoost) UpdateSideChainCommittee(msg MainChainNewLeaderChan) {
 			t = t + 1
 			continue
 		} else {
+
 			break
 		}
 	}
 	if t != len(bz.CommitteeNodesTreeNodeID) {
-		log.Lvl2("final result SC:", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), " is already in the committee")
+		log.Lvl1("final result SC:", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), " is already in the committee")
 		for i, a := range bz.CommitteeNodesTreeNodeID {
-			log.Lvl2("final result SC: BlsCosi committee queue: ", i, ":", bz.Tree().Search(a).Name())
+			log.Lvl1("final result SC: BlsCosi committee queue: ", i, ":", bz.Tree().Search(a).Name())
 		}
 	} else {
 		NextSideChainLeaderTreeNodeID := msg.LeaderTreeNodeID
 		bz.CommitteeNodesTreeNodeID = append([]onet.TreeNodeID{NextSideChainLeaderTreeNodeID}, bz.CommitteeNodesTreeNodeID...)
 		log.Lvl1("final result SC:", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), "is added to side chain for the next epoch's committee")
 		for i, a := range bz.CommitteeNodesTreeNodeID {
-			log.Lvl2("final result SC: BlsCosi committee queue: ", i, ":", bz.Tree().Search(a).Name())
+			log.Lvl1("final result SC: BlsCosi committee queue: ", i, ":", bz.Tree().Search(a).Name())
 		}
 	}
 }
@@ -317,3 +336,13 @@ func (bz *ChainBoost) UpdateSideChainCommittee(msg MainChainNewLeaderChan) {
 		log.LLvl1(bz.Info(), "couldn't start side chain")
 	}
 } */
+
+// utility
+func contains(s []int, e int) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}

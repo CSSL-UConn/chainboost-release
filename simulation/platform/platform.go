@@ -122,7 +122,7 @@ func NewPlatform(t string) Platform {
 func ReadRunFile(p Platform, filename string) []*RunConfig {
 	var runconfigs []*RunConfig
 	masterConfig := NewRunConfig()
-	//log.LLvl3("Reading file", filename)
+	log.Lvl1("Reading file", filename)
 
 	file, err := os.Open(filename)
 	defer func() {

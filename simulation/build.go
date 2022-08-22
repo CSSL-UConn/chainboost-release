@@ -33,10 +33,9 @@ var race = false
 var runWait = 180 * time.Second
 var experimentWait = 0 * time.Second
 
-// ??
-//var platformDst = "localhost"
+var platformDst = "localhost" //todoraha: it should be initialized for debugging?
 //var platformDst = "deterlab"
-var platformDst string //= "deterlab"
+//var platformDst string //= "deterlab"
 
 func init() {
 	flag.BoolVar(&nobuild, "nobuild", false, "Don't rebuild all helpers")
@@ -49,7 +48,7 @@ func init() {
 	flag.DurationVar(&runWait, "runwait", runWait, "How long to wait for each simulation to finish - overwrites .toml-value")
 	flag.DurationVar(&experimentWait, "experimentwait", experimentWait, "How long to wait for the whole experiment to finish")
 	flag.StringVar(&platformDst, "platform", platformDst, "platform to deploy to [localhost,mininet,deterlab]")
-	log.RegisterFlags()
+
 }
 
 // Reads in the platform that we want to use and prepares for the tests
@@ -57,7 +56,7 @@ func init() {
 func startBuild() {
 	//platformDst = customPlatform
 	flag.Parse()
-	log.Lvl1("platformDst is:", platformDst)
+	log.Lvl5("platformDst is:", platformDst)
 	deployP := platform.NewPlatform(platformDst)
 	if deployP == nil {
 		log.Fatal("Platform not recognized.", platformDst)
@@ -76,8 +75,14 @@ func startBuild() {
 		if len(runconfigs) == 0 {
 			log.Fatal("No tests found in", simulation)
 		}
-		// raha: converting string values read from toml file to int values
 
+		/* raha: instead of reading these config variables from the toml connfig file, we set an initialized
+		   value for each on simul.go and we can dynamically change them when running each simulation
+		   via flags with exact same names
+		   e.g.: go test -platform=deterlab -MCRoundDuration=10 -timeout 300000s -run ^TestSimulation$
+		*/
+
+		// raha: converting string values read from toml file to int values
 		MCRoundDuration, _ := strconv.Atoi(runconfigs[0].Get("MCRoundDuration"))
 		PercentageTxPay, _ := strconv.Atoi(runconfigs[0].Get("PercentageTxPay"))
 		MainChainBlockSize, _ := strconv.Atoi(runconfigs[0].Get("MainChainBlockSize"))

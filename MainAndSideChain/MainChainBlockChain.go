@@ -159,7 +159,7 @@ func (bz *ChainBoost) readBCAndSendtoOthers() {
 	}
 	// detecting leader-less in next round
 	go bz.startTimer(bz.MCRoundNumber)
-	log.Lvl1("readBCAndSendtoOthers took:", time.Since(takenTime).String(), "for round number", bz.MCRoundNumber)
+	log.Lvl1("readBCAndSendtoOthers took:", time.Since(takenTime).String(), "for mc round number", bz.MCRoundNumber)
 
 }
 
@@ -203,50 +203,6 @@ func (bz *ChainBoost) readBCPowersAndSeed() (minerspowers map[string]int, seed s
 		seed = row[1]
 	}
 
-	// ----------------------
-	//tododraha: check if works remove this later
-	// ----------------------
-	// if rows, err = f.Rows("RoundTable"); err != nil {
-	// 	log.LLvl1("Panic Raised:\n\n")
-	// 	panic(err)
-	// }
-	// for rows.Next() {
-	// 	rowNumber++
-	// 	if row, err = rows.Columns(); err != nil {
-	// 		log.LLvl1("Panic Raised:\n\n")
-	// 		panic(err)
-	// 	}
-	// }
-	// last row:
-	//for i, colCell := range row {
-	// if i == 0 {
-	// 	if bz.MCRoundNumber, err = strconv.Atoi(colCell); err != nil {
-	// 		log.LLvl1("Panic Raised:\n\n")
-	// 		panic(err)
-	// 	}
-	// }
-	// 	if i == 1 {
-	// 		seed = colCell // last round's seed
-	// 	}
-	// }
-	//-------------------------------------------------------------------------------------------
-	// looking for all nodes' power in the last round in the power table sheet in the mainchainbc file
-	// rowNumber = 0 //ToDoRaha: later it can go straight to last row based on the round number found in round table
-	// rowNum := 0
-	// if rows, err = f.Rows("PowerTable"); err != nil {
-	// 	log.LLvl1("Panic Raised:\n\n")
-	// 	panic(err)
-	// }
-	// for rows.Next() {
-	// 	rowNumber++
-	// }
-	// last row in power table:
-	// if row, err = rows.Columns(); err != nil {
-	// 	log.LLvl1("Panic Raised:\n\n")
-	// 	panic(err)
-	// }
-	// ----------------------
-
 	//-------------------------------------------------------------------------------------------
 	// looking for all nodes' power in the last round in the power table sheet in the mainchainbc file
 	if rows, err = f.GetRows("PowerTable"); err != nil {
@@ -263,7 +219,7 @@ func (bz *ChainBoost) readBCPowersAndSeed() (minerspowers map[string]int, seed s
 				panic(er)
 			}
 			minerspowers[a.Address.String()] = powerCell
-			log.Lvl4(i+1, "-th miner in roster list:", a.Address.String(), "\ngot power of", powerCell, "\nin row number:", rowNumber, "and round number:", bz.MCRoundNumber)
+			log.Lvl4(i+1, "-th miner in roster list:", a.Address.String(), "\ngot power of", powerCell, "\nin row number:", rowNumber, "and mc round number:", bz.MCRoundNumber)
 		}
 	}
 
@@ -333,7 +289,7 @@ func (bz *ChainBoost) readBCPowersAndSeed() (minerspowers map[string]int, seed s
 	// 	upperPower := uint64(t)
 	// 	minerspowers[a.Address.String()] = minerspowers[a.Address.String()] + upperPower
 	// }
-	log.Lvl1("readBCPowersAndSeed took:", time.Since(takenTime).String(), "for round number", bz.MCRoundNumber+1)
+	log.Lvl1("readBCPowersAndSeed took:", time.Since(takenTime).String(), "for mc round number", bz.MCRoundNumber+1)
 	return minerspowers, seed
 }
 
@@ -392,13 +348,15 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 	// including header row: round 1 is on row number 2
 	currentRow := strconv.Itoa(bz.MCRoundNumber + 1)
 	nextRow := strconv.Itoa(bz.MCRoundNumber + 2)
-	// ---
-	axisBCSize := "C" + currentRow
-	err = f.SetCellValue("RoundTable", axisBCSize, bz.MainChainBlockSize)
-	if err != nil {
-		log.LLvl1("Panic Raised:\n\n")
-		panic(err)
-	}
+
+	// --- bc size is inserted in take tx function
+	// axisBCSize := "C" + currentRow
+	// err = f.SetCellValue("RoundTable", axisBCSize, bz.MainChainBlockSize)
+	// if err != nil {
+	// 	log.LLvl1("Panic Raised:\n\n")
+	// 	panic(err)
+	// }
+
 	// --------------------------------------------------------------------
 	// --- set starting round time
 	// --------------------------------------------------------------------
@@ -460,7 +418,7 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 	for rowsMarketMatching.Next() {
 		rowNum++
 		if rowNum == 1 {
-			row, _ = rowsMarketMatching.Columns()
+			continue
 		} else {
 			row, err = rowsMarketMatching.Columns()
 			if err != nil {
@@ -505,10 +463,14 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 			}
 		}
 	}
-
+	//
 	// ---------------------------------------------------------------------
 	// --- Power Table sheet  ----------------------------------------------
 	// ---------------------------------------------------------------------
+	/* todoraha: Power has been  added without considering por tx.s not published (waiting in queue yet)
+	=> fix it: use TXissued column (first set it to 2 when taken and second change its name to TXonQ), so if
+	contract is publlished (1) but TxonQ is taken (2) then add power  */
+
 	index := f.GetSheetIndex("PowerTable")
 	f.SetActiveSheet(index)
 	var PowerInfoRow []int
@@ -538,7 +500,7 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 		panic(err)
 	} else {
 		log.Lvl2("bc Successfully closed")
-		log.Lvl1("updateBCPowerRound took:", time.Since(takenTime).String(), "for round number", bz.MCRoundNumber)
+		log.Lvl1("updateBCPowerRound took:", time.Since(takenTime).String(), "for mc round number", bz.MCRoundNumber)
 
 	}
 }
@@ -547,151 +509,37 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
     updateBC: this is a connection between first layer of blockchain - ROOT NODE - on the second layer - xlsx file -
 ------------------------------------------------------------------------ */
 func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
+	takenTime := time.Now()
 	var err error
-	var rows *excelize.Rows
-	var row []string
-
 	pwd, _ := os.Getwd()
 	log.Lvl4("opening bc in:", pwd)
 	//bcDirectory := strings.Split(pwd, "/build")
-	bcDirectory := strings.Split(pwd, "/build")[0] + "/mainchainbc.xlsx"
-	log.Lvl4("opening bc in:", bcDirectory)
+	bcDirectoryMC := strings.Split(pwd, "/build")[0] + "/mainchainbc.xlsx"
+	log.Lvl4("opening bc in:", bcDirectoryMC)
 	//f, err := excelize.OpenFile("/root/remote/mainchainbc.xlsx")
-	f, err := excelize.OpenFile(bcDirectory)
+	f, err := excelize.OpenFile(bcDirectoryMC)
 	if err != nil {
 		log.Fatal("problem while opening bc: " + err.Error())
 	} else {
 		log.Lvl2("bc Successfully opened")
 	}
-	// -------------------------------------------------------------------------------
-	var takenTime time.Time
-	takenTime = time.Now()
-	// -------------------------------------------------------------------------------
-	// each round, adding one row in power table based on the information in market matching sheet,
-	// assuming that servers are honest and have honestly publish por for their actice (not expired) ServAgrs,
-	// for each storage server and each of their active contracst, add the stored file size to their current power
-	// -------------------------------------------------------------------------------
-	if rows, err = f.Rows("MarketMatching"); err != nil {
+	cols, err := f.GetCols("MarketMatching")
+	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
-	var ServAgrDuration, ServAgrStartedMCRoundNumber, FileSize, ServAgrPublished, ServAgrID int
-	var MinerServer, ServAgrIDString string
-
-	rowNum := 0
-	transactionQueue := make(map[string][5]int)
-	// first int:  stored file size in this round,
-	// second int: corresponding ServAgr id
-	// third int:  TxServAgrPropose required
-	// fourth int: TxStoragePayment required
-	for rows.Next() {
-		rowNum++
-		if rowNum == 1 { // first row is header
-			_, _ = rows.Columns()
-		} else {
-			row, err = rows.Columns()
-			if err != nil {
-				log.LLvl1("Panic Raised:\n\n")
-				panic(err)
-			} else {
-				for i, colCell := range row {
-
-					/* --- in MarketMatching:
-					i = 0 is Server's Info,
-					i = 1 is FileSize,
-					i = 2 is ServAgrDuration,
-					i = 3 is MCRoundNumber,
-					i = 4 is ServAgrID,
-					i = 5 is Client's PK,
-					i = 6 is ServAgrPublished */
-
-					if i == 0 {
-						MinerServer = colCell
-					}
-					if i == 1 {
-						FileSize, err = strconv.Atoi(colCell)
-						if err != nil {
-							log.LLvl1("Panic Raised:\n\n")
-							panic(err)
-						}
-					}
-					if i == 2 {
-						ServAgrDuration, err = strconv.Atoi(colCell)
-						if err != nil {
-							log.LLvl1("Panic Raised:\n\n")
-							panic(err)
-						}
-					}
-					if i == 3 {
-						ServAgrStartedMCRoundNumber, err = strconv.Atoi(colCell)
-						if err != nil {
-							log.LLvl1("Panic Raised:\n\n")
-							panic(err)
-						}
-					}
-					if i == 4 {
-						ServAgrIDString = colCell
-						ServAgrID, err = strconv.Atoi(colCell)
-						if err != nil {
-							log.LLvl1("bad colCell is:", colCell,
-								" cell row num is: ", rowNum, " and the rest of row is:", row)
-							log.LLvl1("Panic Raised:\n\n")
-							panic(err)
-						}
-					}
-					if i == 5 {
-						ServAgrPublished, err = strconv.Atoi(colCell)
-						if err != nil {
-							log.LLvl1("Panic Raised:\n\n")
-							panic(err)
-						}
-					}
-				}
-			}
-			t := [5]int{0, ServAgrID, 0, 0, 0}
-			// map transactionQueue:
-			// t[0]: stored file size in this round,
-			// t[1]: corresponding ServAgr id
-			// t[2]: TxServAgrPropose required
-			// t[3]: TxStoragePayment required
-			// t[4]: TxPor required
-			if ServAgrPublished == 0 {
-				// Add TxServAgrPropose
-				t[2] = 1
-				transactionQueue[MinerServer] = t
-				/* ------------------------------------------------------------
-				// when simStat == 2 it means that side chain is
-				running and por tx.s go to side chain queue
-				------------------------------------------------------------ */
-			} else if bz.MCRoundNumber-ServAgrStartedMCRoundNumber <= ServAgrDuration && bz.SimState == 1 { // ServAgr is not expired
-				t[0] = FileSize //if each server one ServAgr
-				// Add TxPor
-				t[4] = 1
-				transactionQueue[MinerServer] = t
-			} else if bz.MCRoundNumber-ServAgrStartedMCRoundNumber > ServAgrDuration {
-				// Set ServAgrPublished to false
-				// ----
-				// todoraha: check if works file, remove it later
-				// ----
-				// if ServAgrIdCellMarketMatching, err := f.SearchSheet("MarketMatching", ServAgrIDString); err != nil {
-				// 	log.LLvl1("Panic Raised:\n\n")
-				// 	panic(err)
-				// } else {
-				//publishedCellMarketMatching := "F" + ServAgrIdCellMarketMatching[0][1:]
-				// ----
-				publishedCellMarketMatching := "F" + ServAgrIDString
-				err = f.SetCellValue("MarketMatching", publishedCellMarketMatching, 0)
-				if err != nil {
-					log.LLvl1("Panic Raised:\n\n")
-					panic(err)
-				}
-				//}
-				// Add TxStoragePayment
-				t[3] = 1
-				transactionQueue[MinerServer] = t
-			}
-		}
-	}
+	/* --- in MarketMatching each row has the following columns:
+	cols[0] is Server's Info,
+	cols[1] is FileSize,
+	cols[2] is ServAgrDuration,
+	cols[3] is ServAgrStartedMCRoundNumber,
+	cols[4] is ServAgrID,
+	cols[5] is ServAgrPublished
+	cols[6] is ServAgrTxsIssued */
+	ServAgrDurationCol := cols[2][1:]
+	ServAgrStartedMCRoundNumberCol := cols[3][1:]
+	ServAgrPublishedCol := cols[5][1:]
+	ServAgrTxsIssuedCol := cols[6][1:]
 
 	// ----------------------------------------------------------------------
 	// ------ add 5 types of transactions into transaction queue sheet -----
@@ -702,144 +550,430 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 	2) time
 	3) issuedMCRoundNumber
 	4) ServAgrId */
-	var newTransactionRow [5]string
-	s := make([]interface{}, len(newTransactionRow)) //ToDoRaha:  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
+	//-----------------------------------------
 
+	var newTransactionRowMC [5]string
+	sMC := make([]interface{}, len(newTransactionRowMC)) //ToDoRaha:  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
 	// this part can be moved to protocol initialization
 	var PorTxSize, ServAgrProposeTxSize, PayTxSize, StoragePayTxSize, ServAgrCommitTxSize uint32
 	PorTxSize, ServAgrProposeTxSize, PayTxSize, StoragePayTxSize, ServAgrCommitTxSize = blockchain.TransactionMeasurement(bz.SectorNumber, bz.SimulationSeed)
-	// ---
-	addCommitTx := false
-	// map transactionQueue:
-	// [0]: stored file size in this round,
-	// [1]: corresponding ServAgr id
-	// [2]: TxServAgrPropose required
-	// [3]: TxStoragePayment required
-	// [4]: TxPor required
-	for _, a := range bz.Roster().List {
-		if transactionQueue[a.Address.String()][2] == 1 { //TxServAgrPropose required
-			newTransactionRow[2] = time.Now().Format(time.RFC3339)
-			newTransactionRow[3] = strconv.Itoa(bz.MCRoundNumber)
-			newTransactionRow[0] = "TxServAgrPropose"
-			newTransactionRow[1] = strconv.Itoa(int(ServAgrProposeTxSize))
-			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1]) // corresponding ServAgr id
-			addCommitTx = true                                                           // another row will be added containing "TxServAgrCommit"
-		} else if transactionQueue[a.Address.String()][3] == 1 { // TxStoragePayment required
-			newTransactionRow[2] = time.Now().Format(time.RFC3339)
-			newTransactionRow[3] = strconv.Itoa(bz.MCRoundNumber)
-			newTransactionRow[0] = "TxStoragePayment"
-			newTransactionRow[1] = strconv.Itoa(int(StoragePayTxSize))
-			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
-			// && bz.SimState == 1 is  for backup check-  the first condition should never be true when the second condition isn't!
-		} else if transactionQueue[a.Address.String()][4] == 1 && bz.SimState == 1 { // TxPor required
-			newTransactionRow[2] = time.Now().Format(time.RFC3339)
-			newTransactionRow[3] = strconv.Itoa(bz.MCRoundNumber)
-			newTransactionRow[0] = "TxPor"
-			newTransactionRow[1] = strconv.Itoa(int(PorTxSize))
-			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1])
-		} else {
-			continue
-		}
+	var ServAgrDuration, ServAgrStartedMCRoundNumber, ServAgrPublished int
+	colNum := 1
+	rowNumMC := 1
+	var numOfPoRTxsMC, numOfServAgrProposeTxs, numOfStoragePaymentTxs, numOfServAgrCommitTxs, numOfRegularPaymentTxs int
 
-		for i, v := range newTransactionRow {
-			s[i] = v
+	// -------------------------------------------------------------------------------
+	//        -------- updateSideChainBCTransactionQueueCollect  --------
+	// -------------------------------------------------------------------------------
+	var newTransactionRowSC [6]string
+	sSC := make([]interface{}, len(newTransactionRowSC))
+	numOfPoRTxsSC := 1
+	rowNumSC := 1
+	// -------------------------------------------------------------------------------
+	log.Lvl4("opening sidechainbc in:", pwd)
+	bcDirectorySC := strings.Split(pwd, "/build")[0] + "/sidechainbc.xlsx"
+	log.Lvl4("opening sidechainbc in:", bcDirectorySC)
+	f1, err := excelize.OpenFile(bcDirectorySC)
+	if err != nil {
+		log.Fatal("problem while opening sidechainbc: " + err.Error())
+	} else {
+		log.Lvl2("sidechainbc Successfully opened")
+	}
+	// -------------------------------------------------------------------------------
+	// end of side chain operations
+	// -------------------------------------------------------------------------------
+
+	streamWriterMC, err := f.NewStreamWriter("FirstQueue")
+	if err != nil {
+		log.Fatal("problem while opening streamWriter: " + err.Error())
+	} else {
+		log.Lvl2("mainchainbc streamWriter opened")
+	}
+	// ------ add Header Row on top of the stream (first queue in main chain bc) ----------
+	rowsMCFirstQ, err := f.GetRows("FirstQueue")
+	if err != nil {
+		log.LLvl1("Panic Raised:\n\n")
+		panic(err)
+	} else {
+		row := rowsMCFirstQ[0][:]
+		for i, v := range row {
+			sMC[i] = v
 		}
-		if err = f.InsertRow("FirstQueue", 2); err != nil {
+		cell, _ := excelize.CoordinatesToCellName(colNum, rowNumMC)
+		if err := streamWriterMC.SetRow(cell, sMC); err != nil {
 			log.LLvl1("Panic Raised:\n\n")
 			panic(err)
 		} else {
-			if err = f.SetSheetRow("FirstQueue", "A2", &s); err != nil {
-				log.LLvl1("Panic Raised:\n\n")
-				panic(err)
-			} else {
-				if newTransactionRow[0] == "TxPor" {
-					log.Lvl4("a TxPor added to queue in round number", bz.MCRoundNumber)
-				} else if newTransactionRow[0] == "TxStoragePayment" {
-					log.Lvl4("a TxStoragePayment added to queue in round number", bz.MCRoundNumber)
-				} else if newTransactionRow[0] == "TxServAgrPropose" {
-					log.Lvl4("a TxServAgrPropose added to queue in round number", bz.MCRoundNumber)
-				}
-			}
+			rowNumMC++
 		}
-		/* second row added in case of having the first row to be ServAgr propose tx which then we will add
-		ServAgr commit tx right away.
-		warning: Just in one case it may cause irrational statistics which doesn’t worth taking care of!
-		when a propose ServAgr tx is added to a block which causes the ServAgr to become active but
-		the commit ServAgr transaction is not yet! */
-		if addCommitTx {
-			newTransactionRow[0] = "TxServAgrCommit"
-			newTransactionRow[1] = strconv.Itoa(int(ServAgrCommitTxSize))
-			newTransactionRow[4] = strconv.Itoa(transactionQueue[a.Address.String()][1]) // corresponding ServAgr id
-			//--
-			for i, v := range newTransactionRow {
-				s[i] = v
+	}
+
+	// -------------------------------------------------------------------------------
+	//        -------- updateSideChainBCTransactionQueueCollect  --------
+	// -------------------------------------------------------------------------------
+	streamWriterSC, err := f1.NewStreamWriter("FirstQueue")
+	if err != nil {
+		log.Fatal("problem while opening streamWriter: " + err.Error())
+	} else {
+		log.Lvl2("sidechainbc streamWriter opened")
+	}
+	// ------ add Header Row on top of the stream (first queue in side chain bc) ----------
+	rowsSCFirstQ, err := f1.GetRows("FirstQueue")
+	if err != nil {
+		log.LLvl1("Panic Raised:\n\n")
+		panic(err)
+	} else {
+		row := rowsSCFirstQ[0][:]
+		for i, v := range row {
+			sSC[i] = v
+		}
+		cell, _ := excelize.CoordinatesToCellName(colNum, colNum)
+		if err := streamWriterSC.SetRow(cell, sSC); err != nil {
+			log.LLvl1("Panic Raised:\n\n")
+			panic(err)
+		} else {
+			rowNumSC++
+		}
+	}
+	// -------------------------------------------------------------------------------
+	// end of side chain operations
+	// -------------------------------------------------------------------------------
+
+	// --- check for contracts states and add appropriate tx row on top of the stream ----
+	for i := range bz.Roster().List {
+		ServAgrDuration, err = strconv.Atoi(ServAgrDurationCol[i])
+		if err != nil {
+			log.LLvl1("Panic Raised:\n\n")
+			panic(err)
+		}
+		ServAgrStartedMCRoundNumber, err = strconv.Atoi(ServAgrStartedMCRoundNumberCol[i])
+		if err != nil {
+			log.LLvl1("Panic Raised:\n\n")
+			panic(err)
+		}
+		ServAgrPublished, err = strconv.Atoi(ServAgrPublishedCol[i]) //ServAgrPublishedCol is starting from index 1
+		if err != nil {
+			log.LLvl1("Panic Raised:\n\n", err)
+			panic(err)
+		}
+		ServAgrTxsIssued, err := strconv.Atoi(ServAgrTxsIssuedCol[i])
+		if err != nil {
+			log.LLvl1("Panic Raised:\n\n", err)
+			panic(err)
+		}
+		//-------------------------------------------------------------------
+		// when the servic agreement is inactive:
+		//-------------------------------------------------------------------
+		if ServAgrPublished == 0 && ServAgrTxsIssued == 0 {
+			// Add TxServAgrPropose
+			newTransactionRowMC[2] = time.Now().Format(time.RFC3339)
+			newTransactionRowMC[3] = strconv.Itoa(bz.MCRoundNumber)
+			newTransactionRowMC[0] = "TxServAgrPropose"
+			newTransactionRowMC[1] = strconv.Itoa(int(ServAgrProposeTxSize))
+			newTransactionRowMC[4] = strconv.Itoa(i + 2) // corresponding ServAgr id
+			// ------
+			for i, v := range newTransactionRowMC {
+				sMC[i] = v
 			}
-			if err = f.InsertRow("FirstQueue", 2); err != nil {
+			// ------ add a TxServAgrPropose row on top of the stream ----------
+			cell, _ := excelize.CoordinatesToCellName(colNum, rowNumMC)
+			if err := streamWriterMC.SetRow(cell, sMC); err != nil {
 				log.LLvl1("Panic Raised:\n\n")
 				panic(err)
 			} else {
-				if err = f.SetSheetRow("FirstQueue", "A2", &s); err != nil {
-					log.LLvl1("Panic Raised:\n\n")
-					panic(err)
-				} else {
-					addCommitTx = false
-					log.Lvl4("a TxServAgrCommit added to queue in round number", bz.MCRoundNumber)
-				}
+				numOfServAgrProposeTxs++
+				rowNumMC++
+			}
+			/* second row added in case of having the first row to be ServAgr propose tx which then we will add
+			ServAgr commit tx right away.
+			warning: Just in one case it may cause irrational statistics which doesn’t worth taking care of!
+			when a propose ServAgr tx is added to a block which causes the ServAgr to become active but
+			the commit ServAgr transaction is not yet! */
+
+			// Add TxServAgrCommit
+			newTransactionRowMC[0] = "TxServAgrCommit"
+			newTransactionRowMC[1] = strconv.Itoa(int(ServAgrCommitTxSize))
+			newTransactionRowMC[4] = strconv.Itoa(i + 2) // corresponding ServAgr id
+			//--
+			for i, v := range newTransactionRowMC {
+				sMC[i] = v
+			}
+			// ------ add a TxServAgrCommit row on top of the stream ----------
+			cell, _ = excelize.CoordinatesToCellName(colNum, rowNumMC)
+			if err := streamWriterMC.SetRow(cell, sMC); err != nil {
+				log.LLvl1("Panic Raised:\n\n")
+				panic(err)
+			} else {
+				numOfServAgrCommitTxs++
+				rowNumMC++
+			}
+			// --------------------------------------
+			// Set ServAgrTxsIssued to True
+			// --------------------------------------
+			// i start from index 0, serverAgreementID strats from index 2 which is its rownumber
+			issuedCellMarketMatching := "G" + strconv.Itoa(i+2)
+			err = f.SetCellValue("MarketMatching", issuedCellMarketMatching, 1)
+			if err != nil {
+				log.LLvl1("Panic Raised:\n\n")
+				panic(err)
+			} else {
+				log.Lvl3("after issuing contract propose and commit txs, set issued cell to 1")
+			}
+
+			//-------------------------------------------------------------------
+			// when the servic agreement expires (for now we pay for the service just here):
+			//-------------------------------------------------------------------
+		} else if bz.MCRoundNumber-ServAgrStartedMCRoundNumber > ServAgrDuration && ServAgrPublished == 1 && ServAgrTxsIssued == 1 {
+			// Set ServAgrPublished AND ServAgrTxsIssued to false
+			// --------------------------------------
+			// i start from index 0, serverAgreementID strats from index 2 which is its rownumber
+			publishedCellMarketMatching := "F" + strconv.Itoa(i+2)
+			err = f.SetCellValue("MarketMatching", publishedCellMarketMatching, 0)
+			if err != nil {
+				log.LLvl1("Panic Raised:\n\n")
+				panic(err)
+			}
+			// i start from index 0, serverAgreementID strats from index 2 which is its rownumber
+			issuedCellMarketMatching := "G" + strconv.Itoa(i+2)
+			err = f.SetCellValue("MarketMatching", issuedCellMarketMatching, 0)
+			if err != nil {
+				log.LLvl1("Panic Raised:\n\n")
+				panic(err)
+			}
+			// --------------------------------------
+			// Add TxStoragePayment
+			// --------------------------------------
+			newTransactionRowMC[2] = time.Now().Format(time.RFC3339)
+			newTransactionRowMC[3] = strconv.Itoa(bz.MCRoundNumber)
+			newTransactionRowMC[0] = "TxStoragePayment"
+			newTransactionRowMC[1] = strconv.Itoa(int(StoragePayTxSize))
+			newTransactionRowMC[4] = strconv.Itoa(i + 2)
+			// ------
+			for i, v := range newTransactionRowMC {
+				sMC[i] = v
+			}
+			// ------ add a TxStoragePayment row on top of the stream ----------
+			cell, _ := excelize.CoordinatesToCellName(colNum, rowNumMC)
+			if err := streamWriterMC.SetRow(cell, sMC); err != nil {
+				log.LLvl1("Panic Raised:\n\n")
+				panic(err)
+			} else {
+				numOfStoragePaymentTxs++
+				rowNumMC++
+			}
+			//-------------------------------------------------------------------
+			// when simStat == 2 it means that side chain is
+			// running and por tx.s go to side chain queue
+			// when the ServAgr is not expired => Add TxPor
+			//-------------------------------------------------------------------
+		} else if ServAgrPublished == 1 && bz.MCRoundNumber-ServAgrStartedMCRoundNumber <= ServAgrDuration && bz.SimState == 1 {
+			// --- Add TxPor
+			newTransactionRowMC[2] = time.Now().Format(time.RFC3339)
+			newTransactionRowMC[3] = strconv.Itoa(bz.MCRoundNumber)
+			newTransactionRowMC[0] = "TxPor"
+			newTransactionRowMC[1] = strconv.Itoa(int(PorTxSize))
+			newTransactionRowMC[4] = strconv.Itoa(i + 2)
+			// ------
+			for i, v := range newTransactionRowMC {
+				sMC[i] = v
+			}
+			// ------ add a TxPor row on top of the stream ----------
+			cell, _ := excelize.CoordinatesToCellName(colNum, rowNumMC)
+			if err := streamWriterMC.SetRow(cell, sMC); err != nil {
+				log.LLvl1("Panic Raised:\n\n")
+				panic(err)
+			} else {
+				numOfPoRTxsMC++
+				rowNumMC++
+			}
+		} else if ServAgrPublished == 1 && bz.MCRoundNumber-ServAgrStartedMCRoundNumber <= ServAgrDuration && bz.SimState == 2 {
+			// -------------------------------------------------------------------------------
+			//        -------- updateSideChainBCTransactionQueueCollect  --------
+			// -------------------------------------------------------------------------------
+			// --- check for eligible contracts and add a por tx row on top of the stream ----
+			// ServAgr is not expired => Add TxPor
+			newTransactionRowSC[2] = time.Now().Format(time.RFC3339)
+			// 50008 means 50000 + 8 which means epoch number 5 scround number 8 //todoraha: is it still on?
+			newTransactionRowSC[3] = strconv.Itoa(bz.SCRoundNumber)
+			newTransactionRowSC[0] = "TxPor"
+			newTransactionRowSC[1] = strconv.Itoa(int(PorTxSize))
+			newTransactionRowSC[4] = strconv.Itoa(i)
+			newTransactionRowSC[5] = strconv.Itoa(bz.MCRoundNumber)
+			for i, v := range newTransactionRowSC {
+				sSC[i] = v
+			}
+			// ------ add a por tx row on top of the stream ----------
+			cell, _ := excelize.CoordinatesToCellName(colNum, rowNumSC)
+			if err := streamWriterSC.SetRow(cell, sSC); err != nil {
+				log.LLvl1("Panic Raised:\n\n")
+				panic(err)
+			} else {
+				numOfPoRTxsSC++
+				rowNumSC++
+			}
+			// -------------------------------------------------------------------------------
+			// end of side chain operations
+			// -------------------------------------------------------------------------------
+		}
+	}
+
+	rowNumMC--
+	// ------ add previous txs row in the first mc queue to the stream ----------
+	for i, row := range rowsMCFirstQ { //i starts from index 0
+		if i != 0 { // index 0 is the header row
+			for t, v := range row {
+				sMC[t] = v
+			}
+			cell, _ := excelize.CoordinatesToCellName(colNum, i+rowNumMC)
+			if err := streamWriterMC.SetRow(cell, sMC); err != nil {
+				log.LLvl1("Panic Raised:\n\n")
+				panic(err)
 			}
 		}
 	}
+	/* from the documentation: "after set rows, you must call the Flush method to
+	end the streaming writing process and ensure that the order of line numbers is ascending,
+	the common API and stream API can't be work mixed to writing data on the worksheets." */
+	if err := streamWriterMC.Flush(); err != nil {
+		log.LLvl1("Panic Raised:\n\n")
+		panic(err)
+	}
+	// reset rowNumMC
+	rowNumMC = 1
 	// -------------------------------------------------------------------------------
 	// ------ add payment transactions into transaction queue payment sheet
 	// -------------------------------------------------------------------------------
-	/* each transaction has the following column stored on the transaction queue payment sheet:
-	0) size
-	1) time
-	2) issuedMCRoundNumber */
-
-	newTransactionRow[0] = strconv.Itoa(int(PayTxSize))
-	newTransactionRow[1] = time.Now().Format(time.RFC3339)
-	newTransactionRow[2] = strconv.Itoa(bz.MCRoundNumber)
-	newTransactionRow[3] = ""
-	newTransactionRow[4] = ""
-	for i, v := range newTransactionRow {
-		s[i] = v
-	}
-
 	rand.Seed(int64(bz.SimulationSeed))
-
 	// avoid having zero regular payment txs
 	var numberOfRegPay int
 	for numberOfRegPay == 0 {
 		numberOfRegPay = rand.Intn(bz.NumberOfPayTXsUpperBound)
 	}
-	log.LLvl1("Number of regular payment transactions in round number", bz.MCRoundNumber, "is", numberOfRegPay)
-	for i := 1; i <= numberOfRegPay; i++ {
-		if err = f.InsertRow("SecondQueue", 2); err != nil {
-			log.LLvl1("Panic Raised:\n\n")
-			panic(err)
-		} else {
-			if err = f.SetSheetRow("SecondQueue", "A2", &s); err != nil {
-				log.LLvl1("Panic Raised:\n\n")
-				panic(err)
-			} else {
-				log.Lvl4("a regular payment transaction added to queue in round number", bz.MCRoundNumber)
-			}
-		}
+	log.LLvl1("Number of regular payment transactions in mc round number", bz.MCRoundNumber, "is", numberOfRegPay)
+	// ----------------------------------------------------------
+	streamWriterMC, err = f.NewStreamWriter("SecondQueue")
+	if err != nil {
+		log.Fatal("problem while opening second queue streamWriter: " + err.Error())
+	} else {
+		log.Lvl2("sidechainbc streamWriter opened")
 	}
-	// -------------------------------------------------------------------------------
-
-	// ---
-	//err = f.SaveAs("/root/remote/mainchainbc.xlsx")
-	err = f.SaveAs(bcDirectory)
-
+	// ------ add Header Row on top of the stream (second queue in main chain bc) ----------
+	rowsMCSecondQ, err := f.GetRows("SecondQueue")
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	} else {
-		log.Lvl2("bc Successfully closed")
-		log.Lvl1(bz.Name(), " finished collecting new transactions to queue in round number ", bz.MCRoundNumber)
-		log.Lvl1("Collecting tx.s took:", time.Since(takenTime).String())
+		row := rowsMCSecondQ[0][:]
+		for i, v := range row {
+			sMC[i] = v
+		}
+		cell, _ := excelize.CoordinatesToCellName(colNum, colNum)
+		if err := streamWriterMC.SetRow(cell, sMC); err != nil {
+			log.LLvl1("Panic Raised:\n\n")
+			panic(err)
+		} else {
+			rowNumMC++
+		}
 	}
+	// -------------------------------------------------------------------
+	// ------ add payment transactions into second queue stream writer
+	// -------------------------------------------------------------------
+	/* each transaction has the following column stored on the transaction queue payment sheet:
+	0) size
+	1) time
+	2) issuedMCRoundNumber */
+
+	newTransactionRowMC[0] = strconv.Itoa(int(PayTxSize))
+	newTransactionRowMC[1] = time.Now().Format(time.RFC3339)
+	newTransactionRowMC[2] = strconv.Itoa(bz.MCRoundNumber)
+	newTransactionRowMC[3] = ""
+	newTransactionRowMC[4] = ""
+	for i, v := range newTransactionRowMC {
+		sMC[i] = v
+	}
+	for i := 1; i <= numberOfRegPay; i++ {
+		cell, _ := excelize.CoordinatesToCellName(colNum, rowNumMC)
+		if err := streamWriterMC.SetRow(cell, sMC); err != nil {
+			log.LLvl1("Panic Raised:\n\n")
+			panic(err)
+		} else {
+			numOfRegularPaymentTxs++
+			rowNumMC++
+		}
+	}
+	// ------ add previous reg pay tx row in the second queue to the stream ----------
+	for i, row := range rowsMCSecondQ { //i starts from index 0
+		if i != 0 { // index 0 is the header row
+			for t, v := range row {
+				sMC[t] = v
+			}
+			cell, _ := excelize.CoordinatesToCellName(colNum, i+rowNumMC)
+			if err := streamWriterMC.SetRow(cell, sMC); err != nil {
+				log.LLvl1("Panic Raised:\n\n")
+				panic(err)
+			}
+		}
+	}
+	/* from the documentation: "after set rows, you must call the Flush method to
+	end the streaming writing process and ensure that the order of line numbers is ascending,
+	the common API and stream API can't be work mixed to writing data on the worksheets." */
+	if err := streamWriterMC.Flush(); err != nil {
+		log.LLvl1("Panic Raised:\n\n")
+		panic(err)
+	}
+
+	// -------------------------------------------------------------------------------
+	//        -------- updateSideChainBCTransactionQueueCollect  --------
+	// -------------------------------------------------------------------------------
+	rowNumSC--
+	numOfPoRTxsSC--
+	// ------ add previous por tx row in the first queue to the stream ----------
+	for i, row := range rowsSCFirstQ { //i starts from index 0
+		for t, v := range row {
+			sSC[t] = v
+		}
+		if i != 0 { // index 0 is the header row
+			cell, _ := excelize.CoordinatesToCellName(colNum, i+rowNumSC)
+			if err := streamWriterSC.SetRow(cell, sSC); err != nil {
+				log.LLvl1("Panic Raised:\n\n")
+				panic(err)
+			}
+		}
+	}
+	/* from the documentation: "after set rows, you must call the Flush method to
+	end the streaming writing process and ensure that the order of line numbers is ascending,
+	the common API and stream API can't be work mixed to writing data on the worksheets." */
+	if err := streamWriterSC.Flush(); err != nil {
+		log.LLvl1("Panic Raised:\n\n")
+		panic(err)
+	}
+
+	// -------------------------------------------------------------------------------
+	err = f.SaveAs(bcDirectoryMC)
+	if err != nil {
+		log.LLvl1("Panic Raised:\n\n")
+		panic(err)
+	} else {
+		log.Lvl2("mc bc Successfully closed")
+		log.Lvl1(bz.Name(), " finished collecting new transactions to mainchain queues in mc round number ", bz.MCRoundNumber, "in total:\n ",
+			numOfPoRTxsMC, "numOfPoRTxsMC\n", numOfServAgrProposeTxs, "numOfServAgrProposeTxs\n",
+			numOfStoragePaymentTxs, "numOfStoragePaymentTxs\n", numOfServAgrCommitTxs, "numOfServAgrCommitTxs\n",
+			numOfRegularPaymentTxs, "numOfRegularPaymentTxs added to the main chain queus")
+		log.Lvl1("Collecting mc tx.s took:", time.Since(takenTime).String())
+	}
+	// -------------------------------------------------------------------------------
+	if err = f1.SaveAs(bcDirectorySC); err != nil {
+		log.LLvl1("Panic Raised:\n\n")
+		panic(err)
+	} else {
+		log.Lvl2("sc bc successfully closed")
+		log.Lvl4(bz.Name(), "Final result SC: finished collecting new transactions to side chain queue in sc round number ", bz.SCRoundNumber)
+		log.Lvl1("updateSideChainBCTransactionQueueCollect took:", time.Since(takenTime).String())
+		log.Lvl1(numOfPoRTxsSC, "TxPor added to queue in sc round number: ", bz.SCRoundNumber)
+	}
+	// -------------------------------------------------------------------------------
+	// end of side chain operations
+	// -------------------------------------------------------------------------------
 }
 
 /* ----------------------------------------------------------------------
@@ -983,13 +1117,6 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		the 4th column will be the number of por transactions summerized in
 		the sync tx) */
 
-		// ----------------
-		//todoraha: check if works fine, remove this part later
-		// ----------------
-		//for j, colCell := range row {
-		//if j == 1 {
-		// ----------------
-
 		if txsize, err = strconv.Atoi(row[1]); err != nil {
 			log.LLvl1("Panic Raised:\n\n")
 			panic(err)
@@ -1056,11 +1183,12 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 			case "TxSync":
 				log.Lvl4("a sync tx added to block number", bz.MCRoundNumber, " from the queue")
 				numberOfSyncTx++
-				numberOfPoRTx, _ = strconv.Atoi(row[4]) //In case that the transaction type is a Sync transaction,
+				PoRTx, _ := strconv.Atoi(row[4]) //In case that the transaction type is a Sync transaction,
 				// the 4th column will be the number of por transactions summerized in
 				// the sync tx
+				numberOfPoRTx = numberOfPoRTx + PoRTx
 			default:
-				log.Lvl4("Panic Raised:\n\n")
+				log.Lvl1("Panic Raised:\n\n")
 				panic("the type of transaction in the queue is un-defined")
 			}
 
@@ -1087,8 +1215,6 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 			f.SetCellValue("RoundTable", axisQueue1IsFull, 1)
 			break
 		}
-		//}
-		//}
 	}
 	log.Lvl1("other tx.s taking took:", time.Since(takenTime).String())
 
@@ -1098,7 +1224,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	f.SetCellValue("RoundTable", axisNumServAgrCommitTx, numberOfServAgrCommitTx)
 	f.SetCellValue("RoundTable", axisNumSyncTx, numberOfSyncTx)
 
-	log.Lvl2("In total in round number ", bz.MCRoundNumber,
+	log.Lvl2("In total in mc round number ", bz.MCRoundNumber,
 		"\n number of published PoR transactions is", numberOfPoRTx,
 		"\n number of published Storage payment transactions is", numberOfStoragePayTx,
 		"\n number of published Propose ServAgr transactions is", numberOfServAgrProposeTx,
@@ -1127,7 +1253,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		panic(err)
 	}
 
-	log.Lvl1("In total in round number ", bz.MCRoundNumber,
+	log.Lvl1("In total in mc round number ", bz.MCRoundNumber,
 		"\n number of all types of submitted txs is", TotalNumTxsInBothQueue)
 
 	// ---- overall results
@@ -1203,7 +1329,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		panic(err)
 	} else {
 		log.Lvl2("bc Successfully closed")
-		log.Lvl1(bz.Name(), " Finished taking transactions from queue (FIFO) into new block in round number ", bz.MCRoundNumber)
+		log.Lvl1(bz.Name(), " Finished taking transactions from queue (FIFO) into new block in mc round number ", bz.MCRoundNumber)
 	}
 }
 
@@ -1276,7 +1402,7 @@ func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
 			log.LLvl1("Panic Raised:\n\n")
 			panic(err)
 		} else {
-			log.Lvl1("Final result MC:\n a Sync tx added to queue in round number", bz.MCRoundNumber)
+			log.Lvl4("Final result MC:\n a Sync tx added to queue in mc round number", bz.MCRoundNumber)
 		}
 	}
 
@@ -1289,8 +1415,8 @@ func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
 		panic(err)
 	} else {
 		log.Lvl2("mc bc Successfully closed")
-		log.Lvl1("Final result MC:", bz.Name(), " finished collecting new sync transactions to queue in round number ", bz.MCRoundNumber)
-		log.Lvl1("syncMainChainBCTransactionQueueCollect took:", time.Since(takenTime).String(), "for round number", bz.MCRoundNumber)
+		log.Lvl1("Final result MC:", bz.Name(), " finished collecting new sync transactions to queue in mc round number ", bz.MCRoundNumber)
+		log.Lvl1("syncMainChainBCTransactionQueueCollect took:", time.Since(takenTime).String(), "for mc round number", bz.MCRoundNumber)
 
 	}
 

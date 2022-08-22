@@ -99,6 +99,7 @@ type ChainBoost struct {
 	MainChainNewRoundChan chan MainChainNewRoundChan
 	// channel to let nodes that the next round's leader has been specified
 	MainChainNewLeaderChan chan MainChainNewLeaderChan
+	NumMCLeader            int
 	// the suite we use
 	// suite network.Suite
 	// to match the suit in blscosi
@@ -267,12 +268,13 @@ func (bz *ChainBoost) Dispatch() error {
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.MainChainNewRoundChan:
 			bz.MCRoundNumber = bz.MCRoundNumber + 1
-			log.Lvl3(bz.Name(), " round number ", bz.MCRoundNumber, " started at ", time.Now().Format(time.RFC3339))
+			log.Lvl3(bz.Name(), " mc round number ", bz.MCRoundNumber, " started at ", time.Now().Format(time.RFC3339))
 			go bz.MainChainCheckLeadership(msg)
 		// -----------------------------------------------------------------------------
 		// *** MC *** just the ROOT NODE (blockchain layer one) recieve this msg
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.MainChainNewLeaderChan:
+			bz.NumMCLeader++
 			if !bz.MCLeader.HasLeader || msg.TreeNode == bz.TreeNode() {
 				go func() {
 					bz.MCLeader.MCPLock.Lock()
@@ -280,8 +282,10 @@ func (bz *ChainBoost) Dispatch() error {
 						bz.MCLeader.MCPLock.Unlock()
 						return
 					}
-					log.Lvl1("the first leader is:", msg.TreeNode.Name())
+					log.Lvl1("the first leader for mc round number", bz.MCRoundNumber, " is:", msg.TreeNode.Name())
 					bz.MCLeader.HasLeader = true
+					log.Lvl1("MC round number:", bz.MCRoundNumber-1, "had ", bz.NumMCLeader, "proposed leaderrs")
+					bz.NumMCLeader = 1
 					bz.MCLeader.MCPLock.Unlock()
 					// ---
 					time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
@@ -378,7 +382,7 @@ func (bz *ChainBoost) startTimer(MCRoundNumber int) {
 		// bz.hasLeader is for when the round number has'nt changed but the leader has been announced
 		bz.MCLeader.MCPLock.Lock()
 		if bz.IsRoot() && bz.MCRoundNumber == MCRoundNumber && !bz.MCLeader.HasLeader {
-			log.Lvl1("No leader for round number ", bz.MCRoundNumber, "an empty block is added")
+			log.Lvl1("No leader for mc round number ", bz.MCRoundNumber, "an empty block is added")
 			bz.MCLeader.HasLeader = true
 			bz.MainChainNewLeaderChan <- MainChainNewLeaderChan{bz.TreeNode(), NewLeader{LeaderTreeNodeID: bz.TreeNode().ID, MCRoundNumber: bz.MCRoundNumber}}
 		}

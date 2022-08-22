@@ -31,36 +31,42 @@ var monitorAddress string
 var simul string
 
 // suite is Ed25519 by default
-var suite string
+var Suite string
+
+// logging level
+var Debug = 1
 
 // -------------------------------------
 // Raha: chainboost dynamic config variables
 // -------------------------------------
 var PercentageTxPay = 30
-var MCRoundDuration = 10
-var MainChainBlockSize = 2000000
+var MCRoundDuration = 30         //sec
+var MainChainBlockSize = 2000000 //byte
 var SideChainBlockSize = 500000
 var SectorNumber = 2
 var NumberOfPayTXsUpperBound = 1000
-var SimulationRounds = 50
+var SimulationRounds = 20
 var SimulationSeed = 9
 var NbrSubTrees = 1
-var Threshold = 4
-var SCRoundDuration = 5
-var CommitteeWindow = 5
-var MCRoundPerEpoch = 5
+var Threshold = 8 //out of committee nodes
+var SCRoundDuration = 6
+var CommitteeWindow = 10 //nodes
+var MCRoundPerEpoch = 2
 var SimState = 2
 
 // -------------------------------------
 // Initialize before 'init' so we can directly use the fields as parameters
 // to 'Flag'
 //raha:like above???!!!
+//todoraha: fill the description for each flag
 
 func init() {
 	flag.StringVar(&serverAddress, "address", "", "our address to use")
 	flag.StringVar(&monitorAddress, "monitor", "", "remote monitor")
 	flag.StringVar(&simul, "simul", "", "start simulating that protocol")
-	flag.StringVar(&suite, "suite", "Ed25519", "cryptographic suite to use")
+	flag.StringVar(&Suite, "suite", "Ed25519", "cryptographic suite to use")
+	//----
+	flag.IntVar(&Debug, "Debug", Debug, "logging level")
 	//----
 	flag.IntVar(&PercentageTxPay, "PercentageTxPay", PercentageTxPay, "PercentageTxPay")
 	flag.IntVar(&MCRoundDuration, "MCRoundDuration", MCRoundDuration, "MCRoundDuration")
@@ -76,6 +82,7 @@ func init() {
 	flag.IntVar(&CommitteeWindow, "CommitteeWindow", CommitteeWindow, "CommitteeWindow")
 	flag.IntVar(&MCRoundPerEpoch, "MCRoundPerEpoch", MCRoundPerEpoch, "MCRoundPerEpoch")
 	flag.IntVar(&SimState, "SimState", SimState, "SimState")
+	log.RegisterFlags()
 }
 
 // Start has to be called by the main-file that imports the protocol and/or the
@@ -101,6 +108,7 @@ func Start(rcs ...string) {
 		log.Lvl1("Raha: simul is empty!, this is for the platform/ROOT node?")
 		startBuild()
 	} else {
+		log.Lvl1("simul and PercentageTxPay flags are:", simul, "   ", PercentageTxPay)
 		log.LLvl1("Raha: simul is not empty, it is for simple nodes/miners")
 		// -------------------------------------
 		//get current vm's ip
@@ -117,7 +125,7 @@ func Start(rcs ...string) {
 
 		// raha: port 2000 is bcz in start.py file they have initialized it with port 2000!
 		monitorAddress = "192.168.3.220:2000"
-		suite = "bn256.adapter"
+		//suite = "bn256.adapter"
 
 		//todoraha: what monitor is for? what port?
 
@@ -125,7 +133,7 @@ func Start(rcs ...string) {
 			SectorNumber, NumberOfPayTXsUpperBound, SimulationRounds, SimulationSeed,
 			NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow,
 			MCRoundPerEpoch, SimState,
-			suite, serverAddress, simul, monitorAddress)
+			Suite, serverAddress, simul, monitorAddress)
 		if err != nil {
 			log.LLvl1("Raha: err returned from simulate: ", err)
 			log.ErrFatal(err)
@@ -135,27 +143,3 @@ func Start(rcs ...string) {
 	}
 	os.Chdir(wd)
 }
-
-// func StartDistributedSimulation(rcs ...string) {
-// 	wd, err := os.Getwd()
-// 	if len(rcs) > 0 {
-// 		log.ErrFatal(err)
-// 		for _, rc := range rcs {
-// 			log.LLvl1("Running toml-file:", rc)
-// 			os.Args = []string{os.Args[0], rc}
-// 			StartDistributedSimulation()
-// 		}
-// 		return
-// 	}
-// 	flag.Parse()
-// 	if simul == "" {
-// 		log.LLvl1("Raha: simul is empty")
-// 		startBuild("deterlab")
-// 	} else {
-// 		log.LLvl1("Raha: simul is not empty!")
-// 		err := platform.Simulate(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-// 			suite, serverAddress, simul, monitorAddress)
-// 		log.ErrFatal(err)
-// 	}
-// 	os.Chdir(wd)
-// }

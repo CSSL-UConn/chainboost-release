@@ -110,7 +110,7 @@ Specifically, the metadata consists of
 	- a hash of the previous block in the ledger,and
 	- a timestamp indicating when the block was proposed
 The list of transactions in a block logically translates to a set of weights for each user’s public key
-(based on the balance of currency for that key), along with the total weight of all outstanding currency." //ToDoRaha: compelete this later
+(based on the balance of currency for that key), along with the total weight of all outstanding currency."
 */
 type TransactionList struct {
 	//---

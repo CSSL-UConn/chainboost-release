@@ -13,6 +13,12 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
+// these values are written in the market matching sheet but since they are fixed
+// we don't need to read them frequently from the xlsx file, instead we keep them in global variablles
+// and use them when needed
+//var FileSizeRow []string
+//var ServAgrDurationRow []string
+
 // generateNormalValues  generates values that follow a normal distribution with specified variance and mean
 func generateNormalValues(variance, mean, nodes, SimulationSeed int) []string {
 	var list []float64
@@ -50,11 +56,13 @@ func InitializeMainChainBC(
 	MeanFileSize := intVar
 	SimulationSeedInt, _ := strconv.Atoi(SimulationSeed)
 	FileSizeRow := generateNormalValues(VarianceFileSize, MeanFileSize, numberOfNodes, SimulationSeedInt)
+
 	intVar, _ = strconv.Atoi(ServAgrDurationDistributionVariance)
 	VarianceServAgrDuration := intVar
 	intVar, _ = strconv.Atoi(ServAgrDurationDistributionMean)
 	MeanServAgrDuration := intVar
 	ServAgrDurationRow := generateNormalValues(VarianceServAgrDuration, MeanServAgrDuration, numberOfNodes, SimulationSeedInt)
+
 	//--------------------- fill the mainchainbc file with generated numbers  ---------------------
 	f := excelize.NewFile()
 	var err error
@@ -163,6 +171,23 @@ func InitializeMainChainBC(
 	for i := 2; i <= numberOfNodes+1; i++ {
 		ServAgrRow := strconv.Itoa(i)
 		t := "F" + ServAgrRow
+		if err = f.SetCellValue("MarketMatching", t, 0); err != nil {
+			log.LLvl1("Panic Raised:\n\n")
+			panic(err)
+		}
+	}
+	// -----
+	if err = f.SetCellValue("MarketMatching", "G1", "TXIssued"); err != nil {
+		log.LLvl1("Panic Raised:\n\n")
+		panic(err)
+	}
+	if err = f.SetColWidth("MarketMatching", "G", "G", 10); err != nil {
+		log.LLvl1("Panic Raised:\n\n")
+		panic(err)
+	}
+	for i := 2; i <= numberOfNodes+1; i++ {
+		ServAgrRow := strconv.Itoa(i)
+		t := "G" + ServAgrRow
 		if err = f.SetCellValue("MarketMatching", t, 0); err != nil {
 			log.LLvl1("Panic Raised:\n\n")
 			panic(err)
