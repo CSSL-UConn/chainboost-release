@@ -968,7 +968,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 	} else {
 		log.Lvl2("sc bc successfully closed")
 		log.Lvl4(bz.Name(), "Final result SC: finished collecting new transactions to side chain queue in sc round number ", bz.SCRoundNumber)
-		log.Lvl1("updateSideChainBCTransactionQueueCollect took:", time.Since(takenTime).String())
+		//log.Lvl1("updateSideChainBCTransactionQueueCollect took:", time.Since(takenTime).String())
 		log.Lvl1(numOfPoRTxsSC, "TxPor added to queue in sc round number: ", bz.SCRoundNumber)
 	}
 	// -------------------------------------------------------------------------------

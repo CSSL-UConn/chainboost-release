@@ -81,14 +81,16 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	// -----------------------------------------------
 	// --- updating the next side chain's leader
 	// -----------------------------------------------
-	bz.CommitteeNodesTreeNodeID = msg.CommitteeNodesTreeNodeID
+
 	var CommitteeNodesServerIdentity []*network.ServerIdentity
 	if bz.SCRoundNumber == 1 {
+		// just in the first sc round it wont be nil, else this leader has already the info
+		bz.CommitteeNodesTreeNodeID = msg.CommitteeNodesTreeNodeID
 		//todoraha: a out of range bug happens sometimes!
 		//log.LLvl1("raha: debug:", bz.CommitteeWindow-1)
 		log.Lvl2("raha: debug:", bz.CommitteeWindow)
-		//for _, a := range bz.CommitteeNodesTreeNodeID[0 : bz.CommitteeWindow-1] {
-		for _, a := range bz.CommitteeNodesTreeNodeID[0:bz.CommitteeWindow] {
+		for _, a := range bz.CommitteeNodesTreeNodeID[0 : bz.CommitteeWindow-1] {
+			//for _, a := range bz.CommitteeNodesTreeNodeID[0:bz.CommitteeWindow] {
 			CommitteeNodesServerIdentity = append(CommitteeNodesServerIdentity, bz.Tree().Search(a).ServerIdentity)
 		}
 		log.Lvl1("final result SC: ", bz.Name(), " is running next side chain's epoch with new committee")
@@ -98,6 +100,7 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	} else {
 		//log.LLvl1(len(bz.CommitteeNodesTreeNodeID))
 		//log.LLvl1(bz.CommitteeNodesTreeNodeID[len(bz.CommitteeNodesTreeNodeID)-(bz.CommitteeWindow):])
+		// just to make sure, len(bz.CommitteeNodesTreeNodeID)-(bz.CommitteeWindow) should be 0
 		for _, a := range bz.CommitteeNodesTreeNodeID[len(bz.CommitteeNodesTreeNodeID)-(bz.CommitteeWindow):] {
 			CommitteeNodesServerIdentity = append(CommitteeNodesServerIdentity, bz.Tree().Search(a).ServerIdentity)
 		}
@@ -147,6 +150,8 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 	bz.SCRoundNumber = msg.SCRoundNumber
 	bz.SCSig = msg.SCSig
 	var blocksize int
+	//--- maybe locking would work, but if possible! I prefer to not lock here to avoid extra complexity
+	var tempCommitteeNodesTreeNodeID []onet.TreeNodeID
 	// --------------------------------------------------------------------
 	if bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration) == bz.SCRoundNumber {
 		bz.BlsCosi.BlockType = "Summery Block" // just to know!
@@ -165,12 +170,13 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 		bz.SCRoundNumber = 1 // in side chain round number zero the summery blocks are published in side chain
 		// ------------- Epoch changed -----------
 		// i.e. the current published block on side chain is summery block
-		// change committee:
 		log.Lvl1("Final result SC: BlsCosi: the Summery Block was for epoch number: ", bz.MCRoundNumber/bz.MCRoundPerEpoch)
+		// change next epoch's committee:
+		tempCommitteeNodesTreeNodeID = bz.CommitteeNodesTreeNodeID[len(bz.CommitteeNodesTreeNodeID)-(bz.CommitteeWindow):]
 		// changing next side chain's leader for the next epoch rounds from the last miner in the main chain's window of miners
-		bz.NextSideChainLeader = bz.CommitteeNodesTreeNodeID[0]
+		bz.NextSideChainLeader = tempCommitteeNodesTreeNodeID[0]
 		// changing side chain's committee to last miners in the main chain's window of miners
-		bz.CommitteeNodesTreeNodeID = bz.CommitteeNodesTreeNodeID[0:bz.CommitteeWindow]
+		bz.CommitteeNodesTreeNodeID = tempCommitteeNodesTreeNodeID
 		log.Lvl1("Final result SC: BlsCosi: next side chain's epoch leader is: ", bz.Tree().Search(bz.NextSideChainLeader).Name())
 		for i, a := range bz.CommitteeNodesTreeNodeID {
 			log.Lvl3("Final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
@@ -206,7 +212,7 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 	// --------------------------------------------------------------------
 	err = bz.SendTo(bz.Tree().Search(bz.NextSideChainLeader), &RtLSideChainNewRound{
 		SCRoundNumber:            bz.SCRoundNumber,
-		CommitteeNodesTreeNodeID: bz.CommitteeNodesTreeNodeID,
+		CommitteeNodesTreeNodeID: tempCommitteeNodesTreeNodeID,
 		blocksize:                blocksize,
 	})
 	if err != nil {
@@ -222,9 +228,9 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 func (bz *ChainBoost) StartSideChainProtocol() {
 	var err error
 
-	bz.BCLock.Lock()
-	bz.updateSideChainBCTransactionQueueCollect()
-	bz.BCLock.Unlock()
+	//bz.BCLock.Lock()
+	//bz.updateSideChainBCTransactionQueueCollect()
+	//bz.BCLock.Unlock()
 
 	// -----------------------------------------------
 	// --- initializing side chain's msg and side chain's committee roster index for the second run and the next runs

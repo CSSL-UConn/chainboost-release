@@ -203,7 +203,7 @@ func (p *BlsCosi) Start() error {
 		return xerrors.Errorf("integrity check failed: %v", err)
 	}
 
-	log.Lvlf2("Starting BLS CoSi on %v", p.ServerIdentity())
+	log.Lvl1("Starting BLS CoSi on %v", p.ServerIdentity())
 
 	go p.runSubProtocols()
 

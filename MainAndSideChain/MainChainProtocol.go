@@ -105,7 +105,7 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 		// ---
 		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before updateMainChainBCTransactionQueueCollect")
 		//bz.updateSideChainBCTransactionQueueCollect()
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before updateMainChainBCTransactionQueueTake")
+		//log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before updateMainChainBCTransactionQueueTake")
 		// ---
 		bz.readBCAndSendtoOthers()
 		log.Lvl1("new round is announced")
