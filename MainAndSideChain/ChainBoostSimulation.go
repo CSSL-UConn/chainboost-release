@@ -1,30 +1,3 @@
-/*
-	Base DFS protocol:
-
-	Types of Messages:
-	--------------------------------------------
-	1- each server who is elected as leader (few servers in each ) send a msg of &NewLeader{Leaderinfo: bz.Name(), MCRoundNumber: bz.MCRoundNumber} to root node.
-	2- each round, the root node send a msg of &NewRound{Seed:  seed, Power: power} to all servers including the target server's power
-	3- in the bootstrapping phase, the root node send a message to all servers containing protocol config parameters.
-	&HelloChainBoost{
-					Timeout:                  bz.timeout,
-					PercentageTxPay:          bz.PercentageTxPay,
-					MCRoundDuration:            bz.MCRoundDuration,
-					MainChainBlockSize:                bz.MainChainBlockSize,
-					SideChainBlockSize:			bz.SideChainBlockSize,
-					SectorNumber:             bz.SectorNumber,
-					NumberOfPayTXsUpperBound: bz.NumberOfPayTXsUpperBound,
-					SimulationSeed:			  bz.SimulationSeed,
-					nbrSubTrees:			  bz.nbrSubTrees,
-					threshold:				  bz.threshold,
-					SCRoundDuration:            bz.SCRoundDuration,
-					CommitteeWindow:          bz.CommitteeWindow,
-					MCRoundPerEpoch:					bz.MCRoundPerEpoch,
-					SimState:					bz.SimState,
-				}
-	4- timeOut
-
-*/
 // ToDoRaha: it seems that simstate + some other config params aren't required to be sent to all nodes
 
 package MainAndSideChain

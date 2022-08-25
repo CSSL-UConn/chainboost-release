@@ -62,25 +62,26 @@ func (bz *ChainBoost) StartMainChainProtocol() {
 	log.Lvl1("new round is announced")
 }
 func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
-	takenTime := time.Now()
+	RootPreNewRoundTakenTime := time.Now()
+	var eachFunctionTakenTime time.Time
+
 	// -----------------------------------------------------
 	// rounds without a leader =>
 	// in this case the leader info is filled with root node's info, transactions are going to be collected normally but
 	// since the block is empty, no transaction is going to be taken from queues => leader = false
 	// -----------------------------------------------------
 	if msg.LeaderTreeNodeID == bz.TreeNode().ID && bz.MCRoundNumber != 1 && bz.MCLeader.HasLeader && msg.MCRoundNumber == bz.MCRoundNumber {
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "start of a round without a leader")
+		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: start of a round without a leader")
 		log.Lvl1("Raha Debug: wgMCRound.Done")
-		log.Lvl1("Raha Debug:mc round number:", bz.MCRoundNumber)
 		bz.wgMCRound.Done()
 		// -----------------------------------------------------
 		// wait for MCDuration/SCduration number of go routines
 		// to be Done (Done is triggered after finishing SideChainRootPostNewRound)
 		if bz.SimState == 2 && bz.MCRoundNumber%bz.MCRoundPerEpoch == 0 {
+			eachFunctionTakenTime = time.Now()
 			log.Lvl1("Raha Debug: wgSCRound.Wait")
-			log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before waiting for sc rounds")
 			bz.wgSCRound.Wait()
-			log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "after waiting for sc rounds")
+			log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: bz.wgSCRound.Wait() took:", time.Since(eachFunctionTakenTime).String())
 			log.Lvl1("Raha Debug: wgSCRound.Wait: PASSED")
 			// this equation result has to be int!
 			if int(bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration)) != bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration) {
@@ -92,42 +93,41 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 			bz.wgSCRound.Add(bz.MCRoundPerEpoch * (bz.MCRoundDuration / bz.SCRoundDuration))
 		}
 		// -----------------------------------------------------
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before bz.BCLock.Lock()")
 		bz.BCLock.Lock()
 		//----
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before updateBCPowerRound")
+		eachFunctionTakenTime = time.Now()
 		bz.updateBCPowerRound(bz.Tree().Search(msg.LeaderTreeNodeID).Name(), false)
+		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: updateBCPowerRound took:", time.Since(eachFunctionTakenTime).String())
 		// in the case of a leader-less round
 		log.Lvl1("Final result MC: leader TreeNodeID: ROOT NODE filled mc round number", bz.MCRoundNumber, "with empty block")
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before updateMainChainBCTransactionQueueCollect")
+		// ---
+		eachFunctionTakenTime = time.Now()
 		bz.updateMainChainBCTransactionQueueCollect()
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before readBCAndSendtoOthers")
+		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: updateMainChainBCTransactionQueueCollect took:", time.Since(eachFunctionTakenTime).String())
 		// ---
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before updateMainChainBCTransactionQueueCollect")
 		//bz.updateSideChainBCTransactionQueueCollect()
-		//log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before updateMainChainBCTransactionQueueTake")
 		// ---
+		eachFunctionTakenTime = time.Now()
 		bz.readBCAndSendtoOthers()
+		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: readBCAndSendtoOthers took:", time.Since(eachFunctionTakenTime).String())
 		log.Lvl1("new round is announced")
 		//----
 		bz.BCLock.Unlock()
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "after bz.BCLock.Unlock()")
 		// -----------------------------------------------------
 		// normal rounds with a leader => leader = true
 		// -----------------------------------------------------
 	} else if msg.MCRoundNumber == bz.MCRoundNumber && bz.MCRoundNumber != 1 && bz.MCLeader.HasLeader {
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "start of a normal round with a leader")
+		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: start of a round with a leader")
 		log.Lvl1("Raha Debug: wgMCRound.Done")
-		log.Lvl1("Raha Debug:mc round number:", bz.MCRoundNumber)
 		bz.wgMCRound.Done()
 		// -----------------------------------------------------
 		// wait for MCDuration/SCduration number of go routines
 		// to be Done (Done is triggered after finishing SideChainRootPostNewRound)
 		if bz.SimState == 2 && bz.MCRoundNumber%bz.MCRoundPerEpoch == 0 {
+			eachFunctionTakenTime = time.Now()
 			log.Lvl1("Raha Debug: wgSCRound.Wait")
-			log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before waiting for sc rounds")
 			bz.wgSCRound.Wait()
-			log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "after waiting for sc rounds")
+			log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: bz.wgSCRound.Wait() took:", time.Since(eachFunctionTakenTime).String())
 			log.Lvl1("Raha Debug: wgSCRound.Wait: PASSED")
 			// this equation result has to be int!
 			if int(bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration)) != bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration) {
@@ -140,43 +140,44 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 		}
 		// -----------------------------------------------------
 		// ToDoRaha: later validate the leadership proof
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before search leader identity!")
+		eachFunctionTakenTime = time.Now()
 		log.LLvl1("Final result MC: leader: ", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), " is the round leader for mc round number ", bz.MCRoundNumber)
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "after search leader identity!")
+		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: Search took:", time.Since(eachFunctionTakenTime).String())
 		// -----------------------------------------------
 		// dynamically change the side chain's committee with last main chain's leader
 		if bz.SimState == 2 { // i.e. if side chain running is set in simulation
-			log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before UpdateSideChainCommittee")
+			eachFunctionTakenTime = time.Now()
 			bz.UpdateSideChainCommittee(msg)
-			log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "after UpdateSideChainCommittee")
+			log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: UpdateSideChainCommittee took:", time.Since(eachFunctionTakenTime).String())
 		}
 		// -----------------------------------------------
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before bz.BCLock.Lock()")
 		bz.BCLock.Lock()
 		// ---
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before updateBCPowerRound")
+		eachFunctionTakenTime = time.Now()
 		bz.updateBCPowerRound(bz.Tree().Search(msg.LeaderTreeNodeID).Name(), true)
+		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: updateBCPowerRound took:", time.Since(eachFunctionTakenTime).String())
 		// ---
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before updateMainChainBCTransactionQueueCollect")
+		eachFunctionTakenTime = time.Now()
 		bz.updateMainChainBCTransactionQueueCollect()
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before updateMainChainBCTransactionQueueTake")
+		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: updateMainChainBCTransactionQueueCollect took:", time.Since(eachFunctionTakenTime).String())
 		// ---
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before updateMainChainBCTransactionQueueCollect")
 		//bz.updateSideChainBCTransactionQueueCollect()
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before updateMainChainBCTransactionQueueTake")
 		// ---
+		eachFunctionTakenTime = time.Now()
 		bz.updateMainChainBCTransactionQueueTake()
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "before readBCAndSendtoOthers")
+		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: updateMainChainBCTransactionQueueTake took:", time.Since(eachFunctionTakenTime).String())
+		// ---
 		// announce new round and give away required checkleadership info to nodes
+		eachFunctionTakenTime = time.Now()
 		bz.readBCAndSendtoOthers()
+		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: readBCAndSendtoOthers took:", time.Since(eachFunctionTakenTime).String())
 		log.Lvl1("new round is announced")
 		//----
 		bz.BCLock.Unlock()
-		log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String(), "after bz.BCLock.Unlock()")
 	} else if msg.MCRoundNumber == bz.MCRoundNumber {
 		log.Lvl1("this round already has a leader!")
 	}
-	log.Lvl1("RootPreNewRound took:", time.Since(takenTime).String())
+	log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: the whole function took:", time.Since(RootPreNewRoundTakenTime).String())
 }
 func (bz *ChainBoost) MainChainCheckLeadership(msg MainChainNewRoundChan) error {
 	var vrfOutput [64]byte
