@@ -53,10 +53,10 @@ func Rsync(username, host, SSHString, file, dest string) error {
 		addr = username + "@" + addr
 	}
 	//cmd := exec.Command("rsync", "-Pauz", "-e", fmt.Sprintf("ssh -T -o Compression=no -x -p %s", p), file, addr)
-	//SSHString := "ssh -i '/Users/raha/.ssh/chainboostTest.pem'"
+	//SSHString := "ssh -i '/Users//.ssh/chainboostTest.pem'"
 	//Raha: -i is required just if the key is not on default (~/.ssh) directory
 
-	//file = "/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/deploy/"
+	//file = "/Users//Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/deploy/"
 	//addr = "ubuntu@ec2-3-87-13-148.compute-1.amazonaws.com:"
 	//cmd := exec.Command( /*"sudo", "-S",*/ "rsync", "-Pauz", "-e", SSHString, file, addr)
 	//cmd.Stdin = strings.NewReader("pass")

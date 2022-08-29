@@ -99,7 +99,7 @@ func NewSubBlsCosi(n *onet.TreeNodeInstance, vf VerificationFn, suite *pairing.S
 // Dispatch runs the protocol for each node in the protocol acting according
 // to its type
 func (p *SubBlsCosi) Dispatch() error {
-	// raha: commented. we don't want the nodes to be done after one round of protocol!
+	// : commented. we don't want the nodes to be done after one round of protocol!
 	//defer p.Done()
 
 	// Send announcement to start sending signatures

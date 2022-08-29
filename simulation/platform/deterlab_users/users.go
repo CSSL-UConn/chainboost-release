@@ -38,7 +38,7 @@ func init() {
 // - start the simulation
 func main() {
 	log.LLvl1("Raha: ./users file is called on the gateway server and is running the users exe, hence the main function in users.go file")
-	// //raha: why?!!! commented next line
+	// //: why?!!! commented next line
 	// //log.Fatal("De")
 
 	// //init with deter.toml
@@ -53,14 +53,14 @@ func main() {
 	// 	os.Exit(-1)
 	// }
 	//hosts := "csi-lab-ssh.engr.uconn.edu"
-	//todoraha: change this list based on list of VMs or make it dynamic later
+	//todo: change this list based on list of VMs or make it dynamic later
 	hosts := "192.168.3.220:22 192.168.3.221:22 192.168.3.222:22 192.168.3.223:22"
 	hostsTrimmed := strings.TrimSpace(re.ReplaceAllString(string(hosts), " "))
 	hostlist := strings.Split(hostsTrimmed, " ")
 
 	doneHosts := make([]bool, len(hostlist))
 	log.LLvl1("Found the following hosts:", hostlist)
-	//raha: commented
+	//: commented
 	//if kill {
 	log.LLvl1("Cleaning up", len(hostlist), "hosts.")
 	//}
@@ -69,16 +69,16 @@ func main() {
 		wg.Add(1)
 		go func(i int, h string) {
 			defer wg.Done()
-			//raha: commented
+			//: commented
 			//if kill {
 			log.LLvl1("Cleaning up host", h, ".")
-			//raha commented
+			// commented
 			//runSSH(h, "sudo killall -9 simul scp 2>/dev/null >/dev/null")
 			s := strings.Split(h, ":")
 			hs := s[0]
 			runSSH(hs, "kill -9 -1")
 			time.Sleep(5 * time.Second)
-			// raha commented
+			//  commented
 			//runSSH(h, "sudo killall -9 simul 2>/dev/null >/dev/null")
 			//time.Sleep(1 * time.Second)
 			// Also kill all other process that start with "./" and are probably
@@ -109,13 +109,13 @@ func main() {
 	go func() {
 		wg.Wait()
 		log.LLvl1("Done waiting")
-		//todoraha: we will need it once I figure out how to use flags!
+		//todo: we will need it once I figure out how to use flags!
 		cleanupChannel <- "done"
 	}()
 	select {
 	case msg := <-cleanupChannel:
 		log.LLvl1("Received msg from cleanupChannel", msg)
-	//todoraha now: is it a good wait out time for us?
+	//todo now: is it a good wait out time for us?
 	case <-time.After(time.Second * 20000):
 		for i, m := range doneHosts {
 			if !m {
@@ -134,7 +134,7 @@ func main() {
 	// RedirectionAddress:SinkPort-1. With remote tunnel forwarding it will
 	// be forwarded to the real sink
 	//-------------------
-	//todoraha: what proxy and monitor port are doing?
+	//todo: what proxy and monitor port are doing?
 	// addr, port := deter.ProxyAddress, uint16(deter.MonitorPort+1)
 	// log.LLvl1("Launching proxy redirecting to", addr, ":", port)
 	// prox, err := monitor.NewProxy(uint16(deter.MonitorPort), addr, port)
@@ -156,13 +156,13 @@ func main() {
 			// If PreScript is defined, run the appropriate script _before_ the simulation.
 			//log.LLvl1("Raha: skipping:run the appropriate script")
 			if deter.PreScript != "" {
-				log.LLvl1("raha: deter.PreScript running?")
+				log.LLvl1(": deter.PreScript running?")
 				err := platform.SSHRunStdout("root", phys, "cd remote; sudo ./"+deter.PreScript+" deterlab")
 				if err != nil {
 					log.Fatal("error deploying PreScript: ", err)
 				}
 			} else {
-				log.LLvl1("raha: deter.PreScript is empty.")
+				log.LLvl1(": deter.PreScript is empty.")
 			}
 			// -----------------------------------------
 			// Raha added this part!
@@ -206,7 +206,7 @@ func main() {
 			args := " -address=" + internal +
 				" -simul=" + deter.Simulation +
 				" -monitor=" + monitorAddr +
-				//todoraha
+				//todo
 				//" -debug=" + strconv.Itoa(log.DebugVisible()) +
 				" -Debug=" + strconv.Itoa(simul.Debug) +
 				" -suite=" + simul.Suite +
@@ -250,7 +250,7 @@ func main() {
 	}
 	// wait for the servers to finish before stopping
 	wg.Wait()
-	//totdoraha: commented
+	//totdo: commented
 	//prox.Stop()
 }
 

@@ -1,6 +1,6 @@
 package BLSCoSi
 
-/* raha: brought from Package bdnproto:
+/* : brought from Package bdnproto:
 Package bdnproto implements the Boneh-Drijvers-Neven signature scheme
 to protect the aggregates against rogue public-key attacks.
 This is a modified version of blscosi/protocol which is now deprecated.

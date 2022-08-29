@@ -104,7 +104,7 @@ func BenchmarkVrfVerify(b *testing.B) {
 	proofs := make([]VrfProof, b.N)
 	for i := 0; i < b.N; i++ {
 		var sk VrfPrivkey
-		//todoraha: fix this later!
+		//todo: fix this later!
 		var seed [32]byte
 		pks[i], sk = VrfKeygenFromSeedGo(seed)
 		strs[i] = make([]byte, 100)

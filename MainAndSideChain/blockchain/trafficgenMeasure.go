@@ -203,7 +203,7 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 	}
 	// real! TransactionListSize = size.Of(x9) + sum of size of included transactions
 	// --- VRF
-	//raha: ToDoRaha: temp comment
+	//: ToDoRaha: temp comment
 	// t := []byte("first round's seed")
 	// VrfPubkey, VrfPrivkey := vrf.VrfKeygen()
 	// proof, _ := VrfPrivkey.ProveBytes(t)

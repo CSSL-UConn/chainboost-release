@@ -41,7 +41,7 @@ func NewSimulation(config string) (onet.Simulation, error) {
 func (e *simulation) Setup(dir string, hosts []string) (
 	*onet.SimulationConfig, error) {
 	sc := &onet.SimulationConfig{}
-	log.LLvl1("raha: creating roster with hosts number of nodes, out of given addresses and starting from port:2000")
+	log.LLvl1(": creating roster with hosts number of nodes, out of given addresses and starting from port:2000")
 	e.CreateRoster(sc, hosts, 2000)
 	err := e.CreateTree(sc)
 	if err != nil {

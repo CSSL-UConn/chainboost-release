@@ -251,7 +251,7 @@ func newMessageProxyStore(s network.Suite, disp network.Dispatcher, proc network
 		// also add the default one
 		defaultIO: &defaultProtoIO{s},
 	}
-	//raha commented!
+	// commented!
 	//for name, newIO := range messageProxyFactory.factories {
 	for _, newIO := range messageProxyFactory.factories {
 		io := newIO()

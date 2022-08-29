@@ -91,7 +91,7 @@ type TCPConn struct {
 // In case of an error it returns a nil TCPConn and the error.
 func NewTCPConn(addr Address, suite Suite) (conn *TCPConn, err error) {
 	netAddr := addr.NetworkAddress()
-	//log.LLvl3("raha: in newTCPConn function, dialing: ", netAddr)
+	//log.LLvl3(": in newTCPConn function, dialing: ", netAddr)
 	for i := 1; i <= MaxRetryConnect; i++ {
 		var c net.Conn
 		c, err = net.DialTimeout("tcp", netAddr, dialTimeout)
@@ -102,7 +102,7 @@ func NewTCPConn(addr Address, suite Suite) (conn *TCPConn, err error) {
 			}
 			return
 		}
-		err = xerrors.Errorf("raha: dial: %v", err)
+		err = xerrors.Errorf(": dial: %v", err)
 		if i < MaxRetryConnect {
 			time.Sleep(WaitRetry)
 		}
@@ -219,14 +219,14 @@ func (c *TCPConn) sendRaw(b []byte) (uint64, error) {
 	}
 	// Then send everything through the connection
 	// Send chunk by chunk
-	log.Lvl4("raha: Sending from", c.conn.LocalAddr(), "to", c.conn.RemoteAddr())
+	log.Lvl4(": Sending from", c.conn.LocalAddr(), "to", c.conn.RemoteAddr())
 	var sent Size
 	for sent < packetSize {
 		n, err := c.conn.Write(b[sent:])
 		if err != nil {
 			sentLen := 4 + uint64(sent)
 			c.updateTx(sentLen)
-			//log.LLvl3("raha: debug: err in conn.write located in sendRaw called from conn.send")
+			//log.LLvl3(": debug: err in conn.write located in sendRaw called from conn.send")
 			return sentLen, xerrors.Errorf("sending: %w", handleError(err))
 		}
 		sent += Size(n)
@@ -362,7 +362,7 @@ func NewTCPListenerWithListenAddr(addr Address,
 		suite:        s,
 	}
 	listenOn, err := getListenAddress(addr, listenAddr)
-	////log.LLvl3("raha: listen on:", listenOn, "for server addrs:", addr.String())
+	////log.LLvl3(": listen on:", listenOn, "for server addrs:", addr.String())
 	if err != nil {
 		return nil, xerrors.Errorf("listener: %v", err)
 	}
@@ -553,7 +553,7 @@ func (t *TCPHost) Connect(si *ServerIdentity) (Conn, error) {
 	case PlainTCP:
 		c, err := NewTCPConn(si.Address, t.suite)
 		if err != nil {
-			return nil, xerrors.Errorf("raha: tcp connection: %v", err)
+			return nil, xerrors.Errorf(": tcp connection: %v", err)
 		}
 		return c, nil
 	case TLS:

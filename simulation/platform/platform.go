@@ -67,7 +67,7 @@ type Config struct {
 	Suite       string
 	MonitorPort int
 	Debug       int
-	// raha: adding some other system-wide configurations, these fields are those who are needed in the protocol
+	// : adding some other system-wide configurations, these fields are those who are needed in the protocol
 	MCRoundDuration          int
 	PercentageTxPay          int
 	MainChainBlockSize       int

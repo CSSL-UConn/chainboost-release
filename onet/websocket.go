@@ -156,7 +156,7 @@ func NewWebSocket(si *network.ServerIdentity) *WebSocket {
 		Addr:    webHost,
 		Handler: w.mux,
 	}
-	////log.LLvl3("raha: debug: does it get here?! for ", si.Address)
+	////log.LLvl3(": debug: does it get here?! for ", si.Address)
 	return w
 }
 
@@ -173,7 +173,7 @@ func (w *WebSocket) start() {
 	w.Lock()
 	w.started = true
 	w.server.TLSConfig = w.TLSConfig
-	//log.LLvl3("raha: Starting to listen on:", w.server.Addr)
+	//log.LLvl3(": Starting to listen on:", w.server.Addr)
 	started := make(chan bool)
 	go func() {
 		// Check if server is configured for TLS
@@ -181,7 +181,7 @@ func (w *WebSocket) start() {
 		if w.server.TLSConfig != nil && (w.server.TLSConfig.GetCertificate != nil || len(w.server.TLSConfig.Certificates) >= 1) {
 			w.server.ListenAndServeTLS("", "")
 		} else {
-			//log.LLvl3("raha: debug: ListenAndServe", w.server.Addr)
+			//log.LLvl3(": debug: ListenAndServe", w.server.Addr)
 			w.server.ListenAndServe()
 		}
 	}()

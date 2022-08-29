@@ -31,7 +31,7 @@ func init() {
 	log.ErrFatal(err)
 }
 
-//todoraha:  changed default time out from 10 sec
+//todo:  changed default time out from 10 sec
 const DefaultTimeout = 100 * time.Second
 const DefaultSubleaderFailures = 2
 
@@ -74,14 +74,14 @@ type BlsCosi struct {
 	VerificationFn   VerificationFn
 	Suite            *pairing.SuiteBn256
 	SubTrees         BlsProtocolTree
-	// raha added
+	//  added
 	BlockType string // "metablock", "summeryblock"
 }
 
 // CreateProtocolFunction is a function type which creates a new protocol
 // used in BlsCosi protocol for creating sub leader protocols.
 
-// raha: changed this from
+// : changed this from
 //type CreateProtocolFunction func(name string, t *onet.Tree, sid onet.ServiceID) (onet.ProtocolInstance, error)
 // to: (what's the difference?!)
 type CreateProtocolFunction func(name string, t *onet.Tree, sid onet.ServiceID) (onet.ProtocolInstance, error)
@@ -105,7 +105,7 @@ func DefaultThreshold(n int) int {
 	return n - DefaultFaultyThreshold(n)
 }
 
-//raha added
+// added
 func DefaultBlockType() string {
 	return "Meta Block"
 }
@@ -125,7 +125,7 @@ func NewBlsCosi(n *onet.TreeNodeInstance, vf VerificationFn, subProtocolName str
 		VerificationFn:    vf,
 		SubProtocolName:   subProtocolName,
 		Suite:             suite,
-		// raha added
+		//  added
 		BlockType: DefaultBlockType(),
 	}
 
@@ -211,7 +211,7 @@ func (p *BlsCosi) Start() error {
 }
 
 func (p *BlsCosi) runSubProtocols() {
-	// raha: commented. we don't want the nodes to be done after one round of protocol!
+	// : commented. we don't want the nodes to be done after one round of protocol!
 	//defer p.Done()
 
 	// Verification of the data is done before contacting the children
@@ -235,7 +235,7 @@ func (p *BlsCosi) runSubProtocols() {
 		}
 	}
 	p.SubProtocolsLock.Unlock()
-	log.LLvl1(p.ServerIdentity().Address, "all (raha: sub bls) protocols started")
+	log.LLvl1(p.ServerIdentity().Address, "all (: sub bls) protocols started")
 
 	// Wait and collect all the signature responses
 	responses, err := p.collectSignatures()
@@ -536,7 +536,7 @@ func (p *BlsCosi) makeAggregateResponse(suite pairing.Suite, publics []kyber.Poi
 // 	return bls.AggregateSignatures(suite, sigs...)
 // }
 
-// --------------------------------   raha: added   --------------------------------
+// --------------------------------   : added   --------------------------------
 func (p *BlsCosi) IsCommitteeRoot() bool {
 	if p.TreeNode().Name() == p.SubTrees[0].Root.Name() {
 		return true

@@ -621,6 +621,6 @@ func getWSHostPort(si *network.ServerIdentity, global bool) (string, error) {
 	}
 
 	portFormatted := strconv.FormatUint(uint64(port), 10)
-	////log.LLvl3("raha: debug: here?")
+	////log.LLvl3(": debug: here?")
 	return net.JoinHostPort(hostname, portFormatted), nil
 }

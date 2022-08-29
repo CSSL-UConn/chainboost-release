@@ -97,7 +97,7 @@ type Deterlab struct {
 	// Tags to use when compiling
 	Tags string
 
-	// raha: adding some other system-wide configurations
+	// : adding some other system-wide configurations
 	MCRoundDuration          int
 	PercentageTxPay          int
 	MainChainBlockSize       int
@@ -135,7 +135,7 @@ func (d *Deterlab) Configure(pc *Config) {
 	log.LLvl1("Dirs are:", pwd, d.deployDir, "configed monitor port is:", pc.MonitorPort)
 	d.loadAndCheckDeterlabVars()
 	// ------------------------------
-	// raha: adding some other system-wide configurations
+	// : adding some other system-wide configurations
 	d.MCRoundDuration = pc.MCRoundDuration
 	d.PercentageTxPay = pc.PercentageTxPay
 	d.MainChainBlockSize = pc.MainChainBlockSize
@@ -186,11 +186,11 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 	// start building the necessary binaries - it's always the same,
 	// but built for another architecture.
 	packages := []pkg{
-		//raha: changed
+		//: changed
 		// deter has an amd64, linux architecture
-		{"simul", "arm64", "darwin", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
-		{"users", "amd64", "linux", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/platform", "deterlab_users")},
-		{"simul", "amd64", "linux", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
+		{"simul", "arm64", "darwin", path.Join("/Users//Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
+		{"users", "amd64", "linux", path.Join("/Users//Documents/github.com/chainBoostScale/ChainBoost/simulation/platform", "deterlab_users")},
+		{"simul", "amd64", "linux", path.Join("/Users//Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
 		//{"simul", "amd64", "linux", d.simulDir},
 		//{"simul", "arm64", "linux", "/go/src/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"},
 		//{"users", "arm64", "darwin", d.simulDir},
@@ -216,12 +216,12 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 		go func(p pkg) {
 			defer wg.Done()
 			dst := path.Join(d.buildDir, p.name)
-			//raha
+			//
 			var path string
 			var err error
 
-			d.simulDir = "/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"
-			d.platformDir = "/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/platform"
+			d.simulDir = "/Users//Documents/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"
+			d.platformDir = "/Users//Documents/github.com/chainBoostScale/ChainBoost/simulation/platform"
 
 			path, err = filepath.Rel(d.simulDir, p.path)
 			log.ErrFatal(err)
@@ -378,7 +378,7 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	blockchain.InitializeSideChainBC()
 
 	// --------------------------------------------
-	//ToDoraha : is it the best way to do so?!
+	//ToDo : is it the best way to do so?!
 	// Copying central bc files to deploy-directory so it gets transferred to distributed servers
 	err = exec.Command("cp", d.simulDir+"/"+"mainchainbc.xlsx", d.deployDir).Run()
 	if err != nil {
@@ -389,7 +389,7 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 		log.Fatal("error copying sidechainbc.xlsx: ", err)
 	}
 
-	//ToDoraha : is it the best way to do so?!
+	//ToDo : is it the best way to do so?!
 	// Copying chainBoost.toml file to deploy-directory so it gets transferred to distributed servers
 	err = exec.Command("cp", d.simulDir+"/"+d.Simulation+".toml", d.deployDir).Run()
 	if err != nil {
@@ -413,8 +413,8 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	// Copy everything over to uconn's gateway server
 	log.LLvl1("Copying over to", d.Login, "@", d.Host)
 
-	// rahatodo: it works with out id_rsa now but I am not sure how I am authenticated to the gateway, will I need it or not!, I will keep it for now
-	SSHString := "ssh -i '/Users/raha/.ssh/id_rsa'"
+	// todo: it works with out id_rsa now but I am not sure how I am authenticated to the gateway, will I need it or not!, I will keep it for now
+	SSHString := "ssh -i '/Users//.ssh/id_rsa'"
 	//ToDoRaha: fix this later
 	err = Rsync(d.Login, d.Host, SSHString, d.deployDir+"/", "~/remote/")
 	if err != nil {
@@ -435,7 +435,7 @@ func (d *Deterlab) Start(args ...string) error {
 	// listening.
 	// -n = stdout == /Dev/null, -N => no command stream, -T => no tty
 
-	//todoraha: commented temp  do we need them?
+	//todo: commented temp  do we need them?
 	log.LLvl1("Setup remote port forwarding skipped")
 	// redirection := strconv.Itoa(d.MonitorPort) + ":" + d.ProxyAddress + ":" + strconv.Itoa(d.MonitorPort)
 	// cmd := []string{"-nNTf", "-o", "StrictHostKeyChecking=no", "-o", "ExitOnForwardFailure=yes", "-R",

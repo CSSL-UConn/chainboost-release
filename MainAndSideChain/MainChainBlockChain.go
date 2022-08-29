@@ -76,7 +76,7 @@ func (bz *ChainBoost) finalMainChainBCInitialization() {
 	for i := 2; i <= len(NodeInfoRow)+1; i++ { // len(NodeInfoRow) has been used to reflecvt number of nodes 1<->1 number of agreemenets
 		ServAgrRow := strconv.Itoa(i)
 		cell := "E" + ServAgrRow
-		//todoraha: use unique increasing int values for each server 1<->1 contract instead of random values
+		//todo: use unique increasing int values for each server 1<->1 contract instead of random values
 		// this int value as serverAgreementID points to the rownumber in marketmatching sheet that maintain the corresponding contract's info
 
 		//RandomServerAgreementID := r.Int()
@@ -224,7 +224,7 @@ func (bz *ChainBoost) readBCPowersAndSeed() (minerspowers map[string]int, seed s
 	}
 
 	// ----------------------
-	//tododraha: check if works remove this later
+	//todod: check if works remove this later
 	// ----------------------
 	//for _, a := range bz.Tree().List(){
 	//var myColumnHeader []string
@@ -467,7 +467,7 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 	// ---------------------------------------------------------------------
 	// --- Power Table sheet  ----------------------------------------------
 	// ---------------------------------------------------------------------
-	/* todoraha: Power has been  added without considering por tx.s not published (waiting in queue yet)
+	/* todo: Power has been  added without considering por tx.s not published (waiting in queue yet)
 	=> fix it: use TXissued column (first set it to 2 when taken and second change its name to TXonQ), so if
 	contract is publlished (1) but TxonQ is taken (2) then add power  */
 
@@ -793,7 +793,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 			// --- check for eligible contracts and add a por tx row on top of the stream ----
 			// ServAgr is not expired => Add TxPor
 			newTransactionRowSC[2] = time.Now().Format(time.RFC3339)
-			// 50008 means 50000 + 8 which means epoch number 5 scround number 8 //todoraha: is it still on?
+			// 50008 means 50000 + 8 which means epoch number 5 scround number 8 //todo: is it still on?
 			newTransactionRowSC[3] = strconv.Itoa(bz.SCRoundNumber)
 			newTransactionRowSC[0] = "TxPor"
 			newTransactionRowSC[1] = strconv.Itoa(int(PorTxSize))
@@ -1030,7 +1030,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		2) issuedMCRoundNumber */
 
 		// ----------------
-		//todoraha: check if works fine, remove this part later
+		//todo: check if works fine, remove this part later
 		// ----------------
 		// for j, colCell := range row {
 		// 	if j == 0 {
@@ -1141,7 +1141,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 				cid := row[4]
 
 				// ------------------------------
-				// todoraha: check and remove it later if works fine
+				// todo: check and remove it later if works fine
 				// ------------------------------
 				// if ServAgrIdCellMarketMatching, err = f.SearchSheet("MarketMatching", cid); err != nil {
 				// 	log.LLvl1("Panic Raised:\n\n")
@@ -1359,7 +1359,7 @@ func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
 	3) issuedMCRoundNumber
 	4) ServAgrId */
 	var newTransactionRow [5]string
-	s := make([]interface{}, len(newTransactionRow)) //ToDoRaha: raha:  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
+	s := make([]interface{}, len(newTransactionRow)) //ToDoRaha: :  check this out later: https://stackoverflow.com/questions/23148812/whats-the-meaning-of-interface/23148998#23148998
 
 	newTransactionRow[0] = "TxSync"
 	newTransactionRow[2] = time.Now().Format(time.RFC3339)

@@ -193,7 +193,7 @@ func RandomizedFileStoring(sk PrivateKey, initialfile initialFile, SectorNumber 
 	TauSize = len(Tau)
 
 	// we need a BLS hash here. I brought this from kyber.bls.sign
-	// todoraha: check this to be the right method
+	// todo: check this to be the right method
 	// https://github.com/dedis/kyber/blob/b627bb323bc7380f4c09d803208a18b7624e1ec1/sign/bls/bls.go
 
 	// ----  isn't there another way?---------------------------------------

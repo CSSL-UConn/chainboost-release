@@ -57,8 +57,8 @@ var SimState = 2
 // -------------------------------------
 // Initialize before 'init' so we can directly use the fields as parameters
 // to 'Flag'
-//raha:like above???!!!
-//todoraha: fill the description for each flag
+//:like above???!!!
+//todo: fill the description for each flag
 
 func init() {
 	flag.StringVar(&serverAddress, "address", "", "our address to use")
@@ -123,11 +123,11 @@ func Start(rcs ...string) {
 		host := localAddr.IP.String()
 		serverAddress = host
 
-		// raha: port 2000 is bcz in start.py file they have initialized it with port 2000!
+		// : port 2000 is bcz in start.py file they have initialized it with port 2000!
 		monitorAddress = "192.168.3.220:2000"
 		//suite = "bn256.adapter"
 
-		//todoraha: what monitor is for? what port?
+		//todo: what monitor is for? what port?
 
 		err := platform.Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize,
 			SectorNumber, NumberOfPayTXsUpperBound, SimulationRounds, SimulationSeed,

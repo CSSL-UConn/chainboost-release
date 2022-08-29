@@ -89,10 +89,10 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	if bz.SCRoundNumber == 1 {
 		// just in the first sc round it wont be nil, else this leader has already the info
 		bz.CommitteeNodesTreeNodeID = msg.CommitteeNodesTreeNodeID
-		//todoraha: a out of range bug happens sometimes!
-		//log.LLvl1("raha: debug:", bz.CommitteeWindow-1)
-		log.Lvl2("raha: debug:", bz.CommitteeWindow)
-		log.Lvl1("log raha:bz.CommitteeWindow:", bz.CommitteeWindow)
+		//todo: a out of range bug happens sometimes!
+		//log.LLvl1(": debug:", bz.CommitteeWindow-1)
+		log.Lvl2(": debug:", bz.CommitteeWindow)
+		log.Lvl1("log :bz.CommitteeWindow:", bz.CommitteeWindow)
 		for _, a := range bz.CommitteeNodesTreeNodeID[0 : bz.CommitteeWindow-1] {
 			//for _, a := range bz.CommitteeNodesTreeNodeID[0:bz.CommitteeWindow] {
 			CommitteeNodesServerIdentity = append(CommitteeNodesServerIdentity, bz.Tree().Search(a).ServerIdentity)
@@ -104,7 +104,7 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	} else {
 		//log.LLvl1(len(bz.CommitteeNodesTreeNodeID))
 		//log.LLvl1(bz.CommitteeNodesTreeNodeID[len(bz.CommitteeNodesTreeNodeID)-(bz.CommitteeWindow):])
-		// todoraha: check that the case with changing committee after choosing next sc leader (me!) doesnt happen and if it does , it doesnt affect my committee!
+		// todo: check that the case with changing committee after choosing next sc leader (me!) doesnt happen and if it does , it doesnt affect my committee!
 		for _, a := range bz.CommitteeNodesTreeNodeID[0 : bz.CommitteeWindow-1] {
 			CommitteeNodesServerIdentity = append(CommitteeNodesServerIdentity, bz.Tree().Search(a).ServerIdentity)
 		}
@@ -291,7 +291,7 @@ dynamically change the side chain's committee with last main chain's leader
 the committee nodes is shifted by one and the new leader is added to be used for next epoch's side chain's committee
 Note that: for now we are considering the last w distinct leaders in the committee which means
 if a leader is selected multiple times during an epoch, he will not be added multiple times,
-//todoraha: the new leader can be moved to be the first in the committee to be atleast be the next sc's leader
+//todo: the new leader can be moved to be the first in the committee to be atleast be the next sc's leader
 -----------------------------------------------
 --- updating the CommitteeNodesTreeNodeID
 ----------------------------------------------- */

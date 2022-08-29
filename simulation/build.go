@@ -33,7 +33,7 @@ var race = false
 var runWait = 180 * time.Second
 var experimentWait = 0 * time.Second
 
-var platformDst = "localhost" //todoraha: it should be initialized for debugging?
+var platformDst = "localhost" //todo: it should be initialized for debugging?
 //var platformDst = "deterlab"
 //var platformDst string //= "deterlab"
 
@@ -76,13 +76,13 @@ func startBuild() {
 			log.Fatal("No tests found in", simulation)
 		}
 
-		/* raha: instead of reading these config variables from the toml connfig file, we set an initialized
+		/* : instead of reading these config variables from the toml connfig file, we set an initialized
 		   value for each on simul.go and we can dynamically change them when running each simulation
 		   via flags with exact same names
 		   e.g.: go test -platform=deterlab -MCRoundDuration=10 -timeout 300000s -run ^TestSimulation$
 		*/
 
-		// raha: converting string values read from toml file to int values
+		// : converting string values read from toml file to int values
 		MCRoundDuration, _ := strconv.Atoi(runconfigs[0].Get("MCRoundDuration"))
 		PercentageTxPay, _ := strconv.Atoi(runconfigs[0].Get("PercentageTxPay"))
 		MainChainBlockSize, _ := strconv.Atoi(runconfigs[0].Get("MainChainBlockSize"))
@@ -102,7 +102,7 @@ func startBuild() {
 			MonitorPort: monitorPort,
 			Debug:       log.DebugVisible(),
 			Suite:       runconfigs[0].Get("Suite"),
-			// raha: adding some other system-wide configurations
+			// : adding some other system-wide configurations
 			MCRoundDuration:          MCRoundDuration,
 			PercentageTxPay:          PercentageTxPay,
 			MainChainBlockSize:       MainChainBlockSize,
@@ -139,9 +139,9 @@ func startBuild() {
 			// 	panic("Raha: set timeout for the experiment from the config file")
 			// }
 			go func() {
-				log.LLvl1("raha: running RunTests func")
+				log.LLvl1(": running RunTests func")
 				RunTests(deployP, logname, runconfigs)
-				log.LLvl1("raha: RunTests func returned")
+				log.LLvl1(": RunTests func returned")
 				testsDone <- true
 			}()
 			select {

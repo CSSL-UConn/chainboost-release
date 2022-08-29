@@ -27,7 +27,7 @@ type simulInitDone struct{}
 // monitorAddress = ""
 // simul = localhost.simulation
 
-// raha: adding some other system-wide configurations
+// : adding some other system-wide configurations
 func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize, SectorNumber, NumberOfPayTXsUpperBound,
 	SimulationRounds, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, MCRoundPerEpoch, SimState int,
 	suite, serverAddress, simul, monitorAddress string) error {
@@ -38,9 +38,9 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		log.LLvl1(err, serverAddress)
 		return err
 	}
-	//todoraha
+	//todo
 	// if monitorAddress != "" {
-	// 	log.LLvl1("raha: connecting to monitor: ", monitorAddress)
+	// 	log.LLvl1(": connecting to monitor: ", monitorAddress)
 	// 	if err := monitor.ConnectSink(monitorAddress); err != nil {
 	// 		log.Error("Couldn't connect monitor to sink:", err)
 	// 		return xerrors.New("couldn't connect monitor to sink: " + err.Error())
@@ -81,7 +81,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		go func(c *onet.Server) {
 			ready <- true
 			defer wgServer.Done()
-			log.Lvl2("raha: starting a server:", c.ServerIdentity.Address)
+			log.Lvl2(": starting a server:", c.ServerIdentity.Address)
 			c.Start()
 			if measure != nil {
 				measuresLock.Lock()
@@ -93,7 +93,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 
 		// wait to be sure the goroutine started
 		<-ready
-		//log.LLvl1("raha: does it get here for the buggy one?!")
+		//log.LLvl1(": does it get here for the buggy one?!")
 		log.Lvl5("Raha: simul flag value is:", simul)
 		sim, err := onet.NewSimulation(simul, sc.Config)
 		if err != nil {
@@ -162,9 +162,9 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		x.RosterIndex = 0
 		BlsCosiSubTrees, _ := BLSCoSi.NewBlsProtocolTree(onet.NewTree(committee, &x), NbrSubTrees)
 
-		// todoraha: message should be initialized with main chain's genesis block
+		// todo: message should be initialized with main chain's genesis block
 
-		// raha: BlsCosi protocol is created here => call to CreateProtocol() => call an empty Dispatch()
+		// : BlsCosi protocol is created here => call to CreateProtocol() => call an empty Dispatch()
 		log.Lvl1(rootSC.Server.ServerIdentity.Address, ": BlsCosi protocol is created")
 		pi, err := rootSC.Overlay.CreateProtocol("bdnCoSiProto", BlsCosiSubTrees[0], onet.NilServiceID)
 		if err != nil {
@@ -173,7 +173,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		cosiProtocol := pi.(*BLSCoSi.BlsCosi)
 		cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol
 		/* Raha: it doesn't call any fuunction! just initializtion of methods that is going to be used later
-		cosiProtocol.CreateProtocol = rootService.CreateProtocol //raha: it used to be initialized by this function call
+		cosiProtocol.CreateProtocol = rootService.CreateProtocol //: it used to be initialized by this function call
 		params from config file:
 		cosiProtocol.Timeout = time.Duration(ProtocolTimeout) * time.Second
 		*/
@@ -187,7 +187,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		// ---------------------------------------------------------------
 		//              ------   ChainBoost protocol  ------
 		// ---------------------------------------------------------------
-		// raha: ChainBoost protocol is created here => calling CreateProtocol() => calling Dispatch()
+		// : ChainBoost protocol is created here => calling CreateProtocol() => calling Dispatch()
 		log.Lvl1(rootSC.Server.ServerIdentity.Address, ": ChainBoost protocol is created")
 		p, err := rootSC.Overlay.CreateProtocol("ChainBoost", rootSC.Tree, onet.NilServiceID)
 		if err != nil {
@@ -195,7 +195,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		}
 		ChainBoostProtocol := p.(*MainAndSideChain.ChainBoost)
 		//ChainBoostProtocol.SetTimeout(time.Duration(TimeOut) * time.Second)
-		// raha: finally passing our system-wide configurations to our protocol
+		// : finally passing our system-wide configurations to our protocol
 		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": initialization of ChainBoost protocol attributes")
 		ChainBoostProtocol.PercentageTxPay = PercentageTxPay
 		ChainBoostProtocol.MCRoundDuration = MCRoundDuration
@@ -228,7 +228,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			"\n SimState: ", SimState,
 		)
 		// ---------------------------------------------------------------
-		/* raha: initializing BLSCoSi protocol:
+		/* : initializing BLSCoSi protocol:
 		this way, the roster that runs this protocol is initiated by the main roster,
 		(the one that runs the ChainBoost protocol)
 		i.e. cosiProtocol.TreeNodeInstance = ChainBoostProtocol.TreeNodeInstance
@@ -293,7 +293,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		}()
 		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": root node is Starting the ChainBoost Protocol")
 		ChainBoostProtocol.Start()
-		// raha: bls cosi  start function is called inside ChainBoost protocol
+		// : bls cosi  start function is called inside ChainBoost protocol
 		// ---------------------------------------------------------------
 		// when it finishes  is when:
 		// ToDoRaha
@@ -339,7 +339,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		log.Lvl1("Raha: Starting the close all protocol to close all nodes by  the returned root node at the end of simulation")
 		piC.Start()
 	}
-	//todoraha:
+	//todo:
 	log.LLvl1(serverAddress, scs[0].Server.ServerIdentity, "is waiting for all servers to close")
 	wgServer.Wait()
 	log.LLvl1(serverAddress, "has all servers closed")
@@ -359,7 +359,7 @@ type conf struct {
 	IndividualStats string
 }
 
-// raha added
+//  added
 
 func init() {
 	network.RegisterMessage(MainAndSideChain.HelloChainBoost{})
@@ -417,15 +417,15 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 	bz.SummPoRTxs = make(map[int]int)
 
 	// bls key pair for each node for VRF
-	// ToDoraha: temp commented
+	// ToDo: temp commented
 	// do I need to bring this seed from config? check what it is used for?
 	rand.Seed(int64(bz.TreeNodeInstance.Index()))
 	seed := make([]byte, 32)
 	rand.Read(seed)
 	tempSeed := (*[32]byte)(seed[:32])
-	log.Lvlf5("raha:debug:seed for the VRF is:", seed, "the tempSeed value is:", tempSeed)
+	log.Lvlf5(":debug:seed for the VRF is:", seed, "the tempSeed value is:", tempSeed)
 	_, bz.ECPrivateKey = vrf.VrfKeygenFromSeedGo(*tempSeed)
-	log.Lvlf5("raha:debug: the ECprivate Key is:", bz.ECPrivateKey)
+	log.Lvlf5(":debug: the ECprivate Key is:", bz.ECPrivateKey)
 	// --------------------------------------- blscosi -------------------
 	if err := n.RegisterChannel(&bz.RtLSideChainNewRoundChan); err != nil {
 		return bz, err

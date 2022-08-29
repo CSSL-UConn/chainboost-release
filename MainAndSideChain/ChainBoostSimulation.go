@@ -184,7 +184,7 @@ func (bz *ChainBoost) Start() error {
 ------------------------------------------------------------------------ */
 func (bz *ChainBoost) Dispatch() error {
 
-	// todoraha: some where in byzcoin the running variable was set to false. look for it later!
+	// todo: some where in byzcoin the running variable was set to false. look for it later!
 	running := true
 	var err error
 	numberOfJoinedNodes := len(bz.Tree().List())

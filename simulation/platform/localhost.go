@@ -75,7 +75,7 @@ type Localhost struct {
 	// RunWait for long simulations
 	RunWait string
 
-	// raha: adding some other system-wide configurations
+	// : adding some other system-wide configurations
 	MCRoundDuration          int
 	PercentageTxPay          int
 	MainChainBlockSize       int
@@ -103,7 +103,7 @@ func (d *Localhost) Configure(pc *Config) {
 	log.ErrFatal(os.Mkdir(d.runDir, 0770))
 	d.Suite = pc.Suite
 	// ------------------------------
-	// raha: adding some other system-wide configurations
+	// : adding some other system-wide configurations
 	d.MCRoundDuration = pc.MCRoundDuration
 	d.PercentageTxPay = pc.PercentageTxPay
 	d.MainChainBlockSize = pc.MainChainBlockSize
@@ -179,13 +179,13 @@ func (d *Localhost) Deploy(rc *RunConfig) error {
 	// --------------------------------------------
 
 	// ------------------------------------------------------------------
-	//todoraha: we don't need prescript to creat bc files,
+	//todo: we don't need prescript to creat bc files,
 	// it will be created in deploy inside the InitializeMainChainBC and InitializeSideChainBCfunction invokation
 	// but we can use this option whenever we need to runn a command before starting the simulation
 	// Check for PreScript and copy it to the deploy-dir
 	// d.PreScript = rc.Get("PreScript")
 	// if d.PreScript != "" {
-	// 	//raha added next 2 line
+	// 	// added next 2 line
 	// 	//ToDoRaha: what?!!!!!!
 	// 	pwd := "/deterlab_users/GitHub/chainBoostScale/ChainBoost/simulation/chainBoostFiles/"
 	// 	pwd = pwd + d.PreScript
@@ -237,7 +237,7 @@ func (d *Localhost) Start(args ...string) error {
 	//log.Lvlf3("Starting", d.servers, "applications of", ex)
 	time.Sleep(100 * time.Millisecond)
 
-	//todoraha: we don't need prescript to creat bc files,
+	//todo: we don't need prescript to creat bc files,
 	// it will be created in deploy inside the InitializeMainChainBC and InitializeSideChainBCfunction invokation
 	// but we can use this option whenever we need to runn a command before starting the simulation
 
@@ -250,7 +250,7 @@ func (d *Localhost) Start(args ...string) error {
 	// 	}
 	// 	////log.Lvlf3(outStr)
 	// }
-	// raha: commented. can we uste monitor  or not?!
+	// : commented. can we uste monitor  or not?!
 	// err := monitor.ConnectSink("localhost:" + strconv.Itoa(d.monitorPort))
 	// if err != nil {
 	// 	return xerrors.Errorf("monitor: %v", err)
@@ -261,7 +261,7 @@ func (d *Localhost) Start(args ...string) error {
 		host := "127.0.0." + strconv.Itoa(index+1)
 		go func(i int, h string) {
 			//log.Lvlf3("Localhost: will start host", i, h)
-			//log.Lvlf3("raha: adding some other system-wide configurations")
+			//log.Lvlf3(": adding some other system-wide configurations")
 
 			err := Simulate(d.PercentageTxPay, d.MCRoundDuration, d.MainChainBlockSize, d.SideChainBlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.SimulationRounds,
 				d.SimulationSeed, d.NbrSubTrees, d.Threshold, d.SCRoundDuration, d.CommitteeWindow, d.MCRoundPerEpoch, d.SimState,
@@ -314,7 +314,7 @@ func (d *Localhost) Wait() error {
 	if errCleanup != nil {
 		log.Error("Fail to restore the cwd: " + errCleanup.Error())
 	}
-	// raha: commented
+	// : commented
 	//monitor.EndAndCleanup()
 	//log.Lvlf3("Processes finished")
 	return err

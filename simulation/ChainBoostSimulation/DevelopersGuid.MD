@@ -26,8 +26,8 @@ In the simulation config file, there is a line that specify preScript file:
 PreScript = "testPreScript.toml"
 ```
 
-Now I have added the following address (to the code) to look for it in there: "/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/platform/"
-The code copy this file to where it call deploy-dir which is: "/Users/raha/Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build"
+Now I have added the following address (to the code) to look for it in there: "/Users//Documents/GitHub/chainBoostScale/ChainBoost/simulation/platform/"
+The code copy this file to where it call deploy-dir which is: "/Users//Documents/GitHub/chainBoostScale/ChainBoost/simulation/manage/simulation/build"
 
 Later, again in localhost.go file, in the Start() function, it run the preScript file:
  
@@ -77,7 +77,7 @@ type Config struct {
    Suite       string
    MonitorPort int
    Debug       int
-   // raha: adding some other system-wide configurations
+   // : adding some other system-wide configurations
    RoundDuration      string
    PercentageTxPay    string
    BlockSize string
@@ -94,7 +94,7 @@ deployP.Configure(&platform.Config{
 MonitorPort: monitorPort,
 Debug:       log.DebugVisible(),
 Suite:       runconfigs[0].Get("Suite"),
-// raha: adding some other system-wide configurations
+// : adding some other system-wide configurations
 RoundDuration:      runconfigs[0].Get("RoundDuration"),
 PercentageTxPay:    runconfigs[0].Get("PercentageTxPay"),
 BlockSize:          runconfigs[0].Get("BlockSize"),
@@ -106,7 +106,7 @@ BlockSize:          runconfigs[0].Get("BlockSize"),
 ```
 type Localhost struct {
 ...
-   // raha: adding some other system-wide configurations
+   // : adding some other system-wide configurations
    RoundDuration      string
    PercentageTxPay    string
    BlockSize string
@@ -128,7 +128,7 @@ func (d *Localhost) Configure(pc *Config) {
    log.ErrFatal(os.Mkdir(d.runDir, 0770))
    d.Suite = pc.Suite
    // ------------------------------
-   // raha: adding some other system-wide configurations
+   // : adding some other system-wide configurations
    d.RoundDuration = pc.RoundDuration
    d.PercentageTxPay = pc.PercentageTxPay
    d.BlockSize = pc.BlockSize

@@ -124,7 +124,7 @@ func LoadSimulationConfig(s, dir, ca string) ([]*SimulationConfig, error) {
 		return nil, xerrors.Errorf("making tree: %v", err)
 	}
 
-	//log.LLvl3("raha: instantiating host: ", ca)
+	//log.LLvl3(": instantiating host: ", ca)
 	var ret []*SimulationConfig
 	if ca != "" {
 		if !strings.Contains(ca, ":") {
@@ -134,9 +134,9 @@ func LoadSimulationConfig(s, dir, ca string) ([]*SimulationConfig, error) {
 		}
 
 		for _, e := range sc.Roster.List {
-			////log.LLvl3("raha 1:", e.Address.String(), " vs ", ca)
+			////log.LLvl3(" 1:", e.Address.String(), " vs ", ca)
 			if strings.Contains(e.Address.String(), ca) {
-				////log.LLvl3("raha: New Roster Member", e.String())
+				////log.LLvl3(": New Roster Member", e.String())
 				e.SetPrivate(scf.PrivateKeys[e.Address].Private)
 				// Populate the private key in the same array order
 				for i, privkey := range scf.PrivateKeys[e.Address].Services {
@@ -280,7 +280,7 @@ func (s *SimulationBFTree) CreateRoster(sc *SimulationConfig, addresses []string
 	}
 	entities := make([]*network.ServerIdentity, hosts)
 	//log.LLvl3("Doing", hosts, "hosts")
-	// raha: here is where nodes' key-pair are generated
+	// : here is where nodes' key-pair are generated
 	key := key.NewKeyPair(suite)
 	for c := 0; c < hosts; c++ {
 		key.Private.Add(key.Private, suite.Scalar().One())

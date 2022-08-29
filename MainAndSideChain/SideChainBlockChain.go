@@ -189,7 +189,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 	ServAgrDurationCol := cols[2]
 	ServAgrStartedMCRoundNumberCol := cols[3]
 	ServAgrPublishedCol := cols[5]
-	f.Close() //todoraha: does it help?!
+	f.Close() //todo: does it help?!
 
 	// -------------------------------------------------------------------------------
 	pwd, _ = os.Getwd()
@@ -270,7 +270,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueCollect() {
 		if ServAgrPublished == 1 && bz.MCRoundNumber-ServAgrStartedMCRoundNumber <= ServAgrDuration {
 			// ServAgr is not expired => Add TxPor
 			newTransactionRow[2] = time.Now().Format(time.RFC3339)
-			// 50008 means 50000 + 8 which means epoch number 5 scround number 8 //todoraha: is it still on?
+			// 50008 means 50000 + 8 which means epoch number 5 scround number 8 //todo: is it still on?
 			newTransactionRow[3] = strconv.Itoa(bz.SCRoundNumber)
 			newTransactionRow[0] = "TxPor"
 			newTransactionRow[1] = strconv.Itoa(int(PorTxSize))

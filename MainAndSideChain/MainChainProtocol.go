@@ -212,7 +212,7 @@ func (bz *ChainBoost) MainChainCheckLeadership(msg MainChainNewRoundChan) error 
 	seed := make([]byte, 32)
 	rand.Read(seed)
 	tempSeed := (*[32]byte)(seed[:32])
-	//log.LLvl1("raha:debug:seed for the VRF is:", seed, "the tempSeed value is:", tempSeed)
+	//log.LLvl1(":debug:seed for the VRF is:", seed, "the tempSeed value is:", tempSeed)
 	Pubkey, _ := vrf.VrfKeygenFromSeedGo(*tempSeed)
 	//---
 	_, vrfOutput = Pubkey.VerifyBytesGo(proof, toBeHashed[:])

@@ -118,7 +118,7 @@ func genTrees(tree *onet.Tree, nSubtrees int) ([]*onet.Tree, error) {
 // to the rootRoster.
 // The generated tree will have a root with one child (the subleader)
 // and all other nodes in the roster will be the subleader children.
-// raha: changed it to exportable
+// : changed it to exportable
 func GenSubtree(roster *onet.Roster, nodes []int) (*onet.Tree, error) {
 	if roster == nil {
 		return nil, fmt.Errorf("the roster should not be nil, but is")
@@ -159,7 +159,7 @@ func GenSubtree(roster *onet.Roster, nodes []int) (*onet.Tree, error) {
 	return onet.NewTree(roster, rootNode), nil
 }
 
-// --------------------------------   raha: added   --------------------------------
+// --------------------------------   : added   --------------------------------
 
 // GetRoot returns the server identities of the BlsProtocol SubTree Root
 func (pt BlsProtocolTree) GetRoot() *network.ServerIdentity {
