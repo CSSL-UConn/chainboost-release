@@ -15,6 +15,7 @@ import (
 	"flag"
 	"net"
 	"os"
+	"os/exec"
 
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/simulation/platform"
@@ -40,7 +41,7 @@ var Debug = 1
 // Raha: chainboost dynamic config variables
 // -------------------------------------
 var PercentageTxPay = 30
-var MCRoundDuration = 10         //sec
+var MCRoundDuration = 5          //sec
 var MainChainBlockSize = 2000000 //byte
 var SideChainBlockSize = 1000000
 var SectorNumber = 2
@@ -108,8 +109,8 @@ func Start(rcs ...string) {
 		log.Lvl1("Raha: simul is empty!, this is for the platform/ROOT node?")
 		startBuild()
 	} else {
-		log.Lvl1("simul and PercentageTxPay flags are:", simul, "   ", PercentageTxPay)
-		log.LLvl1("Raha: simul is not empty, it is for simple nodes/miners")
+		log.Lvl1("simul and PercentageTxPay flags are:", simul, " ", PercentageTxPay)
+		log.LLvl1("simul is not empty, it is for simple nodes/miners")
 		// -------------------------------------
 		//get current vm's ip
 		var serverAddress, monitorAddress string
@@ -137,6 +138,18 @@ func Start(rcs ...string) {
 		if err != nil {
 			log.LLvl1("Raha: err returned from simulate: ", err)
 			log.ErrFatal(err)
+			cmd := exec.Command("kill", "-9", "-1")
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			var err error
+			go func() {
+				err = cmd.Run()
+			}()
+			if err != nil {
+				log.Fatal("Raha: CMD: Couldn't killall listening threads:", err)
+			} else {
+				log.Lvl1("Raha: all listener on VM", localAddr, "are killed.")
+			}
 		} else {
 			log.LLvl1("Raha: func simulate returned without err")
 		}

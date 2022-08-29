@@ -196,7 +196,6 @@ func (bz *ChainBoost) Dispatch() error {
 		// ******* ALL nodes recieve this message to join the protocol and get the config values set
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.HelloChan:
-			log.Lvl1(bz.TreeNode().Name(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
 			bz.PercentageTxPay = msg.PercentageTxPay
 			bz.MCRoundDuration = msg.MCRoundDuration
 			bz.MainChainBlockSize = msg.MainChainBlockSize
@@ -302,7 +301,7 @@ func (bz *ChainBoost) Dispatch() error {
 
 func (bz *ChainBoost) helloChainBoost() {
 	if !bz.IsRoot() {
-		log.Lvl1(bz.TreeNode().Name(), " joined to the protocol")
+		log.Lvl5(bz.TreeNode().Name(), " joined to the protocol")
 		// all nodes get here and start to listen for blscosi protocol messages
 		// go func() {
 		// 	err := bz.DispatchProtocol()

@@ -203,6 +203,6 @@ func Build(path, out, goarch, goos string, buildArgs ...string) (string, error) 
 func KillGo() {
 	cmd := exec.Command("killall", "go")
 	if err := cmd.Run(); err != nil {
-		//log.Lvlf3("Couldn't kill all go instances:", err)
+		log.Lvl1("Couldn't kill all go instances:", err)
 	}
 }

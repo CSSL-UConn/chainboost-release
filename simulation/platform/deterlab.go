@@ -188,9 +188,9 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 	packages := []pkg{
 		//: changed
 		// deter has an amd64, linux architecture
-		{"simul", "arm64", "darwin", path.Join("/Users//Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
-		{"users", "amd64", "linux", path.Join("/Users//Documents/github.com/chainBoostScale/ChainBoost/simulation/platform", "deterlab_users")},
-		{"simul", "amd64", "linux", path.Join("/Users//Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
+		{"simul", "arm64", "darwin", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
+		{"users", "amd64", "linux", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/platform", "deterlab_users")},
+		{"simul", "amd64", "linux", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
 		//{"simul", "amd64", "linux", d.simulDir},
 		//{"simul", "arm64", "linux", "/go/src/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"},
 		//{"users", "arm64", "darwin", d.simulDir},
@@ -220,8 +220,8 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 			var path string
 			var err error
 
-			d.simulDir = "/Users//Documents/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"
-			d.platformDir = "/Users//Documents/github.com/chainBoostScale/ChainBoost/simulation/platform"
+			d.simulDir = "/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"
+			d.platformDir = "/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/platform"
 
 			path, err = filepath.Rel(d.simulDir, p.path)
 			log.ErrFatal(err)
@@ -334,7 +334,7 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	// createHosts and parseHost functions are deterlab API specific.
 	// deter.createHosts()
 	// Phys: DNS-resolvable names, Virt: VLAN-IP names (physical machines)
-	log.LLvl1("Getting the hosts (Raha: vm addresses?)")
+	log.LLvl1("Getting the hosts")
 	deter.Phys = []string{}
 	deter.Virt = []string{}
 	//---
@@ -414,7 +414,7 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	log.LLvl1("Copying over to", d.Login, "@", d.Host)
 
 	// todo: it works with out id_rsa now but I am not sure how I am authenticated to the gateway, will I need it or not!, I will keep it for now
-	SSHString := "ssh -i '/Users//.ssh/id_rsa'"
+	SSHString := "ssh -i '/Users/raha/.ssh/id_rsa'"
 	//ToDoRaha: fix this later
 	err = Rsync(d.Login, d.Host, SSHString, d.deployDir+"/", "~/remote/")
 	if err != nil {

@@ -37,7 +37,6 @@ func init() {
 // - copy the simulation-files to the server
 // - start the simulation
 func main() {
-	log.LLvl1("Raha: ./users file is called on the gateway server and is running the users exe, hence the main function in users.go file")
 	// //: why?!!! commented next line
 	// //log.Fatal("De")
 
@@ -178,8 +177,6 @@ func main() {
 				log.Fatal(err)
 			}
 			log.Lvl1("Done copying to VMs")
-			// -----------------------------------------
-			log.Lvl1("Raha: running ./simul with non-empty simul tag!!!")
 			// ------------------------------------------
 			// -------------------------------------
 			// Raha: chainboost dynamic config variables

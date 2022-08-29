@@ -243,10 +243,8 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		// ----
 		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) will start the protocol but will wait until all nodes join it")
 		ChainBoostProtocol.JoinedWG.Add(len(rootSC.Tree.Roster.List))
-		// root node is already joined :)
 		ChainBoostProtocol.JoinedWG.Done()
 		// ----
-		// we must wait for all nodes to join the protocol (initialization/ even dispatch is removed but this seems to be necessary)
 		if len(rootSC.Tree.Roster.List) > 100 {
 			// ---
 			ChainBoostProtocol.CalledWG.Add(len(rootSC.Tree.Roster.List) / 100)
@@ -285,7 +283,6 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 
 		// Raha: it is just the root node
 		go func() {
-			log.Lvl1(rootSC.Server.ServerIdentity.Address, ": root node is calling dispatch")
 			err := ChainBoostProtocol.DispatchProtocol()
 			if err != nil {
 				log.Lvl1("protocol dispatch calling error: " + err.Error())
@@ -436,7 +433,7 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 	return bz, nil
 }
 func sendMsgToJoinChainBoostProtocol(i int, ChainBoostProtocol *MainAndSideChain.ChainBoost, rootSC *onet.SimulationConfig) {
-	for _, child := range rootSC.Tree.List()[i*1 : i*1+100] {
+	for _, child := range rootSC.Tree.List()[i*100 : i*100+100] {
 		if child != ChainBoostProtocol.TreeNode() {
 			err := ChainBoostProtocol.SendTo(child, &MainAndSideChain.HelloChainBoost{
 				SimulationRounds:         ChainBoostProtocol.SimulationRounds,

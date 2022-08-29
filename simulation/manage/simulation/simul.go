@@ -92,8 +92,6 @@ func (e *simulation) Run(config *onet.SimulationConfig) error {
 }
 
 func main() {
-	log.LLvl1("running ./simul exe in: \n main package, main function, simul.go file")
-	log.Lvl1("calling simul.Start in \n simul package in simul.go file")
 	flag.Parse()
 	simul.Start("ChainBoost.toml")
 }
