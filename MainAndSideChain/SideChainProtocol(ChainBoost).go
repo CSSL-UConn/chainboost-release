@@ -52,6 +52,9 @@ func (bz *ChainBoost) DispatchProtocol() error {
 		// --------------------------------------------------------
 		// message recieved from BLSCoSi (SideChain):
 		// ******* just the current side chain's "LEADER" recieves this msg
+		// note that other messages communicated in BlsCosi protocol are handled by
+		// func (p *SubBlsCosi) Dispatch() which is called when the startSubProtocol in
+		// Blscosi.go, create subprotocols => hence calls func (p *SubBlsCosi) Dispatch()
 		// --------------------------------------------------------
 		case sig := <-bz.BlsCosi.FinalSignature:
 			if err := BLSCoSi.BdnSignature(sig).Verify(bz.BlsCosi.Suite, bz.BlsCosi.Msg, bz.BlsCosi.SubTrees[0].Roster.Publics()); err == nil {
@@ -89,6 +92,7 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 		//todoraha: a out of range bug happens sometimes!
 		//log.LLvl1("raha: debug:", bz.CommitteeWindow-1)
 		log.Lvl2("raha: debug:", bz.CommitteeWindow)
+		log.Lvl1("log raha:bz.CommitteeWindow:", bz.CommitteeWindow)
 		for _, a := range bz.CommitteeNodesTreeNodeID[0 : bz.CommitteeWindow-1] {
 			//for _, a := range bz.CommitteeNodesTreeNodeID[0:bz.CommitteeWindow] {
 			CommitteeNodesServerIdentity = append(CommitteeNodesServerIdentity, bz.Tree().Search(a).ServerIdentity)
@@ -100,8 +104,8 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	} else {
 		//log.LLvl1(len(bz.CommitteeNodesTreeNodeID))
 		//log.LLvl1(bz.CommitteeNodesTreeNodeID[len(bz.CommitteeNodesTreeNodeID)-(bz.CommitteeWindow):])
-		// just to make sure, len(bz.CommitteeNodesTreeNodeID)-(bz.CommitteeWindow) should be 0
-		for _, a := range bz.CommitteeNodesTreeNodeID[len(bz.CommitteeNodesTreeNodeID)-(bz.CommitteeWindow):] {
+		// todoraha: check that the case with changing committee after choosing next sc leader (me!) doesnt happen and if it does , it doesnt affect my committee!
+		for _, a := range bz.CommitteeNodesTreeNodeID[0 : bz.CommitteeWindow-1] {
 			CommitteeNodesServerIdentity = append(CommitteeNodesServerIdentity, bz.Tree().Search(a).ServerIdentity)
 		}
 		log.Lvl1("final result SC: ", bz.Name(), " is running next side chain's epoch with the same committee members:")
@@ -171,16 +175,9 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 		// ------------- Epoch changed -----------
 		// i.e. the current published block on side chain is summery block
 		log.Lvl1("Final result SC: BlsCosi: the Summery Block was for epoch number: ", bz.MCRoundNumber/bz.MCRoundPerEpoch)
-		// change next epoch's committee:
-		tempCommitteeNodesTreeNodeID = bz.CommitteeNodesTreeNodeID[len(bz.CommitteeNodesTreeNodeID)-(bz.CommitteeWindow):]
-		// changing next side chain's leader for the next epoch rounds from the last miner in the main chain's window of miners
-		bz.NextSideChainLeader = tempCommitteeNodesTreeNodeID[0]
-		// changing side chain's committee to last miners in the main chain's window of miners
-		bz.CommitteeNodesTreeNodeID = tempCommitteeNodesTreeNodeID
-		log.Lvl1("Final result SC: BlsCosi: next side chain's epoch leader is: ", bz.Tree().Search(bz.NextSideChainLeader).Name())
-		for i, a := range bz.CommitteeNodesTreeNodeID {
-			log.Lvl3("Final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
-		}
+
+		// -----------------------------------------------
+		// -----------------------------------------------
 		log.Lvl1("Raha Debug: wgSCRound.Done")
 		bz.wgSCRound.Done()
 		// --------------------------------------------------------------------
@@ -190,6 +187,21 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 		// each epoch this number of mc rounds should be passed
 		log.Lvl1("Raha Debug: wgMCRound.Add(", bz.MCRoundPerEpoch, ")")
 		bz.wgMCRound.Add(bz.MCRoundPerEpoch)
+		// -----------------------------------------------
+		// -----------------------------------------------
+
+		// change next epoch's committee:
+		//tempCommitteeNodesTreeNodeID = bz.CommitteeNodesTreeNodeID[len(bz.CommitteeNodesTreeNodeID)-(bz.CommitteeWindow):]
+		tempCommitteeNodesTreeNodeID = bz.CommitteeNodesTreeNodeID[0 : bz.CommitteeWindow-1]
+		// changing next side chain's leader for the next epoch rounds from the last miner in the main chain's window of miners
+		bz.NextSideChainLeader = tempCommitteeNodesTreeNodeID[0]
+		// changing side chain's committee to last miners in the main chain's window of miners
+		bz.CommitteeNodesTreeNodeID = tempCommitteeNodesTreeNodeID
+		log.Lvl1("Final result SC: BlsCosi: next side chain's epoch leader is: ", bz.Tree().Search(bz.NextSideChainLeader).Name())
+		for i, a := range bz.CommitteeNodesTreeNodeID {
+			log.Lvl3("Final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", bz.Tree().Search(a).Name())
+		}
+
 	} else {
 		// ---
 		bz.BCLock.Lock()
@@ -251,15 +263,19 @@ func (bz *ChainBoost) StartSideChainProtocol() {
 		d := r[i]
 		bz.CommitteeNodesTreeNodeID = append(bz.CommitteeNodesTreeNodeID, bz.Tree().List()[d].ID)
 	}
-	bz.BlsCosi.Msg = []byte{0xFF}
+	for i, a := range bz.CommitteeNodesTreeNodeID {
+		log.Lvl1("final result SC: Initial BlsCosi committee queue: ", i, ":", bz.Tree().Search(a).Name())
+	}
+	bz.NextSideChainLeader = bz.CommitteeNodesTreeNodeID[0]
 	// -----------------------------------------------
 	// --- initializing next side chain's leader
 	// -----------------------------------------------
-	bz.CommitteeNodesTreeNodeID = append([]onet.TreeNodeID{bz.Tree().List()[bz.CommitteeWindow+1].ID}, bz.CommitteeNodesTreeNodeID[:bz.CommitteeWindow-1]...)
-	bz.NextSideChainLeader = bz.Tree().List()[bz.CommitteeWindow+1].ID
+	//bz.CommitteeNodesTreeNodeID = append([]onet.TreeNodeID{bz.Tree().List()[bz.CommitteeWindow+1].ID}, bz.CommitteeNodesTreeNodeID[:bz.CommitteeWindow-1]...)
+	//bz.NextSideChainLeader = bz.Tree().List()[bz.CommitteeWindow+1].ID
 	// --------------------------------------------------------------------
-	//triggering next side chain round leader to run next round of blscosi
+	// triggering next side chain round leader to run next round of blscosi
 	// --------------------------------------------------------------------
+	bz.BlsCosi.Msg = []byte{0xFF}
 	err = bz.SendTo(bz.Tree().Search(bz.NextSideChainLeader), &RtLSideChainNewRound{
 		SCRoundNumber:            bz.SCRoundNumber,
 		CommitteeNodesTreeNodeID: bz.CommitteeNodesTreeNodeID,

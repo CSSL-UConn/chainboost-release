@@ -235,22 +235,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		*/
 		log.Lvl1(rootSC.Server.ServerIdentity.Address, ": setting BLSCoSi prootocol as an ChainBoost protocol's attribute")
 		ChainBoostProtocol.BlsCosi = cosiProtocol
-		// ---------------------------------------------------------------
-		/*
-			Raha: note that in overlay.go the CreateProtocol function will call the Dispatch() function
-			by creating a go routine.
-			that's why I call it here in a go routine too.
-
-			ToDoRaha: But I should check how this part will be doing when testing on multiple servers :|
-
-			raha: should be a single dispatch assigned for each node?! yes, it is in the ChainBoost start ..??
-
-			here, we call the "DispatchProtocol Function"
-			which handles messages in ChainBoost protocol + the finalSignature message in BlsCosi protocol
-			other messages communicated in BlsCosi protocol are handled by func (p *SubBlsCosi) Dispatch()
-			which is called when the startSubProtocol in Blscosi.go, create subprotocols => hence calls func (p *SubBlsCosi) Dispatch()
-		*/
-		// ---------------------------------------------------------------
+		// --------------------------------------------------------------
 		log.Lvl3("Starting nodes: List of nodes (full tree is): \n")
 		for i, a := range rootSC.Tree.List() {
 			log.Lvl5(i, " :", a.Name(), ": ", a.RosterIndex, "\n")
@@ -258,34 +243,42 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		// ----
 		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) will start the protocol but will wait until all nodes join it")
 		ChainBoostProtocol.JoinedWG.Add(len(rootSC.Tree.Roster.List))
-		// to keep a telorance for nodes who can't join
-		for z := 1; z <= int(len(rootSC.Tree.Roster.List)/100); z++ {
-			ChainBoostProtocol.JoinedWG.Done()
-		}
 		// root node is already joined :)
 		ChainBoostProtocol.JoinedWG.Done()
 		// ----
-		for _, child := range rootSC.Tree.List() {
-			if child != ChainBoostProtocol.TreeNode() {
-				err := ChainBoostProtocol.SendTo(child, &MainAndSideChain.HelloChainBoost{
-					SimulationRounds:         ChainBoostProtocol.SimulationRounds,
-					PercentageTxPay:          ChainBoostProtocol.PercentageTxPay,
-					MCRoundDuration:          ChainBoostProtocol.MCRoundDuration,
-					MainChainBlockSize:       ChainBoostProtocol.MainChainBlockSize,
-					SideChainBlockSize:       ChainBoostProtocol.SideChainBlockSize,
-					SectorNumber:             ChainBoostProtocol.SectorNumber,
-					NumberOfPayTXsUpperBound: ChainBoostProtocol.NumberOfPayTXsUpperBound,
-					SimulationSeed:           ChainBoostProtocol.SimulationSeed,
-					// --------------------- bls cosi ------------------------
-					NbrSubTrees:     ChainBoostProtocol.NbrSubTrees,
-					Threshold:       ChainBoostProtocol.Threshold,
-					CommitteeWindow: ChainBoostProtocol.CommitteeWindow,
-					SCRoundDuration: ChainBoostProtocol.SCRoundDuration,
-					MCRoundPerEpoch: ChainBoostProtocol.MCRoundPerEpoch,
-					SimState:        ChainBoostProtocol.SimState,
-				})
-				if err != nil {
-					log.Lvl1(ChainBoostProtocol.Info(), "couldn't send hello to child", child.Name(), "with err:", err)
+		// we must wait for all nodes to join the protocol (initialization/ even dispatch is removed but this seems to be necessary)
+		if len(rootSC.Tree.Roster.List) > 100 {
+			// ---
+			ChainBoostProtocol.CalledWG.Add(len(rootSC.Tree.Roster.List) / 100)
+			// ---
+			for i := 0; i < len(rootSC.Tree.List())/100; i++ {
+				go sendMsgToJoinChainBoostProtocol(i, ChainBoostProtocol, rootSC)
+			}
+			ChainBoostProtocol.CalledWG.Wait()
+			log.Lvl1("Setting up nodes ... \n thia may take a few minutes, be patient ...")
+		} else {
+			for _, child := range rootSC.Tree.List() {
+				if child != ChainBoostProtocol.TreeNode() {
+					err := ChainBoostProtocol.SendTo(child, &MainAndSideChain.HelloChainBoost{
+						SimulationRounds:         ChainBoostProtocol.SimulationRounds,
+						PercentageTxPay:          ChainBoostProtocol.PercentageTxPay,
+						MCRoundDuration:          ChainBoostProtocol.MCRoundDuration,
+						MainChainBlockSize:       ChainBoostProtocol.MainChainBlockSize,
+						SideChainBlockSize:       ChainBoostProtocol.SideChainBlockSize,
+						SectorNumber:             ChainBoostProtocol.SectorNumber,
+						NumberOfPayTXsUpperBound: ChainBoostProtocol.NumberOfPayTXsUpperBound,
+						SimulationSeed:           ChainBoostProtocol.SimulationSeed,
+						// --------------------- bls cosi ------------------------
+						NbrSubTrees:     ChainBoostProtocol.NbrSubTrees,
+						Threshold:       ChainBoostProtocol.Threshold,
+						CommitteeWindow: ChainBoostProtocol.CommitteeWindow,
+						SCRoundDuration: ChainBoostProtocol.SCRoundDuration,
+						MCRoundPerEpoch: ChainBoostProtocol.MCRoundPerEpoch,
+						SimState:        ChainBoostProtocol.SimState,
+					})
+					if err != nil {
+						log.Lvl1(ChainBoostProtocol.Info(), "couldn't send hello to child", child.Name(), "with err:", err)
+					}
 				}
 			}
 		}
@@ -369,8 +362,6 @@ type conf struct {
 // raha added
 
 func init() {
-	//network.RegisterMessage(ProofOfRetTxChan{})
-	//network.RegisterMessage(PreparedBlockChan{})
 	network.RegisterMessage(MainAndSideChain.HelloChainBoost{})
 	network.RegisterMessage(MainAndSideChain.Joined{})
 	network.RegisterMessage(MainAndSideChain.NewRound{})
@@ -389,23 +380,14 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 	cosiProtocol := pi.(*BLSCoSi.BlsCosi)
 	cosiProtocol.CreateProtocol = n.Overlay.CreateProtocol
 	cosiProtocol.TreeNodeInstance = n
-	//cosiProtocol.Timeout = ChainBoostProtocol.DefaultTimeout
-	//cosiProtocol.SubleaderFailures = ChainBoostProtocol.DefaultSubleaderFailures
-	//cosiProtocol.Threshold = ChainBoostProtocol.DefaultThreshold(0)
-	//cosiProtocol.Sign = bls.Sign
-	//cosiProtocol.Verify = bls.Verify
-	//cosiProtocol.Aggregate = ChainBoostProtocol.Aggregate
-	//cosiProtocol.VerificationFn = func(a, b []byte) bool { return true }
-	//cosiProtocol.SubProtocolName = "blsSubCoSiProtoDefault"
-	//cosiProtocol.Suite = pairing.NewSuiteBn256()
-	//cosiProtocol.BlockType = ChainBoostProtocol.DefaultBlockType()
 
 	bz := &MainAndSideChain.ChainBoost{
-		TreeNodeInstance:   n,
-		Suite:              pairing.NewSuiteBn256(),
-		DoneChainBoost:     make(chan bool, 1),
-		LeaderProposeChan:  make(chan bool, 1),
-		MCRoundNumber:      1,
+		TreeNodeInstance:  n,
+		Suite:             pairing.NewSuiteBn256(),
+		DoneChainBoost:    make(chan bool, 1),
+		LeaderProposeChan: make(chan bool, 1),
+		MCRoundNumber:     1,
+		//CommitteeWindow:    10,
 		SCRoundNumber:      1,
 		FirstQueueWait:     0,
 		SideChainQueueWait: 0,
@@ -420,15 +402,12 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 	if err := n.RegisterChannel(&bz.HelloChan); err != nil {
 		return bz, err
 	}
-	if err := n.RegisterChannel(&bz.JoinedWGChan); err != nil {
-		return bz, err
+	if err := n.RegisterChannelLength(&bz.JoinedWGChan, len(bz.Tree().List())); err != nil {
+		log.Error("Couldn't register channel:    ", err)
 	}
 	if err := n.RegisterChannel(&bz.MainChainNewRoundChan); err != nil {
 		return bz, err
 	}
-	//if err := n.RegisterChannel(&bz.MainChainNewLeaderChan); err != nil {
-	//	return bz, err
-	//}
 	if err := n.RegisterChannelLength(&bz.MainChainNewLeaderChan, len(bz.Tree().List())); err != nil {
 		log.Error("Couldn't register channel:    ", err)
 	}
@@ -455,4 +434,31 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 		return bz, err
 	}
 	return bz, nil
+}
+func sendMsgToJoinChainBoostProtocol(i int, ChainBoostProtocol *MainAndSideChain.ChainBoost, rootSC *onet.SimulationConfig) {
+	for _, child := range rootSC.Tree.List()[i*1 : i*1+100] {
+		if child != ChainBoostProtocol.TreeNode() {
+			err := ChainBoostProtocol.SendTo(child, &MainAndSideChain.HelloChainBoost{
+				SimulationRounds:         ChainBoostProtocol.SimulationRounds,
+				PercentageTxPay:          ChainBoostProtocol.PercentageTxPay,
+				MCRoundDuration:          ChainBoostProtocol.MCRoundDuration,
+				MainChainBlockSize:       ChainBoostProtocol.MainChainBlockSize,
+				SideChainBlockSize:       ChainBoostProtocol.SideChainBlockSize,
+				SectorNumber:             ChainBoostProtocol.SectorNumber,
+				NumberOfPayTXsUpperBound: ChainBoostProtocol.NumberOfPayTXsUpperBound,
+				SimulationSeed:           ChainBoostProtocol.SimulationSeed,
+				// --------------------- bls cosi ------------------------
+				NbrSubTrees:     ChainBoostProtocol.NbrSubTrees,
+				Threshold:       ChainBoostProtocol.Threshold,
+				CommitteeWindow: ChainBoostProtocol.CommitteeWindow,
+				SCRoundDuration: ChainBoostProtocol.SCRoundDuration,
+				MCRoundPerEpoch: ChainBoostProtocol.MCRoundPerEpoch,
+				SimState:        ChainBoostProtocol.SimState,
+			})
+			if err != nil {
+				log.Lvl1(ChainBoostProtocol.Info(), "couldn't send hello to child", child.Name(), "with err:", err)
+			}
+		}
+	}
+	ChainBoostProtocol.CalledWG.Done()
 }

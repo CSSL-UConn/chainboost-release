@@ -1,4 +1,4 @@
-Servers = 1
+Servers = 4
 Simulation = "ChainBoost"
 BF = 8
 Rounds = 10
@@ -11,13 +11,12 @@ ServAgrDurationDistributionMean = 25
 ServAgrDurationDistributionVariance = 10
 InitialPowerDistributionMean = 9000000000000000000
 InitialPowerDistributionVariance = 9000000000000000
-Nodes = 8000
 PercentageTxPay = 30
 MCRoundDuration = 5      
 MainChainBlockSize = 20000
 SideChainBlockSize = 3000
 SectorNumber = 2
-NumberOfPayTXsUpperBound = 1000
+NumberOfPayTXsUpperBound = 10
 SimulationRounds = 50
 SimulationSeed = 100
 NbrSubTrees = 1
@@ -26,6 +25,7 @@ SCRoundDuration = 1
 CommitteeWindow = 5
 MCRoundPerEpoch = 2
 SimState = 2
+Nodes = 4000
 
 Hosts
-8000
+4000

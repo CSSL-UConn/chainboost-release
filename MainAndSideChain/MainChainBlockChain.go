@@ -901,6 +901,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 			rowNumMC++
 		}
 	}
+	rowNumMC--
 	// ------ add previous reg pay tx row in the second queue to the stream ----------
 	for i, row := range rowsMCSecondQ { //i starts from index 0
 		if i != 0 { // index 0 is the header row

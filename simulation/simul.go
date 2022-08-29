@@ -40,18 +40,18 @@ var Debug = 1
 // Raha: chainboost dynamic config variables
 // -------------------------------------
 var PercentageTxPay = 30
-var MCRoundDuration = 30         //sec
+var MCRoundDuration = 10         //sec
 var MainChainBlockSize = 2000000 //byte
-var SideChainBlockSize = 500000
+var SideChainBlockSize = 1000000
 var SectorNumber = 2
-var NumberOfPayTXsUpperBound = 1000
+var NumberOfPayTXsUpperBound = 2000
 var SimulationRounds = 20
 var SimulationSeed = 9
 var NbrSubTrees = 1
 var Threshold = 8 //out of committee nodes
-var SCRoundDuration = 6
+var SCRoundDuration = 1
 var CommitteeWindow = 10 //nodes
-var MCRoundPerEpoch = 2
+var MCRoundPerEpoch = 1
 var SimState = 2
 
 // -------------------------------------

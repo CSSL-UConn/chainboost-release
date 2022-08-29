@@ -47,18 +47,32 @@ func (bz *ChainBoost) StartMainChainProtocol() {
 	log.LLvl1(bz.Name(), " :the root node is filling the first block in mc round number: ", bz.MCRoundNumber)
 	// for the first round we have the root node set as a round leader, so  it is true! and he takes txs from the queue
 	//----
-	bz.BCLock.Lock()
-	defer bz.BCLock.Unlock()
-	//----
-	//
 	log.Lvl1("Raha Debug: wgMCRound.Done")
 	bz.wgMCRound.Done()
-	//
+	if bz.SimState == 2 && bz.MCRoundNumber%bz.MCRoundPerEpoch == 0 {
+		eachFunctionTakenTime := time.Now()
+		log.Lvl1("Raha Debug: wgSCRound.Wait")
+		bz.wgSCRound.Wait()
+		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: bz.wgSCRound.Wait() took:", time.Since(eachFunctionTakenTime).String())
+		log.Lvl1("Raha Debug: wgSCRound.Wait: PASSED")
+		// this equation result has to be int!
+		if int(bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration)) != bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration) {
+			log.LLvl1("Panic Raised:\n\n")
+			panic("err in setting config params: {bz.MCRoundPerEpoch*(bz.MCRoundDuration / bz.SCRoundDuration)} has to be int")
+		}
+		// each epoch this number of sc rounds should be passed
+		log.Lvl1("Raha Debug: wgSCRound.Add(", bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration), ")")
+		bz.wgSCRound.Add(bz.MCRoundPerEpoch * (bz.MCRoundDuration / bz.SCRoundDuration))
+	}
+
+	bz.BCLock.Lock()
+	// ---
 	bz.updateBCPowerRound(bz.TreeNode().Name(), true)
 	bz.updateMainChainBCTransactionQueueCollect()
 	bz.updateMainChainBCTransactionQueueTake()
 	time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
 	bz.readBCAndSendtoOthers()
+	bz.BCLock.Unlock()
 	log.Lvl1("new round is announced")
 }
 func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
@@ -118,6 +132,15 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 		// -----------------------------------------------------
 	} else if msg.MCRoundNumber == bz.MCRoundNumber && bz.MCRoundNumber != 1 && bz.MCLeader.HasLeader {
 		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: start of a round with a leader")
+		// dynamically change the side chain's committee with last main chain's leader
+		if bz.SimState == 2 { // i.e. if side chain running is set in simulation
+			eachFunctionTakenTime = time.Now()
+			bz.UpdateSideChainCommittee(msg)
+			log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: UpdateSideChainCommittee took:", time.Since(eachFunctionTakenTime).String())
+		}
+
+		// -----------------------------------------------
+		// -----------------------------------------------
 		log.Lvl1("Raha Debug: wgMCRound.Done")
 		bz.wgMCRound.Done()
 		// -----------------------------------------------------
@@ -138,18 +161,15 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 			log.Lvl1("Raha Debug: wgSCRound.Add(", bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration), ")")
 			bz.wgSCRound.Add(bz.MCRoundPerEpoch * (bz.MCRoundDuration / bz.SCRoundDuration))
 		}
+		// -----------------------------------------------
+		// -----------------------------------------------
+
 		// -----------------------------------------------------
+
 		// ToDoRaha: later validate the leadership proof
 		eachFunctionTakenTime = time.Now()
 		log.LLvl1("Final result MC: leader: ", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), " is the round leader for mc round number ", bz.MCRoundNumber)
 		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: Search took:", time.Since(eachFunctionTakenTime).String())
-		// -----------------------------------------------
-		// dynamically change the side chain's committee with last main chain's leader
-		if bz.SimState == 2 { // i.e. if side chain running is set in simulation
-			eachFunctionTakenTime = time.Now()
-			bz.UpdateSideChainCommittee(msg)
-			log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: UpdateSideChainCommittee took:", time.Since(eachFunctionTakenTime).String())
-		}
 		// -----------------------------------------------
 		bz.BCLock.Lock()
 		// ---

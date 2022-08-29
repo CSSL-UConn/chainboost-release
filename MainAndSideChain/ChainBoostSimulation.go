@@ -12,6 +12,7 @@ import (
 	"github.com/chainBoostScale/ChainBoost/por"
 	"github.com/chainBoostScale/ChainBoost/vrf"
 	"go.dedis.ch/kyber/v3/pairing"
+	"golang.org/x/xerrors"
 )
 
 /* ----------------------------------------- TYPES -------------------------------------------------
@@ -92,8 +93,8 @@ type ChainBoost struct {
 	wgSCRound sync.WaitGroup
 	// for root node to wait for a specific number of main chain rounds before proceeding to next side chain's round
 	wgMCRound sync.WaitGroup
-	// for root node to wait for all nodes join the simulation (the point that start listening on dispatch on hellochainboost function)
-	// before starting the ptocols
+	// for root node to wait for all nodes join the simulation before starting the ptotocols
+	CalledWG sync.WaitGroup
 	JoinedWG sync.WaitGroup
 	// channel that all nodes can use to announce root node they have joined the simulation
 	JoinedWGChan chan JoinedWGChan
@@ -182,15 +183,8 @@ func (bz *ChainBoost) Start() error {
 			 Dispatch listen on the different channels in main chain protocol
 ------------------------------------------------------------------------ */
 func (bz *ChainBoost) Dispatch() error {
-	// another dispatch function (DispatchProtocol) is called in runsimul.go that takes care of both chain's protocols
-	// if !bz.IsRoot() || (bz.IsRoot() && bz.StartedChainBoost) {
-	// 	bz.DispatchProtocol()
-	// } else {
-	// 	return nil
-	// }
-	// return nil
 
-	// todoraha: I remember some where in byzcoin the running variable was set to false. look for it later!
+	// todoraha: some where in byzcoin the running variable was set to false. look for it later!
 	running := true
 	var err error
 	numberOfJoinedNodes := len(bz.Tree().List())
@@ -202,7 +196,7 @@ func (bz *ChainBoost) Dispatch() error {
 		// ******* ALL nodes recieve this message to join the protocol and get the config values set
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.HelloChan:
-			log.Lvlf4(bz.TreeNode().Name(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
+			log.Lvl1(bz.TreeNode().Name(), "received Hello/config params from", msg.TreeNode.ServerIdentity.Address)
 			bz.PercentageTxPay = msg.PercentageTxPay
 			bz.MCRoundDuration = msg.MCRoundDuration
 			bz.MainChainBlockSize = msg.MainChainBlockSize
@@ -232,9 +226,7 @@ func (bz *ChainBoost) Dispatch() error {
 			if bz.IsRoot() && msg.IsJoined {
 				numberOfJoinedNodes--
 				log.Lvl1(msg.TreeNode.Name(), "has joined the simulation:", numberOfJoinedNodes, "is remained.")
-				if numberOfJoinedNodes > int(len(bz.Roster().List)/100) {
-					bz.JoinedWG.Done()
-				}
+				bz.JoinedWG.Done()
 			}
 		// -----------------------------------------------------------------------------
 		// *** MC *** ALL nodes recieve this message to sync rounds
@@ -285,6 +277,20 @@ func (bz *ChainBoost) Dispatch() error {
 				time.Sleep(time.Duration(bz.SCRoundDuration) * time.Second)
 				bz.SideChainRootPostNewRound(msg)
 			}()
+		case sig := <-bz.BlsCosi.FinalSignature:
+			if err := BLSCoSi.BdnSignature(sig).Verify(bz.BlsCosi.Suite, bz.BlsCosi.Msg, bz.BlsCosi.SubTrees[0].Roster.Publics()); err == nil {
+				log.Lvl1("final result SC:", bz.Name(), " : ", bz.BlsCosi.BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
+				err := bz.SendTo(bz.Root(), &LtRSideChainNewRound{
+					NewRound:      true,
+					SCRoundNumber: bz.SCRoundNumber,
+					SCSig:         sig,
+				})
+				if err != nil {
+					return xerrors.New("can't send new round msg to root" + err.Error())
+				}
+			} else {
+				return xerrors.New("error in running this round of blscosi:  " + err.Error())
+			}
 		}
 	}
 	return err
@@ -296,15 +302,15 @@ func (bz *ChainBoost) Dispatch() error {
 
 func (bz *ChainBoost) helloChainBoost() {
 	if !bz.IsRoot() {
-		log.Lvl3(bz.TreeNode().Name(), " joined to the protocol")
+		log.Lvl1(bz.TreeNode().Name(), " joined to the protocol")
 		// all nodes get here and start to listen for blscosi protocol messages
-		go func() {
-			err := bz.DispatchProtocol()
-			if err != nil {
-				log.LLvl1("protocol dispatch calling error: " + err.Error())
-				//panic("protocol dispatch calling error")
-			}
-		}()
+		// go func() {
+		// 	err := bz.DispatchProtocol()
+		// 	if err != nil {
+		// 		log.LLvl1("protocol dispatch calling error: " + err.Error())
+		// 		//panic("protocol dispatch calling error")
+		// 	}
+		// }()
 		err := bz.SendTo(bz.Root(), &Joined{IsJoined: true})
 		if err != nil {
 			log.Lvl1(bz.Name(), "can't announce joining to root node")

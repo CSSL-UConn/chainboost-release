@@ -77,7 +77,7 @@ func main() {
 			s := strings.Split(h, ":")
 			hs := s[0]
 			runSSH(hs, "kill -9 -1")
-			time.Sleep(1 * time.Second)
+			time.Sleep(5 * time.Second)
 			// raha commented
 			//runSSH(h, "sudo killall -9 simul 2>/dev/null >/dev/null")
 			//time.Sleep(1 * time.Second)
