@@ -145,12 +145,11 @@ func main() {
 	//-------------------
 	killing := false
 	for i, phys := range deter.Phys {
-		log.LLvl1("Launching simul on", phys)
 		wg.Add(1)
 		go func(phys, internal string) {
 			defer wg.Done()
 			monitorAddr := deter.MonitorAddress + ":" + strconv.Itoa(deter.MonitorPort)
-			log.LLvl1("Starting servers on physical machine ", internal, "with monitor = ",
+			log.LLvl5("Starting servers on physical machine ", internal, "with monitor = ",
 				monitorAddr)
 			// If PreScript is defined, run the appropriate script _before_ the simulation.
 			//log.LLvl1("Raha: skipping:run the appropriate script")
@@ -164,10 +163,8 @@ func main() {
 				log.LLvl1(": deter.PreScript is empty.")
 			}
 			// -----------------------------------------
-			// Raha added this part!
-			// -----------------------------------------
 			// Copy everything over to each vm
-			log.Lvl1("Copying over to", phys)
+			log.Lvl3("Copying over to", phys)
 			err := platform.SSHRunStdout("root", phys, "mkdir -p remote")
 			if err != nil {
 				log.Fatal(err)
@@ -176,7 +173,7 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			log.Lvl1("Done copying to VMs")
+			log.Lvl3("Done copying to VMs")
 			// ------------------------------------------
 			// -------------------------------------
 			// Raha: chainboost dynamic config variables
@@ -237,9 +234,9 @@ func main() {
 					err = cmd.Run()
 				}()
 				if err != nil {
-					log.Fatal("Raha: CMD: Couldn't killall listening threads:", err)
+					log.Fatal("Couldn't killall listening threads:", err)
 				} else {
-					log.Lvl1("Raha: all listener on VM", internal, "are killed.")
+					log.Lvl1("all listener on VM", internal, "are killed.")
 				}
 			}
 			log.LLvl1("Finished with simul on", internal)

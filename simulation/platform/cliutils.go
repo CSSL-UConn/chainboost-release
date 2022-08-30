@@ -94,7 +94,6 @@ func SSHRun(username, host, command string) ([]byte, error) {
 	if username != "" {
 		addr = username + "@" + addr
 	}
-	log.Lvl1("Going to ssh to", addr, command)
 	// todoRaha: put the key somewhere safe
 	//cmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-i", "'~/Documents/GitHub/chainBoostScale/chainboostTest.pem'",
 	//	addr , "eval '"+command+"'")
@@ -124,7 +123,6 @@ func SSHRunStdout(username, host, command string) error {
 		addr = username + "@" + h
 	}
 
-	//log.Lvlf3("Going to ssh to", addr, command)
 	//cmd := exec.Command("ssh", "-i", "~/.ssh/chainboostTest.pem", "-o", "StrictHostKeyChecking=no", "-p", p, addr,
 	//	"eval '"+command+"'")
 	cmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-p", p, addr,
@@ -132,7 +130,6 @@ func SSHRunStdout(username, host, command string) error {
 
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
-	log.LLvl1("Raha: ssh command: ", cmd.String())
 	err = cmd.Run()
 	if err != nil {
 		return xerrors.Errorf("cmd: %v", err)

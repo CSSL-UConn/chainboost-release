@@ -402,7 +402,7 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	}
 
 	// Copying build-files to deploy-directory
-	build, err := ioutil.ReadDir(d.buildDir)
+	build, _ := ioutil.ReadDir(d.buildDir)
 	for _, file := range build {
 		err = exec.Command("cp", d.buildDir+"/"+file.Name(), d.deployDir).Run()
 		if err != nil {
@@ -411,7 +411,7 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	}
 
 	// Copy everything over to uconn's gateway server
-	log.LLvl1("Copying over to", d.Login, "@", d.Host)
+	log.LLvl3("Copying over to", d.Login, "@", d.Host)
 
 	// todo: it works with out id_rsa now but I am not sure how I am authenticated to the gateway, will I need it or not!, I will keep it for now
 	SSHString := "ssh -i '/Users/raha/.ssh/id_rsa'"

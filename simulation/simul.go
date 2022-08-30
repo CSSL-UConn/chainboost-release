@@ -98,7 +98,7 @@ func Start(rcs ...string) {
 	if len(rcs) > 0 {
 		log.ErrFatal(er)
 		for _, rc := range rcs {
-			log.LLvl1("Running toml-file:", rc)
+			log.LLvl5("Running toml-file:", rc)
 			os.Args = []string{os.Args[0], rc}
 			Start()
 		}
@@ -106,11 +106,9 @@ func Start(rcs ...string) {
 	}
 	flag.Parse()
 	if simul == "" {
-		log.Lvl1("Raha: simul is empty!, this is for the platform/ROOT node?")
 		startBuild()
 	} else {
 		log.Lvl1("simul and PercentageTxPay flags are:", simul, " ", PercentageTxPay)
-		log.LLvl1("simul is not empty, it is for simple nodes/miners")
 		// -------------------------------------
 		//get current vm's ip
 		var serverAddress, monitorAddress string
@@ -120,7 +118,7 @@ func Start(rcs ...string) {
 		}
 		defer conn.Close()
 		localAddr := conn.LocalAddr().(*net.UDPAddr)
-		log.LLvl1("localAddr.IP:", localAddr.IP)
+		//log.LLvl5("localAddr.IP:", localAddr.IP)
 		host := localAddr.IP.String()
 		serverAddress = host
 

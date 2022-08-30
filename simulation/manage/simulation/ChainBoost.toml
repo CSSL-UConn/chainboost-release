@@ -25,7 +25,7 @@ SCRoundDuration = 1
 CommitteeWindow = 5
 MCRoundPerEpoch = 2
 SimState = 2
-Nodes = 4000
+Nodes = 12000
 
 Hosts
-4000
+12000
