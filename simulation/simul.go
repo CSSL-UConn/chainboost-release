@@ -35,7 +35,7 @@ var simul string
 var Suite string
 
 // logging level
-var Debug = 1
+var Debug = 5
 
 // -------------------------------------
 // Raha: chainboost dynamic config variables

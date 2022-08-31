@@ -159,7 +159,7 @@ func (o *Overlay) TransmitMsg(onetMsg *ProtocolMsg, io MessageProxy) error {
 	}
 	// if the TreeNodeInstance is not there, creates it
 	if !ok {
-		log.Lvl5("Raha: the TreeNodeInstance is not there, creates it\n ")
+		//log.Lvl5("Raha: the TreeNodeInstance is not there, creates it\n ")
 		//log.LLvl3("Creating TreeNodeInstance at %s %x", o.server.ServerIdentity, onetMsg.To.ID())
 		tn, err := o.TreeNodeFromTree(tree, onetMsg.To.TreeNodeID)
 		if err != nil {
