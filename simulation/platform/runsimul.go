@@ -315,7 +315,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		piC.Start()
 	}
 	//todo:
-	log.LLvl1(serverAddress, scs[0].Server.ServerIdentity, "is waiting for all servers to close")
+	log.LLvl1(serverAddress, "or?!", scs[0].Server.ServerIdentity, "is waiting for all servers to close")
 	wgServer.Wait()
 	log.LLvl1(serverAddress, "has all servers closed")
 	//if monitorAddress != "" {

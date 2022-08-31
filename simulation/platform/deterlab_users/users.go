@@ -37,13 +37,10 @@ func init() {
 // - copy the simulation-files to the server
 // - start the simulation
 func main() {
-	// //: why?!!! commented next line
-	// //log.Fatal("De")
-
-	// //init with deter.toml
+	//init with deter.toml
 	deter := deterFromConfig()
 	flag.Parse()
-	// // kill old processes
+	// kill old processes
 	var wg sync.WaitGroup
 	re := regexp.MustCompile(" +")
 	// hosts, err := exec.Command("/usr/testbed/bin/node_list", "-e", deter.Project+","+deter.Experiment).Output()
@@ -53,54 +50,49 @@ func main() {
 	// }
 	//hosts := "csi-lab-ssh.engr.uconn.edu"
 	//todo: change this list based on list of VMs or make it dynamic later
-	hosts := "192.168.3.220:22 192.168.3.221:22 192.168.3.222:22 192.168.3.223:22"
+	// 192.168.3.221:22 192.168.3.222:22 192.168.3.223:22
+	hosts := "192.168.3.220:22 192.168.3.221:22 192.168.3.222:22 192.168.3.223:22 192.168.3.224:22 192.168.3.225:22 192.168.3.226:22 192.168.3.227:22"
 	hostsTrimmed := strings.TrimSpace(re.ReplaceAllString(string(hosts), " "))
 	hostlist := strings.Split(hostsTrimmed, " ")
-
 	doneHosts := make([]bool, len(hostlist))
 	log.LLvl1("Found the following hosts:", hostlist)
-	//: commented
-	//if kill {
-	log.LLvl1("Cleaning up", len(hostlist), "hosts.")
-	//}
+	if kill {
+		log.LLvl1("Cleaning up", len(hostlist), "hosts.")
+	}
 
 	for i, h := range hostlist {
 		wg.Add(1)
 		go func(i int, h string) {
 			defer wg.Done()
-			//: commented
-			//if kill {
-			log.LLvl1("Cleaning up host", h, ".")
-			// commented
-			//runSSH(h, "sudo killall -9 simul scp 2>/dev/null >/dev/null")
-			s := strings.Split(h, ":")
-			hs := s[0]
-			runSSH(hs, "kill -9 -1")
-			time.Sleep(5 * time.Second)
-			//  commented
-			//runSSH(h, "sudo killall -9 simul 2>/dev/null >/dev/null")
-			//time.Sleep(1 * time.Second)
-			// Also kill all other process that start with "./" and are probably
-			// locally started processes
-			//runSSH(h, "sudo pkill -9 -f '\\./'")
-			//time.Sleep(1 * time.Second)
-			// if log.DebugVisible() > 3 {
-			// 	log.LLvl1("Cleaning report:")
-			// 	_ = platform.SSHRunStdout("", h, "ps aux")
-			// }
-			//log.Lvl1("Host", h, "cleaned up")
-			//} else {
-
-			log.LLvl1("Raha: skipping: Setting the file-limit higher")
-			//log.LLvl1("Setting the file-limit higher on", h)
-			// Copy configuration file to make higher file-limits
-			// err := platform.SSHRunStdout("root", h, "sudo cp remote/simul.conf /etc/security/limits.d")
-			// if err != nil {
-			// 	log.Fatal("Couldn't copy limit-file:", err)
-			// } else {
-			// 	log.Lvl1("successfully copied limit-file")
-			// }
-			//}
+			if kill {
+				log.LLvl1("Cleaning up host", h, ".")
+				runSSH(h, "sudo killall -9 simul scp 2>/dev/null >/dev/null")
+				//s := strings.Split(h, ":")
+				//hs := s[0]
+				//runSSH(hs, "kill -9 -1")
+				time.Sleep(1 * time.Second)
+				runSSH(h, "sudo killall -9 simul 2>/dev/null >/dev/null")
+				time.Sleep(1 * time.Second)
+				// Also kill all other process that start with "./" and are probably
+				// locally started processes
+				runSSH(h, "sudo pkill -9 -f '\\./'")
+				time.Sleep(1 * time.Second)
+				if log.DebugVisible() > 3 {
+					log.LLvl1("Cleaning report:")
+					_ = platform.SSHRunStdout("root", h, "ps aux")
+				}
+				log.Lvl1("Host", h, "cleaned up")
+			} else {
+				log.LLvl1("Raha: skipping: Setting the file-limit higher")
+				//log.LLvl1("Setting the file-limit higher on", h)
+				// Copy configuration file to make higher file-limits
+				// err := platform.SSHRunStdout("root", h, "sudo cp remote/simul.conf /etc/security/limits.d")
+				// if err != nil {
+				// 	log.Fatal("Couldn't copy limit-file:", err)
+				// } else {
+				// 	log.Lvl1("successfully copied limit-file")
+				// }
+			}
 			doneHosts[i] = true
 		}(i, h)
 	}
@@ -118,8 +110,8 @@ func main() {
 	case <-time.After(time.Second * 20000):
 		for i, m := range doneHosts {
 			if !m {
-				log.LLvl1("Missing host:", hostlist[i], "- You should run")
-				log.LLvl1("/usr/testbed/bin/node_reboot", hostlist[i])
+				log.LLvl1("Missing host:", hostlist[i]) //, "- You should run")
+				//log.LLvl1("/usr/testbed/bin/node_reboot", hostlist[i])
 			}
 		}
 		log.Fatal("Didn't receive all replies while cleaning up - aborting.")
@@ -149,7 +141,7 @@ func main() {
 		go func(phys, internal string) {
 			defer wg.Done()
 			monitorAddr := deter.MonitorAddress + ":" + strconv.Itoa(deter.MonitorPort)
-			log.LLvl5("Starting servers on physical machine ", internal, "with monitor = ",
+			log.LLvl1("Starting servers on physical machine ", internal, "with monitor = ",
 				monitorAddr)
 			// If PreScript is defined, run the appropriate script _before_ the simulation.
 			//log.LLvl1("Raha: skipping:run the appropriate script")
@@ -163,7 +155,7 @@ func main() {
 				log.LLvl1(": deter.PreScript is empty.")
 			}
 			// -----------------------------------------
-			// Copy everything over to each vm
+			// Copy everything over
 			log.Lvl3("Copying over to", phys)
 			err := platform.SSHRunStdout("root", phys, "mkdir -p remote")
 			if err != nil {
@@ -173,7 +165,6 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			log.Lvl3("Done copying to VMs")
 			// ------------------------------------------
 			// -------------------------------------
 			// Raha: chainboost dynamic config variables

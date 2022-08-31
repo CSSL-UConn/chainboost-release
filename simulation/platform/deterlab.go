@@ -346,6 +346,15 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	deter.Virt = append(deter.Virt, "192.168.3.222")
 	deter.Phys = append(deter.Phys, "192.168.3.223:22")
 	deter.Virt = append(deter.Virt, "192.168.3.223")
+	deter.Phys = append(deter.Phys, "192.168.3.224:22")
+	deter.Virt = append(deter.Virt, "192.168.3.224")
+	deter.Phys = append(deter.Phys, "192.168.3.225:22")
+	deter.Virt = append(deter.Virt, "192.168.3.225")
+	deter.Phys = append(deter.Phys, "192.168.3.226:22")
+	deter.Virt = append(deter.Virt, "192.168.3.226")
+	deter.Phys = append(deter.Phys, "192.168.3.227:22")
+	deter.Virt = append(deter.Virt, "192.168.3.227")
+
 	//-----------------------------------
 
 	log.LLvl1("Writing the config file :", deter)
