@@ -3,17 +3,12 @@ package simul
 import (
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	//"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
-
-	"math"
 	"time"
-
-	//"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
 
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/simulation/monitor"
@@ -172,20 +167,20 @@ func RunTests(deployP platform.Platform, name string, runconfigs []*platform.Run
 		}
 	}
 
-	mkTestDir()
-	args := os.O_CREATE | os.O_RDWR | os.O_TRUNC
+	//mkTestDir()
+	//args := os.O_CREATE | os.O_RDWR | os.O_TRUNC
 	// If a range is given, we only append
-	if simRange != "" {
-		args = os.O_CREATE | os.O_RDWR | os.O_APPEND
-	}
-	files := []*os.File{}
-	defer func() {
-		for _, f := range files {
-			if err := f.Close(); err != nil {
-				log.Error("Couln't close", f.Name())
-			}
-		}
-	}()
+	// if simRange != "" {
+	// 	args = os.O_CREATE | os.O_RDWR | os.O_APPEND
+	// }
+	// files := []*os.File{}
+	// defer func() {
+	// 	for _, f := range files {
+	// 		if err := f.Close(); err != nil {
+	// 			log.Error("Couln't close", f.Name())
+	// 		}
+	// 	}
+	// }()
 
 	start, stop := getStartStop(len(runconfigs))
 	for i, rc := range runconfigs {
@@ -205,35 +200,35 @@ func RunTests(deployP platform.Platform, name string, runconfigs []*platform.Run
 		}
 		log.Lvl5("Test results:", stats[0])
 
-		for j, bucketStat := range stats {
-			if j >= len(files) {
-				f, err := os.OpenFile(generateResultFileName(name, j), args, 0660)
-				if err != nil {
-					log.Fatal("error opening test file:", err)
-				}
-				err = f.Sync()
-				if err != nil {
-					log.Fatal("error syncing test file:", err)
-				}
+		// for j, bucketStat := range stats {
+		// 	if j >= len(files) {
+		// 		f, err := os.OpenFile(generateResultFileName(name, j), args, 0660)
+		// 		if err != nil {
+		// 			log.Fatal("error opening test file:", err)
+		// 		}
+		// 		err = f.Sync()
+		// 		if err != nil {
+		// 			log.Fatal("error syncing test file:", err)
+		// 		}
 
-				files = append(files, f)
-			}
-			f := files[j]
+		// 		files = append(files, f)
+		// 	}
+		// 	f := files[j]
 
-			if i == 0 {
-				bucketStat.WriteHeader(f)
-			}
-			if rc.Get("IndividualStats") != "" {
-				err := bucketStat.WriteIndividualStats(f)
-				log.ErrFatal(err)
-			} else {
-				bucketStat.WriteValues(f)
-			}
-			err = f.Sync()
-			if err != nil {
-				log.Fatal("error syncing data to test file:", err)
-			}
-		}
+		// 	if i == 0 {
+		// 		bucketStat.WriteHeader(f)
+		// 	}
+		// 	if rc.Get("IndividualStats") != "" {
+		// 		err := bucketStat.WriteIndividualStats(f)
+		// 		log.ErrFatal(err)
+		// 	} else {
+		// 		bucketStat.WriteValues(f)
+		// 	}
+		// 	err = f.Sync()
+		// 	if err != nil {
+		// 		log.Fatal("error syncing data to test file:", err)
+		// 	}
+		// }
 	}
 }
 
@@ -242,10 +237,10 @@ func RunTests(deployP platform.Platform, name string, runconfigs []*platform.Run
 func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stats, error) {
 	CheckHosts(rc)
 	rc.Delete("simulation")
-	stats := []*monitor.Stats{
-		// this is the global bucket
-		monitor.NewStats(rc.Map(), "hosts", "bf"),
-	}
+	// stats := []*monitor.Stats{
+	// 	// this is the global bucket
+	// 	monitor.NewStats(rc.Map(), "hosts", "bf"),
+	// }
 
 	//todoRaha : temp commented
 
@@ -258,33 +253,33 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 		log.Error(err)
 		return nil, xerrors.Errorf("deploy: %v", err)
 	}
-	m := monitor.NewMonitor(stats[0])
-	m.SinkPort = uint16(monitorPort)
-	defer m.Stop()
+	//m := monitor.NewMonitor(stats[0])
+	// m.SinkPort = uint16(monitorPort)
+	// defer m.Stop()
 
-	// create the buckets that will split the statistics of the hosts
-	// according to the configuration file
-	buckets, err := rc.GetBuckets()
-	if err != nil {
-		if err != platform.ErrorFieldNotPresent {
-			return nil, xerrors.Errorf("db bucket: %v", err)
-		}
+	// // create the buckets that will split the statistics of the hosts
+	// // according to the configuration file
+	// buckets, err := rc.GetBuckets()
+	// if err != nil {
+	// 	if err != platform.ErrorFieldNotPresent {
+	// 		return nil, xerrors.Errorf("db bucket: %v", err)
+	// 	}
 
-		// Do nothing, there won't be any bucket.
-	} else {
-		for i, rules := range buckets {
-			bs := monitor.NewStats(rc.Map(), "hosts", "bf")
-			stats = append(stats, bs)
-			m.InsertBucket(i, rules, bs)
-		}
-	}
+	// 	// Do nothing, there won't be any bucket.
+	// } else {
+	// 	for i, rules := range buckets {
+	// 		bs := monitor.NewStats(rc.Map(), "hosts", "bf")
+	// 		stats = append(stats, bs)
+	// 		m.InsertBucket(i, rules, bs)
+	// 	}
+	// }
 
 	done := make(chan error)
-	go func() {
-		if err := m.Listen(); err != nil {
-			log.Error("error while closing monitor: " + err.Error())
-		}
-	}()
+	// go func() {
+	// 	if err := m.Listen(); err != nil {
+	// 		log.Error("error while closing monitor: " + err.Error())
+	// 	}
+	// }()
 
 	go func() {
 		var err error
@@ -318,7 +313,8 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 		if err != nil {
 			return nil, xerrors.Errorf("simulation error: %v", err)
 		}
-		return stats, nil
+		//return stats, nil
+		return nil, nil
 		// case <-time.After(timeout):
 		// 	return nil, xerrors.New("simulation timeout")
 	}

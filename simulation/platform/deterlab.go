@@ -460,10 +460,9 @@ func (d *Deterlab) Start(args ...string) error {
 	//----------
 	// ToDoRaha: let's not call ./user locally
 	// go func() {
-	// 	log.LLvl1("Raha: Running ./users on the server:", d.Login, "@", d.Host)
 	// 	err := SSHRunStdout(d.Login, d.Host, "cd remote; ./users -suite="+d.Suite)
 	// 	if err != nil {
-	// 		log.LLvl1("Raha: err while running users.exe on", d.Login, "@", d.Host, " : ", err)
+	// 		log.LLvl1(err)
 	// 	}
 	// 	d.sshDeter <- "finished"
 	// }()

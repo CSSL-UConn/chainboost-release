@@ -1,6 +1,6 @@
-Servers = 8
+Servers = 4
 Simulation = "ChainBoost"
-BF = 8
+BF = 2
 Rounds = 10
 timeout = 120
 RunWait = "600000s"
@@ -25,7 +25,7 @@ SCRoundDuration = 1
 CommitteeWindow = 5
 MCRoundPerEpoch = 2
 SimState = 2
-Nodes = 40
+Nodes = 15000
 
 Hosts
-40
+15000
