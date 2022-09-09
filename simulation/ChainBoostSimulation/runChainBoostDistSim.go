@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"os/exec"
 	"time"
 
@@ -33,40 +34,19 @@ func main() {
 			log.LLvl1("Couldn't cleanup platform:", err)
 		}
 	}()
-
 }
 
 func Cleanup() error {
-	err := exec.Command("pkill", "-9", "users").Run()
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.LLvl1(homeDir)
+	err = exec.Command("pkill", "-9", "users").Run()
 	if err != nil {
 		log.LLvl1("Error stopping ./users:", err)
+	} else {
+		log.LLvl1("users on gateway are cleaned")
 	}
-	var sshKill chan string
-	sshKill = make(chan string)
-	go func() {
-		if _, err := SSHRun(d.Login, d.Host, "killall -9 users sshd"); err != nil {
-			log.LLvl1("Error while cleaning up:", err)
-		}
-
-		err := SSHRunStdout(d.Login, d.Host, "test -f remote/users && ( cd remote; ./users -kill )")
-		if err != nil {
-			log.LLvl1("NOT-Normal error from cleanup", err.Error())
-			sshKill <- "error"
-		}
-		sshKill <- "stopped"
-	}()
-
-	for {
-		select {
-		case msg := <-sshKill:
-			if msg == "stopped" {
-				log.LLvl1("Users stopped")
-				return nil
-			}
-			log.LLvl1("Received other command", msg, "probably the app didn't quit correctly")
-		case <-time.After(time.Second * 20):
-			log.LLvl1("Timeout error when waiting for end of ssh")
-			return nil
-		}
-	}
+	return err
 }

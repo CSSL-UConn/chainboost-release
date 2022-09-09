@@ -3,6 +3,7 @@ package platform
 import (
 	"math/rand"
 	"sync"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	MainAndSideChain "github.com/chainBoostScale/ChainBoost/MainAndSideChain"
@@ -20,7 +21,7 @@ type simulInit struct{}
 type simulInitDone struct{}
 
 // Simulate starts the server and will setup the protocol.
-// : adding some other system-wide configurations
+// adding some other system-wide configurations
 func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize, SectorNumber, NumberOfPayTXsUpperBound,
 	SimulationRounds, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, MCRoundPerEpoch, SimState int,
 	suite, serverAddress, simul, monitorAddress string) error {
@@ -85,7 +86,6 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 
 		// wait to be sure the goroutine started
 		<-ready
-		//log.LLvl1(": does it get here for the buggy one?!")
 		log.Lvl5("simul flag value is:", simul)
 		sim, err := onet.NewSimulation(simul, sc.Config)
 		if err != nil {
@@ -135,12 +135,6 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 	var simError error
 	if rootSim != nil {
 		// If this cothority has the root-server, it will start the simulation
-		// I want to see the list of nodes!
-		log.Lvl5("Tree used in ChainBoost is", rootSC.Tree.Roster.List)
-		//wait := true
-		//for wait {
-		// Raha: the protocols are created and instanciated here:
-
 		// ---------------------------------------------------------------
 		//     			---------- BLS CoSi protocol -------------
 		// ---------------------------------------------------------------
@@ -151,20 +145,16 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		var x = *rootSC.Tree.List()[CommitteeWindow]
 		x.RosterIndex = 0
 		BlsCosiSubTrees, _ := BLSCoSi.NewBlsProtocolTree(onet.NewTree(committee, &x), NbrSubTrees)
-
-		// todo: message should be initialized with main chain's genesis block
-
 		pi, err := rootSC.Overlay.CreateProtocol("bdnCoSiProto", BlsCosiSubTrees[0], onet.NilServiceID)
 		if err != nil {
 			return xerrors.New("couldn't create protocol: " + err.Error())
 		}
 		cosiProtocol := pi.(*BLSCoSi.BlsCosi)
 		cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol
-		/* Raha: it doesn't call any function! just initializtion of methods that is going to be used later
-		cosiProtocol.CreateProtocol = rootService.CreateProtocol //: it used to be initialized by this function call
-		params from config file:
-		cosiProtocol.Timeout = time.Duration(ProtocolTimeout) * time.Second
-		*/
+		/*
+			cosiProtocol.CreateProtocol = rootService.CreateProtocol //: it used to be initialized by this function call
+			params from config file:
+			cosiProtocol.Timeout = time.Duration(ProtocolTimeout) * time.Second */
 		cosiProtocol.Threshold = Threshold
 		if NbrSubTrees > 0 {
 			err := cosiProtocol.SetNbrSubTree(NbrSubTrees)
@@ -182,7 +172,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		}
 		ChainBoostProtocol := p.(*MainAndSideChain.ChainBoost)
 		//ChainBoostProtocol.SetTimeout(time.Duration(TimeOut) * time.Second)
-		// : finally passing our system-wide configurations to our protocol
+		// passing our system-wide configurations to our protocol
 		ChainBoostProtocol.PercentageTxPay = PercentageTxPay
 		ChainBoostProtocol.MCRoundDuration = MCRoundDuration
 		ChainBoostProtocol.MainChainBlockSize = MainChainBlockSize
@@ -213,15 +203,8 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			"\n MCRoundPerEpoch: ", MCRoundPerEpoch,
 			"\n SimState: ", SimState,
 		)
-		// ---------------------------------------------------------------
-		// initializing BLSCoSi protocol:
 		ChainBoostProtocol.BlsCosi = cosiProtocol
 		// --------------------------------------------------------------
-		log.Lvl3("Starting nodes: List of nodes (full tree is): \n")
-		for i, a := range rootSC.Tree.List() {
-			log.Lvl5(i, " :", a.Name(), ": ", a.RosterIndex, "\n")
-		}
-		// ----
 		ChainBoostProtocol.JoinedWG.Add(len(rootSC.Tree.Roster.List))
 		ChainBoostProtocol.JoinedWG.Done()
 		// ----
@@ -233,6 +216,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 				go sendMsgToJoinChainBoostProtocol(i, ChainBoostProtocol, rootSC)
 			}
 			ChainBoostProtocol.CalledWG.Wait()
+			log.LLvl1("Wait is passed which means all nodes have recieved the HelloChainBoost msg")
 		} else {
 			for _, child := range rootSC.Tree.List() {
 				if child != ChainBoostProtocol.TreeNode() {
@@ -260,7 +244,6 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			}
 		}
 
-		// Raha: it is just the root node
 		go func() {
 			err := ChainBoostProtocol.DispatchProtocol()
 			if err != nil {
@@ -268,21 +251,12 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			}
 		}()
 		ChainBoostProtocol.Start()
-		// : bls cosi  start function is called inside ChainBoost protocol
-		// ---------------------------------------------------------------
-		// when it finishes  is when:
-		// ToDoRaha
-		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) Back to simulation module: ChainBoostProtocol.Start() returned. waiting for DoneChainBoost channel")
 		px := <-ChainBoostProtocol.DoneChainBoost
-		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) Back to simulation module. Final result is", px)
-		//wait = false
-		//}
+		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": Final result is", px)
 
-		//ToDoRaha: clear this section
 		//childrenWait.Record()
-		// log.LLvl1("Broadcasting start, (Raha: I think its about having mutiple servers",
-		// 	" which doesnt apply to when we are running a localhost simulation)")
-		// syncWait := monitor.NewTimeMeasure("SimulSyncWait")
+		// log.LLvl1("Broadcasting start")
+		// // syncWait := monitor.NewTimeMeasure("SimulSyncWait")
 		// wgSimulInit.Add(len(rootSC.Tree.Roster.List))
 		// for _, conode := range rootSC.Tree.Roster.List {
 		// 	go func(si *network.ServerIdentity) {
@@ -292,12 +266,12 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		// }
 		// wgSimulInit.Wait()
 		// syncWait.Record()
-		// log.LLvl1("Starting new node", simul)
 		// measureNet := monitor.NewCounterIOMeasure("bandwidth_root", rootSC.Server)
 		// simError = rootSim.Run(rootSC)
 		// measureNet.Record()
 
-		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": (root node) close all other nodes!")
+		// --------------------------------------------------------------
+		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": close all other nodes!")
 		// Test if all ServerIdentities are used in the tree, else we'll run into
 		// troubles with CloseAll
 		if !rootSC.Tree.UsesList() {
@@ -311,11 +285,11 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		if err != nil {
 			return xerrors.New("couldn't create closeAll protocol: " + err.Error())
 		}
-		log.Lvl1("Raha: Starting the close all protocol to close all nodes by  the returned root node at the end of simulation")
+		log.Lvl1("close all nodes by  the returned root node at the end of simulation")
 		piC.Start()
 	}
-	//todo:
-	log.LLvl1(serverAddress, "or?!", scs[0].Server.ServerIdentity, "is waiting for all servers to close")
+
+	log.LLvl1(serverAddress, scs[0].Server.ServerIdentity, "is waiting for all servers to close")
 	wgServer.Wait()
 	log.LLvl1(serverAddress, "has all servers closed")
 	//if monitorAddress != "" {
@@ -326,7 +300,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 	if simError != nil {
 		return xerrors.New("error from simulation run: " + simError.Error())
 	}
-	log.LLvl1("Raha: func Simulate is returning")
+	log.LLvl1("Simulate is returning")
 	return nil
 }
 
@@ -413,25 +387,32 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 func sendMsgToJoinChainBoostProtocol(i int, ChainBoostProtocol *MainAndSideChain.ChainBoost, rootSC *onet.SimulationConfig) {
 	for _, child := range rootSC.Tree.List()[i*1000 : i*1000+1000] {
 		if child != ChainBoostProtocol.TreeNode() {
-			err := ChainBoostProtocol.SendTo(child, &MainAndSideChain.HelloChainBoost{
-				SimulationRounds:         ChainBoostProtocol.SimulationRounds,
-				PercentageTxPay:          ChainBoostProtocol.PercentageTxPay,
-				MCRoundDuration:          ChainBoostProtocol.MCRoundDuration,
-				MainChainBlockSize:       ChainBoostProtocol.MainChainBlockSize,
-				SideChainBlockSize:       ChainBoostProtocol.SideChainBlockSize,
-				SectorNumber:             ChainBoostProtocol.SectorNumber,
-				NumberOfPayTXsUpperBound: ChainBoostProtocol.NumberOfPayTXsUpperBound,
-				SimulationSeed:           ChainBoostProtocol.SimulationSeed,
-				// --------------------- bls cosi ------------------------
-				NbrSubTrees:     ChainBoostProtocol.NbrSubTrees,
-				Threshold:       ChainBoostProtocol.Threshold,
-				CommitteeWindow: ChainBoostProtocol.CommitteeWindow,
-				SCRoundDuration: ChainBoostProtocol.SCRoundDuration,
-				MCRoundPerEpoch: ChainBoostProtocol.MCRoundPerEpoch,
-				SimState:        ChainBoostProtocol.SimState,
-			})
-			if err != nil {
-				log.Lvl1(ChainBoostProtocol.Info(), "couldn't send hello to child", child.Name(), "with err:", err)
+			wait := true
+			timeout := 1 * time.Second
+			for wait {
+				err := ChainBoostProtocol.SendTo(child, &MainAndSideChain.HelloChainBoost{
+					SimulationRounds:         ChainBoostProtocol.SimulationRounds,
+					PercentageTxPay:          ChainBoostProtocol.PercentageTxPay,
+					MCRoundDuration:          ChainBoostProtocol.MCRoundDuration,
+					MainChainBlockSize:       ChainBoostProtocol.MainChainBlockSize,
+					SideChainBlockSize:       ChainBoostProtocol.SideChainBlockSize,
+					SectorNumber:             ChainBoostProtocol.SectorNumber,
+					NumberOfPayTXsUpperBound: ChainBoostProtocol.NumberOfPayTXsUpperBound,
+					SimulationSeed:           ChainBoostProtocol.SimulationSeed,
+					// --------------------- bls cosi ------------------------
+					NbrSubTrees:     ChainBoostProtocol.NbrSubTrees,
+					Threshold:       ChainBoostProtocol.Threshold,
+					CommitteeWindow: ChainBoostProtocol.CommitteeWindow,
+					SCRoundDuration: ChainBoostProtocol.SCRoundDuration,
+					MCRoundPerEpoch: ChainBoostProtocol.MCRoundPerEpoch,
+					SimState:        ChainBoostProtocol.SimState,
+				})
+				if err != nil {
+					log.Lvl1(ChainBoostProtocol.Info(), "couldn't send hello to child", child.Name(), "with err:", err)
+				} else {
+					wait = false
+				}
+				timeout *= 2
 			}
 		}
 	}

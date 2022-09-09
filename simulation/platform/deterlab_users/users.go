@@ -66,16 +66,16 @@ func main() {
 			defer wg.Done()
 			if kill {
 				log.LLvl1("Cleaning up host", h, ".")
-				runSSH(h, "sudo killall -9 simul scp 2>/dev/null >/dev/null")
+				runSSH(h, "killall -9 simul scp 2>/dev/null >/dev/null")
 				//s := strings.Split(h, ":")
 				//hs := s[0]
 				//runSSH(hs, "kill -9 -1")
 				time.Sleep(1 * time.Second)
-				runSSH(h, "sudo killall -9 simul 2>/dev/null >/dev/null")
+				runSSH(h, "killall -9 simul 2>/dev/null >/dev/null")
 				time.Sleep(1 * time.Second)
 				// Also kill all other process that start with "./" and are probably
 				// locally started processes
-				runSSH(h, "sudo pkill -9 -f '\\./'")
+				runSSH(h, "pkill -9 -f '\\./'")
 				time.Sleep(1 * time.Second)
 				if log.DebugVisible() > 3 {
 					log.LLvl1("Cleaning report:")
@@ -165,12 +165,7 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			// ------------------------------------------
-			// -------------------------------------
-			// Raha: chainboost dynamic config variables
-			// these variables are initialzied in [not in config(?) file for now] simul.go file
-			// which has a start function that when we call ./simul exe
-			// this start function is called afterward and start the simulation
+
 			/* -------------------------------------
 			PercentageTxPay
 			MCRoundDuration       	//sec
@@ -220,10 +215,7 @@ func main() {
 				cmd := exec.Command("kill", "-9", "-1")
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
-				var err error
-				go func() {
-					err = cmd.Run()
-				}()
+				err := cmd.Run()
 				if err != nil {
 					log.Fatal("Couldn't killall listening threads:", err)
 				} else {
@@ -235,7 +227,6 @@ func main() {
 	}
 	// wait for the servers to finish before stopping
 	wg.Wait()
-	//totdo: commented
 	//prox.Stop()
 }
 
@@ -259,7 +250,6 @@ func deterFromConfig(name ...string) *platform.Deterlab {
 // Runs a command on the remote host and outputs an eventual error if debug level >= 3
 func runSSH(host, cmd string) {
 	if _, err := platform.SSHRun("root", host, cmd); err != nil {
-		// ToDoRaha: it gives error but let's wait for repeating the open listener err
 		log.Lvl1("Host", host, "got error", err.Error(), "while running", cmd)
 	} else {
 		log.Lvl1("Host", host, "cleaned up")
