@@ -41,7 +41,7 @@ var Debug = 5
 // Raha: chainboost dynamic config variables
 // -------------------------------------
 var PercentageTxPay = 30
-var MCRoundDuration = 5          //sec
+var MCRoundDuration = 10         //sec
 var MainChainBlockSize = 2000000 //byte
 var SideChainBlockSize = 1000000
 var SectorNumber = 2
@@ -85,10 +85,8 @@ func init() {
 
 // Start has to be called by the main-file that imports the protocol and/or the
 // service. If a user calls the simulation-file, `simul` is empty, and the
-// build is started.
-// Only the platform will call this binary with a simul-flag set to the name of the
-// simulation to run.
-// If given an array of rcs, each element will be interpreted as a .toml-file
+// build is started.Only the platform will call this binary with a simul-flag set to the name of the
+// simulation to run.If given an array of rcs, each element will be interpreted as a .toml-file
 // to load and simulate.
 func Start(rcs ...string) {
 	wd, er := os.Getwd()

@@ -66,22 +66,19 @@ func main() {
 			defer wg.Done()
 			if kill {
 				log.LLvl1("Cleaning up host", h, ".")
-				runSSH(h, "killall -9 simul scp 2>/dev/null >/dev/null")
+				//runSSH(h, "killall -9 simul scp 2>/simout >/simout")
+				platform.SSHRunStdout("root", h, "killall -9 simul 2>/simout")
 				//s := strings.Split(h, ":")
 				//hs := s[0]
-				//runSSH(hs, "kill -9 -1")
-				time.Sleep(1 * time.Second)
-				runSSH(h, "killall -9 simul 2>/dev/null >/dev/null")
 				time.Sleep(1 * time.Second)
 				// Also kill all other process that start with "./" and are probably
 				// locally started processes
-				runSSH(h, "pkill -9 -f '\\./'")
+				platform.SSHRunStdout("root", h, "pkill -9 -f '\\./' 2>/simout")
 				time.Sleep(1 * time.Second)
 				if log.DebugVisible() > 3 {
 					log.LLvl1("Cleaning report:")
 					_ = platform.SSHRunStdout("root", h, "ps aux")
 				}
-				log.Lvl1("Host", h, "cleaned up")
 			} else {
 				log.LLvl1("Raha: skipping: Setting the file-limit higher")
 				//log.LLvl1("Setting the file-limit higher on", h)
@@ -99,13 +96,12 @@ func main() {
 	cleanupChannel := make(chan string)
 	go func() {
 		wg.Wait()
-		log.LLvl1("Done waiting")
-		//todo: we will need it once I figure out how to use flags!
+		log.LLvl3("Done waiting")
 		cleanupChannel <- "done"
 	}()
 	select {
 	case msg := <-cleanupChannel:
-		log.LLvl1("Received msg from cleanupChannel", msg)
+		log.LLvl3("Received msg from cleanupChannel", msg)
 	//todo now: is it a good wait out time for us?
 	case <-time.After(time.Second * 20000):
 		for i, m := range doneHosts {
@@ -141,10 +137,7 @@ func main() {
 		go func(phys, internal string) {
 			defer wg.Done()
 			monitorAddr := deter.MonitorAddress + ":" + strconv.Itoa(deter.MonitorPort)
-			log.LLvl1("Starting servers on physical machine ", internal, "with monitor = ",
-				monitorAddr)
 			// If PreScript is defined, run the appropriate script _before_ the simulation.
-			//log.LLvl1("Raha: skipping:run the appropriate script")
 			if deter.PreScript != "" {
 				log.LLvl1(": deter.PreScript running?")
 				err := platform.SSHRunStdout("root", phys, "cd remote; sudo ./"+deter.PreScript+" deterlab")
@@ -158,6 +151,10 @@ func main() {
 			// Copy everything over
 			log.Lvl3("Copying over to", phys)
 			err := platform.SSHRunStdout("root", phys, "mkdir -p remote")
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = platform.SSHRunStdout("root", phys, "touch simout")
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -249,7 +246,7 @@ func deterFromConfig(name ...string) *platform.Deterlab {
 
 // Runs a command on the remote host and outputs an eventual error if debug level >= 3
 func runSSH(host, cmd string) {
-	if _, err := platform.SSHRun("root", host, cmd); err != nil {
+	if err := platform.SSHRunStdout("root", host, cmd); err != nil {
 		log.Lvl1("Host", host, "got error", err.Error(), "while running", cmd)
 	} else {
 		log.Lvl1("Host", host, "cleaned up")

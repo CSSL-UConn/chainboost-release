@@ -87,14 +87,11 @@ func SSHRun(username, host, command string) ([]byte, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	fmt.Println(homeDir)
-
 	addr := host
 	if username != "" {
 		addr = username + "@" + addr
 	}
-	// todoRaha: put the key somewhere safe
 	//cmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-i", "'~/Documents/GitHub/chainBoostScale/chainboostTest.pem'",
 	//	addr , "eval '"+command+"'")
 	//, "-o", "StrictHostKeyChecking=no"

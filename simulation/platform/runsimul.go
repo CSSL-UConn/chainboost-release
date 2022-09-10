@@ -209,6 +209,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		ChainBoostProtocol.JoinedWG.Done()
 		// ----
 		if len(rootSC.Tree.Roster.List) > 1000 {
+			log.LLvl1("len(rootSC.Tree.Roster.List) > 1000")
 			// ---
 			ChainBoostProtocol.CalledWG.Add(len(rootSC.Tree.Roster.List) / 1000)
 			// ---
