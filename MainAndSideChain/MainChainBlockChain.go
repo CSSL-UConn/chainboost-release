@@ -76,8 +76,6 @@ func (bz *ChainBoost) finalMainChainBCInitialization() {
 	for i := 2; i <= len(NodeInfoRow)+1; i++ { // len(NodeInfoRow) has been used to reflecvt number of nodes 1<->1 number of agreemenets
 		ServAgrRow := strconv.Itoa(i)
 		cell := "E" + ServAgrRow
-		//todo: use unique increasing int values for each server 1<->1 contract instead of random values
-		// this int value as serverAgreementID points to the rownumber in marketmatching sheet that maintain the corresponding contract's info
 
 		//RandomServerAgreementID := r.Int()
 		//String_RandomServerAgreementID := strconv.Itoa(serverAgreementID)
@@ -1028,13 +1026,6 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		0) size
 		1) time
 		2) issuedMCRoundNumber */
-
-		// ----------------
-		//todo: check if works fine, remove this part later
-		// ----------------
-		// for j, colCell := range row {
-		// 	if j == 0 {
-		// ----------------
 
 		if txsize, err = strconv.Atoi(row[0]); err != nil {
 			log.LLvl1("Panic Raised:\n\n")

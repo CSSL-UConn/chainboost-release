@@ -179,9 +179,6 @@ func (d *Localhost) Deploy(rc *RunConfig) error {
 	// --------------------------------------------
 
 	// ------------------------------------------------------------------
-	//todo: we don't need prescript to creat bc files,
-	// it will be created in deploy inside the InitializeMainChainBC and InitializeSideChainBCfunction invokation
-	// but we can use this option whenever we need to runn a command before starting the simulation
 	// Check for PreScript and copy it to the deploy-dir
 	// d.PreScript = rc.Get("PreScript")
 	// if d.PreScript != "" {

@@ -183,7 +183,6 @@ func main() {
 			args := " -address=" + internal +
 				" -simul=" + deter.Simulation +
 				" -monitor=" + monitorAddr +
-				//todo
 				//" -debug=" + strconv.Itoa(log.DebugVisible()) +
 				" -Debug=" + strconv.Itoa(simul.Debug) +
 				" -suite=" + simul.Suite +

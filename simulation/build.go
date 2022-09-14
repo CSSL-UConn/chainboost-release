@@ -28,7 +28,8 @@ var race = false
 var runWait = 180 * time.Second
 var experimentWait = 0 * time.Second
 
-var platformDst = "localhost" //todo: it should be initialized for debugging?
+var platformDst = "localhost"
+
 //var platformDst = "deterlab"
 //var platformDst string //= "deterlab"
 
