@@ -75,7 +75,7 @@ type BlsCosi struct {
 	Suite            *pairing.SuiteBn256
 	SubTrees         BlsProtocolTree
 	//  added
-	BlockType string // "metablock", "summeryblock"
+	BlockType string // "metablock", "summaryblock"
 }
 
 // CreateProtocolFunction is a function type which creates a new protocol

@@ -419,7 +419,7 @@ type SCBlockHeader struct {
 	Version         [4]byte
 	LeaderPublicKey [33]byte // see https://medium.com/coinmonks/on-bitcoin-transaction-sizes-97e31bc9d816
 	// LeaderPublicKey kyber.Point
-	// the combined signature of committee members for each meta/summery blocks should be
+	// the combined signature of committee members for each meta/summary blocks should be
 	// included in their header `SCBlockHeader` which enables future validation
 	BlsSignature BLSCoSi.BlsSignature
 }
@@ -428,29 +428,29 @@ type SCMetaBlock struct {
 	SCBlockHeader              *SCBlockHeader
 	SCMetaBlockTransactionList *SCMetaBlockTransactionList
 }
-type TxSummery struct {
+type TxSummary struct {
 	//---
 	ServAgrID       []uint64
 	ConfirmedPoRCnt []uint64
 	//---
 }
-type SCSummeryBlockTransactionList struct {
+type SCSummaryBlockTransactionList struct {
 	//---
-	TxSummery    []*TxSummery
-	TxSummeryCnt [2]byte
+	TxSummary    []*TxSummary
+	TxSummaryCnt [2]byte
 	//---
 	Fees [3]byte
 }
-type SCSummeryBlock struct {
+type SCSummaryBlock struct {
 	BlockSize                     [3]byte
 	SCBlockHeader                 *SCBlockHeader
-	SCSummeryBlockTransactionList *SCSummeryBlockTransactionList
+	SCSummaryBlockTransactionList *SCSummaryBlockTransactionList
 }
 
-// side chain's Sync transaction is the result of summerizing the summery block of each epoch in side chain
+// side chain's Sync transaction is the result of summerizing the summary block of each epoch in side chain
 type TxSCSync struct {
 	//---
-	// this information "should be kept in side chain" in `SCSummeryBlock` and
+	// this information "should be kept in side chain" in `SCSummaryBlock` and
 	// ofcourse be sent to mainchain via `TxSCSync` to make it's effect on mainchain
 	ServAgrID       []uint64
 	ConfirmedPoRCnt []uint64
@@ -458,11 +458,11 @@ type TxSCSync struct {
 }
 
 /* -------------------------------------------------------------------------------------------
-    ------------- measuring side chain's sync transaction, summery and meta blocks ------
+    ------------- measuring side chain's sync transaction, summary and meta blocks ------
 -------------------------------------------------------------------------------------------- */
 
 // MetaBlockMeasurement compute the size of meta data and every thing other than the transactions inside the meta block
-func SCBlockMeasurement() (SummeryBlockSizeMinusTransactions int, MetaBlockSizeMinusTransactions int) {
+func SCBlockMeasurement() (SummaryBlockSizeMinusTransactions int, MetaBlockSizeMinusTransactions int) {
 	// ----- block header sample -----
 	// -- Hash Sample ----
 	sha := sha256.New()
@@ -529,36 +529,36 @@ func SCBlockMeasurement() (SummeryBlockSizeMinusTransactions int, MetaBlockSizeM
 	// ---
 	log.Lvl4("Meta Block Size Minus Transactions is: ", MetaBlockSizeMinusTransactions)
 
-	//------------------------------------- Summery block -----------------------------
-	// ---------------- summery block sample ----------------
-	var TxSummeryArraySample []*TxSummery
+	//------------------------------------- Summary block -----------------------------
+	// ---------------- summary block sample ----------------
+	var TxSummaryArraySample []*TxSummary
 
-	x12 := &SCSummeryBlockTransactionList{
+	x12 := &SCSummaryBlockTransactionList{
 		//---
-		TxSummery:    TxSummeryArraySample,
-		TxSummeryCnt: cnt,
+		TxSummary:    TxSummaryArraySample,
+		TxSummaryCnt: cnt,
 		Fees:         feeSample,
 	}
-	x13 := &SCSummeryBlock{
+	x13 := &SCSummaryBlock{
 		BlockSize:                     BlockSizeSample,
 		SCBlockHeader:                 x10,
-		SCSummeryBlockTransactionList: x12,
+		SCSummaryBlockTransactionList: x12,
 	}
 	log.Lvl5(x13)
-	SummeryBlockSizeMinusTransactions = len(BlockSizeSample) + //x13: SCSummeryBlock
+	SummaryBlockSizeMinusTransactions = len(BlockSizeSample) + //x13: SCSummaryBlock
 		len(SCRoundNumberSample) + /*len(nextroundseed) + len(VrfProof) +*/ len(hashSample) + len(timeSample) + len(hashSample) +
 		len(Version) + len(samplePublicKey) + //x10: SCBlockHeader
-		len(cnt) + len(feeSample) //x12: SCSummeryBlockTransactionList
-	log.Lvl4("Summery Block Size Minus Transactions is: ", SummeryBlockSizeMinusTransactions)
+		len(cnt) + len(feeSample) //x12: SCSummaryBlockTransactionList
+	log.Lvl4("Summary Block Size Minus Transactions is: ", SummaryBlockSizeMinusTransactions)
 
-	return SummeryBlockSizeMinusTransactions, MetaBlockSizeMinusTransactions
+	return SummaryBlockSizeMinusTransactions, MetaBlockSizeMinusTransactions
 }
 
 // SyncTransactionMeasurement computes the size of sync transaction
 func SyncTransactionMeasurement() (SyncTxSize int) {
 	return
 }
-func SCSummeryTxMeasurement(SummTxNum int) (SummTxsSizeInSummBlock int) {
+func SCSummaryTxMeasurement(SummTxNum int) (SummTxsSizeInSummBlock int) {
 	r := rand.New(rand.NewSource(int64(0)))
 	var a []uint64
 	for i := 0; i < SummTxNum; i++ {

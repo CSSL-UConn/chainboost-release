@@ -1373,20 +1373,20 @@ func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
 	for i, v := range bz.SummPoRTxs {
 		totalPoR = totalPoR + v
 		if v != 0 {
-			SummTxNum = SummTxNum + 1 // counting the number of active contracts to measure the length of summery tx
+			SummTxNum = SummTxNum + 1 // counting the number of active contracts to measure the length of summary tx
 		}
 		bz.SummPoRTxs[i] = 0
 	}
-	//measuring summery block size
-	SummeryBlockSizeMinusTransactions, _ := blockchain.SCBlockMeasurement()
+	//measuring summary block size
+	SummaryBlockSizeMinusTransactions, _ := blockchain.SCBlockMeasurement()
 	// --------------- adding bls signature size  -----------------
 	log.Lvl4("Size of bls signature:", len(bz.SCSig))
-	SummeryBlockSizeMinusTransactions = SummeryBlockSizeMinusTransactions + len(bz.SCSig)
+	SummaryBlockSizeMinusTransactions = SummaryBlockSizeMinusTransactions + len(bz.SCSig)
 	// ------------------------------------------------------------
-	SummTxsSizeInSummBlock := blockchain.SCSummeryTxMeasurement(SummTxNum)
-	blocksize = SummeryBlockSizeMinusTransactions + SummTxsSizeInSummBlock
+	SummTxsSizeInSummBlock := blockchain.SCSummaryTxMeasurement(SummTxNum)
+	blocksize = SummaryBlockSizeMinusTransactions + SummTxsSizeInSummBlock
 	// ---
-	// for now sync transaction and summery transaction are the same, we should change it when  they differ
+	// for now sync transaction and summary transaction are the same, we should change it when  they differ
 	SyncTxSize := SummTxsSizeInSummBlock
 	// ---
 	newTransactionRow[1] = strconv.Itoa(SyncTxSize)
