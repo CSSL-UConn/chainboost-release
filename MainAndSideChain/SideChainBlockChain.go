@@ -452,7 +452,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 				}
 			}
 
-			// ---------- keep taken transaction's info summery --------------------
+			// ---------- keep taken transaction's info summary --------------------
 			if serverAgrId, err := strconv.Atoi(row[4]); err != nil {
 				log.LLvl1("Panic Raised:\n\n")
 				panic(err)

@@ -145,7 +145,7 @@ type ChainBoost struct {
 	LtRSideChainNewRoundChan chan LtRSideChainNewRoundChan
 	// it is initiated in the start function by root node
 	BlsCosiStarted bool
-	// -- meta block temp summery.
+	// -- meta block temp summary.
 	// server agreement ID --> number of not summerized submitted PoRs in the meta blocks for this agreement
 	SummPoRTxs map[int]int
 	SCSig      BLSCoSi.BlsSignature
