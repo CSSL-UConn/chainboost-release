@@ -114,7 +114,7 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 		}
 	}
 	if bz.SCRoundNumber == 0 {
-		bz.BlsCosi.BlockType = "Summery Block"
+		bz.BlsCosi.BlockType = "Summary Block"
 	} else {
 		bz.BlsCosi.BlockType = "Meta Block"
 	}
@@ -158,23 +158,23 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 	var tempCommitteeNodesTreeNodeID []onet.TreeNodeID
 	// --------------------------------------------------------------------
 	if bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration) == bz.SCRoundNumber {
-		bz.BlsCosi.BlockType = "Summery Block" // just to know!
+		bz.BlsCosi.BlockType = "Summary Block" // just to know!
 		// ---
 		bz.BCLock.Lock()
 		// ---
-		// issueing a sync transaction from last submitted summery block to the main chain
+		// issueing a sync transaction from last submitted summary block to the main chain
 		blocksize = bz.syncMainChainBCTransactionQueueCollect()
-		//update the last row in round table with summery block's size
-		// in this round in which a summery block will be generated, new transactions will be added to the queue but not taken
+		//update the last row in round table with summary block's size
+		// in this round in which a summary block will be generated, new transactions will be added to the queue but not taken
 		bz.updateSideChainBCRound(msg.Name(), blocksize)
 		// ---
 		bz.BCLock.Unlock()
 		// ---
 		// reset side chain round number
-		bz.SCRoundNumber = 1 // in side chain round number zero the summery blocks are published in side chain
+		bz.SCRoundNumber = 1 // in side chain round number zero the summary blocks are published in side chain
 		// ------------- Epoch changed -----------
-		// i.e. the current published block on side chain is summery block
-		log.Lvl1("Final result SC: BlsCosi: the Summery Block was for epoch number: ", bz.MCRoundNumber/bz.MCRoundPerEpoch)
+		// i.e. the current published block on side chain is summary block
+		log.Lvl1("Final result SC: BlsCosi: the Summary Block was for epoch number: ", bz.MCRoundNumber/bz.MCRoundPerEpoch)
 
 		// -----------------------------------------------
 		// -----------------------------------------------
