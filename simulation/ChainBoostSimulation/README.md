@@ -40,13 +40,15 @@ After doing the above steps (for now for each simulation configuration we shuld 
 ** this process should become automatic **
 
 1- (from gateway):
-- `$ rsync root@192.168.3.220:~/remote/mainchainbc.xlsx ~/simulationResult`
-- `$ rsync root@192.168.3.220:~/remote/sidechainbc.xlsx ~/simulationResult`
+
+    - `$ rsync root@192.168.3.220:~/remote/mainchainbc.xlsx ~/simulationResult`
+    - `$ rsync root@192.168.3.220:~/remote/sidechainbc.xlsx ~/simulationResult`
 
 2- open sftp
-1- `$ sftp zam20015@csi-lab-ssh.engr.uconn.edu`
-2- `$ lcd /Users/raha/Desktop/ChainBoostDocuments/simulationResult` set it to where your `simulationResult` folder is located.
-3- `$ get -R simulationResult`
+
+    1- `$ sftp zam20015@csi-lab-ssh.engr.uconn.edu`
+    2- `$ lcd /Users/raha/Desktop/ChainBoostDocuments/simulationResult` set it to where your `simulationResult` folder is located.
+    3- `$ get -R simulationResult`
 
 
 ### develop the Local simulation and run it:
