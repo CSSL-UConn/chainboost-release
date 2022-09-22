@@ -23,8 +23,14 @@ After running the local phase of the distributed simulation, all these files (un
 ### Building and preparing the distributed simulation toolkit:
 
 first set your username in
-- deter.toml and in here: 
+
+- deter.toml 
+
+plus from the followinng two places that should be removed once we add dynamic config: 
+
 - https://github.com/chainBoostScale/ChainBoost/blob/986893b53416876cd64a56fd3928a17fc41a6dc5/simulation/platform/deterlab_users/users.go#L161 (it is one of the configs that should get dynamic)
+- https://github.com/chainBoostScale/chainBoost/blob/6f60cef8009c3c3690665774529da70754c2c037/simulation/platform/deterlab.go#L191
+
 
 Then via the following command build the simulation:
 `$ go test -platform=deterlab timeout 300000s -run ^TestSimulation$`
@@ -41,14 +47,14 @@ After doing the above steps (for now for each simulation configuration we shuld 
 
 1- (from gateway):
 
-    - `$ rsync root@192.168.3.220:~/remote/mainchainbc.xlsx ~/simulationResult`
-    - `$ rsync root@192.168.3.220:~/remote/sidechainbc.xlsx ~/simulationResult`
+    `$ rsync root@192.168.3.220:~/remote/mainchainbc.xlsx ~/simulationResult`
+    `$ rsync root@192.168.3.220:~/remote/sidechainbc.xlsx ~/simulationResult`
 
 2- open sftp
 
-    1- `$ sftp zam20015@csi-lab-ssh.engr.uconn.edu`
-    2- `$ lcd /Users/raha/Desktop/ChainBoostDocuments/simulationResult` set it to where your `simulationResult` folder is located.
-    3- `$ get -R simulationResult`
+    `$ sftp zam20015@csi-lab-ssh.engr.uconn.edu`
+    `$ lcd /Users/raha/Desktop/ChainBoostDocuments/simulationResult` set it to where your `simulationResult` folder is located.
+    `$ get -R simulationResult`
 
 
 ### develop the Local simulation and run it:
