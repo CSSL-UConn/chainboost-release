@@ -28,7 +28,8 @@ first set your username in
 
 plus from the followinng two places that should be removed once we add dynamic config: 
 
-- https://github.com/chainBoostScale/ChainBoost/blob/986893b53416876cd64a56fd3928a17fc41a6dc5/simulation/platform/deterlab_users/users.go#L161 (it is one of the configs that should get dynamic)
+- https://github.com/chainBoostScale/ChainBoost/blob/986893b53416876cd64a56fd3928a17fc41a6dc5/simulation/platform/deterlab_users/users.go#L161
+
 - https://github.com/chainBoostScale/chainBoost/blob/6f60cef8009c3c3690665774529da70754c2c037/simulation/platform/deterlab.go#L191
 
 
