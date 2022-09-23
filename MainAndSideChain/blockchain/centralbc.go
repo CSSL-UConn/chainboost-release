@@ -171,7 +171,8 @@ func InitializeMainChainBC(
 	for i := 2; i <= numberOfNodes+1; i++ {
 		ServAgrRow := strconv.Itoa(i)
 		t := "F" + ServAgrRow
-		if err = f.SetCellValue("MarketMatching", t, 0); err != nil {
+		// all contract are initially considered published
+		if err = f.SetCellValue("MarketMatching", t, 1); err != nil {
 			log.LLvl1("Panic Raised:\n\n")
 			panic(err)
 		}
@@ -188,7 +189,7 @@ func InitializeMainChainBC(
 	for i := 2; i <= numberOfNodes+1; i++ {
 		ServAgrRow := strconv.Itoa(i)
 		t := "G" + ServAgrRow
-		if err = f.SetCellValue("MarketMatching", t, 0); err != nil {
+		if err = f.SetCellValue("MarketMatching", t, 1); err != nil {
 			log.LLvl1("Panic Raised:\n\n")
 			panic(err)
 		}

@@ -302,18 +302,30 @@ func (bz *ChainBoost) UpdateSideChainCommittee(msg MainChainNewLeaderChan) {
 			t = t + 1
 			continue
 		} else {
-
 			break
 		}
 	}
 	if t != len(bz.CommitteeNodesTreeNodeID) {
-		log.Lvl1("final result SC:", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), " is already in the committee")
+
+		// this is part of issue #23 , should finish it later
+		// NextSideChainLeaderTreeNodeID := msg.LeaderTreeNodeID
+		// var NewCommitteeNodesTreeNodeID []onet.TreeNodeID
+
+		// for i, a := range bz.CommitteeNodesTreeNodeID {
+		// 	if a == msg.LeaderTreeNodeID {
+		// 		NewCommitteeNodesTreeNodeID = append([]onet.TreeNodeID{a}, NewCommitteeNodesTreeNodeID...)
+		// 	}
+		// }
+		// bz.CommitteeNodesTreeNodeID = append([]onet.TreeNodeID{NextSideChainLeaderTreeNodeID}, NewCommitteeNodesTreeNodeID...)
+
+		log.Lvl1("final result SC:", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), "is already in the committee")
 		for i, a := range bz.CommitteeNodesTreeNodeID {
 			log.Lvl1("final result SC: BlsCosi committee queue: ", i, ":", bz.Tree().Search(a).Name())
 		}
 	} else {
 		NextSideChainLeaderTreeNodeID := msg.LeaderTreeNodeID
 		bz.CommitteeNodesTreeNodeID = append([]onet.TreeNodeID{NextSideChainLeaderTreeNodeID}, bz.CommitteeNodesTreeNodeID...)
+
 		log.Lvl1("final result SC:", bz.Tree().Search(msg.LeaderTreeNodeID).Name(), "is added to side chain for the next epoch's committee")
 		for i, a := range bz.CommitteeNodesTreeNodeID {
 			log.Lvl1("final result SC: BlsCosi committee queue: ", i, ":", bz.Tree().Search(a).Name())
