@@ -61,3 +61,18 @@ The following packages provide core functionality to `ChainBoost`:
 [^1]: there may be some rounds that there is no leader for them, an empty block will be added to the blockchain in those rounds and the information of the root node (blockchain layer 1) is added (it can be removed) as the round leader but all the other columns are empty. in these rounds transactions will be added normally to the queue but no transaction is removed bcz the block is empty.
 [^2]: when in a round, some transactions should wait in a queue (i.e. the allocated space for  that transaction is full) and are submitted in another round, the average wait of that queue in the round that those transactions get to be submitted increases.
 <!--FootNote-->
+
+
+## On Building using Makefiles
+
+this repo contains three Makefiles, one on the root of the repo, one in `simulation/manage/simulation/Makefile` and one in `simulation/platform/deterlab_users/Makefile`
+
+The Makefile in the root of the repo builds all the binaries (simul and users) and puts them in the build folder,
+it allows the following commands:
+
+* `make build` : builds the binaries
+* `make deploy USER=<user>` : builds the binaries and deploys them to gateway using rsync over SSH
+* `make clean`: cleans up all the binaries that were built.
+
+The in-folder Makefiles are helper Makefiles for the one in the root of the repo, and are used to build their respective binaries
+
