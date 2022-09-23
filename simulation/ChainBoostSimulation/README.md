@@ -1,9 +1,4 @@
 
-## Getting Started ##
-
-- Install Go
-- Clone or Downloade the ChainBoost's source code from Git <https://github.com/chainBstSc/ChainBoost>
-
 
 ## The Distributed Simulation On The CACC Cluster ##
 
