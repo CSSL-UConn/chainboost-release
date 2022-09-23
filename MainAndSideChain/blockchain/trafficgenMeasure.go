@@ -46,7 +46,7 @@ type TxPayOut struct {
 	LockingScript     []byte // pubkey script // see https://medium.com/coinmonks/on-bitcoin-transaction-sizes-97e31bc9d816 35?
 	LockingScriptSize [4]byte
 }
-type TxPay struct {
+type MC_TxPay struct {
 	LockTime [4]byte
 	Version  [4]byte
 	TxInCnt  [1]byte // compactSize uint see https://developer.bitcoin.org/reference/transactions.html#compactsize-unsigned-integers
@@ -58,7 +58,7 @@ type TxPay struct {
 /* ---------------- market matching transactions ---------------- */
 
 //server agreement
-type ServAgr struct {
+type SC_ServAgr struct {
 	duration      [2]byte
 	fileSize      [4]byte
 	startRound    [3]byte
@@ -73,13 +73,13 @@ type ServAgr struct {
 
 /* TxServAgrPropose: A client create a ServAgr and add approprite (duration*price) escrow and sign it and issue a ServAgr propose transaction
 which has the ServAgr and payment (escrow) info in it */
-type TxServAgrPropose struct {
-	tx               *TxPay
-	ServAgrID        *ServAgr
+type SC_TxServAgrPropose struct {
+	tx               *MC_TxPay
+	ServAgrID        *SC_ServAgr
 	clientCommitment [71]byte
 }
 
-type TxServAgrCommit struct {
+type SC_TxServAgrCommit struct {
 	serverCommitment [71]byte
 	ServAgrID        uint64
 }
@@ -87,7 +87,7 @@ type TxServAgrCommit struct {
 /* ---------------- transactions that will be issued (with ChainBoost: each side chain's round / Pure MainChain: each main chain's round) until a ServAgr is active ---------------- */
 
 /* por txs are designed in away that the verifier (any miner) has sufficient information to verify it */
-type TxPoR struct {
+type SC_TxPoR struct {
 	ServAgrID     uint64
 	por           *por.Por
 	MCRoundNumber [3]byte // to determine the random query used for it
@@ -95,9 +95,9 @@ type TxPoR struct {
 
 /* ---------------- transactions that will be issued after a ServAgr is expired(?) ---------------- */
 
-type TxStoragePay struct {
+type MC_TxStoragePay struct {
 	ServAgrID uint64
-	tx        *TxPay
+	tx        *MC_TxPay
 }
 
 /* ---------------- transactions that will be issued for each round ---------------- */
@@ -114,19 +114,19 @@ The list of transactions in a block logically translates to a set of weights for
 */
 type TransactionList struct {
 	//---
-	TxPays   []*TxPay
+	TxPays   []*MC_TxPay
 	TxPayCnt [2]byte
 	//---
-	TxPoRs   []*TxPoR
+	TxPoRs   []*SC_TxPoR
 	TxPoRCnt [2]byte
 	//---
-	TxServAgrProposes   []*TxServAgrPropose
+	TxServAgrProposes   []*SC_TxServAgrPropose
 	TxServAgrProposeCnt [2]byte
 	//---
-	TxServAgrCommits   []*TxServAgrCommit
+	TxServAgrCommits   []*SC_TxServAgrCommit
 	TxServAgrCommitCnt [2]byte
 	//---
-	TxStoragePay    []*TxStoragePay
+	TxStoragePay    []*MC_TxStoragePay
 	TxStoragePayCnt [2]byte
 	//--- tx from side chain
 	TxSCSync    []*TxSCSync
@@ -176,11 +176,11 @@ func BlockMeasurement() (BlockSizeMinusTransactions int) {
 	var feeSample, BlockSizeSample [3]byte
 	var MCRoundNumberSample [3]byte
 	// ---------------- block sample ----------------
-	var TxPayArraySample []*TxPay
-	var TxPorArraySample []*TxPoR
-	var TxServAgrProposeArraySample []*TxServAgrPropose
-	var TxServAgrCommitSample []*TxServAgrCommit
-	var TxStoragePaySample []*TxStoragePay
+	var TxPayArraySample []*MC_TxPay
+	var TxPorArraySample []*SC_TxPoR
+	var TxServAgrProposeArraySample []*SC_TxServAgrPropose
+	var TxServAgrCommitSample []*SC_TxServAgrCommit
+	var TxStoragePaySample []*MC_TxStoragePay
 
 	x9 := &TransactionList{
 		//---
@@ -287,7 +287,7 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize uint32,
 	}
 	xin := []*TxPayIn{x2}
 	xout := []*TxPayOut{x3}
-	x4 := &TxPay{
+	x4 := &MC_TxPay{
 		LockTime: timeSample,
 		Version:  Version,
 		TxInCnt:  cnt,
@@ -307,7 +307,7 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize uint32,
 	Tau, pf := por.RandomizedFileStoring(sk, por.GenerateFile(SectorNumber), SectorNumber)
 
 	// ---------------- ServAgrPropose transaction sample ----------------
-	x5 := &ServAgr{
+	x5 := &SC_ServAgr{
 		duration:      duration,
 		fileSize:      fileSizeSample,
 		startRound:    startRoundSample,
@@ -315,7 +315,7 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize uint32,
 		Tau:           Tau,
 		//MCRoundNumber:   MCRoundNumberSample,
 	}
-	x7 := &TxServAgrPropose{
+	x7 := &SC_TxServAgrPropose{
 		tx:               x4,
 		ServAgrID:        x5,
 		clientCommitment: cmtSample,
@@ -354,7 +354,7 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize uint32,
 	//_, pf := por.RandomizedFileStoring(sk, por.GenerateFile(SectorNumber), SectorNumber)
 	p := por.CreatePoR(pf, SectorNumber, SimulationSeed)
 
-	x6 := &TxPoR{
+	x6 := &SC_TxPoR{
 		ServAgrID:     ServAgrIdSample,
 		por:           &p,
 		MCRoundNumber: MCRoundNumberSample,
@@ -368,7 +368,7 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize uint32,
 	log.Lvl4("size of a por transaction is: ", PorTxSize, " bytes \n with ",
 		SectorNumber*por.Suite.G1().ScalarLen()+por.Suite.G2().PointLen(), " bytes for pure por")
 	// ---------------- TxStoragePay transaction sample ----------------
-	x9 := &TxStoragePay{
+	x9 := &MC_TxStoragePay{
 		ServAgrID: ServAgrIdSample,
 		tx:        x4,
 	}
@@ -378,7 +378,7 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize uint32,
 	StoragePayTxSize = 8 /*len(ServAgrIdSample)*/ + PayTxSize
 	log.Lvl4("size of a StoragePay transaction is: ", StoragePayTxSize)
 	// ---------------- TxServAgrCommit transaction sample ----------------
-	x10 := TxServAgrCommit{
+	x10 := SC_TxServAgrCommit{
 		serverCommitment: cmtSample,
 		ServAgrID:        ServAgrIdSample,
 	}
@@ -401,7 +401,7 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize uint32,
 
 type SCMetaBlockTransactionList struct {
 	//---
-	TxPoRs   []*TxPoR
+	TxPoRs   []*SC_TxPoR
 	TxPoRCnt [2]byte
 	//---
 	Fees [3]byte
@@ -505,7 +505,7 @@ func SCBlockMeasurement() (SummaryBlockSizeMinusTransactions int, MetaBlockSizeM
 		//BlsSignature:      sampleBlsSig, // this will be added back in the protocol
 	}
 	// ---------------- meta block sample ----------------
-	var TxPorArraySample []*TxPoR
+	var TxPorArraySample []*SC_TxPoR
 
 	x9 := &SCMetaBlockTransactionList{
 		TxPoRs:   TxPorArraySample,
