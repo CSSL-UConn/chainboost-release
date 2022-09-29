@@ -14,6 +14,7 @@ require (
 	go.dedis.ch/kyber/v3 v3.0.13
 	go.dedis.ch/protobuf v1.0.11
 	go.etcd.io/bbolt v1.3.6
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	rsc.io/goversion v1.2.0
