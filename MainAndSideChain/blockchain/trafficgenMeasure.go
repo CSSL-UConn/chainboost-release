@@ -47,12 +47,13 @@ type TxPayOut struct {
 	LockingScriptSize [4]byte
 }
 type MC_TxPay struct {
-	LockTime [4]byte
-	Version  [4]byte
-	TxInCnt  [1]byte // compactSize uint see https://developer.bitcoin.org/reference/transactions.html#compactsize-unsigned-integers
-	TxOutCnt [1]byte
-	TxIns    []*TxPayIn
-	TxOuts   []*TxPayOut
+	LockTime    [4]byte
+	Version     [4]byte
+	TxInCnt     [1]byte // compactSize uint see https://developer.bitcoin.org/reference/transactions.html#compactsize-unsigned-integers
+	TxOutCnt    [1]byte
+	TxIns       []*TxPayIn
+	TxOuts      []*TxPayOut
+	OnMainChain bool
 }
 
 /* ---------------- market matching transactions ---------------- */
@@ -64,6 +65,7 @@ type SC_ServAgr struct {
 	startRound    [3]byte
 	pricePerRound [3]byte
 	Tau           []byte
+	OnMainChain   bool
 	//MCRoundNumber   [3]byte //ToDoRaha: why MCRoundNumber is commented here?
 	/* later: Instead of the "file tag" (Tau []byte),
 	the round number is sent and stored on chain and the verifiers
@@ -77,11 +79,13 @@ type SC_TxServAgrPropose struct {
 	tx               *MC_TxPay
 	ServAgrID        *SC_ServAgr
 	clientCommitment [71]byte
+	OnMainChain      bool
 }
 
 type SC_TxServAgrCommit struct {
 	serverCommitment [71]byte
 	ServAgrID        uint64
+	OnMainChain      bool
 }
 
 /* ---------------- transactions that will be issued (with ChainBoost: each side chain's round / Pure MainChain: each main chain's round) until a ServAgr is active ---------------- */
@@ -91,13 +95,15 @@ type SC_TxPoR struct {
 	ServAgrID     uint64
 	por           *por.Por
 	MCRoundNumber [3]byte // to determine the random query used for it
+	OnMainChain   bool
 }
 
 /* ---------------- transactions that will be issued after a ServAgr is expired(?) ---------------- */
 
 type MC_TxStoragePay struct {
-	ServAgrID uint64
-	tx        *MC_TxPay
+	ServAgrID   uint64
+	tx          *MC_TxPay
+	OnMainChain bool
 }
 
 /* ---------------- transactions that will be issued for each round ---------------- */
@@ -288,12 +294,13 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize uint32,
 	xin := []*TxPayIn{x2}
 	xout := []*TxPayOut{x3}
 	x4 := &MC_TxPay{
-		LockTime: timeSample,
-		Version:  Version,
-		TxInCnt:  cnt,
-		TxOutCnt: cnt,
-		TxIns:    xin,
-		TxOuts:   xout,
+		LockTime:    timeSample,
+		Version:     Version,
+		TxInCnt:     cnt,
+		TxOutCnt:    cnt,
+		TxIns:       xin,
+		TxOuts:      xout,
+		OnMainChain: true,
 	}
 
 	PayTxSize = uint32(len(hashSample) + len(index) + // outpoint
@@ -319,6 +326,7 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize uint32,
 		tx:               x4,
 		ServAgrID:        x5,
 		clientCommitment: cmtSample,
+		OnMainChain:      false,
 	}
 
 	log.Lvl5("x5 is:", x5, " and x7 is: ", x7)
@@ -358,6 +366,7 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize uint32,
 		ServAgrID:     ServAgrIdSample,
 		por:           &p,
 		MCRoundNumber: MCRoundNumberSample,
+		OnMainChain:   false,
 	}
 
 	log.Lvl5("tx por is: ", x6)
@@ -369,8 +378,9 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize uint32,
 		SectorNumber*por.Suite.G1().ScalarLen()+por.Suite.G2().PointLen(), " bytes for pure por")
 	// ---------------- TxStoragePay transaction sample ----------------
 	x9 := &MC_TxStoragePay{
-		ServAgrID: ServAgrIdSample,
-		tx:        x4,
+		ServAgrID:   ServAgrIdSample,
+		tx:          x4,
+		OnMainChain: true,
 	}
 
 	log.Lvl5("tx StoragePay is: ", x9)
@@ -381,6 +391,7 @@ func TransactionMeasurement(SectorNumber, SimulationSeed int) (PorTxSize uint32,
 	x10 := SC_TxServAgrCommit{
 		serverCommitment: cmtSample,
 		ServAgrID:        ServAgrIdSample,
+		OnMainChain:      false,
 	}
 
 	log.Lvl5("tx ServAgrCommit is: ", x10)
