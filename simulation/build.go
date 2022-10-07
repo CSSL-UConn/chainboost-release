@@ -185,11 +185,44 @@ func RunTests(deployP platform.Platform, name string, runconfigs []*platform.Run
 		// run test t nTimes times
 		// take the average of all successful runs
 		log.LLvl1("Running test with config:", rc)
+
 		err := RunTest(deployP, rc)
 		if err != nil {
 			log.Error("Error running test:", err)
 			continue
 		}
+		//log.Lvl5("Test results:", stats[0])
+
+
+		// for j, bucketStat := range stats {
+		// 	if j >= len(files) {
+		// 		f, err := os.OpenFile(generateResultFileName(name, j), args, 0660)
+		// 		if err != nil {
+		// 			log.Fatal("error opening test file:", err)
+		// 		}
+		// 		err = f.Sync()
+		// 		if err != nil {
+		// 			log.Fatal("error syncing test file:", err)
+		// 		}
+
+		// 		files = append(files, f)
+		// 	}
+		// 	f := files[j]
+
+		// 	if i == 0 {
+		// 		bucketStat.WriteHeader(f)
+		// 	}
+		// 	if rc.Get("IndividualStats") != "" {
+		// 		err := bucketStat.WriteIndividualStats(f)
+		// 		log.ErrFatal(err)
+		// 	} else {
+		// 		bucketStat.WriteValues(f)
+		// 	}
+		// 	err = f.Sync()
+		// 	if err != nil {
+		// 		log.Fatal("error syncing data to test file:", err)
+		// 	}
+		// }
 	}
 }
 
