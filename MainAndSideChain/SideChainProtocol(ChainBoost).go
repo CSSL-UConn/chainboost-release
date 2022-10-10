@@ -57,6 +57,10 @@ func (bz *ChainBoost) DispatchProtocol() error {
 		// Blscosi.go, create subprotocols => hence calls func (p *SubBlsCosi) Dispatch()
 		// --------------------------------------------------------
 		case sig := <-bz.BlsCosi.FinalSignature:
+			if bz.simulationDone == true {
+				return nil
+			}
+
 			if err := BLSCoSi.BdnSignature(sig).Verify(bz.BlsCosi.Suite, bz.BlsCosi.Msg, bz.BlsCosi.SubTrees[0].Roster.Publics()); err == nil {
 				log.Lvl1("final result SC:", bz.Name(), " : ", bz.BlsCosi.BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
 				err := bz.SendTo(bz.Root(), &LtRSideChainNewRound{

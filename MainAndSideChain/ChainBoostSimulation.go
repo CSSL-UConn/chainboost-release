@@ -42,6 +42,15 @@ type HelloChan struct {
 	HelloChainBoost
 }
 
+type ChainBoostDone struct {
+    *onet.TreeNode
+    SimulationDone
+}
+
+type SimulationDone struct {
+    IsSimulationDone bool
+}
+
 // joined is sent to root to let the root node that this node is joined to the simulation
 type JoinedWGChan struct {
 	*onet.TreeNode
@@ -67,6 +76,8 @@ type ChainBoost struct {
 	// the node we are represented-in
 	*onet.TreeNodeInstance
 	ECPrivateKey vrf.VrfPrivkey
+
+    ChainBoostDone chan ChainBoostDone
 	// channel used to let all servers that the protocol has started
 	HelloChan chan HelloChan
 	// channel used by each round's leader to let all servers that a new round has come
@@ -149,6 +160,8 @@ type ChainBoost struct {
 	// server agreement ID --> number of not summerized submitted PoRs in the meta blocks for this agreement
 	SummPoRTxs map[int]int
 	SCSig      BLSCoSi.BlsSignature
+
+    simulationDone bool
 }
 
 /* ----------------------------------- FUNCTIONS -------------------------------------------------
@@ -192,6 +205,9 @@ func (bz *ChainBoost) Dispatch() error {
 	log.Lvlf5("starting Dispatch in chainboost simulation on:", bz.TreeNode().Name())
 	for running {
 		select {
+
+        case msg := <-bz.ChainBoostDone:
+            bz.simulationDone = msg.IsSimulationDone
 		// -----------------------------------------------------------------------------
 		// ******* ALL nodes recieve this message to join the protocol and get the config values set
 		// -----------------------------------------------------------------------------
@@ -277,6 +293,10 @@ func (bz *ChainBoost) Dispatch() error {
 				bz.SideChainRootPostNewRound(msg)
 			}()
 		case sig := <-bz.BlsCosi.FinalSignature:
+            if bz.simulationDone == true {
+                return nil
+            }
+
 			if err := BLSCoSi.BdnSignature(sig).Verify(bz.BlsCosi.Suite, bz.BlsCosi.Msg, bz.BlsCosi.SubTrees[0].Roster.Publics()); err == nil {
 				log.Lvl1("final result SC:", bz.Name(), " : ", bz.BlsCosi.BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
 				err := bz.SendTo(bz.Root(), &LtRSideChainNewRound{

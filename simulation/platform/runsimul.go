@@ -349,6 +349,9 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
     if err := n.RegisterChannelLength(&bz.MainChainNewLeaderChan, len(bz.Tree().List())); err != nil {
         log.Error("Couldn't register channel:    ", err)
     }
+    if err := n.RegisterChannel(&bz.ChainBoostDone); err != nil {
+        return bz, err
+    }
 
     //ToDoRaha: what exactly does this sentence do?! do we need it?! nil array vs empty array?
     bz.CommitteeNodesTreeNodeID = make([]onet.TreeNodeID, bz.CommitteeWindow)
