@@ -101,6 +101,7 @@ type PublicKey struct {
 	v   kyber.Point
 	spk kyber.Point
 }
+type hashablePoint interface{ Hash([]byte) kyber.Point }
 
 // utility functions
 func RandomizedKeyGeneration() (PrivateKey, PublicKey) {
@@ -193,16 +194,11 @@ func RandomizedFileStoring(sk PrivateKey, initialfile initialFile, SectorNumber 
 	TauSize = len(Tau)
 
 	// we need a BLS hash here. I brought this from kyber.bls.sign
-	// todo: check this to be the right method
 	// https://github.com/dedis/kyber/blob/b627bb323bc7380f4c09d803208a18b7624e1ec1/sign/bls/bls.go
-
 	// ----  isn't there another way?---------------------------------------
-	type hashablePoint interface {
-		Hash([]byte) kyber.Point
-	}
 	hashable, ok := Suite.G1().Point().(hashablePoint)
 	if !ok {
-		log.LLvl1("err")
+		log.LLvl1("point needs to implement hashablePoint")
 	}
 	// --------------------------------------------------------------------
 	//create "AuthValue" (Sigma_i) for block i
@@ -274,11 +270,10 @@ func VerifyPoR(pk PublicKey, Tau []byte, p Por, SectorNumber, SimulationSeed int
 		U := Suite.G1().Point().Mul(u, nil)
 		rightTermPoint = rightTermPoint.Add(rightTermPoint, U.Mul(p.Mu[j], U))
 	}
-	// ----  isn't there another way?---------------------------------------
-	type hashablePoint interface{ Hash([]byte) kyber.Point }
+
 	hashable, ok := Suite.G1().Point().(hashablePoint)
 	if !ok {
-		log.LLvl1("err")
+		log.LLvl1("point needs to implement hashablePoint")
 	}
 	// --------------------------------------------------------------------
 	leftTermPoint := Suite.G1().Point().Null() // pairing check: left term of right hand side
@@ -287,7 +282,7 @@ func VerifyPoR(pk PublicKey, Tau []byte, p Por, SectorNumber, SimulationSeed int
 		//h := hashable.Hash(append(Tau[:1],byte(rq.i[i])))
 		leftTermPoint = Suite.G1().Point().Add(leftTermPoint, Suite.G1().Point().Mul(rq.v_i[i], h))
 	}
-	//check: e(sigma, g) =? e(PHash(name||i)^v_i.P(j=1,..,s)(u_j^mu_j,v)
+	//checking: e(sigma, g) =? e(PHash(name||i)^v_i.P(j=1,..,s)(u_j^mu_j,v)
 	right := Suite.Pair(Suite.G1().Point().Add(leftTermPoint, rightTermPoint), pk.v)
 	left := Suite.Pair(p.Sigma, Suite.G2().Point().Base())
 	if !left.Equal(right) {
