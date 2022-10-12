@@ -41,7 +41,7 @@ type HelloChan struct {
 	*onet.TreeNode
 	HelloChainBoost
 }
-
+// Channel to notify nodes that the simulation has completed
 type ChainBoostDone struct {
     *onet.TreeNode
     SimulationDone
@@ -92,8 +92,9 @@ type ChainBoost struct {
 	//startBCMeasure *monitor.TimeMeasure
 	// onDoneCallback is the callback that will be called at the end of the protocol
 	// onDoneCallback func() //ToDoRaha: define this function and call it when you want to finish the protocol + check when should it be called
-	// channel to notify when we are done -- when a message is sent through this channel the runsimul.go file will catch it and finish the protocol.
-	DoneChainBoost chan bool
+	// channel to notify when the root node is done and that the number of rounds completed == SimulationRounds 
+    // when a message is sent through this channel the runsimul.go file will catch it and finish the protocol.
+	DoneRootNode chan bool
 	// ---------------------------------
 
 	// to avoid conflict while modifying bc files
@@ -208,6 +209,8 @@ func (bz *ChainBoost) Dispatch() error {
 
         case msg := <-bz.ChainBoostDone:
             bz.simulationDone = msg.IsSimulationDone
+            return nil
+
 		// -----------------------------------------------------------------------------
 		// ******* ALL nodes recieve this message to join the protocol and get the config values set
 		// -----------------------------------------------------------------------------

@@ -49,6 +49,10 @@ func (bz *ChainBoost) DispatchProtocol() error {
 	for running {
 		select {
 
+		case msg := <-bz.ChainBoostDone:
+			bz.simulationDone = msg.IsSimulationDone
+			return nil
+
 		// --------------------------------------------------------
 		// message recieved from BLSCoSi (SideChain):
 		// ******* just the current side chain's "LEADER" recieves this msg

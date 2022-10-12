@@ -6,7 +6,7 @@ import (
     "time"
     "fmt"
     "context"
-        
+
     "github.com/BurntSushi/toml"
     MainAndSideChain "github.com/chainBoostScale/ChainBoost/MainAndSideChain"
     "github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi"
@@ -240,7 +240,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
             }
         }()
         ChainBoostProtocol.Start()
-        px := <-ChainBoostProtocol.DoneChainBoost
+        px := <-ChainBoostProtocol.DoneRootNode
         log.LLvl1(rootSC.Server.ServerIdentity.Address, ": Final result is", px)
 
         //childrenWait.Record()
@@ -261,6 +261,16 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 
         // --------------------------------------------------------------
         log.LLvl1(rootSC.Server.ServerIdentity.Address, ": close all other nodes!")
+
+        for _, child := range rootSC.Tree.List() {
+            err := ChainBoostProtocol.SendTo(child, &MainAndSideChain.SimulationDone{
+                                                    IsSimulationDone: true,
+                                                    })
+            if err != nil {
+                log.Lvl1(ChainBoostProtocol.Info(), "couldn't send ChainBoostDone msg to child", child.Name(), "with err:", err)
+            }
+        }
+
         // Test if all ServerIdentities are used in the tree, else we'll run into
         // troubles with CloseAll
         if !rootSC.Tree.UsesList() {
@@ -322,7 +332,7 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
     bz := &MainAndSideChain.ChainBoost{
         TreeNodeInstance:  n,
         Suite:             pairing.NewSuiteBn256(),
-        DoneChainBoost:    make(chan bool, 1),
+        DoneRootNode:    make(chan bool, 1),
         LeaderProposeChan: make(chan bool, 1),
         MCRoundNumber:     1,
         //CommitteeWindow:    10,
