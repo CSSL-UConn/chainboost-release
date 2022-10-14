@@ -10,12 +10,11 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/montanaflynn/stats v0.6.6
 	github.com/stretchr/testify v1.7.1
-	github.com/xuri/excelize/v2 v2.6.0
 	go.dedis.ch/kyber/v3 v3.0.13
 	go.dedis.ch/protobuf v1.0.11
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8
+	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	rsc.io/goversion v1.2.0
 )
@@ -25,18 +24,30 @@ require (
 	github.com/algorand/go-deadlock v0.2.2 // indirect
 	github.com/algorand/msgp v1.1.52 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
+	github.com/google/go-cmp v0.5.6 // indirect
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
+	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/richardlehane/mscfb v1.0.4 // indirect
-	github.com/richardlehane/msoleps v1.0.1 // indirect
-	github.com/xuri/efp v0.0.0-20220407160117-ad0f7a785be8 // indirect
-	github.com/xuri/nfp v0.0.0-20220409054826-5e722a1d9e22 // indirect
+	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	go.dedis.ch/fixbuf v1.0.3 // indirect
-	golang.org/x/crypto v0.0.0-20220408190544-5352b0902921 // indirect
-	golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
+	golang.org/x/tools v0.1.10 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	lukechampine.com/uint128 v1.1.1 // indirect
+	modernc.org/cc/v3 v3.38.1 // indirect
+	modernc.org/ccgo/v3 v3.16.9 // indirect
+	modernc.org/libc v1.19.0 // indirect
+	modernc.org/mathutil v1.5.0 // indirect
+	modernc.org/memory v1.4.0 // indirect
+	modernc.org/opt v0.1.3 // indirect
+	modernc.org/strutil v1.1.3 // indirect
+	modernc.org/token v1.0.1 // indirect
+)
+
+require (
+	golang.org/x/crypto v0.0.0-20220408190544-5352b0902921 // indirect
+	modernc.org/sqlite v1.19.1
 )
 
 go 1.17

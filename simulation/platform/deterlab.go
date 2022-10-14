@@ -106,6 +106,7 @@ type Deterlab struct {
 
 var simulConfig *onet.SimulationConfig
 
+
 // Configure initialises the directories and loads the saved config
 // for Deterlab
 func (d *Deterlab) Configure(pc *Config) {
@@ -364,10 +365,10 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 
 	// Raha: initializing main chain's blockchain -------------------------
 	log.LLvl1("Initializing main chain's blockchain")
-	blockchain.InitializeMainChainBC(
-		rc.Get("FileSizeDistributionMean"), rc.Get("FileSizeDistributionVariance"),
-		rc.Get("ServAgrDurationDistributionMean"), rc.Get("ServAgrDurationDistributionVariance"),
-		rc.Get("Nodes"), rc.Get("SimulationSeed"))
+
+	var expConf blockchain.ExperimentConfig
+	_, err = toml.Decode(string(rc.Toml()), &expConf)
+	blockchain.InitializeMainChainBC(expConf)
 	// Raha: initializing side chain's blockchain -------------------------
 	blockchain.InitializeSideChainBC()
 
@@ -375,10 +376,12 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	//ToDo : is it the best way to do so?!
 	// Copying central bc files to deploy-directory so it gets transferred to distributed servers
 	err = exec.Command("cp", d.simulDir+"/"+"mainchainbc.xlsx", d.deployDir).Run()
+	err = exec.Command("cp", d.simulDir+"/"+"mainchain.db", d.deployDir).Run()
 	if err != nil {
 		log.Fatal("error copying mainchainbc.xlsx: ", err)
 	}
 	err = exec.Command("cp", d.simulDir+"/"+"sidechainbc.xlsx", d.deployDir).Run()
+	err = exec.Command("cp", d.simulDir+"/"+"sidechain.db", d.deployDir).Run()
 	if err != nil {
 		log.Fatal("error copying sidechainbc.xlsx: ", err)
 	}

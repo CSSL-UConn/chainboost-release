@@ -2,6 +2,7 @@ package platform
 
 import (
 	"os"
+	"fmt"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -16,6 +17,7 @@ import (
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"golang.org/x/xerrors"
+	"github.com/BurntSushi/toml"
 )
 
 // Localhost is responsible for launching the app with the specified number of nodes
@@ -163,10 +165,13 @@ func (d *Localhost) Deploy(rc *RunConfig) error {
 	// --------------------------------------------
 	// Raha: initializing main chain's blockchain -------------------------
 	log.LLvl1("Initializing main chain's blockchain")
-	blockchain.InitializeMainChainBC(
-		rc.Get("FileSizeDistributionMean"), rc.Get("FileSizeDistributionVariance"),
-		rc.Get("ServAgrDurationDistributionMean"), rc.Get("ServAgrDurationDistributionVariance"),
-		rc.Get("Nodes"), rc.Get("SimulationSeed"))
+	var expConf blockchain.ExperimentConfig
+	md, err := toml.Decode(string(rc.Toml()), &expConf)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Print(md.Undecoded())
+	blockchain.InitializeMainChainBC(expConf)
 	// Raha: initializing side chain's blockchain -------------------------
 	blockchain.InitializeSideChainBC()
 	// --------------------------------------------
