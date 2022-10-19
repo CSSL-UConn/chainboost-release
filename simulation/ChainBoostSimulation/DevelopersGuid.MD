@@ -57,7 +57,6 @@ err := deployP.Start()
            rc.Get("PercentageTxPay"),
            rc.Get("DistributionMeanFileSize"), rc.Get("DistributionVarianceFileSize"),
            rc.Get("DistributionMeanContractDuration"), rc.Get("DistributionVarianceContractDuration"),
-           rc.Get("DistributionMeanInitialPower"), rc.Get("DistributionVarianceInitialPower"),
            rc.Get("Nodes"),
            rc.Get("BlockSize"))
 // --------------------------------------------

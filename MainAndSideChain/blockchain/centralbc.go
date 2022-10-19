@@ -44,7 +44,6 @@ func generateNormalValues(variance, mean, nodes, SimulationSeed int) []string {
 func InitializeMainChainBC(
 	FileSizeDistributionMean, FileSizeDistributionVariance,
 	ServAgrDurationDistributionMean, ServAgrDurationDistributionVariance,
-	InitialPowerDistributionMean, InitialPowerDistributionVariance,
 	Nodes, SimulationSeed string) {
 	// --------------------- generating normal distributed number based on config params ---------------------
 	intVar, _ := strconv.Atoi(Nodes)
@@ -319,16 +318,7 @@ func InitializeMainChainBC(
 		panic(err)
 	}
 	f.SetCellStyle("PowerTable", "A1", "AAA1", style)
-	// --------------------- distribution of initial power -------------------
-	intVar, _ = strconv.Atoi(InitialPowerDistributionVariance)
-	VarianceInitialPower := intVar
-	intVar, _ = strconv.Atoi(InitialPowerDistributionMean)
-	MeanInitialPower := intVar
-	InitialPowerRow := generateNormalValues(VarianceInitialPower, MeanInitialPower, numberOfNodes, SimulationSeedInt)
-	/*var InitialPowerRowString []string
-	for i:=0;i<len(InitialPowerRow);i++{
-		InitialPowerRowString = append(InitialPowerRowString,InitialPowerRow[i])
-	}*/
+
 	// -----------------------    Filling Power Table's Headers   -----------
 	err = f.SetCellValue("PowerTable", "A1", "Round#/NodeInfo")
 	if err != nil {
@@ -346,12 +336,7 @@ func InitializeMainChainBC(
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
-	// -----------------------    Filling Power Table's first row ------------
-	err = f.SetSheetRow("PowerTable", "B2", &InitialPowerRow)
-	if err != nil {
-		log.LLvl1("Panic Raised:\n\n")
-		panic(err)
-	}
+
 	// --------------------------------------------------------------------
 	// --------------------- Round Table Sheet ---------------------------
 	// --------------------------------------------------------------------
@@ -582,9 +567,7 @@ func InitializeMainChainBC(
 		"\n File Size Distribution Mean: ", FileSizeDistributionMean,
 		"\n File Size Distribution Variance: ", FileSizeDistributionVariance,
 		"\n ServAgr Duration Distribution Mean: ", ServAgrDurationDistributionMean,
-		"\n ServAgr Duration Distribution Variance: ", ServAgrDurationDistributionVariance,
-		"\n Initial Power Distribution Mean: ", InitialPowerDistributionMean,
-		"\n Initial Power Distribution Variance: ", InitialPowerDistributionVariance)
+		"\n ServAgr Duration Distribution Variance: ", ServAgrDurationDistributionVariance)
 }
 
 /*	// in case of initializing a column

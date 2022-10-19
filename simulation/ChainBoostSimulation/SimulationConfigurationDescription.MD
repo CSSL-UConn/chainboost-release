@@ -8,7 +8,6 @@ Config File [ChainBoost.toml](https://github.com/chainBstSc/ChainBoost/blob/mast
 - `SideChainBlockSize` is the maximum block size (in Byte) allowed in each side chain's round
 - `FileSizeDistributionMean` and `FileSizeDistributionVariance` are specifying the mean and variance of the Normal distribution used to generate file-sizes in the ServAgrs
 - `ServAgrDurationDistributionMean` and `ServAgrDurationDistributionVariance` is the same for ServAgrs' duration. Note that duration is in terms of MainChain rounds. (i.e. 10 for a server agreement duration means that the server agreement will expire 10 main chian's round after being started.
-- `InitialPowerDistributionMean` and `InitialPowerDistributionVariance` is the same for the intial power we assign to each server
 - `SectorNumber` is the number of sectors in each block of file with impact the por transaction size. [^sectorNumber]
 - `PercentageTxPay` the block size percentage allocated for regular payment transactions (if regular payment txs are less, other types of txs will take its space)
 - `NumberOfPayTXsUpperBound` the upper bound for a random number of regular payment transactions issued in each round

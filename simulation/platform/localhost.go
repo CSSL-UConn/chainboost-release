@@ -172,7 +172,6 @@ func (d *Localhost) Deploy(rc *RunConfig) error {
 	blockchain.InitializeMainChainBC(
 		rc.Get("FileSizeDistributionMean"), rc.Get("FileSizeDistributionVariance"),
 		rc.Get("ServAgrDurationDistributionMean"), rc.Get("ServAgrDurationDistributionVariance"),
-		rc.Get("InitialPowerDistributionMean"), rc.Get("InitialPowerDistributionVariance"),
 		rc.Get("Nodes"), rc.Get("SimulationSeed"))
 	// Raha: initializing side chain's blockchain -------------------------
 	blockchain.InitializeSideChainBC()
