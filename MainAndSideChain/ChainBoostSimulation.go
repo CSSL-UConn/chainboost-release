@@ -41,14 +41,15 @@ type HelloChan struct {
 	*onet.TreeNode
 	HelloChainBoost
 }
+
 // Channel to notify nodes that the simulation has completed
 type ChainBoostDone struct {
-    *onet.TreeNode
-    SimulationDone
+	*onet.TreeNode
+	SimulationDone
 }
 
 type SimulationDone struct {
-    IsSimulationDone bool
+	IsSimulationDone bool
 }
 
 // joined is sent to root to let the root node that this node is joined to the simulation
@@ -77,7 +78,7 @@ type ChainBoost struct {
 	*onet.TreeNodeInstance
 	ECPrivateKey vrf.VrfPrivkey
 
-    ChainBoostDone chan ChainBoostDone
+	ChainBoostDone chan ChainBoostDone
 	// channel used to let all servers that the protocol has started
 	HelloChan chan HelloChan
 	// channel used by each round's leader to let all servers that a new round has come
@@ -89,11 +90,10 @@ type ChainBoost struct {
 	// suite network.Suite
 	// to match the suit in blscosi
 	Suite *pairing.SuiteBn256
-	//startBCMeasure *monitor.TimeMeasure
 	// onDoneCallback is the callback that will be called at the end of the protocol
 	// onDoneCallback func() //ToDoRaha: define this function and call it when you want to finish the protocol + check when should it be called
-	// channel to notify when the root node is done and that the number of rounds completed == SimulationRounds 
-    // when a message is sent through this channel the runsimul.go file will catch it and finish the protocol.
+	// channel to notify when the root node is done and that the number of rounds completed == SimulationRounds
+	// when a message is sent through this channel the runsimul.go file will catch it and finish the protocol.
 	DoneRootNode chan bool
 	// ---------------------------------
 
@@ -162,7 +162,7 @@ type ChainBoost struct {
 	SummPoRTxs map[int]int
 	SCSig      BLSCoSi.BlsSignature
 
-    simulationDone bool
+	simulationDone bool
 }
 
 /* ----------------------------------- FUNCTIONS -------------------------------------------------
@@ -207,9 +207,9 @@ func (bz *ChainBoost) Dispatch() error {
 	for running {
 		select {
 
-        case msg := <-bz.ChainBoostDone:
-            bz.simulationDone = msg.IsSimulationDone
-            return nil
+		case msg := <-bz.ChainBoostDone:
+			bz.simulationDone = msg.IsSimulationDone
+			return nil
 
 		// -----------------------------------------------------------------------------
 		// ******* ALL nodes recieve this message to join the protocol and get the config values set
@@ -296,9 +296,9 @@ func (bz *ChainBoost) Dispatch() error {
 				bz.SideChainRootPostNewRound(msg)
 			}()
 		case sig := <-bz.BlsCosi.FinalSignature:
-            if bz.simulationDone == true {
-                return nil
-            }
+			if bz.simulationDone == true {
+				return nil
+			}
 
 			if err := BLSCoSi.BdnSignature(sig).Verify(bz.BlsCosi.Suite, bz.BlsCosi.Msg, bz.BlsCosi.SubTrees[0].Roster.Publics()); err == nil {
 				log.Lvl1("final result SC:", bz.Name(), " : ", bz.BlsCosi.BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")

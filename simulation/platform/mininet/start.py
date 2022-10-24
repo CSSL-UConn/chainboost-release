@@ -145,8 +145,6 @@ class Conode(Host):
             socat="socat - %s:%s:%d" % (socatSend, self.gw, socatPort)
 
         args = "-debug %s -address %s:2000 -simul %s -suite %s" % (debugLvl, self.IP(), self.simul, self.suite)
-        if True:
-            args += " -monitor %s:10000" % global_root
         ldone = ""
         # When the first conode on a physical server ends, tell `start.py`
         # to go on. ".0.1" is the BaseRouter.

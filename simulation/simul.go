@@ -25,9 +25,6 @@ import (
 // file, it will be derived from it automatically
 var serverAddress string
 
-// ip addr of the logger to connect to
-var monitorAddress string
-
 // Simul is != "" if this node needs to start a simulation of that protocol
 var simul string
 
@@ -60,7 +57,6 @@ var SimState = 2
 
 func init() {
 	flag.StringVar(&serverAddress, "address", "", "our address to use")
-	flag.StringVar(&monitorAddress, "monitor", "", "remote monitor")
 	flag.StringVar(&simul, "simul", "", "start simulating that protocol")
 	flag.StringVar(&Suite, "suite", "Ed25519", "cryptographic suite to use")
 	//----
@@ -106,7 +102,7 @@ func Start(rcs ...string) {
 		log.Lvl3("simul and PercentageTxPay flags are:", simul, " ", PercentageTxPay)
 		// -------------------------------------
 		//get current vm's ip
-		var serverAddress, monitorAddress string
+		var serverAddress string
 		conn, er := net.Dial("udp", "8.8.8.8:80")
 		if er != nil {
 			log.Fatal(er)
@@ -117,17 +113,13 @@ func Start(rcs ...string) {
 		host := localAddr.IP.String()
 		serverAddress = host
 
-		// : port 2000 is bcz in start.py file they have initialized it with port 2000!
-		monitorAddress = "192.168.3.220:2000"
 		//suite = "bn256.adapter"
-
-		//todo: what monitor is for? what port?
 
 		err := platform.Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize,
 			SectorNumber, NumberOfPayTXsUpperBound, SimulationRounds, SimulationSeed,
 			NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow,
 			MCRoundPerEpoch, SimState,
-			Suite, serverAddress, simul, monitorAddress)
+			Suite, serverAddress, simul)
 		if err != nil {
 			log.LLvl1("Raha: err returned from simulate: ", err)
 			log.ErrFatal(err)

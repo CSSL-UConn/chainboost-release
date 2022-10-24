@@ -74,7 +74,6 @@ type Config struct {
    // string denoting the group used for simulations
    // XXX find ways to remove that "one suite" assumption
    Suite       string
-   MonitorPort int
    Debug       int
    // : adding some other system-wide configurations
    RoundDuration      string
@@ -90,7 +89,6 @@ This struct is used for all platforms (local host, mininet, deterlab). This mean
 
 ```
 deployP.Configure(&platform.Config{
-MonitorPort: monitorPort,
 Debug:       log.DebugVisible(),
 Suite:       runconfigs[0].Get("Suite"),
 // : adding some other system-wide configurations
@@ -135,7 +133,6 @@ func (d *Localhost) Configure(pc *Config) {
    d.localDir = pwd
    d.debug = pc.Debug
    d.running = false
-   d.monitorPort = pc.MonitorPort
    if d.Simulation == "" {
        log.Fatal("No simulation defined in simulation")
    }

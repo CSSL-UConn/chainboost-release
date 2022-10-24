@@ -15,8 +15,6 @@ import (
 	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
-
-	//"github.com/chainBoostScale/ChainBoost/simulation/monitor"
 	"golang.org/x/xerrors"
 )
 
@@ -59,9 +57,6 @@ type Localhost struct {
 
 	// errors go here:
 	errChan chan error
-
-	// Listening monitor port
-	monitorPort int
 
 	// Suite used for the simulation
 	Suite string
@@ -122,7 +117,6 @@ func (d *Localhost) Configure(pc *Config) {
 	d.localDir = pwd
 	d.debug = pc.Debug
 	d.running = false
-	d.monitorPort = pc.MonitorPort
 	if d.Simulation == "" {
 		log.Fatal("No simulation defined in simulation")
 	}
@@ -246,11 +240,6 @@ func (d *Localhost) Start(args ...string) error {
 	// 	}
 	// 	////log.Lvlf3(outStr)
 	// }
-	// : commented. can we uste monitor  or not?!
-	// err := monitor.ConnectSink("localhost:" + strconv.Itoa(d.monitorPort))
-	// if err != nil {
-	// 	return xerrors.Errorf("monitor: %v", err)
-	// }
 
 	for index := 0; index < d.servers; index++ {
 		////log.Lvlf3("Starting server number: ", index)
@@ -261,7 +250,7 @@ func (d *Localhost) Start(args ...string) error {
 
 			err := Simulate(d.PercentageTxPay, d.MCRoundDuration, d.MainChainBlockSize, d.SideChainBlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.SimulationRounds,
 				d.SimulationSeed, d.NbrSubTrees, d.Threshold, d.SCRoundDuration, d.CommitteeWindow, d.MCRoundPerEpoch, d.SimState,
-				d.Suite, host, d.Simulation, "")
+				d.Suite, host, d.Simulation)
 			if err != nil {
 				log.Error("Error running localhost", h, ":", err)
 				d.errChan <- err
@@ -310,8 +299,6 @@ func (d *Localhost) Wait() error {
 	if errCleanup != nil {
 		log.Error("Fail to restore the cwd: " + errCleanup.Error())
 	}
-	// : commented
-	//monitor.EndAndCleanup()
-	//log.Lvlf3("Processes finished")
+	log.Lvlf3("Processes finished")
 	return err
 }

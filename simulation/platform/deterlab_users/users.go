@@ -17,8 +17,6 @@ import (
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	simul "github.com/chainBoostScale/ChainBoost/simulation"
-
-	//"github.com/chainBoostScale/ChainBoost/simulation/monitor"
 	"github.com/chainBoostScale/ChainBoost/simulation/platform"
 )
 
@@ -116,27 +114,12 @@ func main() {
 		log.LLvl1("Only cleaning up - returning")
 		return
 	}
-	// ADDITIONS : the monitoring part
-	// Proxy will listen on Sink:SinkPort and redirect every packet to
-	// RedirectionAddress:SinkPort-1. With remote tunnel forwarding it will
-	// be forwarded to the real sink
-	//-------------------
-	//todo: what proxy and monitor port are doing?
-	// addr, port := deter.ProxyAddress, uint16(deter.MonitorPort+1)
-	// log.LLvl1("Launching proxy redirecting to", addr, ":", port)
-	// prox, err := monitor.NewProxy(uint16(deter.MonitorPort), addr, port)
-	// if err != nil {
-	// 	log.Fatal("Couldn't start proxy:", err)
-	// }
-	// go prox.Run()
-	// log.LLvl1("starting", deter.Servers, "cothorities for a total of", deter.Hosts, "processes.")
 	//-------------------
 	killing := false
 	for i, phys := range deter.Phys {
 		wg.Add(1)
 		go func(phys, internal string) {
 			defer wg.Done()
-			monitorAddr := deter.MonitorAddress + ":" + strconv.Itoa(deter.MonitorPort)
 			// If PreScript is defined, run the appropriate script _before_ the simulation.
 			if deter.PreScript != "" {
 				log.LLvl1(": deter.PreScript running?")
@@ -182,7 +165,6 @@ func main() {
 
 			args := " -address=" + internal +
 				" -simul=" + deter.Simulation +
-				" -monitor=" + monitorAddr +
 				//" -debug=" + strconv.Itoa(log.DebugVisible()) +
 				" -Debug=" + strconv.Itoa(simul.Debug) +
 				" -suite=" + simul.Suite +

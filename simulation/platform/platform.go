@@ -64,9 +64,8 @@ type Platform interface {
 type Config struct {
 	// string denoting the group used for simulations
 	// XXX find ways to remove that "one suite" assumption
-	Suite       string
-	MonitorPort int
-	Debug       int
+	Suite string
+	Debug int
 	// : adding some other system-wide configurations, these fields are those who are needed in the protocol
 	MCRoundDuration          int
 	PercentageTxPay          int
@@ -98,10 +97,6 @@ func NewPlatform(t string) Platform {
 		p = &Deterlab{}
 	case localhost:
 		p = &Localhost{}
-	case mininet:
-		var err error
-		p, err = newMiniNet()
-		log.ErrFatal(err)
 	}
 	return p
 }

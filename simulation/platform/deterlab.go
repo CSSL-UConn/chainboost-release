@@ -69,17 +69,6 @@ type Deterlab struct {
 	sshDeter chan string
 	// Whether the simulation is started
 	started bool
-
-	// ProxyAddress : the proxy will redirect every traffic it
-	// receives to this address
-	ProxyAddress string
-	// MonitorAddress is the address given to clients to connect to the monitor
-	// It is actually the Proxy that will listen to that address and clients
-	// won't know a thing about it
-	MonitorAddress string
-	// Port number of the monitor and the proxy
-	MonitorPort int
-
 	// Number of available servers
 	Servers int
 	// Name of the simulation
@@ -131,8 +120,7 @@ func (d *Deterlab) Configure(pc *Config) {
 	os.RemoveAll(d.deployDir)
 	os.Mkdir(d.deployDir, 0770)
 	os.Mkdir(d.buildDir, 0770)
-	d.MonitorPort = pc.MonitorPort
-	log.LLvl1("Dirs are:", pwd, d.deployDir, "configed monitor port is:", pc.MonitorPort)
+	log.LLvl1("Dirs are:", pwd, d.deployDir)
 	d.loadAndCheckDeterlabVars()
 	// ------------------------------
 	// : adding some other system-wide configurations
@@ -311,8 +299,6 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 		}
 	}
 
-	// deploy will get rsync to /remote on the NFS
-
 	log.LLvl1("Deterlab: Deploying and writing config-files")
 	sim, err := onet.NewSimulation(d.Simulation, string(rc.Toml()))
 	if err != nil {
@@ -433,29 +419,9 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	return nil
 }
 
-// Start creates a tunnel for the monitor-output and contacts the Deterlab-
-// server to run the simulation
+// Start contacts the Deterlab server to run the simulation
 func (d *Deterlab) Start(args ...string) error {
-	// setup port forwarding for viewing log server
 	d.started = true
-	// Remote tunneling : the sink port is used both for the sink and for the
-	// proxy => the proxy redirects packets to the same port the sink is
-	// listening.
-	// -n = stdout == /Dev/null, -N => no command stream, -T => no tty
-
-	//todo: commented temp  do we need them?
-	log.LLvl1("Setup remote port forwarding skipped")
-	// redirection := strconv.Itoa(d.MonitorPort) + ":" + d.ProxyAddress + ":" + strconv.Itoa(d.MonitorPort)
-	// cmd := []string{"-nNTf", "-o", "StrictHostKeyChecking=no", "-o", "ExitOnForwardFailure=yes", "-R",
-	// 	redirection, fmt.Sprintf("%s@%s", d.Login, d.Host)}
-	// exCmd := exec.Command("ssh", cmd...)
-	// if err := exCmd.Start(); err != nil {
-	// 	log.Fatal("Failed to start the ssh port forwarding:", err)
-	// }
-	// if err := exCmd.Wait(); err != nil {
-	// 	log.Fatal("ssh port forwarding exited in failure:", err)
-	// }
-	// log.LLvl1("Setup remote port forwarding", cmd)
 	//----------
 	// ToDoRaha: let's not call ./user locally
 	// go func() {
@@ -501,9 +467,7 @@ func (d *Deterlab) Wait() error {
 func (d *Deterlab) loadAndCheckDeterlabVars() {
 	deter := Deterlab{}
 	err := onet.ReadTomlConfig(&deter, "deter.toml")
-	d.Host, d.Login, d.Project, d.Experiment, d.ProxyAddress, d.MonitorAddress =
-		deter.Host, deter.Login, deter.Project, deter.Experiment,
-		deter.ProxyAddress, deter.MonitorAddress
+	d.Host, d.Login, d.Project, d.Experiment = deter.Host, deter.Login, deter.Project, deter.Experiment
 
 	if err != nil {
 		log.LLvl1("Couldn't read config-file - asking for default values")
@@ -525,13 +489,6 @@ func (d *Deterlab) loadAndCheckDeterlabVars() {
 
 	if d.Experiment == "" {
 		d.Experiment = readString("Please enter the Experiment on "+d.Project, "Dissent-CS")
-	}
-
-	if d.MonitorAddress == "" {
-		d.MonitorAddress = readString("Please enter the Monitor address (where clients will connect)", "csi-lab-ssh.engr.uconn.edu:22")
-	}
-	if d.ProxyAddress == "" {
-		d.ProxyAddress = readString("Please enter the proxy redirection address", "localhost")
 	}
 
 	onet.WriteTomlConfig(*d, "deter.toml")

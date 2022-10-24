@@ -22,8 +22,7 @@ func TestLocal(t *testing.T) {
 	log.ErrFatal(os.Chdir(tmp))
 
 	l.Configure(&Config{
-		Debug:       0,
-		MonitorPort: 10000,
+		Debug: 0,
 	})
 	l.Build("test")
 	l.Cleanup()

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/chainBoostScale/ChainBoost/onet/log"
-	"github.com/chainBoostScale/ChainBoost/simulation/monitor"
 	"github.com/chainBoostScale/ChainBoost/simulation/platform"
 	"golang.org/x/xerrors"
 )
@@ -22,7 +21,6 @@ var nobuild = false
 var clean = true
 var build = "simul"
 var machines = 3
-var monitorPort = monitor.DefaultSinkPort
 var simRange = ""
 var race = false
 var runWait = 180 * time.Second
@@ -39,7 +37,6 @@ func init() {
 	flag.StringVar(&build, "build", "", "List of packages to build")
 	flag.BoolVar(&race, "race", false, "Build with go's race detection enabled (doesn't work on all platforms)")
 	flag.IntVar(&machines, "machines", machines, "Number of machines on Deterlab")
-	flag.IntVar(&monitorPort, "mport", monitorPort, "Port-number for monitor")
 	flag.StringVar(&simRange, "range", simRange, "Range of simulations to run. 0: or 3:4 or :4")
 	flag.DurationVar(&runWait, "runwait", runWait, "How long to wait for each simulation to finish - overwrites .toml-value")
 	flag.DurationVar(&experimentWait, "experimentwait", experimentWait, "How long to wait for the whole experiment to finish")
@@ -95,9 +92,8 @@ func startBuild() {
 		SimState, _ := strconv.Atoi(runconfigs[0].Get("SimState"))
 
 		deployP.Configure(&platform.Config{
-			MonitorPort: monitorPort,
-			Debug:       log.DebugVisible(),
-			Suite:       runconfigs[0].Get("Suite"),
+			Debug: log.DebugVisible(),
+			Suite: runconfigs[0].Get("Suite"),
 			// : adding some other system-wide configurations
 			MCRoundDuration:          MCRoundDuration,
 			PercentageTxPay:          PercentageTxPay,
@@ -135,14 +131,11 @@ func startBuild() {
 			// 	panic("Raha: set timeout for the experiment from the config file")
 			// }
 			go func() {
-				log.LLvl1(": running RunTests func")
 				RunTests(deployP, logname, runconfigs)
-				log.LLvl1(": RunTests func returned")
 				testsDone <- true
 			}()
 			select {
 			case <-testsDone:
-				log.LLvl1("Done with test", simulation)
 				// case <-time.After(timeout):
 				// 	log.Fatal("Test failed to finish (by returning from RunTests) in", timeout)
 			}
@@ -194,57 +187,21 @@ func RunTests(deployP platform.Platform, name string, runconfigs []*platform.Run
 		// run test t nTimes times
 		// take the average of all successful runs
 		log.LLvl1("Running test with config:", rc)
-		stats, err := RunTest(deployP, rc)
+		err := RunTest(deployP, rc)
 		if err != nil {
 			log.Error("Error running test:", err)
 			continue
 		}
-		log.Lvl5("Test results:", stats[0])
-
-		// for j, bucketStat := range stats {
-		// 	if j >= len(files) {
-		// 		f, err := os.OpenFile(generateResultFileName(name, j), args, 0660)
-		// 		if err != nil {
-		// 			log.Fatal("error opening test file:", err)
-		// 		}
-		// 		err = f.Sync()
-		// 		if err != nil {
-		// 			log.Fatal("error syncing test file:", err)
-		// 		}
-
-		// 		files = append(files, f)
-		// 	}
-		// 	f := files[j]
-
-		// 	if i == 0 {
-		// 		bucketStat.WriteHeader(f)
-		// 	}
-		// 	if rc.Get("IndividualStats") != "" {
-		// 		err := bucketStat.WriteIndividualStats(f)
-		// 		log.ErrFatal(err)
-		// 	} else {
-		// 		bucketStat.WriteValues(f)
-		// 	}
-		// 	err = f.Sync()
-		// 	if err != nil {
-		// 		log.Fatal("error syncing data to test file:", err)
-		// 	}
-		// }
 	}
 }
 
 // RunTest a single test - takes a test-file as a string that will be copied
 // to the deterlab-server
-func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stats, error) {
+func RunTest(deployP platform.Platform, rc *platform.RunConfig) error {
 	CheckHosts(rc)
 	rc.Delete("simulation")
-	// stats := []*monitor.Stats{
-	// 	// this is the global bucket
-	// 	monitor.NewStats(rc.Map(), "hosts", "bf"),
-	// }
 
 	//todoRaha : temp commented
-
 	// if err := deployP.Cleanup(); err != nil {
 	// 	log.Error(err)
 	// 	return nil, xerrors.Errorf("cleanup: %v", err)
@@ -252,35 +209,10 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 
 	if err := deployP.Deploy(rc); err != nil {
 		log.Error(err)
-		return nil, xerrors.Errorf("deploy: %v", err)
+		return xerrors.Errorf("deploy: %v", err)
 	}
-	//m := monitor.NewMonitor(stats[0])
-	// m.SinkPort = uint16(monitorPort)
-	// defer m.Stop()
-
-	// // create the buckets that will split the statistics of the hosts
-	// // according to the configuration file
-	// buckets, err := rc.GetBuckets()
-	// if err != nil {
-	// 	if err != platform.ErrorFieldNotPresent {
-	// 		return nil, xerrors.Errorf("db bucket: %v", err)
-	// 	}
-
-	// 	// Do nothing, there won't be any bucket.
-	// } else {
-	// 	for i, rules := range buckets {
-	// 		bs := monitor.NewStats(rc.Map(), "hosts", "bf")
-	// 		stats = append(stats, bs)
-	// 		m.InsertBucket(i, rules, bs)
-	// 	}
-	// }
 
 	done := make(chan error)
-	// go func() {
-	// 	if err := m.Listen(); err != nil {
-	// 		log.Error("error while closing monitor: " + err.Error())
-	// 	}
-	// }()
 
 	go func() {
 		var err error
@@ -292,14 +224,16 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 			return
 		}
 
-		if err = deployP.Wait(); err != nil {
-			log.Error("Test failed:", err)
-			if err := deployP.Cleanup(); err != nil {
-				log.LLvl1("Couldn't cleanup platform:", err)
-			}
-			done <- err
-			return
-		}
+		log.LLvl1("\n======= ******* ======== \nSimulation is built and sent over to the remote server.\nGo to the remote directory created on the home. \nand then run the users exe file there\n======= ******* ======== \n")
+
+		// if err = deployP.Wait(); err != nil {
+		// 	log.Error("Test failed:", err)
+		// 	if err := deployP.Cleanup(); err != nil {
+		// 		log.LLvl1("Couldn't cleanup platform:", err)
+		// 	}
+		// 	done <- err
+		// 	return
+		// }
 		done <- nil
 	}()
 
@@ -312,10 +246,10 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) ([]*monitor.Stat
 	select {
 	case err := <-done:
 		if err != nil {
-			return nil, xerrors.Errorf("simulation error: %v", err)
+			return xerrors.Errorf("simulation error: %v", err)
 		}
 		//return stats, nil
-		return nil, nil
+		return nil
 		// case <-time.After(timeout):
 		// 	return nil, xerrors.New("simulation timeout")
 	}

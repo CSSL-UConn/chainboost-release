@@ -58,7 +58,6 @@ func (e *simulation) Run(config *onet.SimulationConfig) error {
 	log.LLvl1("Size is:", size, "rounds:", e.Rounds)
 	for round := 0; round < e.Rounds; round++ {
 		log.LLvl1("Starting round", round)
-		round := monitor.NewTimeMeasure("round")
 		p, err := config.Overlay.CreateProtocol("Count", config.Tree, onet.NilServiceID)
 		if err != nil {
 			return xerrors.Errorf("creating protocol: %v", err)
@@ -80,7 +79,6 @@ func (e *simulation) Run(config *onet.SimulationConfig) error {
 	log.LLvl1("Size is:", size, "rounds:", e.Rounds)
 	for round := 0; round < e.Rounds; round++ {
 		log.LLvl1("Starting round", round)
-		//round := monitor.NewTimeMeasure("round")
 		p, err := config.Overlay.CreateProtocol("ChainBoost", config.Tree, onet.NilServiceID)
 		if err != nil {
 			return xerrors.Errorf("creating protocol: %v", err)
