@@ -29,6 +29,8 @@ type NetworkConfig struct {
 }
 
 type ExperimentConfig struct {
+    Simulation               string
+    Suite                    string
     MCRoundDuration          int
     PercentageTxPay          int
     MainChainBlockSize       int
@@ -44,6 +46,8 @@ type ExperimentConfig struct {
     CommitteeWindow int
     MCRoundPerEpoch int
     SimState        int
+    NumberOfActiveContractsPerServer int
+    PayPercentOfTransactions float64
 }
 
 type FQSSHClient struct {
@@ -136,7 +140,7 @@ func forceCloseExperiments(clients []FQSSHClient){
 }
 
 /// Runs the experiment in the remote virtual machines then copies the result back into the local
-func runExperiments(sshClients []FQSSHClient, netConf *NetworkConfig){
+func runExperiments(sshClients []FQSSHClient, netConf *NetworkConfig, expConf *ExperimentConfig){
     // Start Running the experiments.
     s := spinner.New(spinner.CharSets[38], 100*time.Millisecond)  // Build our new spinner
     s.Prefix = "Running the experiment, please wait: "
@@ -149,7 +153,45 @@ func runExperiments(sshClients []FQSSHClient, netConf *NetworkConfig){
         go func(client FQSSHClient) {
             failure := false
             defer waitGroup.Done()
-            cmd := fmt.Sprintf("cd ~/%s && ./%s", netConf.RemoteFolder, netConf.Executable)
+            expArgs := fmt.Sprintf( " -address=%s" +
+                                    " -simul=%s" +
+                                    " -suite=%s" +
+                                    " -PercentageTxPay=%d" +
+                                    " -MCRoundDuration=%d" +
+                                    " -MainChainBlockSize=%d" +
+                                    " -SideChainBlockSize=%d" +
+                                    " -SectorNumber=%d" +
+                                    " -NumberOfPayTXsUpperBound=%d" +
+                                    " -SimulationRounds=%d" +
+                                    " -SimulationSeed=%d" +
+                                    " -NbrSubTrees=%d" +
+                                    " -Threshold=%d" +
+                                    " -SCRoundDuration=%d" +
+                                    " -CommitteeWindow=%d" +
+                                    " -MCRoundPerEpoch=%d" +
+                                    " -SimState=%d" +
+                                    " -NumberOfActiveContractsPerServer=%d"+
+                                    " -PayPercentOfTransactions=%f",
+                                    client.host,
+                                    expConf.Simulation,
+                                    expConf.Suite,
+                                    expConf.PercentageTxPay,
+                                    expConf.MCRoundDuration,
+                                    expConf.MainChainBlockSize,
+                                    expConf.SideChainBlockSize,
+                                    expConf.SectorNumber,
+                                    expConf.NumberOfPayTXsUpperBound,
+                                    expConf.SimulationRounds,
+                                    expConf.SimulationSeed,
+                                    expConf.NbrSubTrees,
+                                    expConf.Threshold,
+                                    expConf.SCRoundDuration,
+                                    expConf.CommitteeWindow,
+                                    expConf.MCRoundPerEpoch,
+                                    expConf.SimState,
+                                    expConf.NumberOfActiveContractsPerServer,
+                                    expConf.PayPercentOfTransactions)
+            cmd := fmt.Sprintf("cd ~/%s && ./%s %s", netConf.RemoteFolder, netConf.Executable, expArgs)
             out, err := runCommand(client.client, cmd)
             destination := fmt.Sprintf("%s/stdout.txt", client.host)
             writeToFile(destination, out)
@@ -249,12 +291,11 @@ func main(){
     }
 
     // Read Config Files
-    /*
     expConf, err := openExperimentConfig(os.Args[1])
         if err != nil {
         logger.Fatal(err)
     }
-    */
+    
     netConf, err := openNetworkConfig(os.Args[2])
     if err != nil {
         logger.Fatal(err)
@@ -312,7 +353,7 @@ func main(){
     }
 
     // Run the experiment
-    runExperiments(sshClients, netConf)
+    runExperiments(sshClients, netConf, expConf)
 
     // Stop Running the experiments.
     forceCloseExperiments(sshClients)

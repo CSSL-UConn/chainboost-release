@@ -192,8 +192,6 @@ func RunTests(deployP platform.Platform, name string, runconfigs []*platform.Run
 			continue
 		}
 		//log.Lvl5("Test results:", stats[0])
-
-
 		// for j, bucketStat := range stats {
 		// 	if j >= len(files) {
 		// 		f, err := os.OpenFile(generateResultFileName(name, j), args, 0660)
@@ -264,6 +262,8 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) error {
 			done <- nil
 		} else if platformDst == "deterlab" {
 			log.LLvl1("\n======= ******* ======== \nSimulation is built and sent over to the remote server.\nGo to the remote directory created on the home. \nand then run the users exe file there\n======= ******* ======== \n")
+			done <- nil
+		} else if platformDst == "cssl"{
 			done <- nil
 		}
 	}()

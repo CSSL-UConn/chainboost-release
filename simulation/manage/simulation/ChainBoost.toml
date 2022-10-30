@@ -26,6 +26,8 @@ MCRoundDuration = 10
 SCRoundDuration = 1
 SimState = 2
 Nodes = 100
+VMs = ["192.168.3.200"]
+
 
 Hosts
 100

@@ -7,7 +7,10 @@ all: build
 mk-outdir:
 	@mkdir -p simul
 
-build: mk-outdir
+mk-simul-files:
+	@go test -platform=cssl 2>&1 > /dev/null
+
+build: mk-outdir mk-simul-files
 	@for i in ${ARCH};do\
 		for j in ${OS}; do\
 			mkdir -p users/$$j/$$i;\

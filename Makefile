@@ -32,8 +32,7 @@ build: clean create-builddirs copy-configs build-deterlab build-simul build-orch
 
 copy-configs:
 	@echo "Copying Excel Files and Configs"
-	@cp -r ${SIMUL}/*.toml build/
-	@cp -r ${SIMUL}/*.xlsx build/
+	@cp -r ${SIMUL}/deploy/*.* build/
 	@cp -r ${ORCHESTRATOR}/ssh.toml build/
 
 clean:
@@ -46,8 +45,9 @@ deploy: all
 	$(eval OS:=$(shell echo ${OS} | awk '{print tolower($0)}'))
 	echo ${OS}
 	echo ${ARCH}
-	rsync -avz build/*.xlsx ${USER}@csi-lab-ssh.engr.uconn.edu:~/remote
+	rsync -avz build/*.db ${USER}@csi-lab-ssh.engr.uconn.edu:~/remote
 	rsync -avz build/*.toml ${USER}@csi-lab-ssh.engr.uconn.edu:~/remote
+	rsync -avz build/*.bin ${USER}@csi-lab-ssh.engr.uconn.edu:~/remote
 	rsync -avz build/simul/${OS}/${ARCH}/simul ${USER}@csi-lab-ssh.engr.uconn.edu:~/remote
 	rsync -avz build/users/${OS}/${ARCH}/users ${USER}@csi-lab-ssh.engr.uconn.edu:~/remote
 	rsync -avz build/orchestrator/${OS}/${ARCH}/orchestrator ${USER}@csi-lab-ssh.engr.uconn.edu:~/remote
