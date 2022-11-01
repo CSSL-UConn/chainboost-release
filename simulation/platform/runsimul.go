@@ -35,7 +35,6 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		log.LLvl1(err, serverAddress)
 		return err
 	}
-
 	sims := make([]onet.Simulation, len(scs))
 	simulInitID := network.RegisterMessage(simulInit{})
 	simulInitDoneID := network.RegisterMessage(simulInitDone{})
@@ -54,6 +53,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 	for i, sc := range scs {
 		// Starting all servers for that server
 		server := sc.Server
+
 
 		log.Lvl4("in function simulate: ", serverAddress, "Starting server", server.ServerIdentity.Address)
 		// Launch a server and notifies when it's done
@@ -121,8 +121,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol
 		/*
 		   cosiProtocol.CreateProtocol = rootService.CreateProtocol //: it used to be initialized by this function call
-		   params from config file:
-		   cosiProtocol.Timeout = time.Duration(ProtocolTimeout) * time.Second */
+		   params from config file: */
 		cosiProtocol.Threshold = Threshold
 		if NbrSubTrees > 0 {
 			err := cosiProtocol.SetNbrSubTree(NbrSubTrees)
@@ -139,7 +138,6 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			return xerrors.New("couldn't create protocol: " + err.Error())
 		}
 		ChainBoostProtocol := p.(*MainAndSideChain.ChainBoost)
-		//ChainBoostProtocol.SetTimeout(time.Duration(TimeOut) * time.Second)
 		// passing our system-wide configurations to our protocol
 		ChainBoostProtocol.PercentageTxPay = PercentageTxPay
 		ChainBoostProtocol.MCRoundDuration = MCRoundDuration
@@ -218,6 +216,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		// wgSimulInit.Wait()
 		// syncWait.Record()
 		// simError = rootSim.Run(rootSC)
+
 
 		// --------------------------------------------------------------
 		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": close all other nodes!")

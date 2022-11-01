@@ -228,7 +228,6 @@ func (bz *ChainBoost) Dispatch() error {
 			// bls cosi config
 			bz.NbrSubTrees = msg.NbrSubTrees
 			bz.BlsCosi.Threshold = msg.Threshold
-			//bz.BlsCosi.Timeout = msg.ProtocolTimeout
 			bz.SimState = msg.SimState
 			if msg.NbrSubTrees > 0 {
 				err := bz.BlsCosi.SetNbrSubTree(msg.NbrSubTrees)

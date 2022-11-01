@@ -76,3 +76,26 @@ it allows the following commands:
 
 The in-folder Makefiles are helper Makefiles for the one in the root of the repo, and are used to build their respective binaries
 
+# Time Out
+Timeouts are parsed according to Go's time.Duration: A duration string
+is a possibly signed sequence of decimal numbers, each with optional
+fraction and a unit suffix, such as "300ms", "-1.5h" or "2h45m". Valid
+time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+
+This is a list of timeouts that we want to control or may want to keep static but edit according to our network setting:
+
+### Network Level
+- In the overlay layer, there is a GlobalProtocolTO of 10 mins (I increased it from 1 min to be sure it is not causing error!), 
+- In the Server file, in TryConn a 2 sec listening TO and a 10 sec TO for getting access to IPs
+- In the TCP files, a globalTO of 1 minute (increased now!) for connection TO and a dialTO of 1 minute (increased now!) which the later has a function for changing it.
+- A 20 seconds TO for SSH
+
+###  A speciall TimeOut
+- A joining TO of 20 sec for trying to invite the nodes to join the simulation.
+
+### Prrotocol(s) Level
+- BLSCoSi has a TO which is set to 100 secs and is for waiting for response from the subprotocol
+
+In the `ChainBoost.toml` config file:
+- A `RunWait` parameter which shows how many seconds to wait for a run (one line of .toml-file) to finish
+- A `timeout` shows how many seconds to wait for the while experiment to finish (default: RunWait \* #Runs)
