@@ -211,7 +211,7 @@ func InitalizeSideChainDbTables() error{
     
     _, err = sidechainDb.Query(`
         CREATE TABLE RoundTable (
-            "RoundNumber" integer primary key,
+            "RoundNumber" integer,
             "BCSize" integer,
             "RoundLeader" text,
             "PoRTx" integer,
@@ -230,7 +230,7 @@ func InitalizeSideChainDbTables() error{
     
     _, err = sidechainDb.Query(`
         CREATE TABLE OverallEvaluation (
-            "RoundNbr" integer primary key,
+            "RoundNbr" integer,
             "BCSize" integer,
             "OverallPoRTxNbr" integer,
             "OverallAveWait" integer,
@@ -519,13 +519,7 @@ func InsertIntoSideChainRoundTable(roundNbr int,
         return err
     }
     defer sidechainDb.Close()
-    exists := 0
-    err = sidechainDb.QueryRow("Select RoundNumber FROM RoundTable where RoundNumber = ?", roundNbr).Scan(&exists)
-    if err != nil && err != sql.ErrNoRows {
-        panic(err)
-    }
-    if err == sql.ErrNoRows {
-        _, err := sidechainDb.Exec(`INSERT INTO RoundTable(
+    _, err = sidechainDb.Exec(`INSERT INTO RoundTable(
                                         RoundNumber,
                                         BCSize,
                                         RoundLeader,
@@ -540,24 +534,8 @@ func InsertIntoSideChainRoundTable(roundNbr int,
                                  roundNbr, BCSize, roundLeader, PorTx, startTime.Format(time.RFC3339), aveWait,
                                  TotalNumTx, BlockSpaceFull, TimeTaken, McRound)
 
-        return err
-    } else {
-        _, err := sidechainDb.Exec(`Update RoundTable SET
-                                        BCSize=?,
-                                        RoundLeader=?,
-                                        PoRTx=?,
-                                        StartTime=?,
-                                        AveWait=?,
-                                        TotalNumTx=?,
-                                        BlockSpaceFull=?,
-                                        TimeTaken=?,
-                                        McRound=?
-                                 Where RoundNumber=?`,
-                                 BCSize, roundLeader, PorTx, startTime.Format(time.RFC3339), aveWait,
-                                 TotalNumTx, BlockSpaceFull, TimeTaken, McRound, roundNbr)
-
-        return err
-    }
+    return err
+   
 }
 
 
@@ -572,14 +550,8 @@ func InsertIntoSideChainOverallEvaluation(roundNbr int,
         return err
     }
     defer sidechainDb.Close()
-    exists := 0
-    err = sidechainDb.QueryRow("Select RoundNbr FROM OverallEvaluation where RoundNbr = ?", roundNbr).Scan(&exists)
-    if err != nil && err != sql.ErrNoRows {
-        panic(err)
-    }
-    stmt:= ""
-    if (err == sql.ErrNoRows){
-        stmt = `INSERT INTO OverallEvaluation(
+
+    stmt := `INSERT INTO OverallEvaluation(
                                         RoundNbr,
                                         BCSize,
                                         OverallPorTxNbr,
@@ -588,17 +560,6 @@ func InsertIntoSideChainOverallEvaluation(roundNbr int,
                                  VALUES (?, ?, ?, ?, ?)`
     
     _, err = sidechainDb.Exec(stmt,roundNbr, BCSize, OverallPorTxNbr, OverallAveWait, OverallBlockSpaceFull)
-    } else {
-        stmt = `Update OverallEvaluation Set BCSize=?, 
-                                        OverallPorTxNbr=?,
-                                        OverallAveWait=?,
-                                        OverallBlockSpaceFull=?
-                            Where RoundNbr = ? `
-
-        _, err = sidechainDb.Exec(stmt,roundNbr, BCSize, OverallPorTxNbr, OverallAveWait, OverallBlockSpaceFull)
-    
-    }
-
     return err
 }
 
@@ -1138,7 +1099,7 @@ func SideChainRoundTableSetBlockSpaceIsFull(roundnbr int) error {
 }
 
 func SideChainRoundTableSetFinalRoundInfo(blocksize int, PorTx int, avewait float64, roundnbr int) error {
-    stmt := "Update RoundTable SET BCSize=?, PorTx=?, AveWait=?  Where RoundNumber = ?"
+    stmt := "Update RoundTable SET BCSize=?, PorTx=?, AveWait=?  Where RowId = (Select Max(RowId) From RoundTable Where RoundNumber = ?)"
     sidechainDb, err := sql.Open("sqlite", sidechainpath)        
     if err != nil {
         return err

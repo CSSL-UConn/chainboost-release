@@ -1,7 +1,6 @@
 package MainAndSideChain
 
 import (
-	"fmt"
 	"math"
 	"time"
 
@@ -210,19 +209,18 @@ func updateSideChainBCOverallEvaluation(SCRoundNumber int) {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
-	cond := fmt.Sprintf("RoundNumber <= %d", SCRoundNumber)
-	sumBC, err := blockchain.GetSumSideChainCond("RoundTable", "BCSize", cond)
+	sumBC, err := blockchain.GetSumSideChain("RoundTable", "BCSize")
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
 
-	sumPoRTx, err := blockchain.GetSumSideChainCond("RoundTable", "PoRTx", cond)
+	sumPoRTx, err := blockchain.GetSumSideChain("RoundTable", "PoRTx")
 	if err != nil {
 		log.LLvl1(err)
 	}
 
-	avgWaitTx, err := blockchain.GetAvgSideChainCond("RoundTable", "AveWait", cond)
+	avgWaitTx, err := blockchain.GetAvgSideChain("RoundTable", "AveWait")
 	if err != nil {
 		log.LLvl1(err)
 	}
