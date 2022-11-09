@@ -1,8 +1,8 @@
 package platform
 
 import (
-	"os"
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -13,11 +13,11 @@ import (
 	"time"
 
 	//"github.com/chainBoostScale/ChainBoost/onet/app"
+	"github.com/BurntSushi/toml"
 	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"golang.org/x/xerrors"
-	"github.com/BurntSushi/toml"
 )
 
 // Localhost is responsible for launching the app with the specified number of nodes
@@ -261,7 +261,7 @@ func (d *Localhost) Start(args ...string) error {
 				d.errChan <- err
 			}
 			d.wgRun.Done()
-			//log.Lvlf3("host (index", i, ")", h, "done")
+			log.Lvlf3("host (index", i, ")", h, "done")
 		}(index, host)
 	}
 	return nil

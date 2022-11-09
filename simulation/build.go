@@ -215,25 +215,25 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) error {
 
 	go func() {
 		var err error
-		// Start monitor before so ssh tunnel can connect to the monitor
-		// in case of deterlab.
-		err = deployP.Start()
-		if err != nil {
-			done <- err
-			return
+		if platformDst == "localhost" {
+			err = deployP.Start()
+			if err != nil {
+				done <- err
+				return
+			}
+			if err = deployP.Wait(); err != nil {
+				log.Error("Test failed:", err)
+				if err := deployP.Cleanup(); err != nil {
+					log.LLvl1("Couldn't cleanup platform:", err)
+				}
+				done <- err
+				return
+			}
+			done <- nil
+		} else if platformDst == "deterlab" {
+			log.LLvl1("\n======= ******* ======== \nSimulation is built and sent over to the remote server.\nGo to the remote directory created on the home. \nand then run the users exe file there\n======= ******* ======== \n")
+			done <- nil
 		}
-
-		log.LLvl1("\n======= ******* ======== \nSimulation is built and sent over to the remote server.\nGo to the remote directory created on the home. \nand then run the users exe file there\n======= ******* ======== \n")
-
-		// if err = deployP.Wait(); err != nil {
-		// 	log.Error("Test failed:", err)
-		// 	if err := deployP.Cleanup(); err != nil {
-		// 		log.LLvl1("Couldn't cleanup platform:", err)
-		// 	}
-		// 	done <- err
-		// 	return
-		// }
-		done <- nil
 	}()
 
 	timeout, err := getRunWait(rc)
