@@ -247,9 +247,9 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) error {
 		if err != nil {
 			return xerrors.Errorf("simulation error: %v", err)
 		}
-		return nil, nil
+		return nil
 	case <-time.After(timeout):
-		return nil, xerrors.New("simulation timeout")
+		return xerrors.New("simulation timeout")
 	}
 }
 
