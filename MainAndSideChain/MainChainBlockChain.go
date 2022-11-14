@@ -310,8 +310,13 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 	rand.Seed(int64(bz.SimulationSeed))
 	// avoid having zero regular payment txs
 	var numberOfRegPay int
-	for numberOfRegPay == 0 {
-		numberOfRegPay = rand.Intn(bz.NumberOfPayTXsUpperBound)
+	if bz.PayPercentOfTransactions == 0 || bz.PayPercentOfTransactions > 1 {
+		for numberOfRegPay == 0 {
+			numberOfRegPay = rand.Intn(bz.NumberOfPayTXsUpperBound)
+		}
+	} else {
+		totalNonPayTx := len(mcFirstQueueTxs) + len(scFirstQueueTxs)
+		numberOfRegPay = int((bz.PayPercentOfTransactions * float64(totalNonPayTx))/(1 - bz.PayPercentOfTransactions)) 
 	}
 	// -------------------------------------------------------------------
 	// ------ add payment transactions into second queue stream writer

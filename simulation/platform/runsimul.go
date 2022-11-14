@@ -28,7 +28,7 @@ var batchSize = 1000
 // adding some other system-wide configurations
 func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize, SectorNumber, NumberOfPayTXsUpperBound,
 	SimulationRounds, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, MCRoundPerEpoch, SimState, StoragePaymentEpoch int,
-	suite, serverAddress, simul string) error {
+	suite, serverAddress, simul string, PayPercentOfTransactions float64) error {
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 	if err != nil {
 		// We probably are not needed
@@ -153,6 +153,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		ChainBoostProtocol.MCRoundPerEpoch = MCRoundPerEpoch
 		ChainBoostProtocol.SimState = SimState
 		ChainBoostProtocol.StoragePaymentEpoch = StoragePaymentEpoch
+		ChainBoostProtocol.PayPercentOfTransactions = PayPercentOfTransactions 
 		log.Lvl1("passing our system-wide configurations to the protocol",
 			"\n  PercentageTxPay: ", PercentageTxPay,
 			"\n  MCRoundDuration: ", MCRoundDuration,
@@ -169,6 +170,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			"\n MCRoundPerEpoch: ", MCRoundPerEpoch,
 			"\n SimState: ", SimState,
 			"\n StoragePaymentEpoch: ", StoragePaymentEpoch,
+			"\n PayPercentOfTransactions", PayPercentOfTransactions,
 		)
 		ChainBoostProtocol.BlsCosi = cosiProtocol
 		// --------------------------------------------------------------

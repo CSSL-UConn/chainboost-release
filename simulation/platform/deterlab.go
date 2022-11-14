@@ -96,6 +96,7 @@ type Deterlab struct {
 	SimulationRounds         int
 	SimulationSeed           int
 	//-- bls cosi
+
 	NbrSubTrees         int
 	Threshold           int
 	SCRoundDuration     int
@@ -103,6 +104,7 @@ type Deterlab struct {
 	MCRoundPerEpoch     int
 	SimState            int
 	StoragePaymentEpoch int
+	PayPercentOfTransactions float64
 }
 
 var simulConfig *onet.SimulationConfig
@@ -140,6 +142,8 @@ func (d *Deterlab) Configure(pc *Config) {
 	d.MCRoundPerEpoch = pc.MCRoundPerEpoch
 	d.SimState = pc.SimState
 	d.StoragePaymentEpoch = pc.StoragePaymentEpoch
+	d.PayPercentOfTransactions = pc.PayPercentOfTransactions
+
 	// ------------------------------
 	d.Debug = pc.Debug
 	if d.Simulation == "" {

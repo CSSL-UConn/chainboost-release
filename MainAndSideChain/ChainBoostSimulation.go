@@ -166,7 +166,8 @@ type ChainBoost struct {
 
 	simulationDone bool
 
-    consensusTimeStart time.Time
+  consensusTimeStart time.Time
+	PayPercentOfTransactions float64
 }
 
 /* ----------------------------------- FUNCTIONS -------------------------------------------------

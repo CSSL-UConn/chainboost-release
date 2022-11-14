@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"os"
+	"fmt"
 
 	//"os"
 	"os/exec"
@@ -182,7 +183,8 @@ func main() {
 				" -SCRoundDuration=" + strconv.Itoa(simul.SCRoundDuration) +
 				" -CommitteeWindow=" + strconv.Itoa(simul.CommitteeWindow) +
 				" -MCRoundPerEpoch=" + strconv.Itoa(simul.MCRoundPerEpoch) +
-				" -SimState=" + strconv.Itoa(simul.SimState)
+				" -SimState=" + strconv.Itoa(simul.SimState) +
+				" -PayPercentOfTransactions=" + fmt.Sprintf("%f",simul.PayPercentOfTransactions)
 
 			log.Lvl1("Args is", args)
 			err = platform.SSHRunStdout("root", phys, "cd remote; sudo ./simul "+args)

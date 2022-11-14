@@ -82,6 +82,7 @@ type Localhost struct {
 	SimulationRounds         int
 	SimulationSeed           int
 	//-- bls cosi
+
 	NbrSubTrees         int
 	Threshold           int
 	SCRoundDuration     int
@@ -89,6 +90,7 @@ type Localhost struct {
 	MCRoundPerEpoch     int
 	SimState            int
 	StoragePaymentEpoch int
+	PayPercentOfTransactions float64
 }
 
 // Configure various internal variables
@@ -120,6 +122,7 @@ func (d *Localhost) Configure(pc *Config) {
 	// ------------------------------
 	d.localDir = pwd
 	d.debug = pc.Debug
+	d.PayPercentOfTransactions = pc.PayPercentOfTransactions 
 	d.running = false
 	if d.Simulation == "" {
 		log.Fatal("No simulation defined in simulation")
@@ -257,7 +260,7 @@ func (d *Localhost) Start(args ...string) error {
 
 			err := Simulate(d.PercentageTxPay, d.MCRoundDuration, d.MainChainBlockSize, d.SideChainBlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.SimulationRounds,
 				d.SimulationSeed, d.NbrSubTrees, d.Threshold, d.SCRoundDuration, d.CommitteeWindow, d.MCRoundPerEpoch, d.SimState, d.StoragePaymentEpoch,
-				d.Suite, host, d.Simulation)
+				d.Suite, host, d.Simulation, d.PayPercentOfTransactions)
 			if err != nil {
 				log.Error("Error running localhost", h, ":", err)
 				d.errChan <- err

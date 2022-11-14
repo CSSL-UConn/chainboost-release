@@ -76,6 +76,7 @@ type Config struct {
 	SimulationRounds         int
 	SimulationSeed           int
 	// bls cosi
+
 	NbrSubTrees         int
 	Threshold           int
 	SCRoundDuration     int
@@ -83,6 +84,7 @@ type Config struct {
 	MCRoundPerEpoch     int
 	SimState            int
 	StoragePaymentEpoch int
+	PayPercentOfTransactions float64
 }
 
 var deterlab = "deterlab"

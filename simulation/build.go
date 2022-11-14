@@ -91,6 +91,7 @@ func startBuild() {
 		MCRoundPerEpoch, _ := strconv.Atoi(runconfigs[0].Get("MCRoundPerEpoch"))
 		SimState, _ := strconv.Atoi(runconfigs[0].Get("SimState"))
 		StoragePaymentEpoch, _ := strconv.Atoi(runconfigs[0].Get("StoragePaymentEpoch"))
+		PayPercentOfTransactions, _ := strconv.ParseFloat(runconfigs[0].Get("PayPercentOfTransactions"), 64)
 
 		deployP.Configure(&platform.Config{
 			Debug: log.DebugVisible(),
@@ -111,6 +112,7 @@ func startBuild() {
 			MCRoundPerEpoch:          MCRoundPerEpoch,
 			SimState:                 SimState,
 			StoragePaymentEpoch:      StoragePaymentEpoch,
+			PayPercentOfTransactions: PayPercentOfTransactions,
 		})
 
 		if clean {

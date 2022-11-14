@@ -52,6 +52,7 @@ var CommitteeWindow = 10 //nodes
 var MCRoundPerEpoch = 1
 var SimState = 2
 var StoragePaymentEpoch = 0
+var PayPercentOfTransactions  = 0.02
 
 // -------------------------------------
 // Initialize before 'init' so we can directly use the fields as parameters
@@ -77,6 +78,7 @@ func init() {
 	flag.IntVar(&CommitteeWindow, "CommitteeWindow", CommitteeWindow, "CommitteeWindow")
 	flag.IntVar(&MCRoundPerEpoch, "MCRoundPerEpoch", MCRoundPerEpoch, "MCRoundPerEpoch")
 	flag.IntVar(&SimState, "SimState", SimState, "SimState")
+	flag.Float64Var(&PayPercentOfTransactions, "PayPercentOfTransactions", PayPercentOfTransactions, "PayPercentOfTransactions")
 	log.RegisterFlags()
 }
 
@@ -120,7 +122,7 @@ func Start(rcs ...string) {
 			SectorNumber, NumberOfPayTXsUpperBound, SimulationRounds, SimulationSeed,
 			NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow,
 			MCRoundPerEpoch, SimState, StoragePaymentEpoch,
-			Suite, serverAddress, simul)
+			Suite, serverAddress, simul, PayPercentOfTransactions)
 		if err != nil {
 			log.LLvl1("Raha: err returned from simulate: ", err)
 			log.ErrFatal(err)
