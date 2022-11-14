@@ -90,6 +90,7 @@ func startBuild() {
 		CommitteeWindow, _ := strconv.Atoi(runconfigs[0].Get("CommitteeWindow"))
 		MCRoundPerEpoch, _ := strconv.Atoi(runconfigs[0].Get("MCRoundPerEpoch"))
 		SimState, _ := strconv.Atoi(runconfigs[0].Get("SimState"))
+		StoragePaymentEpoch, _ := strconv.Atoi(runconfigs[0].Get("StoragePaymentEpoch"))
 
 		deployP.Configure(&platform.Config{
 			Debug: log.DebugVisible(),
@@ -109,6 +110,7 @@ func startBuild() {
 			CommitteeWindow:          CommitteeWindow,
 			MCRoundPerEpoch:          MCRoundPerEpoch,
 			SimState:                 SimState,
+			StoragePaymentEpoch:      StoragePaymentEpoch,
 		})
 
 		if clean {

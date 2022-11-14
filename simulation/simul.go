@@ -51,6 +51,7 @@ var SCRoundDuration = 1
 var CommitteeWindow = 10 //nodes
 var MCRoundPerEpoch = 1
 var SimState = 2
+var StoragePaymentEpoch = 0
 
 // -------------------------------------
 // Initialize before 'init' so we can directly use the fields as parameters
@@ -118,7 +119,7 @@ func Start(rcs ...string) {
 		err := platform.Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize,
 			SectorNumber, NumberOfPayTXsUpperBound, SimulationRounds, SimulationSeed,
 			NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow,
-			MCRoundPerEpoch, SimState,
+			MCRoundPerEpoch, SimState, StoragePaymentEpoch,
 			Suite, serverAddress, simul)
 		if err != nil {
 			log.LLvl1("Raha: err returned from simulate: ", err)

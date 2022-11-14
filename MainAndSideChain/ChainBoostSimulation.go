@@ -35,7 +35,8 @@ type HelloChainBoost struct {
 	NbrSubTrees int
 	Threshold   int
 	// simulation
-	SimState int
+	SimState            int
+	StoragePaymentEpoch int
 }
 type HelloChan struct {
 	*onet.TreeNode
@@ -135,9 +136,10 @@ type ChainBoost struct {
 	SectorNumber             int
 	NumberOfPayTXsUpperBound int
 	// ---
-	SimulationRounds int
-	SimulationSeed   int
-	SimState         int
+	SimulationRounds    int
+	SimulationSeed      int
+	SimState            int
+	StoragePaymentEpoch int
 	// -- blscosi related config params
 	NbrSubTrees     int
 	Threshold       int
@@ -229,6 +231,7 @@ func (bz *ChainBoost) Dispatch() error {
 			bz.NbrSubTrees = msg.NbrSubTrees
 			bz.BlsCosi.Threshold = msg.Threshold
 			bz.SimState = msg.SimState
+			bz.StoragePaymentEpoch = msg.StoragePaymentEpoch
 			if msg.NbrSubTrees > 0 {
 				err := bz.BlsCosi.SetNbrSubTree(msg.NbrSubTrees)
 				if err != nil {

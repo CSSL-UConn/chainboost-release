@@ -82,12 +82,13 @@ type Localhost struct {
 	SimulationRounds         int
 	SimulationSeed           int
 	//-- bls cosi
-	NbrSubTrees     int
-	Threshold       int
-	SCRoundDuration int
-	CommitteeWindow int
-	MCRoundPerEpoch int
-	SimState        int
+	NbrSubTrees         int
+	Threshold           int
+	SCRoundDuration     int
+	CommitteeWindow     int
+	MCRoundPerEpoch     int
+	SimState            int
+	StoragePaymentEpoch int
 }
 
 // Configure various internal variables
@@ -115,6 +116,7 @@ func (d *Localhost) Configure(pc *Config) {
 	d.CommitteeWindow = pc.CommitteeWindow
 	d.MCRoundPerEpoch = pc.MCRoundPerEpoch
 	d.SimState = pc.SimState
+	d.StoragePaymentEpoch = pc.StoragePaymentEpoch
 	// ------------------------------
 	d.localDir = pwd
 	d.debug = pc.Debug
@@ -254,7 +256,7 @@ func (d *Localhost) Start(args ...string) error {
 			//log.Lvlf3(": adding some other system-wide configurations")
 
 			err := Simulate(d.PercentageTxPay, d.MCRoundDuration, d.MainChainBlockSize, d.SideChainBlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.SimulationRounds,
-				d.SimulationSeed, d.NbrSubTrees, d.Threshold, d.SCRoundDuration, d.CommitteeWindow, d.MCRoundPerEpoch, d.SimState,
+				d.SimulationSeed, d.NbrSubTrees, d.Threshold, d.SCRoundDuration, d.CommitteeWindow, d.MCRoundPerEpoch, d.SimState, d.StoragePaymentEpoch,
 				d.Suite, host, d.Simulation)
 			if err != nil {
 				log.Error("Error running localhost", h, ":", err)

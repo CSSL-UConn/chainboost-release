@@ -21,7 +21,9 @@ Config File [ChainBoost.toml](https://github.com/chainBstSc/ChainBoost/blob/mast
 - `CommitteeWindow` the number of committee in the side chain that is the number of last `CommitteeWindow` miners (leaders) in main chain [^3]
 - `SimState` specify the mode of simulation: pure main chain vs sid chain plus main chain (ChainBoost) 
     -  See: <https://github.com/chainBoostScale/ChainBoost/ChainBoost/tree/master/ChainBoostSimulation#SimState>
-
+- `StoragePaymentEpoch` determines the storage payment intervals: 
+    - `0` indicates the payment is done at the end of the contraact duration, i.e. when the contract expires
+    - `x` s.t. x is in N, indicate the number of epochs between each settlement
 ## SimState ##
 The mode of simulation is determined by the `SimState` config param in the config file. if `SimState = 1` the simulation will run in the single pure main chain mode and if `SimState = 2` the main chain and the side chain are going to run simentaniously.
 

@@ -96,16 +96,16 @@ type Deterlab struct {
 	SimulationRounds         int
 	SimulationSeed           int
 	//-- bls cosi
-	NbrSubTrees     int
-	Threshold       int
-	SCRoundDuration int
-	CommitteeWindow int
-	MCRoundPerEpoch int
-	SimState        int
+	NbrSubTrees         int
+	Threshold           int
+	SCRoundDuration     int
+	CommitteeWindow     int
+	MCRoundPerEpoch     int
+	SimState            int
+	StoragePaymentEpoch int
 }
 
 var simulConfig *onet.SimulationConfig
-
 
 // Configure initialises the directories and loads the saved config
 // for Deterlab
@@ -139,6 +139,7 @@ func (d *Deterlab) Configure(pc *Config) {
 	d.CommitteeWindow = pc.CommitteeWindow
 	d.MCRoundPerEpoch = pc.MCRoundPerEpoch
 	d.SimState = pc.SimState
+	d.StoragePaymentEpoch = pc.StoragePaymentEpoch
 	// ------------------------------
 	d.Debug = pc.Debug
 	if d.Simulation == "" {

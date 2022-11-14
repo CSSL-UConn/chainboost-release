@@ -12,12 +12,12 @@ import (
 )
 
 type ExperimentConfig struct {
-	FileSizeDistributionMean float64
-	FileSizeDistributionVariance float64
-	ServAgrDurationDistributionMean float64
+	FileSizeDistributionMean            float64
+	FileSizeDistributionVariance        float64
+	ServAgrDurationDistributionMean     float64
 	ServAgrDurationDistributionVariance float64
-	SimulationSeed int
-	Nodes int
+	SimulationSeed                      int
+	Nodes                               int
 }
 
 // these values are written in the market matching sheet but since they are fixed
@@ -41,13 +41,16 @@ type ExperimentConfig struct {
 
 func generateNormalValues(variance float64, mean float64, nodes int, SimulationSeed int) []interface{} {
 	var list []interface{}
-	
-	rand.Seed(int64(SimulationSeed))
-	
-	for i := 1; i <= nodes; i++ {
-		list = append(list, mean + variance * rand.NormFloat64())
-	}
 
+	rand.Seed(int64(SimulationSeed))
+
+	for i := 1; i <= nodes; i++ {
+		value := mean + variance*rand.NormFloat64()
+		if value < 1 {
+			value = 1
+		}
+		list = append(list, value)
+	}
 	return list
 }
 
@@ -62,20 +65,20 @@ func InitializeMainChainBC(exconf ExperimentConfig) {
 	//--------------------- fill the mainchainbc file with generated numbers  ---------------------
 	var err error
 	err = InitalizeMainChainDbTables()
-	if err != nil{
+	if err != nil {
 		panic(err)
 	}
 
 	for i, _ := range FileSizeRow {
 		err = InitialInsertValuesIntoMarketMatchingTable(int(FileSizeRow[i].(float64)), int(ServAgrDurationRow[i].(float64)), 0, i+1, true, true)
-		if err != nil{
+		if err != nil {
 			panic(err)
 		}
 	}
-	
-	SimulationSeedAsStr :=  strconv.Itoa(exconf.SimulationSeed)
+
+	SimulationSeedAsStr := strconv.Itoa(exconf.SimulationSeed)
 	err = InsertIntoMainChainRoundTable(0, SimulationSeedAsStr, 0, "", 0, 0, 0, 0, 0, time.Now(), 0, 0, 0, false, false, false)
-	if err != nil{
+	if err != nil {
 		panic(err)
 	}
 
@@ -87,7 +90,6 @@ func InitializeMainChainBC(exconf ExperimentConfig) {
 	}
 	hash := sha.Sum(nil)
 	err = InsertIntoMainChainRoundTable(1, hex.EncodeToString(hash), 0, "", 0, 0, 0, 0, 0, time.Now(), 0, 0, 0, false, false, false)
-
 
 	logMsg := fmt.Sprintf(
 		`Config params used in initial initialization of main chain:
@@ -101,11 +103,10 @@ func InitializeMainChainBC(exconf ExperimentConfig) {
 	log.LLvl1(logMsg)
 }
 
-
 // InitializeSideChainBC function is called in simulation level (build.go)
 func InitializeSideChainBC() {
 	err := InitalizeSideChainDbTables()
-	if err != nil{
+	if err != nil {
 		panic(err)
 	}
 }

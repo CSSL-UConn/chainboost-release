@@ -27,7 +27,7 @@ var batchSize = 1000
 // Simulate starts the server and will setup the protocol.
 // adding some other system-wide configurations
 func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize, SectorNumber, NumberOfPayTXsUpperBound,
-	SimulationRounds, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, MCRoundPerEpoch, SimState int,
+	SimulationRounds, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, MCRoundPerEpoch, SimState, StoragePaymentEpoch int,
 	suite, serverAddress, simul string) error {
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 	if err != nil {
@@ -53,7 +53,6 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 	for i, sc := range scs {
 		// Starting all servers for that server
 		server := sc.Server
-
 
 		log.Lvl4("in function simulate: ", serverAddress, "Starting server", server.ServerIdentity.Address)
 		// Launch a server and notifies when it's done
@@ -153,6 +152,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		ChainBoostProtocol.CommitteeWindow = CommitteeWindow
 		ChainBoostProtocol.MCRoundPerEpoch = MCRoundPerEpoch
 		ChainBoostProtocol.SimState = SimState
+		ChainBoostProtocol.StoragePaymentEpoch = StoragePaymentEpoch
 		log.Lvl1("passing our system-wide configurations to the protocol",
 			"\n  PercentageTxPay: ", PercentageTxPay,
 			"\n  MCRoundDuration: ", MCRoundDuration,
@@ -168,6 +168,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			"\n CommitteeWindow: ", CommitteeWindow,
 			"\n MCRoundPerEpoch: ", MCRoundPerEpoch,
 			"\n SimState: ", SimState,
+			"\n StoragePaymentEpoch: ", StoragePaymentEpoch,
 		)
 		ChainBoostProtocol.BlsCosi = cosiProtocol
 		// --------------------------------------------------------------
@@ -216,7 +217,6 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		// wgSimulInit.Wait()
 		// syncWait.Record()
 		// simError = rootSim.Run(rootSC)
-
 
 		// --------------------------------------------------------------
 		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": close all other nodes!")
@@ -292,15 +292,16 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 		LeaderProposeChan: make(chan bool, 1),
 		MCRoundNumber:     1,
 		//CommitteeWindow:    10,
-		SCRoundNumber:      1,
-		FirstQueueWait:     0,
-		SideChainQueueWait: 0,
-		FirstSCQueueWait:   0,
-		SecondQueueWait:    0,
-		SimulationRounds:   0,
-		BlsCosiStarted:     false,
-		BlsCosi:            cosiProtocol,
-		SimState:           1, // 1: just the main chain - 2: main chain plus side chain = chainBoost
+		SCRoundNumber:       1,
+		FirstQueueWait:      0,
+		SideChainQueueWait:  0,
+		FirstSCQueueWait:    0,
+		SecondQueueWait:     0,
+		SimulationRounds:    0,
+		BlsCosiStarted:      false,
+		BlsCosi:             cosiProtocol,
+		SimState:            1, // 1: just the main chain - 2: main chain plus side chain = chainBoost
+		StoragePaymentEpoch: 0, // 0:  after contracts expires, n: settllement after n epoch
 	}
 
 	if err := n.RegisterChannel(&bz.HelloChan); err != nil {
@@ -366,12 +367,13 @@ func sendMsgToJoinChainBoostProtocol(i int, ChainBoostProtocol *MainAndSideChain
 					NumberOfPayTXsUpperBound: ChainBoostProtocol.NumberOfPayTXsUpperBound,
 					SimulationSeed:           ChainBoostProtocol.SimulationSeed,
 					// --------------------- bls cosi ------------------------
-					NbrSubTrees:     ChainBoostProtocol.NbrSubTrees,
-					Threshold:       ChainBoostProtocol.Threshold,
-					CommitteeWindow: ChainBoostProtocol.CommitteeWindow,
-					SCRoundDuration: ChainBoostProtocol.SCRoundDuration,
-					MCRoundPerEpoch: ChainBoostProtocol.MCRoundPerEpoch,
-					SimState:        ChainBoostProtocol.SimState,
+					NbrSubTrees:         ChainBoostProtocol.NbrSubTrees,
+					Threshold:           ChainBoostProtocol.Threshold,
+					CommitteeWindow:     ChainBoostProtocol.CommitteeWindow,
+					SCRoundDuration:     ChainBoostProtocol.SCRoundDuration,
+					MCRoundPerEpoch:     ChainBoostProtocol.MCRoundPerEpoch,
+					SimState:            ChainBoostProtocol.SimState,
+					StoragePaymentEpoch: ChainBoostProtocol.StoragePaymentEpoch,
 				})
 				if err != nil {
 					log.Lvl1(ChainBoostProtocol.Info(), "couldn't send HelloChainBoost msg to child", child.Name(), "with err:", err)

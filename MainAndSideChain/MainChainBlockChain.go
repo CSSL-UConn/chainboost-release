@@ -12,7 +12,6 @@ import (
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 )
 
-
 /* ----------------------------------------------------------------------
 	finalMainChainBCInitialization initialize the mainchainbc file based on the config params defined in the config file
 	(.toml file of the protocol) the info we hadn't before and we have now is nodes' info that this function add to the mainchainbc file
@@ -26,7 +25,7 @@ func (bz *ChainBoost) finalMainChainBCInitialization() {
 	// fill nodes info and get the maximum file size
 	maxFileSize, err := blockchain.GetMaxMainChain("MarketMatching", "FileSize")
 	if err != nil {
-		log.Fatal (err)
+		log.Fatal(err)
 	}
 	argvars := make([]interface{}, 0, len(NodeInfoRow))
 	for _, element := range NodeInfoRow {
@@ -34,7 +33,7 @@ func (bz *ChainBoost) finalMainChainBCInitialization() {
 	}
 	err = blockchain.AddMoreFieldsIntoTableInMainChain("MarketMatching", "ServerInfo", argvars...)
 	if err != nil {
-		log.Fatal (err)
+		log.Fatal(err)
 	}
 	bz.maxFileSize = int(maxFileSize)
 
@@ -44,7 +43,7 @@ func (bz *ChainBoost) finalMainChainBCInitialization() {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
-	
+
 	FormulaString := "=SUM(MarketMatching!B2:B" + strconv.Itoa(len(NodeInfoRow)+1) + ")"
 	err = f.SetCellFormula("ExtraInfo", "B2", FormulaString)
 	if err != nil {
@@ -98,7 +97,6 @@ func (bz *ChainBoost) readBCAndSendtoOthers() {
 	// detecting leader-less in next round
 	go bz.startTimer(bz.MCRoundNumber)
 	log.Lvl1("readBCAndSendtoOthers took:", time.Since(takenTime).String(), "for mc round number", bz.MCRoundNumber)
-
 }
 
 /* ----------------------------------------------------------------------*/
@@ -106,12 +104,12 @@ func (bz *ChainBoost) readBCPowersAndSeed() (minerspowers map[string]int, seed s
 	var err error
 	takenTime := time.Now()
 	seed, err = blockchain.MainChainGetLastRoundSeed()
-	if err != nil{
+	if err != nil {
 		log.Fatal(err)
 	}
 
 	minerspowers, err = blockchain.MainChainGetPowerTable()
-	if err != nil{
+	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -140,21 +138,21 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 	}
 	hash := sha.Sum(nil)
 	nextSeed := hex.EncodeToString(hash)
-	
-	err = blockchain.InsertIntoMainChainRoundTable(nextRoundNumber, nextSeed, 0 , LeaderName, 0, 0, 0, 0, 0, time.Now(), 0, 0, 0, false, false, false)
+
+	err = blockchain.InsertIntoMainChainRoundTable(nextRoundNumber, nextSeed, 0, LeaderName, 0, 0, 0, 0, 0, time.Now(), 0, 0, 0, false, false, false)
 
 	// Each round, adding one row in power table based on the information in market matching sheet,
 	// assuming that servers are honest  and have honestly publish por for their actice (not expired)
 	// ServAgrs,for each storage server and each of their active contracst,
 	// add the stored file size to their current power
-	rowsMarketMatching, err := blockchain.MainChainGetFileAndRoundInfo();
+	rowsMarketMatching, err := blockchain.MainChainGetFileAndRoundInfo()
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
 		panic(err)
 	}
 	MinerServers := make(map[string]int)
 	for _, item := range rowsMarketMatching {
-		if bz.MCRoundNumber - item.StartedMcRoundNumber <= item.ServerAgrDuration {
+		if bz.MCRoundNumber-item.StartedMcRoundNumber <= item.ServerAgrDuration {
 			MinerServers[item.MinerServer] = item.FileSize //if each server one ServAgr
 		} else {
 			MinerServers[item.MinerServer] = 0
@@ -168,7 +166,7 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 	=> fix it: use TXissued column (first set it to 2 when taken and second change its name to TXonQ), so if
 	contract is publlished (1) but TxonQ is taken (2) then add power  */
 
-	err = blockchain.MainChainUpdatePowerTable(MinerServers) 
+	err = blockchain.MainChainUpdatePowerTable(MinerServers)
 
 	if err != nil {
 		log.LLvl1("Panic Raised:\n\n")
@@ -188,7 +186,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 	var err error
 
 	fileInfo, err := blockchain.MainChainGetFileAndRoundInfo()
-	if err != nil{
+	if err != nil {
 		log.Fatal(err)
 	}
 	// ----------------------------------------------------------------------
@@ -208,67 +206,85 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 
 	var numOfPoRTxsMC, numOfPoRTxsSC, numOfServAgrProposeTxs, numOfStoragePaymentTxs, numOfServAgrCommitTxs, numOfRegularPaymentTxs int
 
-
 	// -------------------------------------------------------------------------------
 	mcFirstQueueTxs := make([]blockchain.MainChainFirstQueueEntry, 0)
 	scFirstQueueTxs := make([]blockchain.SideChainFirstQueueEntry, 0)
 	// --- check for contracts states and add appropriate tx row on top of the stream ----
 	for i := range bz.Roster().List {
-		//-------------------------------------------------------------------
-		// when the servic agreement is inactive:
-		//-------------------------------------------------------------------
-		if !fileInfo[i].Published  && !fileInfo[i].TxIssued {
+		//--------------------------------------------------------------------------------------------------------------------------------------
+		// --------------------------------------------- when the servic agreement is inactive ---------------------------------------------
+		//--------------------------------------------------------------------------------------------------------------------------------------
+		if !fileInfo[i].Published && !fileInfo[i].TxIssued {
 			// Add TxServAgrPropose
 
-			tx := blockchain.MainChainFirstQueueEntry{ Name : "TxServAgrPropose", Size : ServAgrProposeTxSize, Time: time.Now(), RoundIssued : bz.MCRoundNumber, ServAgrId : i+1}
+			tx := blockchain.MainChainFirstQueueEntry{Name: "TxServAgrPropose", Size: ServAgrProposeTxSize, Time: time.Now(), RoundIssued: bz.MCRoundNumber, ServAgrId: i + 1}
 			mcFirstQueueTxs = append(mcFirstQueueTxs, tx)
 			numOfServAgrProposeTxs++
-			tx = blockchain.MainChainFirstQueueEntry{ Name : "TxServAgrCommit", Size : ServAgrCommitTxSize, Time: time.Now(), RoundIssued : bz.MCRoundNumber, ServAgrId : i+1}
+			tx = blockchain.MainChainFirstQueueEntry{Name: "TxServAgrCommit", Size: ServAgrCommitTxSize, Time: time.Now(), RoundIssued: bz.MCRoundNumber, ServAgrId: i + 1}
 			mcFirstQueueTxs = append(mcFirstQueueTxs, tx)
 			numOfServAgrCommitTxs++
 			err = blockchain.MainChainSetTxIssued(i+1, true)
 			if err != nil {
 				panic(err)
 			}
-			//-------------------------------------------------------------------
-			// when the servic agreement expires (for now we pay for the service just here):
-			//-------------------------------------------------------------------
-		} else if bz.MCRoundNumber-fileInfo[i].StartedMcRoundNumber > fileInfo[i].ServerAgrDuration && fileInfo[i].Published  && fileInfo[i].TxIssued  {
-			// Set ServAgrPublished AND ServAgrTxsIssued to false
-			// --------------------------------------
-			// i start from index 0, serverAgreementID strats from index 2 which is its rownumber
-			err = blockchain.MainChainSetPublished(i+1, false)
-			if err != nil {
-				panic(err)
-			}
-			// i start from index 0, serverAgreementID strats from index 2 which is its rownumber
-			err = blockchain.MainChainSetTxIssued(i+1, false)
-			if err != nil {
-				panic(err)
-			}
-			tx := blockchain.MainChainFirstQueueEntry{ Name : "TxStoragePayment", Size : StoragePayTxSize, Time: time.Now(), RoundIssued : bz.MCRoundNumber, ServAgrId : i+1}
-			mcFirstQueueTxs = append(mcFirstQueueTxs, tx)
 
-			numOfStoragePaymentTxs++
+			//--------------------------------------------------------------------------------------------------------------------------------------
+			// --------------------------------------------- when the service agreement expires ---------------------------------------------
+			//--------------------------------------------------------------------------------------------------------------------------------------
+			//-------------------------------------------------------------------
+			// bz.StoragePaymentEpoch == 0 means: settle the service payment when the servic agreement expires,
+			//-------------------------------------------------------------------
+		} else if bz.MCRoundNumber-fileInfo[i].StartedMcRoundNumber > fileInfo[i].ServerAgrDuration && fileInfo[i].Published && fileInfo[i].TxIssued {
+			if bz.StoragePaymentEpoch != 0 {
+				// Set ServAgrPublished AND ServAgrTxsIssued to false
+				// --------------------------------------
+				// i start from index 0, serverAgreementID strats from index 2 which is its rownumber
+				err = blockchain.MainChainSetPublished(i+1, false)
+				if err != nil {
+					panic(err)
+				}
+				// i start from index 0, serverAgreementID strats from index 2 which is its rownumber
+				err = blockchain.MainChainSetTxIssued(i+1, false)
+				if err != nil {
+					panic(err)
+				}
+			} else if bz.StoragePaymentEpoch == 0 {
+				// Set ServAgrPublished AND ServAgrTxsIssued to false
+				// --------------------------------------
+				// i start from index 0, serverAgreementID strats from index 2 which is its rownumber
+				err = blockchain.MainChainSetPublished(i+1, false)
+				if err != nil {
+					panic(err)
+				}
+				// i start from index 0, serverAgreementID strats from index 2 which is its rownumber
+				err = blockchain.MainChainSetTxIssued(i+1, false)
+				if err != nil {
+					panic(err)
+				}
 
-			//-------------------------------------------------------------------
-			// when simStat == 2 it means that side chain is
-			// running and por tx.s go to side chain queue
-			// when the ServAgr is not expired => Add TxPor
-			//-------------------------------------------------------------------
-		} else if fileInfo[i].Published  && bz.MCRoundNumber-fileInfo[i].StartedMcRoundNumber <= fileInfo[i].ServerAgrDuration && bz.SimState == 1 {
+				tx := blockchain.MainChainFirstQueueEntry{Name: "TxStoragePayment", Size: StoragePayTxSize, Time: time.Now(), RoundIssued: bz.MCRoundNumber, ServAgrId: i + 1}
+				mcFirstQueueTxs = append(mcFirstQueueTxs, tx)
+
+				numOfStoragePaymentTxs++
+			}
+			//--------------------------------------------------------------------------------------------------------------------------------------
+			// --------------------------------------------- when the ServAgr is not expired => Add TxPor ---------------------------------------------
+			//--------------------------------------------------------------------------------------------------------------------------------------
+		} else if fileInfo[i].Published && bz.MCRoundNumber-fileInfo[i].StartedMcRoundNumber <= fileInfo[i].ServerAgrDuration && bz.SimState == 1 {
 			// --- Add TxPor
-			tx := blockchain.MainChainFirstQueueEntry{ Name : "TxPor", Size : PorTxSize, Time: time.Now(), RoundIssued : bz.MCRoundNumber, ServAgrId : i+1}
+			tx := blockchain.MainChainFirstQueueEntry{Name: "TxPor", Size: PorTxSize, Time: time.Now(), RoundIssued: bz.MCRoundNumber, ServAgrId: i + 1}
 			mcFirstQueueTxs = append(mcFirstQueueTxs, tx)
 			numOfPoRTxsMC++
-
-		} else if fileInfo[i].Published  && bz.MCRoundNumber-fileInfo[i].StartedMcRoundNumber <= fileInfo[i].ServerAgrDuration && bz.SimState == 2 {
+			//-------------------------------------------------------------------
+			// simStat == 2 means that side chain is running => por tx.s go to side chain queue
+			//-------------------------------------------------------------------
+		} else if fileInfo[i].Published && bz.MCRoundNumber-fileInfo[i].StartedMcRoundNumber <= fileInfo[i].ServerAgrDuration && bz.SimState == 2 {
 			// -------------------------------------------------------------------------------
 			//        -------- updateSideChainBCTransactionQueueCollect  --------
 			// -------------------------------------------------------------------------------
 			// --- check for eligible contracts and add a por tx row on top of the stream ----
 			// ServAgr is not expired => Add TxPor
-			tx := blockchain.SideChainFirstQueueEntry{ Name : "TxPor", Size : int(PorTxSize), Time: time.Now(), IssuedScRoundNumber : bz.MCRoundNumber, ServAgrId : i+1, MCRoundNbr: bz.MCRoundNumber}
+			tx := blockchain.SideChainFirstQueueEntry{Name: "TxPor", Size: int(PorTxSize), Time: time.Now(), IssuedScRoundNumber: bz.MCRoundNumber, ServAgrId: i + 1, MCRoundNbr: bz.MCRoundNumber}
 			scFirstQueueTxs = append(scFirstQueueTxs, tx)
 			numOfPoRTxsSC++
 			// -------------------------------------------------------------------------------
@@ -280,10 +296,10 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 	if err != nil {
 		panic(err)
 	}
-	for i := 0; i < len(scFirstQueueTxs); i += 2000{
-		
+	for i := 0; i < len(scFirstQueueTxs); i += 2000 {
+
 		limit := math.Min(float64(len(scFirstQueueTxs)), float64(i+2000))
-		err = blockchain.BulkInsertIntoSideChainFirstQueue(scFirstQueueTxs[i: int(limit)])
+		err = blockchain.BulkInsertIntoSideChainFirstQueue(scFirstQueueTxs[i:int(limit)])
 		if err != nil {
 			panic(err)
 		}
@@ -307,7 +323,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 
 	mcSecondQueueTxs := make([]blockchain.MainChainSecondQueueEntry, 0)
 	for i := 1; i <= numberOfRegPay; i++ {
-		tx := blockchain.MainChainSecondQueueEntry{ Size: PayTxSize, Time: time.Now(), RoundIssued: bz.MCRoundNumber}
+		tx := blockchain.MainChainSecondQueueEntry{Size: PayTxSize, Time: time.Now(), RoundIssued: bz.MCRoundNumber}
 		mcSecondQueueTxs = append(mcSecondQueueTxs, tx)
 		numOfRegularPaymentTxs++
 	}
@@ -316,9 +332,9 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 		panic(err)
 	}
 	log.Lvl1(bz.Name(), " finished collecting new transactions to mainchain queues in mc round number ", bz.MCRoundNumber, "in total:\n ",
-			numOfPoRTxsMC, "numOfPoRTxsMC\n", numOfServAgrProposeTxs, "numOfServAgrProposeTxs\n",
-			numOfStoragePaymentTxs, "numOfStoragePaymentTxs\n", numOfServAgrCommitTxs, "numOfServAgrCommitTxs\n",
-			numOfRegularPaymentTxs, "numOfRegularPaymentTxs added to the main chain queus")
+		numOfPoRTxsMC, "numOfPoRTxsMC\n", numOfServAgrProposeTxs, "numOfServAgrProposeTxs\n",
+		numOfStoragePaymentTxs, "numOfStoragePaymentTxs\n", numOfServAgrCommitTxs, "numOfServAgrCommitTxs\n",
+		numOfRegularPaymentTxs, "numOfRegularPaymentTxs added to the main chain queus")
 	log.Lvl1("Collecting mc tx.s took:", time.Since(takenTime).String())
 	log.Lvl4(bz.Name(), "Final result SC: finished collecting new transactions to side chain queue in sc round number ", bz.SCRoundNumber)
 	log.Lvl1(numOfPoRTxsSC, "TxPor added to queue in sc round number: ", bz.SCRoundNumber)
@@ -351,15 +367,15 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		panic(err)
 	}
 
-	for index=0; index <= len(rows) - 1  && !regPayshareIsFull; index++ {
+	for index = 0; index <= len(rows)-1 && !regPayshareIsFull; index++ {
 		out := rows[index]
-	
+
 		/* each transaction has the following column stored on the Transaction Queue Payment sheet:
 		0) size
 		1) time
 		2) issuedMCRoundNumber */
 
-		if 100 * (accumulatedTxSize + int(out.Size)) <= regPayTxShare {
+		if 100*(accumulatedTxSize+int(out.Size)) <= regPayTxShare {
 			accumulatedTxSize = accumulatedTxSize + int(out.Size)
 
 			bz.SecondQueueWait = bz.SecondQueueWait + bz.MCRoundNumber - int(out.RoundIssued)
@@ -395,17 +411,17 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	numberOfServAgrProposeTx := 0
 	numberOfServAgrCommitTx := 0
 	numberOfSyncTx := 0
- 
+
 	takenTime = time.Now()
 	fqRows, err := blockchain.MainChainGetFirstQueue()
 	index = 0
 	lastRowId = 0
-	for index=0 ; index <= len(fqRows) - 1 && !blockIsFull; index++ {
-		
+	for index = 0; index <= len(fqRows)-1 && !blockIsFull; index++ {
+
 		out := fqRows[index]
-		
+
 		/* each transaction has the following column stored on the transaction queue sheet:
-		
+
 		0) name
 		1) size
 		2) time
@@ -414,7 +430,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		the 4th column will be the number of por transactions summerized in
 		the sync tx) */
 
-		if accumulatedTxSize + int(out.Size) <= otherTxsShare {
+		if accumulatedTxSize+int(out.Size) <= otherTxsShare {
 			accumulatedTxSize = accumulatedTxSize + int(out.Size)
 			/* transaction name in transaction queue can be
 			"TxServAgrCommit",
@@ -466,18 +482,17 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 			blockIsFull = true
 			log.Lvl1("Final result MC: \n block is full! ")
 			err = blockchain.AddToRoundTableBasedOnRoundNumber("BlockSpaceFull", true, bz.MCRoundNumber)
-			if err != nil{
+			if err != nil {
 				panic(err)
 			}
 			break
 		}
 	}
 	err = blockchain.MainChainDeleteFromFirstQueue(lastRowId)
-	if err != nil{
+	if err != nil {
 		panic(err)
 	}
 	log.Lvl1("other tx.s taking took:", time.Since(takenTime).String())
-
 
 	log.Lvl2("In total in mc round number ", bz.MCRoundNumber,
 		"\n number of published PoR transactions is", numberOfPoRTx,
@@ -492,17 +507,17 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 
 	var avg1stWaitQueue, avg2ndWaitQueue float64 = 0, 0
 	if TotalNumTxsInFirstQueue != 0 {
-		avg1stWaitQueue = float64(bz.FirstQueueWait)/float64(TotalNumTxsInFirstQueue)
-	} 
+		avg1stWaitQueue = float64(bz.FirstQueueWait) / float64(TotalNumTxsInFirstQueue)
+	}
 
 	if numberOfRegPayTx != 0 {
-		avg2ndWaitQueue = float64(bz.SecondQueueWait)/float64(numberOfRegPayTx)
+		avg2ndWaitQueue = float64(bz.SecondQueueWait) / float64(numberOfRegPayTx)
 	}
-	
+
 	BlockSize := accumulatedTxSize + allocatedBlockSizeForRegPayTx + BlockSizeMinusTransactions
-    err = blockchain.AddStatsToRoundTableBasedOnRoundNumber(BlockSize, numberOfRegPayTx, numberOfPoRTx, numberOfStoragePayTx, numberOfServAgrProposeTx, numberOfServAgrCommitTx,
-													TotalNumTxsInBothQueue, avg1stWaitQueue,
-													avg2ndWaitQueue, numberOfSyncTx, bz.MCRoundNumber)
+	err = blockchain.AddStatsToRoundTableBasedOnRoundNumber(BlockSize, numberOfRegPayTx, numberOfPoRTx, numberOfStoragePayTx, numberOfServAgrProposeTx, numberOfServAgrCommitTx,
+		TotalNumTxsInBothQueue, avg1stWaitQueue,
+		avg2ndWaitQueue, numberOfSyncTx, bz.MCRoundNumber)
 	log.Lvl2("Final result MC: \n Block size allocation:\n", allocatedBlockSizeForRegPayTx,
 		" for regular payment txs,\n and ", accumulatedTxSize, " for other types of txs")
 	if err != nil {
@@ -555,16 +570,16 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	}
 
 	err = blockchain.InsertIntoMainChainOverallEvaluationTable(bz.MCRoundNumber, SumBCSize, SumRegPayTx, SumPoRTx, SumStorjTx,
-													SumCntPropTx, SumCntCmtTx, AvgWaitForOtherTxs, AvgWaitRegPay, 0)
-	if err != nil{
+		SumCntPropTx, SumCntCmtTx, AvgWaitForOtherTxs, AvgWaitRegPay, 0)
+	if err != nil {
 		panic(err)
 	}
 	/*
-	FormulaString = "=SUM(RoundTable!O2:O" + NextRow + ")"
-	err = f.SetCellFormula("OverallEvaluation", axisOverallBlockSpaceFull, FormulaString)
-	if err != nil {
-		log.LLvl1(err)
-	}*/
+		FormulaString = "=SUM(RoundTable!O2:O" + NextRow + ")"
+		err = f.SetCellFormula("OverallEvaluation", axisOverallBlockSpaceFull, FormulaString)
+		if err != nil {
+			log.LLvl1(err)
+		}*/
 
 	log.Lvl1(bz.Name(), " Finished taking transactions from queue (FIFO) into new block in mc round number ", bz.MCRoundNumber)
 
@@ -606,10 +621,27 @@ func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
 
 	if err != nil {
 		panic(err)
-	}	
+	}
 	log.Lvl1("Final result MC:", bz.Name(), " finished collecting new sync transactions to queue in mc round number ", bz.MCRoundNumber)
 	log.Lvl1("syncMainChainBCTransactionQueueCollect took:", time.Since(takenTime).String(), "for mc round number", bz.MCRoundNumber)
 
-
 	return blocksize
+}
+
+func (bz *ChainBoost) StoragePaymentMainChainBCTransactionQueueCollect() error {
+	// a simplifying assumpption: since all. contracts will be activated once expired, we assume that there is no contract that remain expired for an
+	// entire duration of n epoch
+	var err error
+	_, _, _, StoragePayTxSize, _ := blockchain.TransactionMeasurement(bz.SectorNumber, bz.SimulationSeed)
+	mcFirstQueueTxs := make([]blockchain.MainChainFirstQueueEntry, 0)
+
+	for i := range bz.Roster().List {
+		tx := blockchain.MainChainFirstQueueEntry{Name: "TxStoragePayment", Size: StoragePayTxSize, Time: time.Now(), RoundIssued: bz.MCRoundNumber, ServAgrId: i + 1}
+		mcFirstQueueTxs = append(mcFirstQueueTxs, tx)
+	}
+	err = blockchain.BulkInsertIntoMainChainFirstQueue(mcFirstQueueTxs)
+	if err != nil {
+		return err
+	}
+	return nil
 }

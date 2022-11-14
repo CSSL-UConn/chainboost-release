@@ -169,9 +169,21 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 		bz.BlsCosi.BlockType = "Summary Block" // just to know!
 		// ---
 		bz.BCLock.Lock()
-		// ---
+		// ----------------------------------------------------------------------------------------------------------------
+		// ---------------------------------------------- Blockchain Operations -------------------------------------------
+		// ----------------------------------------------------------------------------------------------------------------
 		// issueing a sync transaction from last submitted summary block to the main chain
 		blocksize = bz.syncMainChainBCTransactionQueueCollect()
+		// todoraha: add description
+		if bz.StoragePaymentEpoch != 0 && (bz.MCRoundNumber/bz.MCRoundPerEpoch%bz.StoragePaymentEpoch) == 0 {
+			err = bz.StoragePaymentMainChainBCTransactionQueueCollect()
+			if err != nil {
+				return xerrors.New("can't issue StoragePayment at the end of epoch" + err.Error())
+			}
+		}
+		// ----------------------------------------------------------------------------------------------------------------
+		// 									-------------------------------------------------
+		// ----------------------------------------------------------------------------------------------------------------
 		//update the last row in round table with summary block's size
 		// in this round in which a summary block will be generated, new transactions will be added to the queue but not taken
 		bz.updateSideChainBCRound(msg.Name(), blocksize)
