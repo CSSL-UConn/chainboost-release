@@ -147,6 +147,7 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	// ----
 	//go func() error {
 	bz.BlsCosi.Start()
+	bz.consensusTimeStart = time.Now()
 	log.Lvl1("SideChainLeaderPreNewRound took:", time.Since(takenTime).String(), "for sc round number", bz.SCRoundNumber)
 	//	if err != nil {
 	//		return xerrors.New("Problem in cosi protocol run:   " + err.Error())

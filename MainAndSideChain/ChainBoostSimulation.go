@@ -165,6 +165,8 @@ type ChainBoost struct {
 	SCSig      BLSCoSi.BlsSignature
 
 	simulationDone bool
+
+    consensusTimeStart time.Time
 }
 
 /* ----------------------------------- FUNCTIONS -------------------------------------------------
@@ -298,6 +300,8 @@ func (bz *ChainBoost) Dispatch() error {
 				bz.SideChainRootPostNewRound(msg)
 			}()
 		case sig := <-bz.BlsCosi.FinalSignature:
+            log.Lvl1("Time Taken for Consensus:", time.Since(bz.consensusTimeStart).String())
+
 			if bz.simulationDone == true {
 				return nil
 			}
