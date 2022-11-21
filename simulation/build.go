@@ -82,6 +82,7 @@ func startBuild() {
 		SideChainBlockSize, _ := strconv.Atoi(runconfigs[0].Get("SideChainBlockSize"))
 		SectorNumber, _ := strconv.Atoi(runconfigs[0].Get("SectorNumber"))
 		NumberOfPayTXsUpperBound, _ := strconv.Atoi(runconfigs[0].Get("NumberOfPayTXsUpperBound"))
+		NumberOfActiveContractsPerServer, _ := strconv.Atoi(runconfigs[0].Get("NumberOfActiveContractsPerServer"))
 		SimulationRounds, _ := strconv.Atoi(runconfigs[0].Get("SimulationRounds"))
 		SimulationSeed, _ := strconv.Atoi(runconfigs[0].Get("SimulationSeed"))
 		NbrSubTrees, _ := strconv.Atoi(runconfigs[0].Get("NbrSubTrees"))
@@ -97,22 +98,23 @@ func startBuild() {
 			Debug: log.DebugVisible(),
 			Suite: runconfigs[0].Get("Suite"),
 			// : adding some other system-wide configurations
-			MCRoundDuration:          MCRoundDuration,
-			PercentageTxPay:          PercentageTxPay,
-			MainChainBlockSize:       MainChainBlockSize,
-			SideChainBlockSize:       SideChainBlockSize,
-			SectorNumber:             SectorNumber,
-			NumberOfPayTXsUpperBound: NumberOfPayTXsUpperBound,
-			SimulationRounds:         SimulationRounds,
-			SimulationSeed:           SimulationSeed,
-			NbrSubTrees:              NbrSubTrees,
-			Threshold:                Threshold,
-			SCRoundDuration:          SCRoundDuration,
-			CommitteeWindow:          CommitteeWindow,
-			MCRoundPerEpoch:          MCRoundPerEpoch,
-			SimState:                 SimState,
-			StoragePaymentEpoch:      StoragePaymentEpoch,
-			PayPercentOfTransactions: PayPercentOfTransactions,
+			MCRoundDuration:                  MCRoundDuration,
+			PercentageTxPay:                  PercentageTxPay,
+			MainChainBlockSize:               MainChainBlockSize,
+			SideChainBlockSize:               SideChainBlockSize,
+			SectorNumber:                     SectorNumber,
+			NumberOfPayTXsUpperBound:         NumberOfPayTXsUpperBound,
+			NumberOfActiveContractsPerServer: NumberOfActiveContractsPerServer,
+			SimulationRounds:                 SimulationRounds,
+			SimulationSeed:                   SimulationSeed,
+			NbrSubTrees:                      NbrSubTrees,
+			Threshold:                        Threshold,
+			SCRoundDuration:                  SCRoundDuration,
+			CommitteeWindow:                  CommitteeWindow,
+			MCRoundPerEpoch:                  MCRoundPerEpoch,
+			SimState:                         SimState,
+			StoragePaymentEpoch:              StoragePaymentEpoch,
+			PayPercentOfTransactions:         PayPercentOfTransactions,
 		})
 
 		if clean {

@@ -11,6 +11,7 @@ Config File [ChainBoost.toml](https://github.com/chainBstSc/ChainBoost/blob/mast
 - `SectorNumber` is the number of sectors in each block of file with impact the por transaction size. [^sectorNumber]
 - `PercentageTxPay` the block size percentage allocated for regular payment transactions (if regular payment txs are less, other types of txs will take its space)
 - `NumberOfPayTXsUpperBound` the upper bound for a random number of regular payment transactions issued in each round
+- `NumberOfActiveContractsPerServer` 
 - `SimulationRounds` is number of mainchain's round that we want the protocol to stop after it
 - `MCRoundDuration` the time interval between each round (in seconds)
 - `SimulationSeed` 

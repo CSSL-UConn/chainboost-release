@@ -20,17 +20,18 @@ import (
 
 // Hello is sent down the tree from the root node, every node who gets it starts the protocol and send it to its children
 type HelloChainBoost struct {
-	SimulationRounds         int
-	PercentageTxPay          int
-	MCRoundDuration          int
-	SideChainBlockSize       int
-	MainChainBlockSize       int
-	SectorNumber             int
-	NumberOfPayTXsUpperBound int
-	SimulationSeed           int
-	SCRoundDuration          int
-	CommitteeWindow          int
-	MCRoundPerEpoch          int
+	SimulationRounds                 int
+	PercentageTxPay                  int
+	MCRoundDuration                  int
+	SideChainBlockSize               int
+	MainChainBlockSize               int
+	SectorNumber                     int
+	NumberOfPayTXsUpperBound         int
+	NumberOfActiveContractsPerServer int
+	SimulationSeed                   int
+	SCRoundDuration                  int
+	CommitteeWindow                  int
+	MCRoundPerEpoch                  int
 	// bls cosi config
 	NbrSubTrees int
 	Threshold   int
@@ -129,12 +130,13 @@ type ChainBoost struct {
 		for the root node: "after" NewMainAndSideChain call (in func: Simulate in file: runsimul.go)
 		for the rest of nodes node: while joining protocol by the HelloChainBoost message
 	--------------------------------------------------------------------- */
-	PercentageTxPay          int
-	MCRoundDuration          int
-	MainChainBlockSize       int
-	SideChainBlockSize       int
-	SectorNumber             int
-	NumberOfPayTXsUpperBound int
+	PercentageTxPay                  int
+	MCRoundDuration                  int
+	MainChainBlockSize               int
+	SideChainBlockSize               int
+	SectorNumber                     int
+	NumberOfPayTXsUpperBound         int
+	NumberOfActiveContractsPerServer int
 	// ---
 	SimulationRounds    int
 	SimulationSeed      int
@@ -166,7 +168,7 @@ type ChainBoost struct {
 
 	simulationDone bool
 
-  consensusTimeStart time.Time
+	consensusTimeStart       time.Time
 	PayPercentOfTransactions float64
 }
 
@@ -226,6 +228,7 @@ func (bz *ChainBoost) Dispatch() error {
 			bz.SideChainBlockSize = msg.SideChainBlockSize
 			bz.SectorNumber = msg.SectorNumber
 			bz.NumberOfPayTXsUpperBound = msg.NumberOfPayTXsUpperBound
+			bz.NumberOfActiveContractsPerServer = msg.NumberOfActiveContractsPerServer
 			bz.SimulationSeed = msg.SimulationSeed
 			bz.SCRoundDuration = msg.SCRoundDuration
 			bz.CommitteeWindow = msg.CommitteeWindow
@@ -301,7 +304,7 @@ func (bz *ChainBoost) Dispatch() error {
 				bz.SideChainRootPostNewRound(msg)
 			}()
 		case sig := <-bz.BlsCosi.FinalSignature:
-            log.Lvl1("Time Taken for Consensus:", time.Since(bz.consensusTimeStart).String())
+			log.Lvl1("Time Taken for Consensus:", time.Since(bz.consensusTimeStart).String())
 
 			if bz.simulationDone == true {
 				return nil

@@ -10,7 +10,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-type FileAndRoundInfo struct {
+type MarketMatchingRows struct {
 	MinerServer          string
 	FileSize             int
 	ServerAgrDuration    int
@@ -686,7 +686,7 @@ func MainChainGetPowerTable() (map[string]int, error) {
 	return minerspowers, nil
 }
 
-func MainChainGetFileAndRoundInfo() ([]FileAndRoundInfo, error) {
+func MainChainGetMarketMatchingRows() ([]MarketMatchingRows, error) {
 	stmt := `SELECT ServerInfo,
                     FileSize,
                     ServAgrDuration,
@@ -695,7 +695,7 @@ func MainChainGetFileAndRoundInfo() ([]FileAndRoundInfo, error) {
                     TxIssued
             FROM MarketMatching`
 
-	var output []FileAndRoundInfo
+	var output []MarketMatchingRows
 	mainchainDb, err := sql.Open("sqlite", mainchainpath)
 	if err != nil {
 		return nil, err
@@ -707,7 +707,7 @@ func MainChainGetFileAndRoundInfo() ([]FileAndRoundInfo, error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var item FileAndRoundInfo
+		var item MarketMatchingRows
 		if err := rows.Scan(&item.MinerServer,
 			&item.FileSize,
 			&item.ServerAgrDuration,

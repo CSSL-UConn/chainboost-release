@@ -73,23 +73,24 @@ type Localhost struct {
 	RunWait string
 
 	// : adding some other system-wide configurations
-	MCRoundDuration          int
-	PercentageTxPay          int
-	MainChainBlockSize       int
-	SideChainBlockSize       int
-	SectorNumber             int
-	NumberOfPayTXsUpperBound int
-	SimulationRounds         int
-	SimulationSeed           int
+	MCRoundDuration                  int
+	PercentageTxPay                  int
+	MainChainBlockSize               int
+	SideChainBlockSize               int
+	SectorNumber                     int
+	NumberOfPayTXsUpperBound         int
+	NumberOfActiveContractsPerServer int
+	SimulationRounds                 int
+	SimulationSeed                   int
 	//-- bls cosi
 
-	NbrSubTrees         int
-	Threshold           int
-	SCRoundDuration     int
-	CommitteeWindow     int
-	MCRoundPerEpoch     int
-	SimState            int
-	StoragePaymentEpoch int
+	NbrSubTrees              int
+	Threshold                int
+	SCRoundDuration          int
+	CommitteeWindow          int
+	MCRoundPerEpoch          int
+	SimState                 int
+	StoragePaymentEpoch      int
 	PayPercentOfTransactions float64
 }
 
@@ -110,6 +111,7 @@ func (d *Localhost) Configure(pc *Config) {
 	d.SideChainBlockSize = pc.SideChainBlockSize
 	d.SectorNumber = pc.SectorNumber
 	d.NumberOfPayTXsUpperBound = pc.NumberOfPayTXsUpperBound
+	d.NumberOfActiveContractsPerServer = pc.NumberOfActiveContractsPerServer
 	d.SimulationRounds = pc.SimulationRounds
 	d.SimulationSeed = pc.SimulationSeed
 	d.NbrSubTrees = pc.NbrSubTrees
@@ -122,7 +124,7 @@ func (d *Localhost) Configure(pc *Config) {
 	// ------------------------------
 	d.localDir = pwd
 	d.debug = pc.Debug
-	d.PayPercentOfTransactions = pc.PayPercentOfTransactions 
+	d.PayPercentOfTransactions = pc.PayPercentOfTransactions
 	d.running = false
 	if d.Simulation == "" {
 		log.Fatal("No simulation defined in simulation")
@@ -258,7 +260,7 @@ func (d *Localhost) Start(args ...string) error {
 			//log.Lvlf3("Localhost: will start host", i, h)
 			//log.Lvlf3(": adding some other system-wide configurations")
 
-			err := Simulate(d.PercentageTxPay, d.MCRoundDuration, d.MainChainBlockSize, d.SideChainBlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.SimulationRounds,
+			err := Simulate(d.PercentageTxPay, d.MCRoundDuration, d.MainChainBlockSize, d.SideChainBlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.NumberOfActiveContractsPerServer, d.SimulationRounds,
 				d.SimulationSeed, d.NbrSubTrees, d.Threshold, d.SCRoundDuration, d.CommitteeWindow, d.MCRoundPerEpoch, d.SimState, d.StoragePaymentEpoch,
 				d.Suite, host, d.Simulation, d.PayPercentOfTransactions)
 			if err != nil {

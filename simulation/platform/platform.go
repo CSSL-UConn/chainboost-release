@@ -67,23 +67,24 @@ type Config struct {
 	Suite string
 	Debug int
 	// : adding some other system-wide configurations, these fields are those who are needed in the protocol
-	MCRoundDuration          int
-	PercentageTxPay          int
-	MainChainBlockSize       int
-	SideChainBlockSize       int
-	SectorNumber             int
-	NumberOfPayTXsUpperBound int
-	SimulationRounds         int
-	SimulationSeed           int
+	MCRoundDuration                  int
+	PercentageTxPay                  int
+	MainChainBlockSize               int
+	SideChainBlockSize               int
+	SectorNumber                     int
+	NumberOfPayTXsUpperBound         int
+	NumberOfActiveContractsPerServer int
+	SimulationRounds                 int
+	SimulationSeed                   int
 	// bls cosi
 
-	NbrSubTrees         int
-	Threshold           int
-	SCRoundDuration     int
-	CommitteeWindow     int
-	MCRoundPerEpoch     int
-	SimState            int
-	StoragePaymentEpoch int
+	NbrSubTrees              int
+	Threshold                int
+	SCRoundDuration          int
+	CommitteeWindow          int
+	MCRoundPerEpoch          int
+	SimState                 int
+	StoragePaymentEpoch      int
 	PayPercentOfTransactions float64
 }
 

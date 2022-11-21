@@ -87,23 +87,24 @@ type Deterlab struct {
 	Tags string
 
 	// : adding some other system-wide configurations
-	MCRoundDuration          int
-	PercentageTxPay          int
-	MainChainBlockSize       int
-	SideChainBlockSize       int
-	SectorNumber             int
-	NumberOfPayTXsUpperBound int
-	SimulationRounds         int
-	SimulationSeed           int
+	MCRoundDuration                  int
+	PercentageTxPay                  int
+	MainChainBlockSize               int
+	SideChainBlockSize               int
+	SectorNumber                     int
+	NumberOfPayTXsUpperBound         int
+	NumberOfActiveContractsPerServer int
+	SimulationRounds                 int
+	SimulationSeed                   int
 	//-- bls cosi
 
-	NbrSubTrees         int
-	Threshold           int
-	SCRoundDuration     int
-	CommitteeWindow     int
-	MCRoundPerEpoch     int
-	SimState            int
-	StoragePaymentEpoch int
+	NbrSubTrees              int
+	Threshold                int
+	SCRoundDuration          int
+	CommitteeWindow          int
+	MCRoundPerEpoch          int
+	SimState                 int
+	StoragePaymentEpoch      int
 	PayPercentOfTransactions float64
 }
 
@@ -133,6 +134,7 @@ func (d *Deterlab) Configure(pc *Config) {
 	d.SideChainBlockSize = pc.SideChainBlockSize
 	d.SectorNumber = pc.SectorNumber
 	d.NumberOfPayTXsUpperBound = pc.NumberOfPayTXsUpperBound
+	d.NumberOfActiveContractsPerServer = pc.NumberOfActiveContractsPerServer
 	d.SimulationRounds = pc.SimulationRounds
 	d.SimulationSeed = pc.SimulationSeed
 	d.NbrSubTrees = pc.NbrSubTrees

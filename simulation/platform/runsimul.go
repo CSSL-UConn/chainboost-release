@@ -26,7 +26,7 @@ var batchSize = 1000
 
 // Simulate starts the server and will setup the protocol.
 // adding some other system-wide configurations
-func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize, SectorNumber, NumberOfPayTXsUpperBound,
+func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize, SectorNumber, NumberOfPayTXsUpperBound, NumberOfActiveContractsPerServer,
 	SimulationRounds, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, MCRoundPerEpoch, SimState, StoragePaymentEpoch int,
 	suite, serverAddress, simul string, PayPercentOfTransactions float64) error {
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
@@ -144,6 +144,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		ChainBoostProtocol.SideChainBlockSize = SideChainBlockSize
 		ChainBoostProtocol.SectorNumber = SectorNumber
 		ChainBoostProtocol.NumberOfPayTXsUpperBound = NumberOfPayTXsUpperBound
+		ChainBoostProtocol.NumberOfActiveContractsPerServer = NumberOfActiveContractsPerServer
 		ChainBoostProtocol.SimulationRounds = SimulationRounds
 		ChainBoostProtocol.SimulationSeed = SimulationSeed
 		ChainBoostProtocol.NbrSubTrees = NbrSubTrees
@@ -153,7 +154,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 		ChainBoostProtocol.MCRoundPerEpoch = MCRoundPerEpoch
 		ChainBoostProtocol.SimState = SimState
 		ChainBoostProtocol.StoragePaymentEpoch = StoragePaymentEpoch
-		ChainBoostProtocol.PayPercentOfTransactions = PayPercentOfTransactions 
+		ChainBoostProtocol.PayPercentOfTransactions = PayPercentOfTransactions
 		log.Lvl1("passing our system-wide configurations to the protocol",
 			"\n  PercentageTxPay: ", PercentageTxPay,
 			"\n  MCRoundDuration: ", MCRoundDuration,
@@ -161,6 +162,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 			"\n SideChainBlockSize: ", SideChainBlockSize,
 			"\n SectorNumber: ", SectorNumber,
 			"\n NumberOfPayTXsUpperBound: ", NumberOfPayTXsUpperBound,
+			"\n NumberOfActiveContractsPerServer: ", NumberOfActiveContractsPerServer,
 			"\n SimulationRounds: ", SimulationRounds,
 			"\n SimulationSeed of: ", SimulationSeed,
 			"\n nbrSubTrees of: ", NbrSubTrees,
@@ -360,14 +362,15 @@ func sendMsgToJoinChainBoostProtocol(i int, ChainBoostProtocol *MainAndSideChain
 			start := time.Now()
 			for time.Since(start) < timeout {
 				err := ChainBoostProtocol.SendTo(child, &MainAndSideChain.HelloChainBoost{
-					SimulationRounds:         ChainBoostProtocol.SimulationRounds,
-					PercentageTxPay:          ChainBoostProtocol.PercentageTxPay,
-					MCRoundDuration:          ChainBoostProtocol.MCRoundDuration,
-					MainChainBlockSize:       ChainBoostProtocol.MainChainBlockSize,
-					SideChainBlockSize:       ChainBoostProtocol.SideChainBlockSize,
-					SectorNumber:             ChainBoostProtocol.SectorNumber,
-					NumberOfPayTXsUpperBound: ChainBoostProtocol.NumberOfPayTXsUpperBound,
-					SimulationSeed:           ChainBoostProtocol.SimulationSeed,
+					SimulationRounds:                 ChainBoostProtocol.SimulationRounds,
+					PercentageTxPay:                  ChainBoostProtocol.PercentageTxPay,
+					MCRoundDuration:                  ChainBoostProtocol.MCRoundDuration,
+					MainChainBlockSize:               ChainBoostProtocol.MainChainBlockSize,
+					SideChainBlockSize:               ChainBoostProtocol.SideChainBlockSize,
+					SectorNumber:                     ChainBoostProtocol.SectorNumber,
+					NumberOfPayTXsUpperBound:         ChainBoostProtocol.NumberOfPayTXsUpperBound,
+					NumberOfActiveContractsPerServer: ChainBoostProtocol.NumberOfActiveContractsPerServer,
+					SimulationSeed:                   ChainBoostProtocol.SimulationSeed,
 					// --------------------- bls cosi ------------------------
 					NbrSubTrees:         ChainBoostProtocol.NbrSubTrees,
 					Threshold:           ChainBoostProtocol.Threshold,

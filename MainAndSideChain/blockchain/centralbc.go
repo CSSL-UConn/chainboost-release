@@ -18,6 +18,7 @@ type ExperimentConfig struct {
 	ServAgrDurationDistributionVariance float64
 	SimulationSeed                      int
 	Nodes                               int
+	NumberOfActiveContractsPerServer    int
 }
 
 // these values are written in the market matching sheet but since they are fixed
@@ -58,6 +59,7 @@ func generateNormalValues(variance float64, mean float64, nodes int, SimulationS
 func InitializeMainChainBC(exconf ExperimentConfig) {
 	// --------------------- generating normal distributed number based on config params ---------------------
 	// --------------------- distribution of market matching information ---------------------
+	exconf.Nodes = exconf.Nodes * exconf.NumberOfActiveContractsPerServer
 	FileSizeRow := generateNormalValues(exconf.FileSizeDistributionVariance, exconf.FileSizeDistributionMean, exconf.Nodes, exconf.SimulationSeed)
 
 	ServAgrDurationRow := generateNormalValues(exconf.ServAgrDurationDistributionVariance, exconf.ServAgrDurationDistributionMean, exconf.Nodes, exconf.SimulationSeed)

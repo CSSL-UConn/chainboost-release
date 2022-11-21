@@ -43,6 +43,7 @@ var MainChainBlockSize = 2000000 //byte
 var SideChainBlockSize = 1000000
 var SectorNumber = 2
 var NumberOfPayTXsUpperBound = 2000
+var NumberOfActiveContractsPerServer = 2
 var SimulationRounds = 20
 var SimulationSeed = 9
 var NbrSubTrees = 1
@@ -52,7 +53,7 @@ var CommitteeWindow = 10 //nodes
 var MCRoundPerEpoch = 1
 var SimState = 2
 var StoragePaymentEpoch = 0
-var PayPercentOfTransactions  = 0.02
+var PayPercentOfTransactions = 0.02
 
 // -------------------------------------
 // Initialize before 'init' so we can directly use the fields as parameters
@@ -119,7 +120,7 @@ func Start(rcs ...string) {
 		//suite = "bn256.adapter"
 
 		err := platform.Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize,
-			SectorNumber, NumberOfPayTXsUpperBound, SimulationRounds, SimulationSeed,
+			SectorNumber, NumberOfPayTXsUpperBound, NumberOfActiveContractsPerServer, SimulationRounds, SimulationSeed,
 			NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow,
 			MCRoundPerEpoch, SimState, StoragePaymentEpoch,
 			Suite, serverAddress, simul, PayPercentOfTransactions)
