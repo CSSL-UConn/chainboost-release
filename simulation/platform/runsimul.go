@@ -3,7 +3,9 @@ package platform
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
+	"os"
 	"sync"
 	"time"
 
@@ -24,11 +26,12 @@ type simulInitDone struct{}
 
 var batchSize = 1000
 
+var abspath, _ = os.Getwd()
+
 // Simulate starts the server and will setup the protocol.
 // adding some other system-wide configurations
-func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize, SectorNumber, NumberOfPayTXsUpperBound, NumberOfActiveContractsPerServer,
-	SimulationRounds, SimulationSeed, NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow, MCRoundPerEpoch, SimState, StoragePaymentEpoch int,
-	suite, serverAddress, simul string, PayPercentOfTransactions float64) error {
+func Simulate(configurations []Config, 
+	suite, serverAddress, simul string) error {
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 	if err != nil {
 		// We probably are not needed
@@ -100,115 +103,144 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 	}
 
 	var simError error
+	var ChainBoostProtocol *MainAndSideChain.ChainBoost
+	fmt.Printf(os.Getwd())
+	inputMainChain, err := ioutil.ReadFile(abspath + "/mainchain.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	inputSideChain, err := ioutil.ReadFile(abspath +"/sidechain.db")
+	if err != nil {
+		log.Fatal(err)
+	}
 	if rootSim != nil {
-		// If this cothority has the root-server, it will start the simulation
-		// ---------------------------------------------------------------
-		//              ---------- BLS CoSi protocol -------------
-		// ---------------------------------------------------------------
-		// initialization of committee members in side chain
-		committeeNodes := rootSC.Tree.Roster.List[:CommitteeWindow-1]
-		committeeNodes = append([]*network.ServerIdentity{rootSC.Tree.List()[CommitteeWindow].ServerIdentity}, committeeNodes...)
-		committee := onet.NewRoster(committeeNodes)
-		var x = *rootSC.Tree.List()[CommitteeWindow]
-		x.RosterIndex = 0
-		BlsCosiSubTrees, _ := BLSCoSi.NewBlsProtocolTree(onet.NewTree(committee, &x), NbrSubTrees)
-		pi, err := rootSC.Overlay.CreateProtocol("bdnCoSiProto", BlsCosiSubTrees[0], onet.NilServiceID)
-		if err != nil {
-			return xerrors.New("couldn't create protocol: " + err.Error())
-		}
-		cosiProtocol := pi.(*BLSCoSi.BlsCosi)
-		cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol
-		/*
-		   cosiProtocol.CreateProtocol = rootService.CreateProtocol //: it used to be initialized by this function call
-		   params from config file: */
-		cosiProtocol.Threshold = Threshold
-		if NbrSubTrees > 0 {
-			err := cosiProtocol.SetNbrSubTree(NbrSubTrees)
-			if err != nil {
-				return err
+		for run, configuration := range configurations {
+			err = ioutil.WriteFile(abspath + "/mainchain.db", inputMainChain, 0644)
+			if err != nil{
+				log.Fatal(err)
 			}
-		}
-		// ---------------------------------------------------------------
-		//              ------   ChainBoost protocol  ------
-		// ---------------------------------------------------------------
-		// calling CreateProtocol() => calling Dispatch()
-		p, err := rootSC.Overlay.CreateProtocol("ChainBoost", rootSC.Tree, onet.NilServiceID)
-		if err != nil {
-			return xerrors.New("couldn't create protocol: " + err.Error())
-		}
-		ChainBoostProtocol := p.(*MainAndSideChain.ChainBoost)
-		// passing our system-wide configurations to our protocol
-		ChainBoostProtocol.PercentageTxPay = PercentageTxPay
-		ChainBoostProtocol.MCRoundDuration = MCRoundDuration
-		ChainBoostProtocol.MainChainBlockSize = MainChainBlockSize
-		ChainBoostProtocol.SideChainBlockSize = SideChainBlockSize
-		ChainBoostProtocol.SectorNumber = SectorNumber
-		ChainBoostProtocol.NumberOfPayTXsUpperBound = NumberOfPayTXsUpperBound
-		ChainBoostProtocol.NumberOfActiveContractsPerServer = NumberOfActiveContractsPerServer
-		ChainBoostProtocol.SimulationRounds = SimulationRounds
-		ChainBoostProtocol.SimulationSeed = SimulationSeed
-		ChainBoostProtocol.NbrSubTrees = NbrSubTrees
-		ChainBoostProtocol.Threshold = Threshold
-		ChainBoostProtocol.SCRoundDuration = SCRoundDuration
-		ChainBoostProtocol.CommitteeWindow = CommitteeWindow
-		ChainBoostProtocol.MCRoundPerEpoch = MCRoundPerEpoch
-		ChainBoostProtocol.SimState = SimState
-		ChainBoostProtocol.StoragePaymentEpoch = StoragePaymentEpoch
-		ChainBoostProtocol.PayPercentOfTransactions = PayPercentOfTransactions
-		log.Lvl1("passing our system-wide configurations to the protocol",
-			"\n  PercentageTxPay: ", PercentageTxPay,
-			"\n  MCRoundDuration: ", MCRoundDuration,
-			"\n MainChainBlockSize: ", MainChainBlockSize,
-			"\n SideChainBlockSize: ", SideChainBlockSize,
-			"\n SectorNumber: ", SectorNumber,
-			"\n NumberOfPayTXsUpperBound: ", NumberOfPayTXsUpperBound,
-			"\n NumberOfActiveContractsPerServer: ", NumberOfActiveContractsPerServer,
-			"\n SimulationRounds: ", SimulationRounds,
-			"\n SimulationSeed of: ", SimulationSeed,
-			"\n nbrSubTrees of: ", NbrSubTrees,
-			"\n threshold of: ", Threshold,
-			"\n SCRoundDuration: ", SCRoundDuration,
-			"\n CommitteeWindow: ", CommitteeWindow,
-			"\n MCRoundPerEpoch: ", MCRoundPerEpoch,
-			"\n SimState: ", SimState,
-			"\n StoragePaymentEpoch: ", StoragePaymentEpoch,
-			"\n PayPercentOfTransactions", PayPercentOfTransactions,
-		)
-		ChainBoostProtocol.BlsCosi = cosiProtocol
-		// --------------------------------------------------------------
-		ChainBoostProtocol.JoinedWG.Add(len(rootSC.Tree.Roster.List))
-		ChainBoostProtocol.JoinedWG.Done()
-		// ----
-
-		ChainBoostProtocol.CalledWG.Add(len(rootSC.Tree.Roster.List))
-		ChainBoostProtocol.CalledWG.Done()
-
-		//Exit when first error occurs in a goroutine: https://stackoverflow.com/a/61518963
-		//Pass arguments into errgroup: https://forum.golangbridge.org/t/pass-arguments-to-errgroup-within-a-loop/19999
-		errs, _ := errgroup.WithContext(context.Background())
-		for i := 0; i <= len(rootSC.Tree.List())/batchSize; i++ {
-			id := i
-			errs.Go(func() error {
-				return sendMsgToJoinChainBoostProtocol(id, ChainBoostProtocol, rootSC)
-			})
-		}
-		if err := errs.Wait(); err != nil {
-			return xerrors.New("Error from simulation run: " + err.Error())
-		}
-
-		ChainBoostProtocol.CalledWG.Wait()
-		log.LLvl1("Wait is passed which means all nodes have recieved the HelloChainBoost msg")
-
-		go func() {
-			err := ChainBoostProtocol.DispatchProtocol()
-			if err != nil {
-				log.Lvl1("protocol dispatch calling error: " + err.Error())
+			err = ioutil.WriteFile(abspath + "/sidechain.db", inputSideChain, 0644)
+			if err != nil{
+				log.Fatal(err)
 			}
-		}()
-		ChainBoostProtocol.Start()
-		px := <-ChainBoostProtocol.DoneRootNode
-		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": Final result is", px)
+			// If this cothority has the root-server, it will start the simulation
+			// ---------------------------------------------------------------
+			//              ---------- BLS CoSi protocol -------------
+			// ---------------------------------------------------------------
+			// initialization of committee members in side chain
+			fmt.Printf(">>>>%+v", configuration)
+			committeeNodes := rootSC.Tree.Roster.List[:configuration.CommitteeWindow-1]
+			committeeNodes = append([]*network.ServerIdentity{rootSC.Tree.List()[configuration.CommitteeWindow].ServerIdentity}, committeeNodes...)
+			committee := onet.NewRoster(committeeNodes)
+			var x = *rootSC.Tree.List()[configuration.CommitteeWindow]
+			x.RosterIndex = 0
+			BlsCosiSubTrees, _ := BLSCoSi.NewBlsProtocolTree(onet.NewTree(committee, &x), configuration.NbrSubTrees)
+			pi, err := rootSC.Overlay.CreateProtocol("bdnCoSiProto", BlsCosiSubTrees[0], onet.NilServiceID)
+			if err != nil {
+				return xerrors.New("couldn't create protocol: " + err.Error())
+			}
+			cosiProtocol := pi.(*BLSCoSi.BlsCosi)
+			cosiProtocol.CreateProtocol = rootSC.Overlay.CreateProtocol
+			/*
+			   cosiProtocol.CreateProtocol = rootService.CreateProtocol //: it used to be initialized by this function call
+			   params from config file: */
+			cosiProtocol.Threshold = configuration.Threshold
+			if configuration.NbrSubTrees > 0 {
+				err := cosiProtocol.SetNbrSubTree(configuration.NbrSubTrees)
+				if err != nil {
+					return err
+				}
+			}
+			// ---------------------------------------------------------------
+			//              ------   ChainBoost protocol  ------
+			// ---------------------------------------------------------------
+			// calling CreateProtocol() => calling Dispatch()
+			p, err := rootSC.Overlay.CreateProtocol("ChainBoost", rootSC.Tree, onet.NilServiceID)
+			if err != nil {
+				return xerrors.New("couldn't create protocol: " + err.Error())
+			}
+			ChainBoostProtocol = p.(*MainAndSideChain.ChainBoost)
+			// passing our system-wide configurations to our protocol
+			ChainBoostProtocol.PercentageTxPay = configuration.PercentageTxPay
+			ChainBoostProtocol.MCRoundDuration = configuration.MCRoundDuration
+			ChainBoostProtocol.MainChainBlockSize = configuration.MainChainBlockSize
+			ChainBoostProtocol.SideChainBlockSize = configuration.SideChainBlockSize
+			ChainBoostProtocol.SectorNumber = configuration.SectorNumber
+			ChainBoostProtocol.NumberOfPayTXsUpperBound = configuration.NumberOfPayTXsUpperBound
+			ChainBoostProtocol.NumberOfActiveContractsPerServer = configuration.NumberOfActiveContractsPerServer
+			ChainBoostProtocol.SimulationRounds = configuration.SimulationRounds
+			ChainBoostProtocol.SimulationSeed = configuration.SimulationSeed
+			ChainBoostProtocol.NbrSubTrees = configuration.NbrSubTrees
+			ChainBoostProtocol.Threshold = configuration.Threshold
+			ChainBoostProtocol.SCRoundDuration = configuration.SCRoundDuration
+			ChainBoostProtocol.CommitteeWindow = configuration.CommitteeWindow
+			ChainBoostProtocol.MCRoundPerEpoch = configuration.MCRoundPerEpoch
+			ChainBoostProtocol.SimState = configuration.SimState
+			ChainBoostProtocol.StoragePaymentEpoch = configuration.StoragePaymentEpoch
+			ChainBoostProtocol.PayPercentOfTransactions = configuration.PayPercentOfTransactions
+			log.Lvl1("passing our system-wide configurations to the protocol",
+				"\n  PercentageTxPay: ", configuration.PercentageTxPay,
+				"\n  MCRoundDuration: ", configuration.MCRoundDuration,
+				"\n MainChainBlockSize: ", configuration.MainChainBlockSize,
+				"\n SideChainBlockSize: ", configuration.SideChainBlockSize,
+				"\n SectorNumber: ", configuration.SectorNumber,
+				"\n NumberOfPayTXsUpperBound: ", configuration.NumberOfPayTXsUpperBound,
+				"\n NumberOfActiveContractsPerServer: ", configuration.NumberOfActiveContractsPerServer,
+				"\n SimulationRounds: ", configuration.SimulationRounds,
+				"\n SimulationSeed of: ", configuration.SimulationSeed,
+				"\n nbrSubTrees of: ", configuration.NbrSubTrees,
+				"\n threshold of: ", configuration.Threshold,
+				"\n SCRoundDuration: ", configuration.SCRoundDuration,
+				"\n CommitteeWindow: ", configuration.CommitteeWindow,
+				"\n MCRoundPerEpoch: ", configuration.MCRoundPerEpoch,
+				"\n SimState: ", configuration.SimState,
+				"\n StoragePaymentEpoch: ", configuration.StoragePaymentEpoch,
+				"\n PayPercentOfTransactions", configuration.PayPercentOfTransactions,
+			)
+			ChainBoostProtocol.BlsCosi = cosiProtocol
+			// --------------------------------------------------------------
+			ChainBoostProtocol.JoinedWG.Add(len(rootSC.Tree.Roster.List))
+			ChainBoostProtocol.JoinedWG.Done()
+			// ----
 
+			ChainBoostProtocol.CalledWG.Add(len(rootSC.Tree.Roster.List))
+			ChainBoostProtocol.CalledWG.Done()
+
+			//Exit when first error occurs in a goroutine: https://stackoverflow.com/a/61518963
+			//Pass arguments into errgroup: https://forum.golangbridge.org/t/pass-arguments-to-errgroup-within-a-loop/19999
+			errs, _ := errgroup.WithContext(context.Background())
+			for i := 0; i <= len(rootSC.Tree.List())/batchSize; i++ {
+				id := i
+				errs.Go(func() error {
+					return sendMsgToJoinChainBoostProtocol(id, ChainBoostProtocol, rootSC)
+				})
+			}
+			if err := errs.Wait(); err != nil {
+				return xerrors.New("Error from simulation run: " + err.Error())
+			}
+
+			ChainBoostProtocol.CalledWG.Wait()
+			log.LLvl1("Wait is passed which means all nodes have recieved the HelloChainBoost msg")
+
+			go func() {
+				err := ChainBoostProtocol.DispatchProtocol()
+				if err != nil {
+					log.Lvl1("protocol dispatch calling error: " + err.Error())
+				}
+			}()
+			ChainBoostProtocol.Start()
+			px := <-ChainBoostProtocol.DoneRootNode
+			log.LLvl1(rootSC.Server.ServerIdentity.Address, ": Final result is", px)
+			time.Sleep(time.Second * 10) // wait for thread to finish writing to the db
+			mcFilename := fmt.Sprintf(abspath + "/mainchain_%d.db", run)
+			scFilename := fmt.Sprintf(abspath + "/sidechain_%d.db", run)
+			os.Rename(abspath + "/mainchain.db", mcFilename)
+			os.Rename(abspath + "/sidechain.db", scFilename)
+		}
+		err = ioutil.WriteFile(abspath + "/sidechain.db", inputSideChain, 0644)
+		if err != nil{
+			log.Fatal(err)
+		}
 		//childrenWait.Record()
 		// log.LLvl1("Broadcasting start")
 		// wgSimulInit.Add(len(rootSC.Tree.Roster.List))
@@ -233,7 +265,7 @@ func Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlo
 				log.Lvl1(ChainBoostProtocol.Info(), "couldn't send ChainBoostDone msg to child", child.Name(), "with err:", err)
 			}
 		}
-
+		
 		// Test if all ServerIdentities are used in the tree, else we'll run into
 		// troubles with CloseAll
 		if !rootSC.Tree.UsesList() {

@@ -92,45 +92,20 @@ type Localhost struct {
 	SimState                 int
 	StoragePaymentEpoch      int
 	PayPercentOfTransactions float64
+	configs []Config
 }
 
 // Configure various internal variables
-func (d *Localhost) Configure(pc *Config) {
+func (d *Localhost) Configure(pcs []Config) {
 	d.Lock()
 	defer d.Unlock()
 	pwd, _ := os.Getwd()
 	d.runDir = pwd + "/build"
 	os.RemoveAll(d.runDir)
 	log.ErrFatal(os.Mkdir(d.runDir, 0770))
-	d.Suite = pc.Suite
-	// ------------------------------
-	// : adding some other system-wide configurations
-	d.MCRoundDuration = pc.MCRoundDuration
-	d.PercentageTxPay = pc.PercentageTxPay
-	d.MainChainBlockSize = pc.MainChainBlockSize
-	d.SideChainBlockSize = pc.SideChainBlockSize
-	d.SectorNumber = pc.SectorNumber
-	d.NumberOfPayTXsUpperBound = pc.NumberOfPayTXsUpperBound
-	d.NumberOfActiveContractsPerServer = pc.NumberOfActiveContractsPerServer
-	d.SimulationRounds = pc.SimulationRounds
-	d.SimulationSeed = pc.SimulationSeed
-	d.NbrSubTrees = pc.NbrSubTrees
-	d.Threshold = pc.Threshold
-	d.SCRoundDuration = pc.SCRoundDuration
-	d.CommitteeWindow = pc.CommitteeWindow
-	d.MCRoundPerEpoch = pc.MCRoundPerEpoch
-	d.SimState = pc.SimState
-	d.StoragePaymentEpoch = pc.StoragePaymentEpoch
-	// ------------------------------
-	d.localDir = pwd
-	d.debug = pc.Debug
-	d.PayPercentOfTransactions = pc.PayPercentOfTransactions
-	d.running = false
-	if d.Simulation == "" {
-		log.Fatal("No simulation defined in simulation")
-	}
-	//log.Lvlf3(fmt.Sprintf("Localhost dirs: RunDir %s", d.runDir))
-	//log.Lvlf3("Localhost configured ...")
+	d.configs = pcs
+	fmt.Printf(">>>>%+v", pcs)
+	fmt.Printf(">>>>%+v", d.configs)
 }
 
 // Build does nothing, as we're using our own binary, no need to build
@@ -260,9 +235,7 @@ func (d *Localhost) Start(args ...string) error {
 			//log.Lvlf3("Localhost: will start host", i, h)
 			//log.Lvlf3(": adding some other system-wide configurations")
 
-			err := Simulate(d.PercentageTxPay, d.MCRoundDuration, d.MainChainBlockSize, d.SideChainBlockSize, d.SectorNumber, d.NumberOfPayTXsUpperBound, d.NumberOfActiveContractsPerServer, d.SimulationRounds,
-				d.SimulationSeed, d.NbrSubTrees, d.Threshold, d.SCRoundDuration, d.CommitteeWindow, d.MCRoundPerEpoch, d.SimState, d.StoragePaymentEpoch,
-				d.Suite, host, d.Simulation, d.PayPercentOfTransactions)
+			err := Simulate(d.configs, d.Suite, host, d.Simulation)
 			if err != nil {
 				log.Error("Error running localhost", h, ":", err)
 				d.errChan <- err

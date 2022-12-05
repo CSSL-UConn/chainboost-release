@@ -106,16 +106,17 @@ type Deterlab struct {
 	SimState                 int
 	StoragePaymentEpoch      int
 	PayPercentOfTransactions float64
+	configs []Config
 }
 
 var simulConfig *onet.SimulationConfig
 
 // Configure initialises the directories and loads the saved config
 // for Deterlab
-func (d *Deterlab) Configure(pc *Config) {
+func (d *Deterlab) Configure(pcs []Config) {
 	// Directory setup - would also be possible in /tmp
 	pwd, _ := os.Getwd()
-	d.Suite = pc.Suite
+	d.Suite = pcs[0].Suite
 	d.simulDir = pwd
 	d.deployDir = pwd + "/deploy"
 	d.buildDir = pwd + "/build"
@@ -126,31 +127,6 @@ func (d *Deterlab) Configure(pc *Config) {
 	os.Mkdir(d.buildDir, 0770)
 	log.LLvl1("Dirs are:", pwd, d.deployDir)
 	d.loadAndCheckDeterlabVars()
-	// ------------------------------
-	// : adding some other system-wide configurations
-	d.MCRoundDuration = pc.MCRoundDuration
-	d.PercentageTxPay = pc.PercentageTxPay
-	d.MainChainBlockSize = pc.MainChainBlockSize
-	d.SideChainBlockSize = pc.SideChainBlockSize
-	d.SectorNumber = pc.SectorNumber
-	d.NumberOfPayTXsUpperBound = pc.NumberOfPayTXsUpperBound
-	d.NumberOfActiveContractsPerServer = pc.NumberOfActiveContractsPerServer
-	d.SimulationRounds = pc.SimulationRounds
-	d.SimulationSeed = pc.SimulationSeed
-	d.NbrSubTrees = pc.NbrSubTrees
-	d.Threshold = pc.Threshold
-	d.SCRoundDuration = pc.SCRoundDuration
-	d.CommitteeWindow = pc.CommitteeWindow
-	d.MCRoundPerEpoch = pc.MCRoundPerEpoch
-	d.SimState = pc.SimState
-	d.StoragePaymentEpoch = pc.StoragePaymentEpoch
-	d.PayPercentOfTransactions = pc.PayPercentOfTransactions
-
-	// ------------------------------
-	d.Debug = pc.Debug
-	if d.Simulation == "" {
-		log.Fatal("No simulation defined in runconfig")
-	}
 
 	// Setting up channel
 	d.sshDeter = make(chan string)

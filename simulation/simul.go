@@ -118,12 +118,11 @@ func Start(rcs ...string) {
 		serverAddress = host
 
 		//suite = "bn256.adapter"
-
-		err := platform.Simulate(PercentageTxPay, MCRoundDuration, MainChainBlockSize, SideChainBlockSize,
-			SectorNumber, NumberOfPayTXsUpperBound, NumberOfActiveContractsPerServer, SimulationRounds, SimulationSeed,
-			NbrSubTrees, Threshold, SCRoundDuration, CommitteeWindow,
-			MCRoundPerEpoch, SimState, StoragePaymentEpoch,
-			Suite, serverAddress, simul, PayPercentOfTransactions)
+		runconfigs, err := getPlatformConfigs(os.Args[1])
+		if err != nil{
+			log.Fatal(err)
+		}
+		err = platform.Simulate(runconfigs,Suite, serverAddress, simul)
 		if err != nil {
 			log.LLvl1("Raha: err returned from simulate: ", err)
 			log.ErrFatal(err)

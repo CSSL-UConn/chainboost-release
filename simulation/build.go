@@ -12,6 +12,7 @@ import (
 
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/simulation/platform"
+	"github.com/BurntSushi/toml"
 	"golang.org/x/xerrors"
 )
 
@@ -42,6 +43,25 @@ func init() {
 	flag.DurationVar(&experimentWait, "experimentwait", experimentWait, "How long to wait for the whole experiment to finish")
 	flag.StringVar(&platformDst, "platform", platformDst, "platform to deploy to [localhost,mininet,deterlab]")
 
+}
+
+
+func getPlatformConfigs(configFile string) ([]platform.Config, error){
+	deployP := platform.NewPlatform(platformDst)
+	if deployP == nil {
+		log.Fatal("Platform not recognized.", platformDst)
+	}
+	runconfigs := platform.ReadRunFile(deployP, configFile)
+	platformConfigs := make([]platform.Config, 0)
+	for _, rc := range(runconfigs){
+		cfg := platform.Config{};
+		_, err := toml.Decode(string(rc.Toml()), &cfg)
+		if err != nil{
+			return nil, err
+		}
+		platformConfigs = append(platformConfigs, cfg)
+	}
+	return platformConfigs, nil
 }
 
 // Reads in the platform that we want to use and prepares for the tests
@@ -76,46 +96,19 @@ func startBuild() {
 		*/
 
 		// : converting string values read from toml file to int values
-		MCRoundDuration, _ := strconv.Atoi(runconfigs[0].Get("MCRoundDuration"))
-		PercentageTxPay, _ := strconv.Atoi(runconfigs[0].Get("PercentageTxPay"))
-		MainChainBlockSize, _ := strconv.Atoi(runconfigs[0].Get("MainChainBlockSize"))
-		SideChainBlockSize, _ := strconv.Atoi(runconfigs[0].Get("SideChainBlockSize"))
-		SectorNumber, _ := strconv.Atoi(runconfigs[0].Get("SectorNumber"))
-		NumberOfPayTXsUpperBound, _ := strconv.Atoi(runconfigs[0].Get("NumberOfPayTXsUpperBound"))
-		NumberOfActiveContractsPerServer, _ := strconv.Atoi(runconfigs[0].Get("NumberOfActiveContractsPerServer"))
-		SimulationRounds, _ := strconv.Atoi(runconfigs[0].Get("SimulationRounds"))
-		SimulationSeed, _ := strconv.Atoi(runconfigs[0].Get("SimulationSeed"))
-		NbrSubTrees, _ := strconv.Atoi(runconfigs[0].Get("NbrSubTrees"))
-		Threshold, _ := strconv.Atoi(runconfigs[0].Get("Threshold"))
-		SCRoundDuration, _ := strconv.Atoi(runconfigs[0].Get("SCRoundDuration"))
-		CommitteeWindow, _ := strconv.Atoi(runconfigs[0].Get("CommitteeWindow"))
-		MCRoundPerEpoch, _ := strconv.Atoi(runconfigs[0].Get("MCRoundPerEpoch"))
-		SimState, _ := strconv.Atoi(runconfigs[0].Get("SimState"))
-		StoragePaymentEpoch, _ := strconv.Atoi(runconfigs[0].Get("StoragePaymentEpoch"))
-		PayPercentOfTransactions, _ := strconv.ParseFloat(runconfigs[0].Get("PayPercentOfTransactions"), 64)
+		platformConfigs := make([]platform.Config, 0)
 
-		deployP.Configure(&platform.Config{
-			Debug: log.DebugVisible(),
-			Suite: runconfigs[0].Get("Suite"),
-			// : adding some other system-wide configurations
-			MCRoundDuration:                  MCRoundDuration,
-			PercentageTxPay:                  PercentageTxPay,
-			MainChainBlockSize:               MainChainBlockSize,
-			SideChainBlockSize:               SideChainBlockSize,
-			SectorNumber:                     SectorNumber,
-			NumberOfPayTXsUpperBound:         NumberOfPayTXsUpperBound,
-			NumberOfActiveContractsPerServer: NumberOfActiveContractsPerServer,
-			SimulationRounds:                 SimulationRounds,
-			SimulationSeed:                   SimulationSeed,
-			NbrSubTrees:                      NbrSubTrees,
-			Threshold:                        Threshold,
-			SCRoundDuration:                  SCRoundDuration,
-			CommitteeWindow:                  CommitteeWindow,
-			MCRoundPerEpoch:                  MCRoundPerEpoch,
-			SimState:                         SimState,
-			StoragePaymentEpoch:              StoragePaymentEpoch,
-			PayPercentOfTransactions:         PayPercentOfTransactions,
-		})
+		for _, rc := range(runconfigs){
+			cfg := platform.Config{};
+			_, err := toml.Decode(string(rc.Toml()), &cfg)
+			if err != nil{
+				log.Fatal(err)
+			}
+			platformConfigs = append(platformConfigs, cfg)
+		}
+
+
+		deployP.Configure(platformConfigs)
 
 		if clean {
 			err := deployP.Deploy(runconfigs[0])
