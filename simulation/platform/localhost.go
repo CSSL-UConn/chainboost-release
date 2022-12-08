@@ -92,7 +92,7 @@ type Localhost struct {
 	SimState                 int
 	StoragePaymentEpoch      int
 	PayPercentOfTransactions float64
-	configs []Config
+	configs                  []Config
 }
 
 // Configure various internal variables
@@ -164,7 +164,7 @@ func (d *Localhost) Deploy(rc *RunConfig) error {
 	// if d.PreScript != "" {
 	// 	// added next 2 line
 	// 	//ToDoRaha: what?!!!!!!
-	// 	pwd := "/deterlab_users/GitHub/chainBoostScale/ChainBoost/simulation/chainBoostFiles/"
+	// 	pwd := "/csslab_users/GitHub/chainBoostScale/ChainBoost/simulation/chainBoostFiles/"
 	// 	pwd = pwd + d.PreScript
 	// 	_, err := os.Stat(pwd /*d.PreScript*/)
 	// 	if !os.IsNotExist(err) {

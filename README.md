@@ -65,7 +65,7 @@ The following packages provide core functionality to `ChainBoost`:
 
 ## On Building using Makefiles
 
-this repo contains three Makefiles, one on the root of the repo, one in `simulation/manage/simulation/Makefile` and one in `simulation/platform/deterlab_users/Makefile`
+this repo contains three Makefiles, one on the root of the repo, one in `simulation/manage/simulation/Makefile` and one in `simulation/platform/csslab_users/Makefile`
 
 The Makefile in the root of the repo builds all the binaries (simul and users) and puts them in the build folder,
 it allows the following commands:

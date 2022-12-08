@@ -7,7 +7,7 @@
 
 After building the simulaion on your local machine, it will build two executable files `simul` and `users`, and create two xlsx files (to keep blockchain information) `mainchainbc` and `sidechainbc` which all will be under a created folder in the simulation module named `deploy`. 
 
-Two other config files named `chainBoost.toml` and `deterlab.toml` are transfered to this folder. These files are the ones that the simulation configuration is specified in them. So to set the simulation configuration these two config files should be used. 
+Two other config files named `chainBoost.toml` and `csslab.toml` are transfered to this folder. These files are the ones that the simulation configuration is specified in them. So to set the simulation configuration these two config files should be used. 
 
 After running the local phase of the distributed simulation, all these files (under the `deploy` folder in the local machine) are transferred to the gateway, to your home directory under a folder named `remote`. 
 
@@ -19,17 +19,17 @@ After running the local phase of the distributed simulation, all these files (un
 
 first set your username in
 
-- deter.toml 
+- cssl.toml 
 
 plus from the followinng two places that should be removed once we add dynamic config: 
 
-- https://github.com/chainBoostScale/ChainBoost/blob/986893b53416876cd64a56fd3928a17fc41a6dc5/simulation/platform/deterlab_users/users.go#L161
+- https://github.com/chainBoostScale/ChainBoost/blob/986893b53416876cd64a56fd3928a17fc41a6dc5/simulation/platform/csslab_users/users.go#L161
 
-- https://github.com/chainBoostScale/chainBoost/blob/6f60cef8009c3c3690665774529da70754c2c037/simulation/platform/deterlab.go#L191
+- https://github.com/chainBoostScale/chainBoost/blob/6f60cef8009c3c3690665774529da70754c2c037/simulation/platform/csslab.go#L191
 
 
 Then via the following command build the simulation:
-`$ go test -platform=deterlab timeout 300000s -run ^TestSimulation$`
+`$ go test -platform=csslab timeout 300000s -run ^TestSimulation$`
 
 ** after building the stimulation, you will see a `simulation started` message in your local machine,  thats where it should return (doesn't now) so you can terminate your local run for now. **
 

@@ -2,7 +2,7 @@
 Package onet is the Overlay Network which offers a simple framework for generating
 your own distributed systems. It is based on a description of your protocol
 and offers sending and receiving messages, handling trees and host-lists, and
-easy deploying to Localhost, Deterlab or a real-system.
+easy deploying to Localhost, Csslab or a real-system.
 
 ONet is based on the following pieces:
 

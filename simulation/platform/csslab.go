@@ -1,5 +1,5 @@
-// Deterlab is responsible for setting up everything to test the application
-// on deterlab.net
+// Csslab is responsible for setting up everything to test the application
+// on csslab.net
 // Given a list of hostnames, it will create an overlay
 // tree topology, using all but the last node. It will create multiple
 // nodes per server and run timestamping processes. The last node is
@@ -7,10 +7,10 @@
 //
 // Creates the following directory structure:
 // build/ - where all cross-compiled executables are stored
-// remote/ - directory to be copied to the deterlab server
+// remote/ - directory to be copied to the csslab server
 //
 // The following apps are used:
-//   deter - runs on the user-machine in deterlab and launches the others
+//   cssl - runs on the user-machine in csslab and launches the others
 //   forkexec - runs on the other servers and launches the app, so it can measure its cpu usage
 
 package platform
@@ -40,9 +40,9 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// Deterlab holds all fields necessary for a Deterlab-run
-type Deterlab struct {
-	// *** Deterlab-related configuration
+// Csslab holds all fields necessary for a Csslab-run
+type Csslab struct {
+	// *** Csslab-related configuration
 	// The login on the platform
 	Login string
 	// The outside host on the platform
@@ -53,7 +53,7 @@ type Deterlab struct {
 	Experiment string
 	// Directory holding the simulation-main file
 	simulDir string
-	// Directory where the deterlab-users-file is held
+	// Directory where the csslab-users-file is held
 	usersDir string
 	// Directory where everything is copied into
 	deployDir string
@@ -66,7 +66,7 @@ type Deterlab struct {
 	// VLAN-IP names (physical machines)
 	Virt []string
 	// Channel to communication stopping of experiment
-	sshDeter chan string
+	sshCss chan string
 	// Whether the simulation is started
 	started bool
 	// Number of available servers
@@ -106,14 +106,13 @@ type Deterlab struct {
 	SimState                 int
 	StoragePaymentEpoch      int
 	PayPercentOfTransactions float64
-	configs []Config
 }
 
 var simulConfig *onet.SimulationConfig
 
 // Configure initialises the directories and loads the saved config
-// for Deterlab
-func (d *Deterlab) Configure(pcs []Config) {
+// for Csslab
+func (d *Csslab) Configure(pcs []Config) {
 	// Directory setup - would also be possible in /tmp
 	pwd, _ := os.Getwd()
 	d.Suite = pcs[0].Suite
@@ -126,10 +125,10 @@ func (d *Deterlab) Configure(pcs []Config) {
 	os.Mkdir(d.deployDir, 0770)
 	os.Mkdir(d.buildDir, 0770)
 	log.LLvl1("Dirs are:", pwd, d.deployDir)
-	d.loadAndCheckDeterlabVars()
+	d.loadAndCheckCsslabVars()
 
 	// Setting up channel
-	d.sshDeter = make(chan string)
+	d.sshCss = make(chan string)
 }
 
 type pkg struct {
@@ -139,10 +138,10 @@ type pkg struct {
 	path      string
 }
 
-// Build prepares all binaries for the Deterlab-simulation.
+// Build prepares all binaries for the Csslab-simulation.
 // If 'build' is empty, all binaries are created, else only
 // the ones indicated. Either "simul" or "users"
-func (d *Deterlab) Build(build string, arg ...string) error {
+func (d *Csslab) Build(build string, arg ...string) error {
 	log.LLvl1("Building for", d.Login, d.Host, d.Project, build, "simulDir=", d.simulDir)
 	start := time.Now()
 
@@ -159,16 +158,16 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 	// but built for another architecture.
 	packages := []pkg{
 		//: changed
-		// deter has an amd64, linux architecture
+		// cssl has an amd64, linux architecture
 		{"simul", "arm64", "darwin", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
-		{"users", "amd64", "linux", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/platform", "deterlab_users")},
+		{"users", "amd64", "linux", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/platform", "csslab_users")},
 		{"simul", "amd64", "linux", path.Join("/Users/raha/Documents/github.com/chainBoostScale/ChainBoost/simulation/manage", "simulation")},
 		//{"simul", "amd64", "linux", d.simulDir},
 		//{"simul", "arm64", "linux", "/go/src/github.com/chainBoostScale/ChainBoost/simulation/manage/simulation"},
 		//{"users", "arm64", "darwin", d.simulDir},
 		//{"users", "arm64", "linux", d.simulDir},
-		//{"users", "386", "freebsd", path.Join(d.platformDir, "deterlab_users")},
-		//{"users", "arm64", "linux", path.Join(d.platformDir, "deterlab_users")},
+		//{"users", "386", "freebsd", path.Join(d.platformDir, "csslab_users")},
+		//{"users", "arm64", "linux", path.Join(d.platformDir, "csslab_users")},
 	}
 	if build == "" {
 		build = "simul,users"
@@ -222,14 +221,14 @@ func (d *Deterlab) Build(build string, arg ...string) error {
 }
 
 // Cleanup kills all eventually remaining processes from the last Deploy-run
-func (d *Deterlab) Cleanup() error {
+func (d *Csslab) Cleanup() error {
 	// Cleanup eventual ssh from the proxy-forwarding to the logserver
 	err := exec.Command("pkill", "-9", "-f", "ssh -nNTf").Run()
 	if err != nil {
 		log.LLvl1("Error stopping ssh:", err)
 	}
 
-	// SSH to the deterlab-server and end all running users-processes
+	// SSH to the csslab-server and end all running users-processes
 	log.LLvl1("Going to kill everything")
 	var sshKill chan string
 	sshKill = make(chan string)
@@ -263,8 +262,8 @@ func (d *Deterlab) Cleanup() error {
 }
 
 // Deploy creates the appropriate configuration-files and copies everything to the
-// deterlab-installation.
-func (d *Deterlab) Deploy(rc *RunConfig) error {
+// csslab-installation.
+func (d *Csslab) Deploy(rc *RunConfig) error {
 	if err := os.RemoveAll(d.deployDir); err != nil {
 		return xerrors.Errorf("removing folders: %v", err)
 	}
@@ -283,54 +282,54 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 		}
 	}
 
-	log.LLvl1("Deterlab: Deploying and writing config-files")
+	log.LLvl1("Csslab: Deploying and writing config-files")
 	sim, err := onet.NewSimulation(d.Simulation, string(rc.Toml()))
 	if err != nil {
 		return xerrors.Errorf("simulation: %v", err)
 	}
-	// Initialize the deter-struct with our current structure (for debug-levels
+	// Initialize the cssl-struct with our current structure (for debug-levels
 	// and such), then read in the app-configuration to overwrite eventual
 	// 'Machines', 'ppm', '' or other fields
-	deter := *d
-	deterConfig := d.deployDir + "/deter.toml"
-	_, err = toml.Decode(string(rc.Toml()), &deter)
+	cssl := *d
+	csslConfig := d.deployDir + "/cssl.toml"
+	_, err = toml.Decode(string(rc.Toml()), &cssl)
 	if err != nil {
 		return xerrors.Errorf("decoding toml: %v", err)
 	}
 	//-----------------------------------
-	// ToDoRaha: filling 2 attributes in deter struct: deter.Virt, deter.Phys
+	// ToDoRaha: filling 2 attributes in cssl struct: cssl.Virt, cssl.Phys
 	// by an "string array of IPs and DNS resolvable host names"
 
-	// createHosts and parseHost functions are deterlab API specific.
-	// deter.createHosts()
+	// createHosts and parseHost functions are csslab API specific.
+	// cssl.createHosts()
 	// Phys: DNS-resolvable names, Virt: VLAN-IP names (physical machines)
 	log.LLvl1("Getting the hosts")
-	deter.Phys = []string{}
-	deter.Virt = []string{}
+	cssl.Phys = []string{}
+	cssl.Virt = []string{}
 	//---
-	deter.Phys = append(deter.Phys, "192.168.3.220:22")
-	deter.Virt = append(deter.Virt, "192.168.3.220")
-	deter.Phys = append(deter.Phys, "192.168.3.221:22")
-	deter.Virt = append(deter.Virt, "192.168.3.221")
-	deter.Phys = append(deter.Phys, "192.168.3.222:22")
-	deter.Virt = append(deter.Virt, "192.168.3.222")
-	deter.Phys = append(deter.Phys, "192.168.3.223:22")
-	deter.Virt = append(deter.Virt, "192.168.3.223")
-	deter.Phys = append(deter.Phys, "192.168.3.224:22")
-	deter.Virt = append(deter.Virt, "192.168.3.224")
-	deter.Phys = append(deter.Phys, "192.168.3.225:22")
-	deter.Virt = append(deter.Virt, "192.168.3.225")
-	deter.Phys = append(deter.Phys, "192.168.3.226:22")
-	deter.Virt = append(deter.Virt, "192.168.3.226")
-	deter.Phys = append(deter.Phys, "192.168.3.227:22")
-	deter.Virt = append(deter.Virt, "192.168.3.227")
+	cssl.Phys = append(cssl.Phys, "192.168.3.220:22")
+	cssl.Virt = append(cssl.Virt, "192.168.3.220")
+	cssl.Phys = append(cssl.Phys, "192.168.3.221:22")
+	cssl.Virt = append(cssl.Virt, "192.168.3.221")
+	cssl.Phys = append(cssl.Phys, "192.168.3.222:22")
+	cssl.Virt = append(cssl.Virt, "192.168.3.222")
+	cssl.Phys = append(cssl.Phys, "192.168.3.223:22")
+	cssl.Virt = append(cssl.Virt, "192.168.3.223")
+	cssl.Phys = append(cssl.Phys, "192.168.3.224:22")
+	cssl.Virt = append(cssl.Virt, "192.168.3.224")
+	cssl.Phys = append(cssl.Phys, "192.168.3.225:22")
+	cssl.Virt = append(cssl.Virt, "192.168.3.225")
+	cssl.Phys = append(cssl.Phys, "192.168.3.226:22")
+	cssl.Virt = append(cssl.Virt, "192.168.3.226")
+	cssl.Phys = append(cssl.Phys, "192.168.3.227:22")
+	cssl.Virt = append(cssl.Virt, "192.168.3.227")
 
 	//-----------------------------------
 
-	log.LLvl1("Writing the config file :", deter)
-	onet.WriteTomlConfig(deter, deterConfig, d.deployDir)
+	log.LLvl1("Writing the config file :", cssl)
+	onet.WriteTomlConfig(cssl, csslConfig, d.deployDir)
 
-	simulConfig, err = sim.Setup(d.deployDir, deter.Virt)
+	simulConfig, err = sim.Setup(d.deployDir, cssl.Virt)
 	if err != nil {
 		return xerrors.Errorf("simulation setup: %v", err)
 	}
@@ -405,8 +404,8 @@ func (d *Deterlab) Deploy(rc *RunConfig) error {
 	return nil
 }
 
-// Start contacts the Deterlab server to run the simulation
-func (d *Deterlab) Start(args ...string) error {
+// Start contacts the Csslab server to run the simulation
+func (d *Csslab) Start(args ...string) error {
 	d.started = true
 	//----------
 	// ToDoRaha: let's not call ./user locally
@@ -415,14 +414,14 @@ func (d *Deterlab) Start(args ...string) error {
 	// 	if err != nil {
 	// 		log.LLvl1(err)
 	// 	}
-	// 	d.sshDeter <- "finished"
+	// 	d.sshCss <- "finished"
 	// }()
 
 	return nil
 }
 
 // Wait for the process to finish
-func (d *Deterlab) Wait() error {
+func (d *Csslab) Wait() error {
 	wait, err := time.ParseDuration(d.RunWait)
 	if err != nil || wait == 0 {
 		wait = 600 * time.Second
@@ -431,7 +430,7 @@ func (d *Deterlab) Wait() error {
 	if d.started {
 		log.LLvl1("Simulation is started")
 		select {
-		case msg := <-d.sshDeter:
+		case msg := <-d.sshCss:
 			if msg == "finished" {
 				log.LLvl1("Received finished-message, not killing users")
 				return nil
@@ -450,34 +449,35 @@ func (d *Deterlab) Wait() error {
 // ask on the command-line.
 // For the login-variable, it will try to set up a connection to d.Host and copy over the
 // public key for a more easy communication
-func (d *Deterlab) loadAndCheckDeterlabVars() {
-	deter := Deterlab{}
-	err := onet.ReadTomlConfig(&deter, "deter.toml")
-	d.Host, d.Login, d.Project, d.Experiment = deter.Host, deter.Login, deter.Project, deter.Experiment
+func (d *Csslab) loadAndCheckCsslabVars() {
+	cssl := Csslab{}
+	err := onet.ReadTomlConfig(&cssl, "cssl.toml")
+	d.Host, d.Login, d.Project, d.Experiment = cssl.Host, cssl.Login, cssl.Project, cssl.Experiment
 
 	if err != nil {
 		log.LLvl1("Couldn't read config-file - asking for default values")
 	}
 
 	if d.Host == "" {
-		d.Host = readString("Please enter the hostname of deterlab", "csi-lab-ssh.engr.uconn.edu")
+		d.Host = readString("Please enter the hostname of csslab", "csi-lab-ssh.engr.uconn.edu:30")
 	}
 
 	login, err := user.Current()
 	log.ErrFatal(err)
+
 	if d.Login == "" {
 		d.Login = readString("Please enter the login-name on "+d.Host, login.Username)
 	}
 
 	if d.Project == "" {
-		d.Project = readString("Please enter the project on deterlab", "SAFER")
+		d.Project = readString("Please enter the project on csslab", "SAFER")
 	}
 
 	if d.Experiment == "" {
 		d.Experiment = readString("Please enter the Experiment on "+d.Project, "Dissent-CS")
 	}
 
-	onet.WriteTomlConfig(*d, "deter.toml")
+	onet.WriteTomlConfig(*d, "cssl.toml")
 }
 
 // Shows a messages and reads in a string, eventually returning a default (dft) string
@@ -494,7 +494,7 @@ func readString(msg, dft string) string {
 }
 
 const simulConnectionsConf = `
-# This is for the onet-deterlab testbed, which can use up an awful lot of connections
+# This is for the onet-csslab testbed, which can use up an awful lot of connections
 
 * soft nofile 128000
 * hard nofile 128000
@@ -502,17 +502,17 @@ const simulConnectionsConf = `
 
 // Write the hosts.txt file automatically
 // from project name and number of servers
-// func (d *Deterlab) createHosts() {
-// 	// Query deterlab's API for servers
-// 	log.LLvl1("Querying Deterlab's API to retrieve server names and addresses")
+// func (d *Csslab) createHosts() {
+// 	// Query csslab's API for servers
+// 	log.LLvl1("Querying Csslab's API to retrieve server names and addresses")
 // 	command := fmt.Sprintf("/usr/testbed/bin/expinfo -l -e %s,%s", d.Project, d.Experiment)
 // 	apiReply, err := SSHRun(d.Login, d.Host, command)
 // 	if err != nil {
-// 		log.Fatal("Error while querying Deterlab:", err)
+// 		log.Fatal("Error while querying Csslab:", err)
 // 	}
 // 	log.ErrFatal(d.parseHosts(string(apiReply)))
 // }
-// func (d *Deterlab) parseHosts(str string) error {
+// func (d *Csslab) parseHosts(str string) error {
 // 	// Get the link-information, which is the second block in `expinfo`-output
 // 	infos := strings.Split(str, "\n\n")
 // 	if len(infos) < 2 {
@@ -542,7 +542,7 @@ const simulConnectionsConf = `
 // 		// Convert client-0:0 to client-0
 // 		name := strings.Split(matches[1], ":")[0]
 // 		ip := matches[2]
-// 		fullName := fmt.Sprintf("%s.%s.%s.isi.deterlab.net", name, d.Experiment, d.Project)
+// 		fullName := fmt.Sprintf("%s.%s.%s.isi.csslab.net", name, d.Experiment, d.Project)
 // 		log.LLvl1("Discovered", fullName, "on ip", ip)
 // 		if _, exists := names[fullName]; !exists {
 // 			d.Phys = append(d.Phys, fullName)

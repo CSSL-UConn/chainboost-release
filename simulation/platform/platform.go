@@ -1,6 +1,6 @@
 // Package platform contains interface and implementation to run onet code
 // amongst multiple platforms. Such implementations include Localhost (run your
-// test locally) and Deterlab (similar to emulab).
+// test locally) and Csslab (similar to emulab).
 package platform
 
 import (
@@ -88,18 +88,18 @@ type Config struct {
 	PayPercentOfTransactions float64
 }
 
-var deterlab = "deterlab"
+var csslab = "csslab"
 var localhost = "localhost"
 var mininet = "mininet"
 var cssl = "cssl"
 
 // NewPlatform returns the appropriate platform
-// [deterlab,localhost]
+// [csslab,localhost]
 func NewPlatform(t string) Platform {
 	var p Platform
 	switch t {
-	case deterlab:
-		p = &Deterlab{}
+	case csslab:
+		p = &Csslab{}
 	case localhost:
 		p = &Localhost{}
 	case cssl:

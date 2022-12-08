@@ -4,7 +4,7 @@ are available:
 
 	- localhost - for up to 100 nodes
 	- mininet - for up to 1'000 nodes
-	- deterlab - for up to 50'000 nodes
+	- csslab - for up to 50'000 nodes
 
 Usually you start small, then work your way up to the full potential of your
 protocol!
@@ -64,22 +64,6 @@ func init() {
 	flag.StringVar(&Suite, "suite", "Ed25519", "cryptographic suite to use")
 	//----
 	flag.IntVar(&Debug, "Debug", Debug, "logging level")
-	//----
-	flag.IntVar(&PercentageTxPay, "PercentageTxPay", PercentageTxPay, "PercentageTxPay")
-	flag.IntVar(&MCRoundDuration, "MCRoundDuration", MCRoundDuration, "MCRoundDuration")
-	flag.IntVar(&MainChainBlockSize, "MainChainBlockSize", MainChainBlockSize, "MainChainBlockSize")
-	flag.IntVar(&SideChainBlockSize, "SideChainBlockSize", SideChainBlockSize, "SideChainBlockSize")
-	flag.IntVar(&SectorNumber, "SectorNumber", SectorNumber, "SectorNumber")
-	flag.IntVar(&NumberOfPayTXsUpperBound, "NumberOfPayTXsUpperBound", NumberOfPayTXsUpperBound, "NumberOfPayTXsUpperBound")
-	flag.IntVar(&SimulationRounds, "SimulationRounds", SimulationRounds, "SimulationRounds")
-	flag.IntVar(&SimulationSeed, "SimulationSeed", SimulationSeed, "SimulationSeed")
-	flag.IntVar(&NbrSubTrees, "NbrSubTrees", NbrSubTrees, "NbrSubTrees")
-	flag.IntVar(&Threshold, "Threshold", Threshold, "Threshold")
-	flag.IntVar(&SCRoundDuration, "SCRoundDuration", SCRoundDuration, "SCRoundDuration")
-	flag.IntVar(&CommitteeWindow, "CommitteeWindow", CommitteeWindow, "CommitteeWindow")
-	flag.IntVar(&MCRoundPerEpoch, "MCRoundPerEpoch", MCRoundPerEpoch, "MCRoundPerEpoch")
-	flag.IntVar(&SimState, "SimState", SimState, "SimState")
-	flag.Float64Var(&PayPercentOfTransactions, "PayPercentOfTransactions", PayPercentOfTransactions, "PayPercentOfTransactions")
 	log.RegisterFlags()
 }
 
@@ -88,22 +72,21 @@ func init() {
 // build is started.Only the platform will call this binary with a simul-flag set to the name of the
 // simulation to run.If given an array of rcs, each element will be interpreted as a .toml-file
 // to load and simulate.
-func Start(rcs ...string) {
+func Start(platformDst string, rcs ...string) {
 	wd, er := os.Getwd()
 	if len(rcs) > 0 {
 		log.ErrFatal(er)
 		for _, rc := range rcs {
 			log.LLvl5("Running toml-file:", rc)
 			os.Args = []string{os.Args[0], rc}
-			Start()
+			Start(platformDst)
 		}
 		return
 	}
 	flag.Parse()
 	if simul == "" {
-		startBuild()
+		startBuild(platformDst)
 	} else {
-		log.Lvl3("simul and PercentageTxPay flags are:", simul, " ", PercentageTxPay)
 		// -------------------------------------
 		//get current vm's ip
 		var serverAddress string
@@ -118,11 +101,12 @@ func Start(rcs ...string) {
 		serverAddress = host
 
 		//suite = "bn256.adapter"
+
 		runconfigs, err := getPlatformConfigs(os.Args[1])
-		if err != nil{
+		if err != nil {
 			log.Fatal(err)
 		}
-		err = platform.Simulate(runconfigs,Suite, serverAddress, simul)
+		err = platform.Simulate(runconfigs, Suite, serverAddress, simul)
 		if err != nil {
 			log.LLvl1("Raha: err returned from simulate: ", err)
 			log.ErrFatal(err)

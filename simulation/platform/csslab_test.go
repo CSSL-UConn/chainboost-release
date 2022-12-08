@@ -1,21 +1,21 @@
 package platform
 
-// func TestDeterlab_parseHosts(t *testing.T) {
-// 	d := &Deterlab{}
+// func TestCsslab_parseHosts(t *testing.T) {
+// 	d := &Csslab{}
 // 	require.NotNil(t, d.parseHosts(""))
-// 	require.NotNil(t, d.parseHosts(deterHostsErr1))
-// 	require.NotNil(t, d.parseHosts(deterHostsErr2))
+// 	require.NotNil(t, d.parseHosts(csslHostsErr1))
+// 	require.NotNil(t, d.parseHosts(csslHostsErr2))
 
-// 	log.ErrFatal(d.parseHosts(deterHosts1))
+// 	log.ErrFatal(d.parseHosts(csslHosts1))
 // 	require.Equal(t, 9, len(d.Virt))
 // 	require.Equal(t, 9, len(d.Phys))
 
-// 	log.ErrFatal(d.parseHosts(deterHosts2))
+// 	log.ErrFatal(d.parseHosts(csslHosts2))
 // 	require.Equal(t, 2, len(d.Virt))
 // 	require.Equal(t, 2, len(d.Phys))
 // }
 
-const deterHostsErr1 = `
+const csslHostsErr1 = `
 Experiment: SAFER/LB-LLD
 State: active
 
@@ -24,7 +24,7 @@ ID              Member/Proto    IP/Mask         Delay     BW (Kbs)  Loss Rate
 --------------- --------------- --------------- --------- --------- ---------
 lanclients      client-0:0      10.0.1.1        5.00      100000    0.00000000`
 
-const deterHostsErr2 = `
+const csslHostsErr2 = `
 Experiment: SAFER/LB-LLD
 State: active
 
@@ -34,7 +34,7 @@ ID              Member/Proto    IP/Mask         Delay     BW (Kbs)  Loss Rate
 lanclients      client-0:0      10.0.1.1        5.00      100000
                 ethernet        255.255.255.0   5.00      100000    0.00000000`
 
-const deterHosts1 = `
+const csslHosts1 = `
 Experiment: SAFER/LB-LLD
 State: active
 
@@ -101,7 +101,7 @@ lantrustees     trustee-1:0     100 slots  Tail    0/0/0/0
 lantrustees     trustee-2:0     100 slots  Tail    0/0/0/0
 `
 
-const deterHosts2 = `
+const csslHosts2 = `
 Experiment: SAFER/LB-LLD
 State: active
 

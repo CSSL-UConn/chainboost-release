@@ -8,7 +8,7 @@ The onet library allows for multiple levels of simulations:
     -   up to 300 nodes on a 48-core machine, multiplied by the number of machines
         available
     -   define max. bandwidth and delay for your network
--   [Deterlab](./platform/DETERLAB.md):
+-   [Csslab](./platform/CSSLAB.md):
     -   up to 1000 nodes on a strong machine, multiplied by the number of machines
         available
 
@@ -20,7 +20,7 @@ Refer to the simulation-examples in one of the following places:
 ## Runfile for simulations
 
 Each simulation can have one or more .toml-files that describe a number of experiments
-to be run on localhost or deterlab.
+to be run on localhost or csslab.
 
 The .toml-files are split in two parts, separated by an empty line. The first
 part consists of one or more 'global' variables that describe all experiments.
@@ -40,11 +40,11 @@ experiment, where each experiment makes up one line.
 The `Servers` will mostly influence how the simulation will be run.
 Depending on the platform, this will be handled differently:
 - `localhost` - `Servers` is ignored here
-- `Deterlab` - the system will distribute the `Hosts` nodes over the
+- `Csslab` - the system will distribute the `Hosts` nodes over the
  available servers, but not over more than `Servers`.
- This allows for running simulations that are smaller than your whole DETERLab experiment without having to modify and restart the
+ This allows for running simulations that are smaller than your whole CSSLab experiment without having to modify and restart the
   experiment.
-- `Mininet` - as in `Deterlab`, the `Hosts` nodes will be distributed over
+- `Mininet` - as in `Csslab`, the `Hosts` nodes will be distributed over
  a maximum of `Servers`.
 
 ### onet.SimulationBFTree
@@ -56,7 +56,7 @@ Even if you use the `SimulationBFTree`, you're not restricted to use only the
  prepared `Tree`.
 However, there will not be more nodes available than the ones in the prepared
  `Roster`.
-Some restrictions apply when you're using the `Deterlab` simulation: 
+Some restrictions apply when you're using the `Csslab` simulation: 
 - all nodes on one server (`Hosts` / min(available servers, `Servers`)) are
  run in one binary, which means
   - bandwidth measurements cover all the nodes
@@ -133,7 +133,7 @@ a missing library), you can define
 -   `PreScript` - a shell-script that is run _before_ the simulation is started
     on each machine.
     It receives a single argument: the platform this simulation runs:
-    [localhost,mininet,deterlab]
+    [localhost,mininet,csslab]
 
 ### MiniNet specific
 

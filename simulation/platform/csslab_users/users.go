@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"os"
-	"fmt"
 
 	//"os"
 	"os/exec"
@@ -32,22 +31,22 @@ func init() {
 	flag.BoolVar(&kill, "kill", false, "kill everything (and don't start anything)")
 }
 
-// DeterlabUsers is called on the users.deterlab.net-server and will:
+// CsslabUsers is called on the users.csslab.net-server and will:
 // - copy the simulation-files to the server
 // - start the simulation
 func main() {
-	//init with deter.toml
-	deter := deterFromConfig()
+	//init with cssl.toml
+	cssl := csslFromConfig()
 	flag.Parse()
 	// kill old processes
 	var wg sync.WaitGroup
 	re := regexp.MustCompile(" +")
-	// hosts, err := exec.Command("/usr/testbed/bin/node_list", "-e", deter.Project+","+deter.Experiment).Output()
+	// hosts, err := exec.Command("/usr/testbed/bin/node_list", "-e", cssl.Project+","+cssl.Experiment).Output()
 	// if err != nil {
-	// 	log.Fatal("Deterlab experiment", deter.Project+"/"+deter.Experiment, "tttt seems not to be swapped in. Aborting.")
+	// 	log.Fatal("Csslab experiment", cssl.Project+"/"+cssl.Experiment, "tttt seems not to be swapped in. Aborting.")
 	// 	os.Exit(-1)
 	// }
-	//hosts := "csi-lab-ssh.engr.uconn.edu"
+	//hosts := "csi-lab-ssh.engr.uconn.edu:30"
 	//todo: change this list based on list of VMs or make it dynamic later
 	// 192.168.3.221:22 192.168.3.222:22 192.168.3.223:22
 	hosts := "192.168.3.220:22 192.168.3.221:22 192.168.3.222:22 192.168.3.223:22 192.168.3.224:22 192.168.3.225:22 192.168.3.226:22 192.168.3.227:22"
@@ -117,19 +116,19 @@ func main() {
 	}
 	//-------------------
 	killing := false
-	for i, phys := range deter.Phys {
+	for i, phys := range cssl.Phys {
 		wg.Add(1)
 		go func(phys, internal string) {
 			defer wg.Done()
 			// If PreScript is defined, run the appropriate script _before_ the simulation.
-			if deter.PreScript != "" {
-				log.LLvl1(": deter.PreScript running?")
-				err := platform.SSHRunStdout("root", phys, "cd remote; sudo ./"+deter.PreScript+" deterlab")
+			if cssl.PreScript != "" {
+				log.LLvl1(": cssl.PreScript running?")
+				err := platform.SSHRunStdout("root", phys, "cd remote; sudo ./"+cssl.PreScript+" csslab")
 				if err != nil {
 					log.Fatal("error deploying PreScript: ", err)
 				}
 			} else {
-				log.LLvl1(": deter.PreScript is empty.")
+				log.LLvl1(": cssl.PreScript is empty.")
 			}
 			// -----------------------------------------
 			// Copy everything over
@@ -165,26 +164,10 @@ func main() {
 			*/
 
 			args := " -address=" + internal +
-				" -simul=" + deter.Simulation +
+				" -simul=" + cssl.Simulation +
 				//" -debug=" + strconv.Itoa(log.DebugVisible()) +
 				" -Debug=" + strconv.Itoa(simul.Debug) +
-				" -suite=" + simul.Suite +
-				// ----- ChainBoost Config Variables
-				" -PercentageTxPay=" + strconv.Itoa(deter.PercentageTxPay) + //strconv.Itoa(simul.PercentageTxPay) +
-				" -MCRoundDuration=" + strconv.Itoa(simul.MCRoundDuration) +
-				" -MainChainBlockSize=" + strconv.Itoa(simul.MainChainBlockSize) +
-				" -SideChainBlockSize=" + strconv.Itoa(simul.SideChainBlockSize) +
-				" -SectorNumber=" + strconv.Itoa(simul.SectorNumber) +
-				" -NumberOfPayTXsUpperBound=" + strconv.Itoa(simul.NumberOfPayTXsUpperBound) +
-				" -SimulationRounds=" + strconv.Itoa(simul.SimulationRounds) +
-				" -SimulationSeed=" + strconv.Itoa(simul.SimulationSeed) +
-				" -NbrSubTrees=" + strconv.Itoa(simul.NbrSubTrees) +
-				" -Threshold=" + strconv.Itoa(simul.Threshold) +
-				" -SCRoundDuration=" + strconv.Itoa(simul.SCRoundDuration) +
-				" -CommitteeWindow=" + strconv.Itoa(simul.CommitteeWindow) +
-				" -MCRoundPerEpoch=" + strconv.Itoa(simul.MCRoundPerEpoch) +
-				" -SimState=" + strconv.Itoa(simul.SimState) +
-				" -PayPercentOfTransactions=" + fmt.Sprintf("%f",simul.PayPercentOfTransactions)
+				" -suite=" + simul.Suite
 
 			log.Lvl1("Args is", args)
 			err = platform.SSHRunStdout("root", phys, "cd remote; sudo ./simul "+args)
@@ -203,17 +186,17 @@ func main() {
 				}
 			}
 			log.LLvl1("Finished with simul on", internal)
-		}(phys, deter.Virt[i])
+		}(phys, cssl.Virt[i])
 	}
 	// wait for the servers to finish before stopping
 	wg.Wait()
 	//prox.Stop()
 }
 
-// Reads in the deterlab-config and drops out if there is an error
-func deterFromConfig(name ...string) *platform.Deterlab {
-	d := &platform.Deterlab{}
-	configName := "deter.toml"
+// Reads in the csslab-config and drops out if there is an error
+func csslFromConfig(name ...string) *platform.Csslab {
+	d := &platform.Csslab{}
+	configName := "cssl.toml"
 	if len(name) > 0 {
 		configName = name[0]
 	}

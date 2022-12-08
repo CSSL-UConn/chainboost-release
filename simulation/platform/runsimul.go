@@ -30,7 +30,7 @@ var abspath, _ = os.Getwd()
 
 // Simulate starts the server and will setup the protocol.
 // adding some other system-wide configurations
-func Simulate(configurations []Config, 
+func Simulate(configurations []Config,
 	suite, serverAddress, simul string) error {
 	scs, err := onet.LoadSimulationConfig(suite, ".", serverAddress)
 	if err != nil {
@@ -109,18 +109,18 @@ func Simulate(configurations []Config,
 	if err != nil {
 		log.Fatal(err)
 	}
-	inputSideChain, err := ioutil.ReadFile(abspath +"/sidechain.db")
+	inputSideChain, err := ioutil.ReadFile(abspath + "/sidechain.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	if rootSim != nil {
 		for run, configuration := range configurations {
-			err = ioutil.WriteFile(abspath + "/mainchain.db", inputMainChain, 0644)
-			if err != nil{
+			err = ioutil.WriteFile(abspath+"/mainchain.db", inputMainChain, 0644)
+			if err != nil {
 				log.Fatal(err)
 			}
-			err = ioutil.WriteFile(abspath + "/sidechain.db", inputSideChain, 0644)
-			if err != nil{
+			err = ioutil.WriteFile(abspath+"/sidechain.db", inputSideChain, 0644)
+			if err != nil {
 				log.Fatal(err)
 			}
 			// If this cothority has the root-server, it will start the simulation
@@ -232,13 +232,13 @@ func Simulate(configurations []Config,
 			px := <-ChainBoostProtocol.DoneRootNode
 			log.LLvl1(rootSC.Server.ServerIdentity.Address, ": Final result is", px)
 			time.Sleep(time.Second * 10) // wait for thread to finish writing to the db
-			mcFilename := fmt.Sprintf(abspath + "/mainchain_%d.db", run)
-			scFilename := fmt.Sprintf(abspath + "/sidechain_%d.db", run)
-			os.Rename(abspath + "/mainchain.db", mcFilename)
-			os.Rename(abspath + "/sidechain.db", scFilename)
+			mcFilename := fmt.Sprintf(abspath+"/mainchain_%d.db", run)
+			scFilename := fmt.Sprintf(abspath+"/sidechain_%d.db", run)
+			os.Rename(abspath+"/mainchain.db", mcFilename)
+			os.Rename(abspath+"/sidechain.db", scFilename)
 		}
-		err = ioutil.WriteFile(abspath + "/sidechain.db", inputSideChain, 0644)
-		if err != nil{
+		err = ioutil.WriteFile(abspath+"/sidechain.db", inputSideChain, 0644)
+		if err != nil {
 			log.Fatal(err)
 		}
 		//childrenWait.Record()
@@ -265,7 +265,7 @@ func Simulate(configurations []Config,
 				log.Lvl1(ChainBoostProtocol.Info(), "couldn't send ChainBoostDone msg to child", child.Name(), "with err:", err)
 			}
 		}
-		
+
 		// Test if all ServerIdentities are used in the tree, else we'll run into
 		// troubles with CloseAll
 		if !rootSC.Tree.UsesList() {

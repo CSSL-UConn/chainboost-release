@@ -82,7 +82,7 @@ type Config struct {
 }
 ```
 
-This struct is used for all platforms (local host, mininet, deterlab). This means we should not have to make any change when changing platform from local host to mininet (multiple servers)
+This struct is used for all platforms (local host, mininet, csslab). This means we should not have to make any change when changing platform from local host to mininet (multiple servers)
 
 2- In build.go I read these params from our protocol’s config file (.toml) and send them to platform.Configure function, which is again a platform independent change:
 

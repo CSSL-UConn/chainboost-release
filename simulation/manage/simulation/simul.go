@@ -91,5 +91,5 @@ func (e *simulation) Run(config *onet.SimulationConfig) error {
 
 func main() {
 	flag.Parse()
-	simul.Start("ChainBoost.toml")
+	simul.Start("localhost", "ChainBoost.toml")
 }

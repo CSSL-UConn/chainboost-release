@@ -7,7 +7,7 @@ import (
 )
 
 func TestSimulation(t *testing.T) {
-	simul.Start("ChainBoost.toml")
+	simul.Start("csslab", "ChainBoost.toml")
 }
 
 // func TestDistributedSimulation(t *testing.T) {
@@ -15,7 +15,7 @@ func TestSimulation(t *testing.T) {
 // 	//log.SetUseColors(true)
 // 	//log.SetPadding(true)
 // 	simul.StartDistributedSimulation("ChainBoost.toml")
-// 	//simul.Start("deter.toml")
+// 	//simul.Start("cssl.toml")
 // }
 
 /*

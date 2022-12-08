@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 	"github.com/chainBoostScale/ChainBoost/simulation/platform"
-	"github.com/BurntSushi/toml"
 	"golang.org/x/xerrors"
 )
 
@@ -27,36 +27,35 @@ var race = false
 var runWait = 180 * time.Second
 var experimentWait = 0 * time.Second
 
-var platformDst = "localhost"
+var platformDst string
 
-//var platformDst = "deterlab"
-//var platformDst string //= "deterlab"
+//var platformDst = "csslab"
+//var platformDst string //= "csslab"
 
 func init() {
 	flag.BoolVar(&nobuild, "nobuild", false, "Don't rebuild all helpers")
 	flag.BoolVar(&clean, "clean", false, "Only clean platform")
 	flag.StringVar(&build, "build", "", "List of packages to build")
 	flag.BoolVar(&race, "race", false, "Build with go's race detection enabled (doesn't work on all platforms)")
-	flag.IntVar(&machines, "machines", machines, "Number of machines on Deterlab")
+	flag.IntVar(&machines, "machines", machines, "Number of machines on Csslab")
 	flag.StringVar(&simRange, "range", simRange, "Range of simulations to run. 0: or 3:4 or :4")
 	flag.DurationVar(&runWait, "runwait", runWait, "How long to wait for each simulation to finish - overwrites .toml-value")
 	flag.DurationVar(&experimentWait, "experimentwait", experimentWait, "How long to wait for the whole experiment to finish")
-	flag.StringVar(&platformDst, "platform", platformDst, "platform to deploy to [localhost,mininet,deterlab]")
+	flag.StringVar(&platformDst, "platform", platformDst, "platform to deploy to [localhost,mininet,csslab]")
 
 }
 
-
-func getPlatformConfigs(configFile string) ([]platform.Config, error){
+func getPlatformConfigs(configFile string) ([]platform.Config, error) {
 	deployP := platform.NewPlatform(platformDst)
 	if deployP == nil {
 		log.Fatal("Platform not recognized.", platformDst)
 	}
 	runconfigs := platform.ReadRunFile(deployP, configFile)
 	platformConfigs := make([]platform.Config, 0)
-	for _, rc := range(runconfigs){
-		cfg := platform.Config{};
+	for _, rc := range runconfigs {
+		cfg := platform.Config{}
 		_, err := toml.Decode(string(rc.Toml()), &cfg)
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 		platformConfigs = append(platformConfigs, cfg)
@@ -66,10 +65,15 @@ func getPlatformConfigs(configFile string) ([]platform.Config, error){
 
 // Reads in the platform that we want to use and prepares for the tests
 //func startBuild(customPlatform string) {
-func startBuild() {
+func startBuild(platformDstDefault string) {
 	//platformDst = customPlatform
 	flag.Parse()
-	log.Lvl5("platformDst is:", platformDst)
+	if platformDst != "" {
+		log.Lvl5("platformDst is:", platformDst)
+	} else {
+		platformDst = platformDstDefault
+	}
+
 	deployP := platform.NewPlatform(platformDst)
 	if deployP == nil {
 		log.Fatal("Platform not recognized.", platformDst)
@@ -92,21 +96,20 @@ func startBuild() {
 		/* : instead of reading these config variables from the toml connfig file, we set an initialized
 		   value for each on simul.go and we can dynamically change them when running each simulation
 		   via flags with exact same names
-		   e.g.: go test -platform=deterlab -MCRoundDuration=10 -timeout 300000s -run ^TestSimulation$
+		   e.g.: go test -platform=csslab -MCRoundDuration=10 -timeout 300000s -run ^TestSimulation$
 		*/
 
 		// : converting string values read from toml file to int values
 		platformConfigs := make([]platform.Config, 0)
 
-		for _, rc := range(runconfigs){
-			cfg := platform.Config{};
+		for _, rc := range runconfigs {
+			cfg := platform.Config{}
 			_, err := toml.Decode(string(rc.Toml()), &cfg)
-			if err != nil{
+			if err != nil {
 				log.Fatal(err)
 			}
 			platformConfigs = append(platformConfigs, cfg)
 		}
-
 
 		deployP.Configure(platformConfigs)
 
@@ -225,7 +228,7 @@ func RunTests(deployP platform.Platform, name string, runconfigs []*platform.Run
 }
 
 // RunTest a single test - takes a test-file as a string that will be copied
-// to the deterlab-server
+// to the csslab-server
 func RunTest(deployP platform.Platform, rc *platform.RunConfig) error {
 	CheckHosts(rc)
 	rc.Delete("simulation")
@@ -260,7 +263,7 @@ func RunTest(deployP platform.Platform, rc *platform.RunConfig) error {
 				return
 			}
 			done <- nil
-		} else if platformDst == "deterlab" {
+		} else if platformDst == "csslab" {
 			log.LLvl1("\n======= ******* ======== \nSimulation is built and sent over to the remote server.\nGo to the remote directory created on the home. \nand then run the users exe file there\n======= ******* ======== \n")
 			done <- nil
 		} else if platformDst == "cssl"{
