@@ -23,4 +23,4 @@ build: mk-outdir mk-simul-files
 clean:
 	rm -rf users
 
-.PHONY: clean
+.PHONY: clean mk-simul-files

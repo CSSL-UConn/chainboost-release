@@ -140,7 +140,7 @@ func forceCloseExperiments(clients []FQSSHClient){
 }
 
 /// Runs the experiment in the remote virtual machines then copies the result back into the local
-func runExperiments(sshClients []FQSSHClient, netConf *NetworkConfig, expConf *ExperimentConfig){
+func runExperiments(sshClients []FQSSHClient, netConf *NetworkConfig){
     // Start Running the experiments.
     s := spinner.New(spinner.CharSets[38], 100*time.Millisecond)  // Build our new spinner
     s.Prefix = "Running the experiment, please wait: "
@@ -153,44 +153,8 @@ func runExperiments(sshClients []FQSSHClient, netConf *NetworkConfig, expConf *E
         go func(client FQSSHClient) {
             failure := false
             defer waitGroup.Done()
-            expArgs := fmt.Sprintf( " -address=%s" +
-                                    " -simul=%s" +
-                                    " -suite=%s" +
-                                    " -PercentageTxPay=%d" +
-                                    " -MCRoundDuration=%d" +
-                                    " -MainChainBlockSize=%d" +
-                                    " -SideChainBlockSize=%d" +
-                                    " -SectorNumber=%d" +
-                                    " -NumberOfPayTXsUpperBound=%d" +
-                                    " -SimulationRounds=%d" +
-                                    " -SimulationSeed=%d" +
-                                    " -NbrSubTrees=%d" +
-                                    " -Threshold=%d" +
-                                    " -SCRoundDuration=%d" +
-                                    " -CommitteeWindow=%d" +
-                                    " -MCRoundPerEpoch=%d" +
-                                    " -SimState=%d" +
-                                    " -NumberOfActiveContractsPerServer=%d"+
-                                    " -PayPercentOfTransactions=%f",
-                                    client.host,
-                                    expConf.Simulation,
-                                    expConf.Suite,
-                                    expConf.PercentageTxPay,
-                                    expConf.MCRoundDuration,
-                                    expConf.MainChainBlockSize,
-                                    expConf.SideChainBlockSize,
-                                    expConf.SectorNumber,
-                                    expConf.NumberOfPayTXsUpperBound,
-                                    expConf.SimulationRounds,
-                                    expConf.SimulationSeed,
-                                    expConf.NbrSubTrees,
-                                    expConf.Threshold,
-                                    expConf.SCRoundDuration,
-                                    expConf.CommitteeWindow,
-                                    expConf.MCRoundPerEpoch,
-                                    expConf.SimState,
-                                    expConf.NumberOfActiveContractsPerServer,
-                                    expConf.PayPercentOfTransactions)
+            expArgs := fmt.Sprintf(" -address=%s -simul=ChainBoost -suite=bn256.adapter",
+                                    client.host)
             cmd := fmt.Sprintf("cd ~/%s && ./%s %s", netConf.RemoteFolder, netConf.Executable, expArgs)
             out, err := runCommand(client.client, cmd)
             destination := fmt.Sprintf("%s/stdout.txt", client.host)
@@ -221,7 +185,7 @@ func runExperiments(sshClients []FQSSHClient, netConf *NetworkConfig, expConf *E
 
 /// Prints the command used to run this exe
 func printHelp(name string){
-    fmt.Printf("usage: %s <path/to/ExperimentConfig.toml> <path/to/NetworkConfig.toml>", name)
+    fmt.Printf("usage: %s <path/to/NetworkConfig.toml>", name)
 }
 
 /// Reads the experimentation configuration into this program (will be useful when we enable simul to take CLI Args)
@@ -285,18 +249,18 @@ func main(){
     // Initial Setup 
 
     logger = log.New(os.Stderr).WithColor()
-    if len(os.Args) != 3{
+    if len(os.Args) != 2{
         printHelp(os.Args[0])
         os.Exit(0)
     }
 
     // Read Config Files
-    expConf, err := openExperimentConfig(os.Args[1])
+    /*expConf, err := openExperimentConfig(os.Args[1])
         if err != nil {
         logger.Fatal(err)
-    }
+    }*/
     
-    netConf, err := openNetworkConfig(os.Args[2])
+    netConf, err := openNetworkConfig(os.Args[1])
     if err != nil {
         logger.Fatal(err)
     }
@@ -353,7 +317,7 @@ func main(){
     }
 
     // Run the experiment
-    runExperiments(sshClients, netConf, expConf)
+    runExperiments(sshClients, netConf)
 
     // Stop Running the experiments.
     forceCloseExperiments(sshClients)
