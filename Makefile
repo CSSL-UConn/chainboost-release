@@ -1,4 +1,4 @@
-DETERLAB=simulation/platform/deterlab_users
+DETERLAB=simulation/platform/csslab_users
 SIMUL=simulation/manage/simulation
 ORCHESTRATOR=orchestrator
 CWD:=$(shell pwd)
@@ -27,7 +27,7 @@ build-orchestator:
 	@mv ${ORCHESTRATOR}/orchestrator build/
 
 
-build: clean create-builddirs copy-configs build-deterlab build-simul build-orchestator
+build: clean create-builddirs build-deterlab build-simul copy-configs build-orchestator
 
 
 copy-configs:

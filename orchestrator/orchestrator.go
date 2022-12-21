@@ -153,7 +153,7 @@ func runExperiments(sshClients []FQSSHClient, netConf *NetworkConfig){
         go func(client FQSSHClient) {
             failure := false
             defer waitGroup.Done()
-            expArgs := fmt.Sprintf(" -address=%s -simul=ChainBoost -suite=bn256.adapter",
+            expArgs := fmt.Sprintf(" -address=%s -simul=ChainBoost -suite=bn256.adapter -platform=csslab",
                                     client.host)
             cmd := fmt.Sprintf("cd ~/%s && ./%s %s", netConf.RemoteFolder, netConf.Executable, expArgs)
             out, err := runCommand(client.client, cmd)
@@ -285,6 +285,9 @@ func main(){
         }
         sshClients[i] = *sshClient
         defer sshClients[i].client.Close()
+
+        closeOneExperiment(sshClients[i].client)
+        time.Sleep(1 * time.Second)
 
         scpClient, err := createScpClient(sshClients[i].client)
         if err != nil {
