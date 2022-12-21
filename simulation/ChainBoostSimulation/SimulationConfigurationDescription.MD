@@ -25,6 +25,7 @@ Config File [ChainBoost.toml](https://github.com/chainBstSc/ChainBoost/blob/mast
 - `StoragePaymentEpoch` determines the storage payment intervals: 
     - `0` indicates the payment is done at the end of the contraact duration, i.e. when the contract expires
     - `x` s.t. x is in N, indicate the number of epochs between each settlement
+- `PayPercentOfTransactions` the percentage of payment transactions off all transactions in the system. Note: this superseads (`NumberOfPayTxUpperBound`), and should be >0 and <=1 , otherwise, it reverts to using: `NumberOfPayTxUpperBound`
 ## SimState ##
 The mode of simulation is determined by the `SimState` config param in the config file. if `SimState = 1` the simulation will run in the single pure main chain mode and if `SimState = 2` the main chain and the side chain are going to run simentaniously.
 
