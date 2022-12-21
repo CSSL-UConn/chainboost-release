@@ -7,6 +7,7 @@ import (
     "os/signal"
     "path"
     "strings"
+    "errors"
     "sync"
     "sync/atomic"
     "syscall"
@@ -53,6 +54,26 @@ type ExperimentConfig struct {
 type FQSSHClient struct {
     client *ssh.Client
     host string
+}
+
+type SSHSession ssh.Session
+
+func FileCombinedOutput(s *ssh.Session, cmd string, filepath string) error {
+    if s.Stdout != nil {
+        return errors.New("ssh: Stdout already set")
+    }
+    if s.Stderr != nil {
+        return errors.New("ssh: Stderr already set")
+    }
+    b, err := os.OpenFile(filepath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+    if err != nil {
+        return err
+    }
+    defer b.Close()
+    s.Stdout = b
+    s.Stderr = b
+    err = s.Run(cmd)
+    return err
 }
 
 // SSH and SCP Functions
@@ -103,14 +124,15 @@ func createScpClient(client *ssh.Client) (*scp.Client, error) {
 }
 
 /// Run CLI Commands over SSH
-func runCommand(client *ssh.Client, cmd string) (string, error){
+func runCommand(client FQSSHClient, cmd string) error{
     logger.Info("Executing(Remote): ", cmd)
-    session, err := makeSSHSession(client)
+    session, err := makeSSHSession(client.client)
     if err != nil {
-       return "", err
+       return err
     }
-    out, err := session.CombinedOutput(cmd)
-    return string(out),err
+    destination := fmt.Sprintf("%s/stdout.txt", client.host)
+    err = FileCombinedOutput(session, cmd, destination)
+    return err
 }
 
 /// Upload Files (Copy File from local to remote)
@@ -128,14 +150,14 @@ func downloadFile(client *scp.Client, remotePath string, localPath string) error
 //Experiment functions
 
 /// Terminates one instance of the simulation by sending SIGINT 
-func closeOneExperiment(client *ssh.Client){
+func closeOneExperiment(client FQSSHClient){
     runCommand(client, "pkill -9 simul")
 }
 
 /// Terminates all the instances of the simulation by sending SIGINT
 func forceCloseExperiments(clients []FQSSHClient){
     for _, client := range clients{
-        closeOneExperiment(client.client)
+        closeOneExperiment(client)
     }
 }
 
@@ -156,15 +178,13 @@ func runExperiments(sshClients []FQSSHClient, netConf *NetworkConfig){
             expArgs := fmt.Sprintf(" -address=%s -simul=ChainBoost -suite=bn256.adapter -platform=csslab",
                                     client.host)
             cmd := fmt.Sprintf("cd ~/%s && ./%s %s", netConf.RemoteFolder, netConf.Executable, expArgs)
-            out, err := runCommand(client.client, cmd)
-            destination := fmt.Sprintf("%s/stdout.txt", client.host)
-            writeToFile(destination, out)
+            err := runCommand(client, cmd)
             if err != nil {
                 logger.Errorf("Host %s: %s", client.host, err)
                 failure = true
             }
             for _, output := range netConf.Outputs{
-                destination = fmt.Sprintf("%s/%s", client.host, output)
+                destination := fmt.Sprintf("%s/%s", client.host, output)
                 source := fmt.Sprintf("%s/%s", netConf.RemoteFolder, output)
                 scpClient, _ := createScpClient(client.client)
                 downloadFile(scpClient, source, destination)
@@ -286,7 +306,7 @@ func main(){
         sshClients[i] = *sshClient
         defer sshClients[i].client.Close()
 
-        closeOneExperiment(sshClients[i].client)
+        closeOneExperiment(sshClients[i])
         time.Sleep(1 * time.Second)
 
         scpClient, err := createScpClient(sshClients[i].client)
@@ -296,7 +316,7 @@ func main(){
         defer scpClient.Close()
 
         cmd := fmt.Sprintf("mkdir -p ~/%s", netConf.RemoteFolder)
-        _, err = runCommand(sshClients[i].client, cmd)
+        err = runCommand(sshClients[i], cmd)
         if err != nil {
             logger.Fatalf("Server %s: %s", server, err)
         }
@@ -311,7 +331,7 @@ func main(){
 
             if file == netConf.Executable{
                 cmd := fmt.Sprintf("chmod +x %s", destination)
-                _, err := runCommand(sshClients[i].client, cmd)
+                err := runCommand(sshClients[i], cmd)
                 if err != nil {
                     logger.Fatalf("Server %s: %s", server, err)
                 }             

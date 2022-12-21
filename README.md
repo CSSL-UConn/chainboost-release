@@ -76,6 +76,14 @@ it allows the following commands:
 
 The in-folder Makefiles are helper Makefiles for the one in the root of the repo, and are used to build their respective binaries
 
+## On Running the exeperiment using the orchestrator:
+
+The orchestrator is a production ready way to orchestrate different instances of the simulation executable. in order to run the experiment:
+1) edit `ssh.toml` to match your expected files to be uploaded to the VMs and the ones you want to retrieve after the experiments are over.
+2) run `./orchestrator ssh.toml`
+
+Note: The logs of every simul instance are written under the folder `<vm-ip-address>/stdout.txt` , it contains stdout and stderr outputs
+
 # Time Out
 Timeouts are parsed according to Go's time.Duration: A duration string
 is a possibly signed sequence of decimal numbers, each with optional
