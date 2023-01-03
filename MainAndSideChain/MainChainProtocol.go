@@ -47,8 +47,10 @@ func (bz *ChainBoost) StartMainChainProtocol() {
 	log.LLvl1(bz.Name(), " :the root node is filling the first block in mc round number: ", bz.MCRoundNumber)
 	// for the first round we have the root node set as a round leader, so  it is true! and he takes txs from the queue
 	//----
-	log.Lvl1("Raha Debug: wgMCRound.Done")
-	bz.wgMCRound.Done()
+	if bz.SimState == 2 {
+		log.Lvl1("Raha Debug: wgMCRound.Done")
+		bz.wgMCRound.Done()
+	}
 	if bz.SimState == 2 && bz.MCRoundNumber%bz.MCRoundPerEpoch == 0 {
 		eachFunctionTakenTime := time.Now()
 		log.Lvl1("Raha Debug: wgSCRound.Wait")
@@ -86,8 +88,10 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 	// -----------------------------------------------------
 	if msg.LeaderTreeNodeID == bz.TreeNode().ID && bz.MCRoundNumber != 1 && bz.MCLeader.HasLeader && msg.MCRoundNumber == bz.MCRoundNumber {
 		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: start of a round without a leader")
-		log.Lvl1("Raha Debug: wgMCRound.Done")
-		bz.wgMCRound.Done()
+		if bz.SimState == 2 {
+			log.Lvl1("Raha Debug: wgMCRound.Done")
+			bz.wgMCRound.Done()
+		}
 		// -----------------------------------------------------
 		// wait for MCDuration/SCduration number of go routines
 		// to be Done (Done is triggered after finishing SideChainRootPostNewRound)
@@ -141,8 +145,10 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 
 		// -----------------------------------------------
 		// -----------------------------------------------
-		log.Lvl1("Raha Debug: wgMCRound.Done")
-		bz.wgMCRound.Done()
+		if bz.SimState == 2 {
+			log.Lvl1("Raha Debug: wgMCRound.Done")
+			bz.wgMCRound.Done()
+		}
 		// -----------------------------------------------------
 		// wait for MCDuration/SCduration number of go routines
 		// to be Done (Done is triggered after finishing SideChainRootPostNewRound)
@@ -237,7 +243,7 @@ func (bz *ChainBoost) MainChainCheckLeadership(msg MainChainNewRoundChan) error 
 	//the criteria for selecting potential leaders
 	if vrfoutputInt < msg.Power {
 		// -----------
-		log.Lvl4(bz.Name(), "I may be elected for mc round number ", bz.MCRoundNumber, "with power: ", msg.Power, "and vrf output of:", vrfoutputInt)
+		log.Lvl2(bz.Name(), "I may be elected for mc round number ", bz.MCRoundNumber, "with power: ", msg.Power, "and vrf output of:", vrfoutputInt)
 		bz.SendTo(bz.Root(), &NewLeader{LeaderTreeNodeID: bz.TreeNode().ID, MCRoundNumber: bz.MCRoundNumber})
 	}
 	return nil
