@@ -169,7 +169,7 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 			// Do Nothing!
 
 			//ToDO: later add power just when the server has submitted por
-			log.LLvl1(item.MinerServer, "has no acctive contract in this round")
+			log.Lvl3(item.MinerServer, "has no acctive contract in this round")
 		}
 	}
 	//

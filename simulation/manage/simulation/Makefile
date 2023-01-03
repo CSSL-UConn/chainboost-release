@@ -8,7 +8,7 @@ mk-outdir:
 	@mkdir -p simul
 
 mk-simul-files:
-	@go test -platform=cssl 2>&1 > /dev/null
+	go test -platform=cssl
 
 build: mk-outdir mk-simul-files
 	@for i in ${ARCH};do\

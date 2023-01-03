@@ -21,6 +21,8 @@ import (
 	"golang.org/x/xerrors"
 )
 
+const ChainBoostDefaultJoinTimeOut = 100
+
 type simulInit struct{}
 type simulInitDone struct{}
 
@@ -104,7 +106,7 @@ func Simulate(configurations []Config,
 
 	var simError error
 	var ChainBoostProtocol *MainAndSideChain.ChainBoost
-	fmt.Printf(os.Getwd())
+
 	inputMainChain, err := ioutil.ReadFile(abspath + "/mainchain.db")
 	if err != nil {
 		log.Fatal(err)
@@ -115,6 +117,10 @@ func Simulate(configurations []Config,
 	}
 	if rootSim != nil {
 		for run, configuration := range configurations {
+			log.Lvl1("====================================================================================================================================================")
+			log.Lvl1("======= Starting run number ", run+1, "\n.toml configuration is:", configuration)
+			log.Lvl1("====================================================================================================================================================")
+			// creating new db file for this run, will be renamed to contain run number later
 			err = ioutil.WriteFile(abspath+"/mainchain.db", inputMainChain, 0644)
 			if err != nil {
 				log.Fatal(err)
@@ -128,7 +134,6 @@ func Simulate(configurations []Config,
 			//              ---------- BLS CoSi protocol -------------
 			// ---------------------------------------------------------------
 			// initialization of committee members in side chain
-			fmt.Printf(">>>>%+v", configuration)
 			committeeNodes := rootSC.Tree.Roster.List[:configuration.CommitteeWindow-1]
 			committeeNodes = append([]*network.ServerIdentity{rootSC.Tree.List()[configuration.CommitteeWindow].ServerIdentity}, committeeNodes...)
 			committee := onet.NewRoster(committeeNodes)
@@ -209,6 +214,9 @@ func Simulate(configurations []Config,
 			//Exit when first error occurs in a goroutine: https://stackoverflow.com/a/61518963
 			//Pass arguments into errgroup: https://forum.golangbridge.org/t/pass-arguments-to-errgroup-within-a-loop/19999
 			errs, _ := errgroup.WithContext(context.Background())
+
+			// --------------------------------------------------------------
+			// Inviting other nodes to joinn the protocol, in parralel!
 			for i := 0; i <= len(rootSC.Tree.List())/batchSize; i++ {
 				id := i
 				errs.Go(func() error {
@@ -216,12 +224,11 @@ func Simulate(configurations []Config,
 				})
 			}
 			if err := errs.Wait(); err != nil {
-				return xerrors.New("Error from simulation run: " + err.Error())
+				return xerrors.New("Error from the initial simulation joining  phase: " + err.Error())
 			}
-
 			ChainBoostProtocol.CalledWG.Wait()
-			log.LLvl1("Wait is passed which means all nodes have recieved the HelloChainBoost msg")
-
+			log.LLvl1("Wait is passed which means all nodes have recieved the invitatioon msg")
+			// --------------------------------------------------------------
 			go func() {
 				err := ChainBoostProtocol.DispatchProtocol()
 				if err != nil {
@@ -237,22 +244,12 @@ func Simulate(configurations []Config,
 			os.Rename(abspath+"/mainchain.db", mcFilename)
 			os.Rename(abspath+"/sidechain.db", scFilename)
 		}
+
+		// what is this for?
 		err = ioutil.WriteFile(abspath+"/sidechain.db", inputSideChain, 0644)
 		if err != nil {
 			log.Fatal(err)
 		}
-		//childrenWait.Record()
-		// log.LLvl1("Broadcasting start")
-		// wgSimulInit.Add(len(rootSC.Tree.Roster.List))
-		// for _, conode := range rootSC.Tree.Roster.List {
-		//  go func(si *network.ServerIdentity) {
-		//      _, err := rootSC.Server.Send(si, &simulInit{})
-		//      log.ErrFatal(err, "Couldn't send to conode:")
-		//  }(conode)
-		// }
-		// wgSimulInit.Wait()
-		// syncWait.Record()
-		// simError = rootSim.Run(rootSC)
 
 		// --------------------------------------------------------------
 		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": close all other nodes!")
@@ -390,7 +387,7 @@ func sendMsgToJoinChainBoostProtocol(i int, ChainBoostProtocol *MainAndSideChain
 	}
 	for _, child := range rootSC.Tree.List()[begin:end] {
 		if child != ChainBoostProtocol.TreeNode() {
-			timeout := 20 * time.Second
+			timeout := ChainBoostDefaultJoinTimeOut * time.Second
 			start := time.Now()
 			for time.Since(start) < timeout {
 				err := ChainBoostProtocol.SendTo(child, &MainAndSideChain.HelloChainBoost{

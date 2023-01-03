@@ -214,17 +214,17 @@ func (c *Server) Start() {
 	InformServerStarted()
 	c.started = time.Now()
 	if !c.Quiet {
-		//log.LLvl3("Starting server at %s on address %s",
-		//c.started.Format("2006-01-02 15:04:05"),
-		//c.ServerIdentity.Address)
+		//log.Lvl1("Starting server at %s on address %s",
+		//	c.started.Format("2006-01-02 15:04:05"),
+		//	c.ServerIdentity.Address)
 	}
 	go c.Router.Start()
 	go c.WebSocket.start()
 	for !c.Router.Listening() || !c.WebSocket.Listening() {
-		//log.LLvl3("ToDoRaha: router or webSocket for:", c.Address().String(), " is not listening!")
+		log.Lvl1("router or webSocket for:", c.Address().String(), " is not listening!")
 		time.Sleep(50 * time.Millisecond)
 	}
-	//log.LLvl3("ToDoRaha: router or webSocket for:", c.Address().String(), " is listening!!")
+	log.Lvl1("router or webSocket for:", c.Address().String(), " is listening!!", c.started.Format("2006-01-02 15:04:05"), time.Now().Format("2006-01-02 15:04:05"))
 	c.Lock()
 	c.IsStarted = true
 	c.Unlock()
