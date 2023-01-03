@@ -4,3 +4,4 @@ Files = ["simul", "ChainBoost.toml", "mainchain.db", "simulation.bin", "sidechai
 Executable = "simul"
 Outputs = ["mainchain.db", "sidechain.db"]
 User = "root"
+Debug = 2
