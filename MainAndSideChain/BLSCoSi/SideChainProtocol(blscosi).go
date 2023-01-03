@@ -32,7 +32,7 @@ func init() {
 }
 
 //todo:  changed default time out from 10 sec
-const DefaultTimeout = 100 * time.Second
+const DefaultTimeout = 10000 * time.Second
 const DefaultSubleaderFailures = 2
 
 // VerificationFn is called on every node. Where msg is the message that is
@@ -313,8 +313,8 @@ func (p *BlsCosi) startSubProtocol(tree *onet.Tree) (*SubBlsCosi, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Raha: I want to see the list of nodes!
-	log.Lvl3("Raha: Tree used in SubBlsCosi is", tree.Roster.List)
+	// I want to see the list of nodes!
+	log.Lvl3("Tree used in SubBlsCosi is", tree.Roster.List)
 	return cosiSubProtocol, err
 }
 

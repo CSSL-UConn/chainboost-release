@@ -14,6 +14,9 @@ import (
 	"go.dedis.ch/kyber/v3/sign/bls"
 )
 
+// we consider a committee running the byzcoin bls cosi protocol by the default size of 500
+const ChainBoostDefaultCommitteeSize = 500
+
 // sub_protocol is run by each sub-leader and each node once, and n times by
 // the root leader, where n is the number of sub-leader.
 
@@ -85,7 +88,12 @@ func NewSubBlsCosi(n *onet.TreeNodeInstance, vf VerificationFn, suite *pairing.S
 		c.subResponse = make(chan StructResponse, 1)
 	}
 
-	err := c.RegisterChannels(&c.ChannelAnnouncement, &c.ChannelResponse, &c.ChannelRefusal)
+	err := c.RegisterChannels(&c.ChannelAnnouncement, &c.ChannelRefusal)
+	if err != nil {
+		return nil, errors.New("couldn't register channels: " + err.Error())
+	}
+
+	err = c.RegisterChannelLength(&c.ChannelResponse, ChainBoostDefaultCommitteeSize)
 	if err != nil {
 		return nil, errors.New("couldn't register channels: " + err.Error())
 	}
@@ -254,6 +262,11 @@ func (p *SubBlsCosi) dispatchSubLeader() error {
 	}
 
 	own, err := p.makeResponse()
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
 	if ok := p.verificationFn(p.Msg, p.Data); ok {
 		log.Lvlf3("Subleader %v signed", p.ServerIdentity())
 		_, index := searchPublicKey(p.TreeNodeInstance, p.ServerIdentity())
