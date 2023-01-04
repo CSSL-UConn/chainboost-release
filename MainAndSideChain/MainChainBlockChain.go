@@ -306,10 +306,14 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 			// -------------------------------------------------------------------------------
 		}
 	}
-	err = blockchain.BulkInsertIntoMainChainFirstQueue(mcFirstQueueTxs)
-	if err != nil {
-		panic(err)
+	for i:= 0; i < len(mcFirstQueueTxs); i+= 2000 {
+		limit := math.Min(float64(len(mcFirstQueueTxs)), float64(i+2000))
+		err = blockchain.BulkInsertIntoMainChainFirstQueue(mcFirstQueueTxs[i:int(limit)])
+		if err != nil {
+			panic(err)
+		}
 	}
+
 	for i := 0; i < len(scFirstQueueTxs); i += 2000 {
 
 		limit := math.Min(float64(len(scFirstQueueTxs)), float64(i+2000))
@@ -346,9 +350,12 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 		mcSecondQueueTxs = append(mcSecondQueueTxs, tx)
 		numOfRegularPaymentTxs++
 	}
-	blockchain.BulkInsertIntoMainChainSecondQueue(mcSecondQueueTxs)
-	if err != nil {
-		panic(err)
+	for i:= 0; i < len(mcSecondQueueTxs); i+= 2000 {
+		limit := math.Min(float64(len(mcSecondQueueTxs)), float64(i+2000))
+		blockchain.BulkInsertIntoMainChainSecondQueue(mcSecondQueueTxs[i:int(limit)])
+		if err != nil {
+			panic(err)
+		}
 	}
 	log.Lvl1(bz.Name(), " finished collecting new transactions to mainchain queues in mc round number ", bz.MCRoundNumber, "in total:\n ",
 		numOfPoRTxsMC, "numOfPoRTxsMC\n", numOfServAgrProposeTxs, "numOfServAgrProposeTxs\n",
@@ -663,9 +670,13 @@ func (bz *ChainBoost) StoragePaymentMainChainBCTransactionQueueCollect() error {
 			mcFirstQueueTxs = append(mcFirstQueueTxs, tx)
 		}
 	}
-	err = blockchain.BulkInsertIntoMainChainFirstQueue(mcFirstQueueTxs)
-	if err != nil {
-		return err
+	for i:= 0; i < len(mcFirstQueueTxs); i+= 2000 {
+		limit := math.Min(float64(len(mcFirstQueueTxs)), float64(i+2000))
+		err = blockchain.BulkInsertIntoMainChainFirstQueue(mcFirstQueueTxs[i:int(limit)])
+
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
