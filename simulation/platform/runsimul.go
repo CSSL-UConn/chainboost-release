@@ -387,7 +387,7 @@ func sendMsgToJoinChainBoostProtocol(i int, ChainBoostProtocol *MainAndSideChain
 	}
 	for _, child := range rootSC.Tree.List()[begin:end] {
 		if child != ChainBoostProtocol.TreeNode() {
-			timeout := ChainBoostDefaultJoinTimeOut * time.Second
+			timeout := ChainBoostDefaultJoinTimeOut * time.Minute
 			start := time.Now()
 			for time.Since(start) < timeout {
 				err := ChainBoostProtocol.SendTo(child, &MainAndSideChain.HelloChainBoost{

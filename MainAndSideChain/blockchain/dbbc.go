@@ -51,7 +51,7 @@ type SideChainRoundInfo struct {
 	RoundLeader    string
 	PoRTx          int
 	StartTime      time.Time
-	AveWait        int
+	AveWait        float64
 	TotalNumTx     int
 	BlockSpaceFull int
 	TimeTaken      int

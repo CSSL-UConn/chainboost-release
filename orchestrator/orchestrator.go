@@ -299,6 +299,7 @@ func main() {
 
 	// Create SSH Connection and SCP Clients
 	for i, server := range netConf.Servers {
+		os.RemoveAll(server)
 		os.Mkdir(server, 0750)
 		sshClient, err := createSSHConnection(server, netConf.User)
 		if err != nil {
@@ -308,7 +309,7 @@ func main() {
 		defer sshClients[i].client.Close()
 
 		closeOneExperiment(sshClients[i])
-		time.Sleep(1 * time.Second)
+		time.Sleep(5 * time.Second)
 
 		scpClient, err := createScpClient(sshClients[i].client)
 		if err != nil {
