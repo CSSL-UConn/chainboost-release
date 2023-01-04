@@ -118,7 +118,7 @@ func Simulate(configurations []Config,
 	if rootSim != nil {
 		for run, configuration := range configurations {
 			log.Lvl1("====================================================================================================================================================")
-			log.Lvl1("======= Starting run number ", run+1, "\n.toml configuration is:", configuration)
+			log.Lvl1("======= Starting run number: ", run+1)
 			log.Lvl1("====================================================================================================================================================")
 			// creating new db file for this run, will be renamed to contain run number later
 			err = ioutil.WriteFile(abspath+"/mainchain.db", inputMainChain, 0644)
