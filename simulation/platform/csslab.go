@@ -17,7 +17,6 @@ package platform
 
 import (
 	"bufio"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -486,7 +485,7 @@ func (d *Csslab) loadAndCheckCsslabVars() {
 
 // Shows a messages and reads in a string, eventually returning a default (dft) string
 func readString(msg, dft string) string {
-	fmt.Printf("%s [%s]:", msg, dft)
+	log.LLvl1("%s [%s]:", msg, dft)
 
 	reader := bufio.NewReader(os.Stdin)
 	strnl, _ := reader.ReadString('\n')

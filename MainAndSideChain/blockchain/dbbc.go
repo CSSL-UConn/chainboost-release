@@ -498,7 +498,7 @@ func BulkInsertIntoSideChainFirstQueue(rows []SideChainFirstQueueEntry) error {
 		valueArgs = append(valueArgs, row.ServAgrId)
 		valueArgs = append(valueArgs, row.MCRoundNbr)
 	}
-	fmt.Printf("len args: %d, len valueArgs: %d", len(rows), len(valueArgs))
+	//fmt.Printf("len args: %d, len valueArgs: %d", len(rows), len(valueArgs))
 	stmt := fmt.Sprintf(`INSERT INTO FirstQueue(Name, Size, Time, IssuedScRoundNumber, ServAgrId, MCRoundNbr)
                                  VALUES %s`, strings.Join(valueStrings, ","))
 	_, err = sidechainDb.Exec(stmt, valueArgs...)

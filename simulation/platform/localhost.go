@@ -104,8 +104,8 @@ func (d *Localhost) Configure(pcs []Config) {
 	os.RemoveAll(d.runDir)
 	log.ErrFatal(os.Mkdir(d.runDir, 0770))
 	d.configs = pcs
-	fmt.Printf(">>>>%+v", pcs)
-	fmt.Printf(">>>>%+v", d.configs)
+	log.LLvl1(">>>>%+v", pcs)
+	log.LLvl1(">>>>%+v", d.configs)
 }
 
 // Build does nothing, as we're using our own binary, no need to build

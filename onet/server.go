@@ -224,7 +224,7 @@ func (c *Server) Start() {
 		log.Lvl1("router or webSocket for:", c.Address().String(), " is not listening!")
 		time.Sleep(50 * time.Millisecond)
 	}
-	log.Lvl1("router or webSocket for:", c.Address().String(), " is listening!!", c.started.Format("2006-01-02 15:04:05"), time.Now().Format("2006-01-02 15:04:05"))
+	log.Lvl5("router or webSocket for:", c.Address().String(), " is listening!!", time.Now().Format("2006-01-02 15:04:05"))
 	c.Lock()
 	c.IsStarted = true
 	c.Unlock()
