@@ -323,6 +323,10 @@ func (d *Csslab) Deploy(rc *RunConfig) error {
 	cssl.Virt = append(cssl.Virt, "192.168.3.226")
 	cssl.Phys = append(cssl.Phys, "192.168.3.227:22")
 	cssl.Virt = append(cssl.Virt, "192.168.3.227")
+	cssl.Phys = append(cssl.Phys, "192.168.3.228:22")
+	cssl.Virt = append(cssl.Virt, "192.168.3.228")
+	cssl.Phys = append(cssl.Phys, "192.168.3.229:22")
+	cssl.Virt = append(cssl.Virt, "192.168.3.229")
 
 	//-----------------------------------
 

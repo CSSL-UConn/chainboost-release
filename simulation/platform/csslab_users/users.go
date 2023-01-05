@@ -49,7 +49,7 @@ func main() {
 	//hosts := "csi-lab-ssh.engr.uconn.edu:30"
 	//todo: change this list based on list of VMs or make it dynamic later
 	// 192.168.3.221:22 192.168.3.222:22 192.168.3.223:22
-	hosts := "192.168.3.220:22 192.168.3.221:22 192.168.3.222:22 192.168.3.223:22 192.168.3.224:22 192.168.3.225:22 192.168.3.226:22 192.168.3.227:22"
+	hosts := "192.168.3.220:22 192.168.3.221:22 192.168.3.222:22 192.168.3.223:22 192.168.3.224:22 192.168.3.225:22 192.168.3.226:22 192.168.3.227:22 192.168.3.228:22 192.168.3.229:22"
 	hostsTrimmed := strings.TrimSpace(re.ReplaceAllString(string(hosts), " "))
 	hostlist := strings.Split(hostsTrimmed, " ")
 	doneHosts := make([]bool, len(hostlist))
