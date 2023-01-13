@@ -469,6 +469,7 @@ func (n *TreeNodeInstance) dispatchChannel(msgSlice []*ProtocolMsg) error {
 			//log.LLvl3("Adding msg", m, "to", n.ServerIdentity().Address)
 			out.Index(i).Set(m)
 		}
+		log.LLvl5("DEBUG: Sent aggregated message ", mt, " to channel", out, "len?", out.Len())
 		reflect.ValueOf(n.channels[mt]).Send(out)
 	} else {
 		for _, msg := range msgSlice {
@@ -477,6 +478,8 @@ func (n *TreeNodeInstance) dispatchChannel(msgSlice []*ProtocolMsg) error {
 			if err != nil {
 				return xerrors.Errorf("processing message: %v", err)
 			}
+
+			log.LLvl5("DEBUG: Sent aggregated message ", mt, "to", to, ":", m.Field(1).Interface(), " and it contains", m)
 			//log.LLvl3(n.Name(), "Dispatching msg type", mt, " to", to, " :", m.Field(1).Interface())
 			if out.Len() < out.Cap() {
 				n.msgDispatchQueueMutex.Lock()

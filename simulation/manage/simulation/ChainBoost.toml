@@ -12,8 +12,6 @@ ServAgrDurationDistributionVariance = 10
 PercentageTxPay = 30
 PayPercentOfTransactions = 0.02
 NumberOfPayTXsUpperBound = 100
-MainChainBlockSize = 2000000
-SideChainBlockSize = 1000000
 SectorNumber = 2
 NumberOfActiveContractsPerServer = 3
 SimulationRounds = 60
@@ -26,8 +24,8 @@ MCRoundPerEpoch = 10
 MCRoundDuration = 30 
 SCRoundDuration = 10
 VMs = ["192.168.3.220", "192.168.3.221", "192.168.3.222", "192.168.3.223", "192.168.3.224", "192.168.3.225", "192.168.3.226", "192.168.3.227", "192.168.3.228", "192.168.3.229"]
-Nodes = 12000
+Nodes = 16000
 
-Hosts, SimState
-12000, 2
-12000, 1
+Hosts, SimState, MainChainBlockSize, SideChainBlockSize 
+16000, 2, 1000000, 500000
+16000, 1, 1000000, 500000

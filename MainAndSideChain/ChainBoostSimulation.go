@@ -266,7 +266,7 @@ func (bz *ChainBoost) Dispatch() error {
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.MainChainNewLeaderChan:
 			bz.NumMCLeader++
-			if !bz.MCLeader.HasLeader || msg.TreeNode == bz.TreeNode() {
+			if msg.MCRoundNumber == bz.MCRoundNumber && (!bz.MCLeader.HasLeader || msg.TreeNode == bz.TreeNode()) {
 				go func() {
 					bz.MCLeader.MCPLock.Lock()
 					if bz.MCLeader.HasLeader && msg.TreeNode != bz.TreeNode() {
@@ -280,6 +280,7 @@ func (bz *ChainBoost) Dispatch() error {
 					bz.MCLeader.MCPLock.Unlock()
 					// ---
 					time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
+					log.LLvlf5("DEBUG: the msg is: %v, the channel has %d messages left", msg, len(bz.MainChainNewLeaderChan))
 					bz.RootPreNewRound(msg)
 
 					//
@@ -395,6 +396,7 @@ func (bz *ChainBoost) startTimer(MCRoundNumber int) {
 		if bz.IsRoot() && bz.MCRoundNumber == MCRoundNumber && !bz.MCLeader.HasLeader {
 			log.Lvl1("No leader for mc round number ", bz.MCRoundNumber, "an empty block is added")
 			bz.MCLeader.HasLeader = true
+			log.Lvl5("DEBUG: StarTimer: Bz.TreeNodeId()", bz.TreeNode().ID, "bz.MCRoundNumber: ", bz.MCRoundNumber, "MCRoundNumber: ", MCRoundNumber)
 			bz.MainChainNewLeaderChan <- MainChainNewLeaderChan{bz.TreeNode(), NewLeader{LeaderTreeNodeID: bz.TreeNode().ID, MCRoundNumber: bz.MCRoundNumber}}
 		}
 		bz.MCLeader.MCPLock.Unlock()

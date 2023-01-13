@@ -86,6 +86,7 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 	// in this case the leader info is filled with root node's info, transactions are going to be collected normally but
 	// since the block is empty, no transaction is going to be taken from queues => leader = false
 	// -----------------------------------------------------
+	log.Lvl5("DEBUG: RootPreNewRound(Entry):", msg.Name(), " msg.LeaderTreeNodeID: ", msg.LeaderTreeNodeID, "bz.TreeNode().Id: ", bz.TreeNode().ID, "bz.MCRoundNumber: ", bz.MCRoundNumber, "bz.MCLeader.HasLeader: ", bz.MCLeader.HasLeader, "msg.MCRoundNumber: ", msg.MCRoundNumber)
 	if msg.LeaderTreeNodeID == bz.TreeNode().ID && bz.MCRoundNumber != 1 && bz.MCLeader.HasLeader && msg.MCRoundNumber == bz.MCRoundNumber {
 		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: start of a round without a leader")
 		if bz.SimState == 2 {
@@ -202,6 +203,8 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 		bz.BCLock.Unlock()
 	} else if msg.MCRoundNumber == bz.MCRoundNumber {
 		log.Lvl1("this round already has a leader!")
+	} else {
+		log.Lvl5("DEBUG: None of the Conditions is true:", msg.Name(), " msg.LeaderTreeNodeID: ", msg.LeaderTreeNodeID, "bz.TreeNode().Id: ", bz.TreeNode().ID, "bz.MCRoundNumber: ", bz.MCRoundNumber, "bz.MCLeader.HasLeader: ", bz.MCLeader.HasLeader, "msg.MCRoundNumber: ", msg.MCRoundNumber)
 	}
 	log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: the whole function took:", time.Since(RootPreNewRoundTakenTime).String())
 }
@@ -244,6 +247,7 @@ func (bz *ChainBoost) MainChainCheckLeadership(msg MainChainNewRoundChan) error 
 	if vrfoutputInt < msg.Power {
 		// -----------
 		log.Lvl2(bz.Name(), "I may be elected for mc round number ", bz.MCRoundNumber, "with power: ", msg.Power, "and vrf output of:", vrfoutputInt)
+		log.Lvl5("DEBUG: [Election]:", bz.Name(), "bz.TreeNode().Id: ", bz.TreeNode().ID, "bz.MCRoundNumber: ", bz.MCRoundNumber)
 		bz.SendTo(bz.Root(), &NewLeader{LeaderTreeNodeID: bz.TreeNode().ID, MCRoundNumber: bz.MCRoundNumber})
 	}
 	return nil
