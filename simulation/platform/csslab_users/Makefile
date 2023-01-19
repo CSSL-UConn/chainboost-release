@@ -16,6 +16,9 @@ build: mk-outdir
 		done;\
 	done;
 
+build-rc: mk-outdir
+	GOOS=linux GOARCH=amd64 go build -v -race -o users/linux/amd64/users
+
 
 clean:
 	rm -rf users

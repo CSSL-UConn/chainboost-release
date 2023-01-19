@@ -16,6 +16,8 @@ build: mk-outdir
 		done;\
 	done;
 
+build-rc: mk-outdir 
+	GOOS=linux GOARCH=amd64 go build -v -race -o orchestrator/linux/amd64/orchestrator
 
 clean:
 	rm -rf orchestrator

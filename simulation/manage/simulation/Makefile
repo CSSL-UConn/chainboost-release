@@ -8,7 +8,7 @@ mk-outdir:
 	@mkdir -p simul
 
 mk-simul-files:
-	go test -platform=cssl
+	go test -platform=cssl -timeout 9999s
 
 build: mk-outdir mk-simul-files
 	@for i in ${ARCH};do\
@@ -19,6 +19,9 @@ build: mk-outdir mk-simul-files
 		done;\
 	done;
 
+
+build-rc: mk-outdir mk-simul-files
+	GOOS=linux GOARCH=amd64 go build -v -race -o simul/linux/amd64/simul
 
 clean:
 	rm -rf users

@@ -29,12 +29,35 @@ build-orchestator:
 
 build: clean create-builddirs build-deterlab build-simul copy-configs build-orchestator
 
+build-deterlab-rc:
+	@echo "building users(executable) for oses/arch"
+	make -C ${DETERLAB} build-rc
+	@echo "Moving files to build folder"
+	@mv ${DETERLAB}/users build/
+
+build-simul-rc:
+	@echo "building simul(executable) for oses/arch"
+	make -C ${SIMUL} build-rc
+	@echo "Moving files to build folder"
+	@mv ${SIMUL}/simul build/
+
+build-orchestator-rc:
+	@echo "building orchestrator(executable) for oses/arch"
+	make -C ${ORCHESTRATOR}
+	@echo "Moving files to build folder"
+	@mv ${ORCHESTRATOR}/orchestrator build/
+
+
+build-rc: clean create-builddirs build-deterlab-rc build-simul-rc copy-configs build-orchestator-rc
+
 
 copy-configs:
 	@echo "Copying Excel Files and Configs"
 	@cp -r ${SIMUL}/deploy/*.* build/
 	@cp -r ${ORCHESTRATOR}/ssh.toml build/
 
+build-docker-rc:
+	make -C race-cond-build-env
 clean:
 	@rm -rf build
 
@@ -51,5 +74,13 @@ deploy: all
 	rsync -avz build/simul/${OS}/${ARCH}/simul ${USER}@csi-lab-ssh.engr.uconn.edu:~/remote
 	rsync -avz build/users/${OS}/${ARCH}/users ${USER}@csi-lab-ssh.engr.uconn.edu:~/remote
 	rsync -avz build/orchestrator/${OS}/${ARCH}/orchestrator ${USER}@csi-lab-ssh.engr.uconn.edu:~/remote
+
+deploy-rc: build-docker-rc
+	rsync -avz build/*.db ${USER}@csi-lab-ssh.engr.uconn.edu:~/remote
+	rsync -avz build/*.toml ${USER}@csi-lab-ssh.engr.uconn.edu:~/remote
+	rsync -avz build/*.bin ${USER}@csi-lab-ssh.engr.uconn.edu:~/remote
+	rsync -avz build/simul/linux/amd64/simul ${USER}@csi-lab-ssh.engr.uconn.edu:~/remote
+	rsync -avz build/users/linux/amd64/users ${USER}@csi-lab-ssh.engr.uconn.edu:~/remote
+	rsync -avz build/orchestrator/linux/amd64/orchestrator ${USER}@csi-lab-ssh.engr.uconn.edu:~/remote
 
 .PHONY: clean create-builddirs build
