@@ -61,7 +61,7 @@ func (bz *ChainBoost) DispatchProtocol() error {
 		// Blscosi.go, create subprotocols => hence calls func (p *SubBlsCosi) Dispatch()
 		// --------------------------------------------------------
 		case sig := <-bz.BlsCosi.FinalSignature:
-			if bz.simulationDone == true {
+			if bz.simulationDone {
 				return nil
 			}
 
@@ -69,7 +69,7 @@ func (bz *ChainBoost) DispatchProtocol() error {
 				log.Lvl1("final result SC:", bz.Name(), " : ", bz.BlsCosi.BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
 				err := bz.SendTo(bz.Root(), &LtRSideChainNewRound{
 					NewRound:      true,
-					SCRoundNumber: bz.SCRoundNumber,
+					SCRoundNumber: int(bz.SCRoundNumber.Load()),
 					SCSig:         sig,
 				})
 				if err != nil {
@@ -86,7 +86,7 @@ func (bz *ChainBoost) DispatchProtocol() error {
 //SideChainLeaderPreNewRound is run by the side chain's leader
 func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) error {
 	var err error
-	bz.SCRoundNumber = msg.SCRoundNumber
+	bz.SCRoundNumber.Store(int64(msg.SCRoundNumber))
 	bz.BlsCosi.Msg = []byte{0xFF}
 	takenTime := time.Now()
 	// -----------------------------------------------
@@ -94,7 +94,7 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	// -----------------------------------------------
 
 	var CommitteeNodesServerIdentity []*network.ServerIdentity
-	if bz.SCRoundNumber == 1 {
+	if bz.SCRoundNumber.Load() == 1 {
 		// just in the first sc round it wont be nil, else this leader has already the info
 		bz.CommitteeNodesTreeNodeID = msg.CommitteeNodesTreeNodeID
 		//todo: a out of range bug happens sometimes!
@@ -121,7 +121,7 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 			log.Lvl3("final result SC: BlsCosi: next side chain's epoch committee number ", i, ":", a.Address)
 		}
 	}
-	if bz.SCRoundNumber == 0 {
+	if bz.SCRoundNumber.Load() == 0 {
 		bz.BlsCosi.BlockType = "Summary Block"
 	} else {
 		bz.BlsCosi.BlockType = "Meta Block"
@@ -133,7 +133,7 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	// ---
 	bz.BlsCosi.SubTrees, err = BLSCoSi.NewBlsProtocolTree(onet.NewTree(committeeRoster, &x), bz.NbrSubTrees)
 	if err == nil {
-		if bz.SCRoundNumber == 1 {
+		if bz.SCRoundNumber.Load() == 1 {
 			log.Lvl3("final result SC: Next bls cosi tree is: ", bz.BlsCosi.SubTrees[0].Roster.List,
 				" with ", bz.Name(), " as Root \n running BlsCosi sc round number", bz.SCRoundNumber)
 		}
@@ -160,13 +160,13 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 //
 func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) error {
 	var err error
-	bz.SCRoundNumber = msg.SCRoundNumber
+	bz.SCRoundNumber.Store(int64(msg.SCRoundNumber))
 	bz.SCSig = msg.SCSig
 	var blocksize int
 	//--- maybe locking would work, but if possible! I prefer to not lock here to avoid extra complexity
 	var tempCommitteeNodesTreeNodeID []onet.TreeNodeID
 	// --------------------------------------------------------------------
-	if bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration) == bz.SCRoundNumber {
+	if bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration) == int(bz.SCRoundNumber.Load()) {
 		bz.BlsCosi.BlockType = "Summary Block" // just to know!
 		// ---
 		bz.BCLock.Lock()
@@ -176,7 +176,7 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 		// issueing a sync transaction from last submitted summary block to the main chain
 		blocksize = bz.syncMainChainBCTransactionQueueCollect()
 		// todoraha: add description
-		if bz.StoragePaymentEpoch != 0 && (bz.MCRoundNumber/bz.MCRoundPerEpoch%bz.StoragePaymentEpoch) == 0 {
+		if bz.StoragePaymentEpoch != 0 && (int(bz.MCRoundNumber.Load())/bz.MCRoundPerEpoch%bz.StoragePaymentEpoch) == 0 {
 			err = bz.StoragePaymentMainChainBCTransactionQueueCollect()
 			if err != nil {
 				return xerrors.New("can't issue StoragePayment at the end of epoch" + err.Error())
@@ -192,10 +192,10 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 		bz.BCLock.Unlock()
 		// ---
 		// reset side chain round number
-		bz.SCRoundNumber = 1 // in side chain round number zero the summary blocks are published in side chain
+		bz.SCRoundNumber.Store(1) // in side chain round number zero the summary blocks are published in side chain
 		// ------------- Epoch changed -----------
 		// i.e. the current published block on side chain is summary block
-		log.Lvl1("Final result SC: BlsCosi: the Summary Block was for epoch number: ", bz.MCRoundNumber/bz.MCRoundPerEpoch)
+		log.Lvl1("Final result SC: BlsCosi: the Summary Block was for epoch number: ", int(bz.MCRoundNumber.Load())/bz.MCRoundPerEpoch)
 
 		// -----------------------------------------------
 		// -----------------------------------------------
@@ -236,7 +236,7 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 		bz.BCLock.Unlock()
 		// ---
 		// increase side chain round number
-		bz.SCRoundNumber = bz.SCRoundNumber + 1
+		bz.SCRoundNumber.Inc()
 		log.Lvl1("Raha Debug: wgSCRound.Done")
 		bz.wgSCRound.Done()
 	}
@@ -244,7 +244,7 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 	//triggering next side chain round leader to run next round of blscosi
 	// --------------------------------------------------------------------
 	err = bz.SendTo(bz.Tree().Search(bz.NextSideChainLeader), &RtLSideChainNewRound{
-		SCRoundNumber:            bz.SCRoundNumber,
+		SCRoundNumber:            int(bz.SCRoundNumber.Load()),
 		CommitteeNodesTreeNodeID: tempCommitteeNodesTreeNodeID,
 		blocksize:                blocksize,
 	})
@@ -298,7 +298,7 @@ func (bz *ChainBoost) StartSideChainProtocol() {
 	// --------------------------------------------------------------------
 	bz.BlsCosi.Msg = []byte{0xFF}
 	err = bz.SendTo(bz.Tree().Search(bz.NextSideChainLeader), &RtLSideChainNewRound{
-		SCRoundNumber:            bz.SCRoundNumber,
+		SCRoundNumber:            int(bz.SCRoundNumber.Load()),
 		CommitteeNodesTreeNodeID: bz.CommitteeNodesTreeNodeID,
 	})
 	if err != nil {

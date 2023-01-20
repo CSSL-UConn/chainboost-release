@@ -17,6 +17,7 @@ import (
 	"github.com/chainBoostScale/ChainBoost/onet/network"
 	"github.com/chainBoostScale/ChainBoost/vrf"
 	"go.dedis.ch/kyber/v3/pairing"
+	"go.uber.org/atomic"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/xerrors"
 )
@@ -323,9 +324,9 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 		Suite:             pairing.NewSuiteBn256(),
 		DoneRootNode:      make(chan bool, 1),
 		LeaderProposeChan: make(chan bool, 1),
-		MCRoundNumber:     1,
+		MCRoundNumber:     *atomic.NewInt64(1),
 		//CommitteeWindow:    10,
-		SCRoundNumber:       1,
+		SCRoundNumber:       *atomic.NewInt64(1),
 		FirstQueueWait:      0,
 		SideChainQueueWait:  0,
 		FirstSCQueueWait:    0,

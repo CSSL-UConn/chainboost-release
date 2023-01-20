@@ -28,11 +28,11 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 		RoundIntervalSec = int(time.Now().Unix())
 		log.Lvl3("Final result SC: round number: ", 0, "took ", RoundIntervalSec, " seconds in total")
 	} else {
-		RoundIntervalSec = int(time.Now().Sub(info.StartTime).Seconds())
+		RoundIntervalSec = int(time.Since(info.StartTime).Seconds())
 		log.Lvl3("Final result SC: round number: ", info.RoundNumber, "took ", RoundIntervalSec, " seconds in total")
 	}
 
-	err = blockchain.InsertIntoSideChainRoundTable(bz.SCRoundNumber, blocksize, LeaderName, 0, time.Now(), 0, 0, 0, RoundIntervalSec, bz.MCRoundNumber)
+	err = blockchain.InsertIntoSideChainRoundTable(int(bz.SCRoundNumber.Load()), blocksize, LeaderName, 0, time.Now(), 0, 0, 0, RoundIntervalSec, int(bz.MCRoundNumber.Load()))
 	if err != nil {
 		panic(err)
 	}
@@ -149,14 +149,14 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 				panic("the type of transaction in the queue is un-defined")
 			}
 
-			bz.SideChainQueueWait = bz.SideChainQueueWait + int(math.Abs(float64(bz.SCRoundNumber-row.IssuedScRoundNumber))) + bz.MCRoundDuration/bz.SCRoundDuration*(bz.MCRoundNumber-row.MCRoundNbr)
+			bz.SideChainQueueWait = bz.SideChainQueueWait + int(math.Abs(float64(bz.SCRoundNumber.Load()-int64(row.IssuedScRoundNumber)))) + bz.MCRoundDuration/bz.SCRoundDuration*(int(bz.MCRoundNumber.Load())-row.MCRoundNbr)
 			lastRowId = row.RowId
 
 			bz.SummPoRTxs[row.ServAgrId] = bz.SummPoRTxs[row.ServAgrId] + 1
 		} else {
 			blockIsFull = true
 			log.Lvl1("final result SC:\n side chain block is full! ")
-			err = blockchain.SideChainRoundTableSetBlockSpaceIsFull(bz.SCRoundNumber)
+			err = blockchain.SideChainRoundTableSetBlockSpaceIsFull(int(bz.SCRoundNumber.Load()))
 			if err != nil {
 				panic(err)
 			}
@@ -174,7 +174,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 	err = blockchain.SideChainRoundTableSetFinalRoundInfo(accumulatedTxSize+MetaBlockSizeMinusTransactions,
 		numberOfPoRTx,
 		avgWait,
-		bz.SCRoundNumber)
+		int(bz.SCRoundNumber.Load()))
 	if err != nil {
 		panic(err)
 	}
@@ -188,7 +188,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 	}
 
 	// fill OverallEvaluation Sheet
-	updateSideChainBCOverallEvaluation(bz.SCRoundNumber)
+	updateSideChainBCOverallEvaluation(int(bz.SCRoundNumber.Load()))
 	blocksize := accumulatedTxSize + MetaBlockSizeMinusTransactions
 	log.Lvl1("updateSideChainBCTransactionQueueTake took:", time.Since(takenTime).String())
 	return blocksize

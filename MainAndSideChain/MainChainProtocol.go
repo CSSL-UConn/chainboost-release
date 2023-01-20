@@ -51,7 +51,7 @@ func (bz *ChainBoost) StartMainChainProtocol() {
 		log.Lvl1("Raha Debug: wgMCRound.Done")
 		bz.wgMCRound.Done()
 	}
-	if bz.SimState == 2 && bz.MCRoundNumber%bz.MCRoundPerEpoch == 0 {
+	if bz.SimState == 2 && bz.MCRoundNumber.Load()%int64(bz.MCRoundPerEpoch) == 0 {
 		eachFunctionTakenTime := time.Now()
 		log.Lvl1("Raha Debug: wgSCRound.Wait")
 		bz.wgSCRound.Wait()
@@ -87,7 +87,7 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 	// since the block is empty, no transaction is going to be taken from queues => leader = false
 	// -----------------------------------------------------
 	log.Lvl5("DEBUG: RootPreNewRound(Entry):", msg.Name(), " msg.LeaderTreeNodeID: ", msg.LeaderTreeNodeID, "bz.TreeNode().Id: ", bz.TreeNode().ID, "bz.MCRoundNumber: ", bz.MCRoundNumber, "bz.MCLeader.HasLeader: ", bz.MCLeader.HasLeader, "msg.MCRoundNumber: ", msg.MCRoundNumber)
-	if msg.LeaderTreeNodeID == bz.TreeNode().ID && bz.MCRoundNumber != 1 && bz.MCLeader.HasLeader && msg.MCRoundNumber == bz.MCRoundNumber {
+	if msg.LeaderTreeNodeID == bz.TreeNode().ID && bz.MCRoundNumber.Load() != 1 && bz.MCLeader.HasLeader && int64(msg.MCRoundNumber) == bz.MCRoundNumber.Load() {
 		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: start of a round without a leader")
 		if bz.SimState == 2 {
 			log.Lvl1("Raha Debug: wgMCRound.Done")
@@ -96,7 +96,7 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 		// -----------------------------------------------------
 		// wait for MCDuration/SCduration number of go routines
 		// to be Done (Done is triggered after finishing SideChainRootPostNewRound)
-		if bz.SimState == 2 && bz.MCRoundNumber%bz.MCRoundPerEpoch == 0 {
+		if bz.SimState == 2 && bz.MCRoundNumber.Load()%int64(bz.MCRoundPerEpoch) == 0 {
 			eachFunctionTakenTime = time.Now()
 			log.Lvl1("Raha Debug: wgSCRound.Wait")
 			bz.wgSCRound.Wait()
@@ -135,7 +135,7 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 		// -----------------------------------------------------
 		// normal rounds with a leader => leader = true
 		// -----------------------------------------------------
-	} else if msg.MCRoundNumber == bz.MCRoundNumber && bz.MCRoundNumber != 1 && bz.MCLeader.HasLeader {
+	} else if int64(msg.MCRoundNumber) == bz.MCRoundNumber.Load() && bz.MCRoundNumber.Load() != 1 && bz.MCLeader.HasLeader {
 		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: start of a round with a leader")
 		// dynamically change the side chain's committee with last main chain's leader
 		if bz.SimState == 2 { // i.e. if side chain running is set in simulation
@@ -153,7 +153,7 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 		// -----------------------------------------------------
 		// wait for MCDuration/SCduration number of go routines
 		// to be Done (Done is triggered after finishing SideChainRootPostNewRound)
-		if bz.SimState == 2 && bz.MCRoundNumber%bz.MCRoundPerEpoch == 0 {
+		if bz.SimState == 2 && bz.MCRoundNumber.Load()%int64(bz.MCRoundPerEpoch) == 0 {
 			eachFunctionTakenTime = time.Now()
 			log.Lvl1("Raha Debug: wgSCRound.Wait")
 			bz.wgSCRound.Wait()
@@ -201,7 +201,7 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 		log.Lvl1("new round is announced")
 		//----
 		bz.BCLock.Unlock()
-	} else if msg.MCRoundNumber == bz.MCRoundNumber {
+	} else if int64(msg.MCRoundNumber) == bz.MCRoundNumber.Load() {
 		log.Lvl1("this round already has a leader!")
 	} else {
 		log.Lvl5("DEBUG: None of the Conditions is true:", msg.Name(), " msg.LeaderTreeNodeID: ", msg.LeaderTreeNodeID, "bz.TreeNode().Id: ", bz.TreeNode().ID, "bz.MCRoundNumber: ", bz.MCRoundNumber, "bz.MCLeader.HasLeader: ", bz.MCLeader.HasLeader, "msg.MCRoundNumber: ", msg.MCRoundNumber)
@@ -248,7 +248,7 @@ func (bz *ChainBoost) MainChainCheckLeadership(msg MainChainNewRoundChan) error 
 		// -----------
 		log.Lvl2(bz.Name(), "I may be elected for mc round number ", bz.MCRoundNumber, "with power: ", msg.Power, "and vrf output of:", vrfoutputInt)
 		log.Lvl5("DEBUG: [Election]:", bz.Name(), "bz.TreeNode().Id: ", bz.TreeNode().ID, "bz.MCRoundNumber: ", bz.MCRoundNumber)
-		bz.SendTo(bz.Root(), &NewLeader{LeaderTreeNodeID: bz.TreeNode().ID, MCRoundNumber: bz.MCRoundNumber})
+		bz.SendTo(bz.Root(), &NewLeader{LeaderTreeNodeID: bz.TreeNode().ID, MCRoundNumber: int(bz.MCRoundNumber.Load())})
 	}
 	return nil
 }

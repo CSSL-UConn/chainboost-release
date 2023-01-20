@@ -12,6 +12,7 @@ import (
 	"github.com/chainBoostScale/ChainBoost/por"
 	"github.com/chainBoostScale/ChainBoost/vrf"
 	"go.dedis.ch/kyber/v3/pairing"
+	"go.uber.org/atomic"
 	"golang.org/x/xerrors"
 )
 
@@ -87,7 +88,7 @@ type ChainBoost struct {
 	MainChainNewRoundChan chan MainChainNewRoundChan
 	// channel to let nodes that the next round's leader has been specified
 	MainChainNewLeaderChan chan MainChainNewLeaderChan
-	NumMCLeader            int
+	NumMCLeader            atomic.Int64
 	// the suite we use
 	// suite network.Suite
 	// to match the suit in blscosi
@@ -114,8 +115,8 @@ type ChainBoost struct {
 	JoinedWGChan chan JoinedWGChan
 	// channel to notify leader elected
 	LeaderProposeChan chan bool
-	MCRoundNumber     int
-	SCRoundNumber     int
+	MCRoundNumber     atomic.Int64
+	SCRoundNumber     atomic.Int64
 	// --- just root node use these - these are used for delay evaluation
 	FirstQueueWait  int
 	SecondQueueWait int
@@ -258,15 +259,15 @@ func (bz *ChainBoost) Dispatch() error {
 		// *** MC *** ALL nodes recieve this message to sync rounds
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.MainChainNewRoundChan:
-			bz.MCRoundNumber = bz.MCRoundNumber + 1
+			bz.MCRoundNumber.Inc()
 			log.Lvl3(bz.Name(), " mc round number ", bz.MCRoundNumber, " started at ", time.Now().Format(time.RFC3339))
 			go bz.MainChainCheckLeadership(msg)
 		// -----------------------------------------------------------------------------
 		// *** MC *** just the ROOT NODE (blockchain layer one) recieve this msg
 		// -----------------------------------------------------------------------------
 		case msg := <-bz.MainChainNewLeaderChan:
-			bz.NumMCLeader++
-			if msg.MCRoundNumber == bz.MCRoundNumber && (!bz.MCLeader.HasLeader || msg.TreeNode == bz.TreeNode()) {
+			bz.NumMCLeader.Inc()
+			if int64(msg.MCRoundNumber) == bz.MCRoundNumber.Load() && (!bz.MCLeader.HasLeader || msg.TreeNode == bz.TreeNode()) {
 				go func() {
 					bz.MCLeader.MCPLock.Lock()
 					if bz.MCLeader.HasLeader && msg.TreeNode != bz.TreeNode() {
@@ -275,8 +276,8 @@ func (bz *ChainBoost) Dispatch() error {
 					}
 					log.Lvl1("the first leader for mc round number", bz.MCRoundNumber, " is:", msg.TreeNode.Name())
 					bz.MCLeader.HasLeader = true
-					log.Lvl1("MC round number:", bz.MCRoundNumber-1, "had ", bz.NumMCLeader, "proposed leaderrs")
-					bz.NumMCLeader = 1
+					log.Lvl1("MC round number:", bz.MCRoundNumber.Load()-1, "had ", bz.NumMCLeader, "proposed leaderrs")
+					bz.NumMCLeader.Store(1)
 					bz.MCLeader.MCPLock.Unlock()
 					// ---
 					time.Sleep(time.Duration(bz.MCRoundDuration) * time.Second)
@@ -307,7 +308,7 @@ func (bz *ChainBoost) Dispatch() error {
 		case sig := <-bz.BlsCosi.FinalSignature:
 			log.Lvl1("Time Taken for Consensus:", time.Since(bz.consensusTimeStart).String())
 
-			if bz.simulationDone == true {
+			if bz.simulationDone {
 				return nil
 			}
 
@@ -315,7 +316,7 @@ func (bz *ChainBoost) Dispatch() error {
 				log.Lvl1("final result SC:", bz.Name(), " : ", bz.BlsCosi.BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
 				err := bz.SendTo(bz.Root(), &LtRSideChainNewRound{
 					NewRound:      true,
-					SCRoundNumber: bz.SCRoundNumber,
+					SCRoundNumber: int(bz.SCRoundNumber.Load()),
 					SCSig:         sig,
 				})
 				if err != nil {
@@ -393,11 +394,11 @@ func (bz *ChainBoost) startTimer(MCRoundNumber int) {
 		// bz.MCRoundNumber == MCRoundNumber is for when the round number has changed!,
 		// bz.hasLeader is for when the round number has'nt changed but the leader has been announced
 		bz.MCLeader.MCPLock.Lock()
-		if bz.IsRoot() && bz.MCRoundNumber == MCRoundNumber && !bz.MCLeader.HasLeader {
+		if bz.IsRoot() && bz.MCRoundNumber.Load() == int64(MCRoundNumber) && !bz.MCLeader.HasLeader {
 			log.Lvl1("No leader for mc round number ", bz.MCRoundNumber, "an empty block is added")
 			bz.MCLeader.HasLeader = true
 			log.Lvl5("DEBUG: StarTimer: Bz.TreeNodeId()", bz.TreeNode().ID, "bz.MCRoundNumber: ", bz.MCRoundNumber, "MCRoundNumber: ", MCRoundNumber)
-			bz.MainChainNewLeaderChan <- MainChainNewLeaderChan{bz.TreeNode(), NewLeader{LeaderTreeNodeID: bz.TreeNode().ID, MCRoundNumber: bz.MCRoundNumber}}
+			bz.MainChainNewLeaderChan <- MainChainNewLeaderChan{bz.TreeNode(), NewLeader{LeaderTreeNodeID: bz.TreeNode().ID, MCRoundNumber: int(bz.MCRoundNumber.Load())}}
 		}
 		bz.MCLeader.MCPLock.Unlock()
 	}
