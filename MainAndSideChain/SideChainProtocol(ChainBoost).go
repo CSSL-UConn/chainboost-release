@@ -60,13 +60,13 @@ func (bz *ChainBoost) DispatchProtocol() error {
 		// func (p *SubBlsCosi) Dispatch() which is called when the startSubProtocol in
 		// Blscosi.go, create subprotocols => hence calls func (p *SubBlsCosi) Dispatch()
 		// --------------------------------------------------------
-		case sig := <-bz.BlsCosi.FinalSignature:
+		case sig := <-bz.BlsCosi.Load().FinalSignature:
 			if bz.simulationDone {
 				return nil
 			}
 
-			if err := BLSCoSi.BdnSignature(sig).Verify(bz.BlsCosi.Suite, bz.BlsCosi.Msg, bz.BlsCosi.SubTrees[0].Roster.Publics()); err == nil {
-				log.Lvl1("final result SC:", bz.Name(), " : ", bz.BlsCosi.BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
+			if err := BLSCoSi.BdnSignature(sig).Verify(bz.BlsCosi.Load().Suite, bz.BlsCosi.Load().Msg, bz.BlsCosi.Load().SubTrees[0].Roster.Publics()); err == nil {
+				log.Lvl1("final result SC:", bz.Name(), " : ", bz.BlsCosi.Load().BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
 				err := bz.SendTo(bz.Root(), &LtRSideChainNewRound{
 					NewRound:      true,
 					SCRoundNumber: int(bz.SCRoundNumber.Load()),
@@ -87,7 +87,9 @@ func (bz *ChainBoost) DispatchProtocol() error {
 func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) error {
 	var err error
 	bz.SCRoundNumber.Store(int64(msg.SCRoundNumber))
-	bz.BlsCosi.Msg = []byte{0xFF}
+	blsCosi := bz.BlsCosi.Load()
+	blsCosi.Msg = []byte{0xFF}
+	bz.BlsCosi.Store(blsCosi)
 	takenTime := time.Now()
 	// -----------------------------------------------
 	// --- updating the next side chain's leader
@@ -122,19 +124,25 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 		}
 	}
 	if bz.SCRoundNumber.Load() == 0 {
-		bz.BlsCosi.BlockType = "Summary Block"
+		blsCosi := bz.BlsCosi.Load()
+		blsCosi.BlockType = "Summary Block"
+		bz.BlsCosi.Store(blsCosi)
 	} else {
-		bz.BlsCosi.BlockType = "Meta Block"
+		blsCosi := bz.BlsCosi.Load()
+		blsCosi.BlockType = "Meta Block"
+		bz.BlsCosi.Store(blsCosi)
 	}
 	committeeRoster := onet.NewRoster(CommitteeNodesServerIdentity)
 	// --- root should have root index of 0 (this is based on what happens in gen_tree.go)
 	var x = *bz.TreeNode()
 	x.RosterIndex = 0
 	// ---
-	bz.BlsCosi.SubTrees, err = BLSCoSi.NewBlsProtocolTree(onet.NewTree(committeeRoster, &x), bz.NbrSubTrees)
+	blsCosi = bz.BlsCosi.Load()
+	blsCosi.SubTrees, err = BLSCoSi.NewBlsProtocolTree(onet.NewTree(committeeRoster, &x), bz.NbrSubTrees)
+	bz.BlsCosi.Store(blsCosi)
 	if err == nil {
 		if bz.SCRoundNumber.Load() == 1 {
-			log.Lvl3("final result SC: Next bls cosi tree is: ", bz.BlsCosi.SubTrees[0].Roster.List,
+			log.Lvl3("final result SC: Next bls cosi tree is: ", bz.BlsCosi.Load().SubTrees[0].Roster.List,
 				" with ", bz.Name(), " as Root \n running BlsCosi sc round number", bz.SCRoundNumber)
 		}
 	} else {
@@ -143,10 +151,12 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	// ---
 	// from bc: update msg size with next block size on side chain
 	s := make([]byte, msg.blocksize)
-	bz.BlsCosi.Msg = append(bz.BlsCosi.Msg, s...) // Msg is the meta block
+	blsCosi = bz.BlsCosi.Load()
+	blsCosi.Msg = append(blsCosi.Msg, s...) // Msg is the meta block
+	bz.BlsCosi.Store(blsCosi)
 	// ----
 	//go func() error {
-	bz.BlsCosi.Start()
+	bz.BlsCosi.Load().Start()
 	bz.consensusTimeStart = time.Now()
 	log.Lvl1("SideChainLeaderPreNewRound took:", time.Since(takenTime).String(), "for sc round number", bz.SCRoundNumber)
 	//	if err != nil {
@@ -167,7 +177,9 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 	var tempCommitteeNodesTreeNodeID []onet.TreeNodeID
 	// --------------------------------------------------------------------
 	if bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration) == int(bz.SCRoundNumber.Load()) {
-		bz.BlsCosi.BlockType = "Summary Block" // just to know!
+		blsCosi := bz.BlsCosi.Load()
+		blsCosi.BlockType = "Summary Block"
+		bz.BlsCosi.Store(blsCosi) // just to know!
 		// ---
 		bz.BCLock.Lock()
 		// ----------------------------------------------------------------------------------------------------------------
@@ -231,7 +243,9 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 		bz.updateSideChainBCRound(msg.Name(), 0) // we dont use blocksize param bcz when we are generating meta block
 		// the block size is measured and added in the func: updateSideChainBCTransactionQueueTake
 		blocksize = bz.updateSideChainBCTransactionQueueTake()
-		bz.BlsCosi.BlockType = "Meta Block" // just to know!
+		blsCosi := bz.BlsCosi.Load()
+		blsCosi.BlockType = "Meta Block"
+		bz.BlsCosi.Store(blsCosi) // just to know!
 		// ---
 		bz.BCLock.Unlock()
 		// ---
@@ -296,7 +310,9 @@ func (bz *ChainBoost) StartSideChainProtocol() {
 	// --------------------------------------------------------------------
 	// triggering next side chain round leader to run next round of blscosi
 	// --------------------------------------------------------------------
-	bz.BlsCosi.Msg = []byte{0xFF}
+	blsCosi := bz.BlsCosi.Load()
+	blsCosi.Msg = []byte{0xFF}
+	bz.BlsCosi.Store(blsCosi)
 	err = bz.SendTo(bz.Tree().Search(bz.NextSideChainLeader), &RtLSideChainNewRound{
 		SCRoundNumber:            int(bz.SCRoundNumber.Load()),
 		CommitteeNodesTreeNodeID: bz.CommitteeNodesTreeNodeID,

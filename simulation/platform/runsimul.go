@@ -203,7 +203,8 @@ func Simulate(configurations []Config,
 				"\n StoragePaymentEpoch: ", configuration.StoragePaymentEpoch,
 				"\n PayPercentOfTransactions", configuration.PayPercentOfTransactions,
 			)
-			ChainBoostProtocol.BlsCosi = cosiProtocol
+			ChainBoostProtocol.BlsCosi = atomic.Pointer[BLSCoSi.BlsCosi]{} //.Store(&cosiProtocol)
+			ChainBoostProtocol.BlsCosi.Store(cosiProtocol)
 			// --------------------------------------------------------------
 			ChainBoostProtocol.JoinedWG.Add(len(rootSC.Tree.Roster.List))
 			ChainBoostProtocol.JoinedWG.Done()
@@ -333,11 +334,11 @@ func NewChainBoostProtocol(n *onet.TreeNodeInstance) (onet.ProtocolInstance, err
 		SecondQueueWait:     0,
 		SimulationRounds:    0,
 		BlsCosiStarted:      false,
-		BlsCosi:             cosiProtocol,
+		BlsCosi:             atomic.Pointer[BLSCoSi.BlsCosi]{},
 		SimState:            1, // 1: just the main chain - 2: main chain plus side chain = chainBoost
 		StoragePaymentEpoch: 0, // 0:  after contracts expires, n: settllement after n epoch
 	}
-
+	bz.BlsCosi.Store(cosiProtocol)
 	if err := n.RegisterChannel(&bz.HelloChan); err != nil {
 		return bz, err
 	}

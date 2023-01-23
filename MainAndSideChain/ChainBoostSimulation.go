@@ -153,7 +153,7 @@ type ChainBoost struct {
 	/* ------------------------------------------------------------------
 	 ---------------------------  bls cosi protocol  ---------------
 	--------------------------------------------------------------------- */
-	BlsCosi                  *BLSCoSi.BlsCosi
+	BlsCosi                  atomic.Pointer[BLSCoSi.BlsCosi]
 	CommitteeNodesTreeNodeID []onet.TreeNodeID
 	MCRoundPerEpoch          int
 	NextSideChainLeader      onet.TreeNodeID
@@ -236,14 +236,18 @@ func (bz *ChainBoost) Dispatch() error {
 			bz.MCRoundPerEpoch = msg.MCRoundPerEpoch
 			// bls cosi config
 			bz.NbrSubTrees = msg.NbrSubTrees
-			bz.BlsCosi.Threshold = msg.Threshold
+			blsCosi := bz.BlsCosi.Load()
+			blsCosi.Threshold = msg.Threshold
+			bz.BlsCosi.Store(blsCosi)
 			bz.SimState = msg.SimState
 			bz.StoragePaymentEpoch = msg.StoragePaymentEpoch
 			if msg.NbrSubTrees > 0 {
-				err := bz.BlsCosi.SetNbrSubTree(msg.NbrSubTrees)
+				blsCosi := bz.BlsCosi.Load()
+				err := blsCosi.SetNbrSubTree(msg.NbrSubTrees)
 				if err != nil {
 					return err
 				}
+				bz.BlsCosi.Store(blsCosi)
 			}
 			go bz.helloChainBoost()
 		// -----------------------------------------------------------------------------
@@ -305,15 +309,15 @@ func (bz *ChainBoost) Dispatch() error {
 				time.Sleep(time.Duration(bz.SCRoundDuration) * time.Second)
 				bz.SideChainRootPostNewRound(msg)
 			}()
-		case sig := <-bz.BlsCosi.FinalSignature:
+		case sig := <-bz.BlsCosi.Load().FinalSignature:
 			log.Lvl1("Time Taken for Consensus:", time.Since(bz.consensusTimeStart).String())
 
 			if bz.simulationDone {
 				return nil
 			}
 
-			if err := BLSCoSi.BdnSignature(sig).Verify(bz.BlsCosi.Suite, bz.BlsCosi.Msg, bz.BlsCosi.SubTrees[0].Roster.Publics()); err == nil {
-				log.Lvl1("final result SC:", bz.Name(), " : ", bz.BlsCosi.BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
+			if err := BLSCoSi.BdnSignature(sig).Verify(bz.BlsCosi.Load().Suite, bz.BlsCosi.Load().Msg, bz.BlsCosi.Load().SubTrees[0].Roster.Publics()); err == nil {
+				log.Lvl1("final result SC:", bz.Name(), " : ", bz.BlsCosi.Load().BlockType, "with side chain's round number", bz.SCRoundNumber, "Confirmed in Side Chain")
 				err := bz.SendTo(bz.Root(), &LtRSideChainNewRound{
 					NewRound:      true,
 					SCRoundNumber: int(bz.SCRoundNumber.Load()),
