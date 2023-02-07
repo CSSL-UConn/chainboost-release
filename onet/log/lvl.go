@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -150,8 +151,8 @@ func lvl(lvl, skip int, args ...interface{}) {
 		case lvlPanic:
 			lvlStr = "P"
 		}
-		fmtstr := fmt.Sprintf(": %%-%ds - %%s", namePadding)
-		str := fmt.Sprintf(fmtstr, caller, message)
+		fmtstr := fmt.Sprintf(": %%-%ds [goroutine-id: %%d] - %%s", namePadding)
+		str := fmt.Sprintf(fmtstr, caller, goid(), message)
 		if lInfo.ShowTime {
 			ti := time.Now()
 			str = fmt.Sprintf("%s.%09d%s", ti.Format("06/02/01 15:04:05"), ti.Nanosecond(), str)
@@ -160,6 +161,17 @@ func lvl(lvl, skip int, args ...interface{}) {
 
 		l.Log(lvl, str)
 	}
+}
+
+func goid() int {
+	var buf [64]byte
+	n := runtime.Stack(buf[:], false)
+	idField := strings.Fields(strings.TrimPrefix(string(buf[:n]), "goroutine "))[0]
+	id, err := strconv.Atoi(idField)
+	if err != nil {
+		panic(fmt.Sprintf("cannot get goroutine id: %v", err))
+	}
+	return id
 }
 
 // Needs two functions to keep the caller-depth the same and find who calls us
@@ -368,6 +380,7 @@ func Padding() bool {
 //   - the first ls argument given, else
 //   - from the environment variable, else
 //   - defaultMainTest (2)
+//
 // Also be aware that go only outputs the stdout of the tests if the verbose
 // flag is given.
 func MainTest(m *testing.M, ls ...int) {
@@ -397,10 +410,11 @@ func MainTest(m *testing.M, ls ...int) {
 }
 
 // ParseEnv looks at the following environment-variables:
-//   DEBUG_LVL - for the actual debug-lvl - default is 1
-//   DEBUG_TIME - whether to show the timestamp - default is false
-//   DEBUG_COLOR - whether to color the output - default is false
-//   DEBUG_PADDING - whether to pad the output nicely - default is true
+//
+//	DEBUG_LVL - for the actual debug-lvl - default is 1
+//	DEBUG_TIME - whether to show the timestamp - default is false
+//	DEBUG_COLOR - whether to color the output - default is false
+//	DEBUG_PADDING - whether to pad the output nicely - default is true
 func ParseEnv() {
 	dv := os.Getenv("DEBUG_LVL")
 	if dv != "" {
@@ -477,6 +491,7 @@ var timeoutFlagMutex sync.Mutex
 //  1. "-timeout 1m"
 //  2. MainTestWait = 2*time.Minute
 //  3. 10*time.Minute
+//
 // interpretWait will throw a warning if MainTestWait has been set.
 func interpretWait() time.Duration {
 	timeoutFlagMutex.Lock()

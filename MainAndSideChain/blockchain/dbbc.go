@@ -148,7 +148,8 @@ func InitalizeMainChainDbTables() error {
             "AveWaitRegPay" REAL,
             "RegSpaceFull" integer,
             "BlockSpaceFull" integer,
-            "SyncTx" integer
+            "SyncTx" integer,
+            "ScPorTx" integer
         );
     `)
 
@@ -918,7 +919,9 @@ func AddStatsToRoundTableBasedOnRoundNumber(
 	AveWaitOtherTxs float64,
 	AveWaitRegPay float64,
 	SyncTx int,
-	RoundNumber int) error {
+	SCPoRTx int,
+	RoundNumber int,
+	) error {
 
 	mainchainDb, err := sql.Open("sqlite", mainchainpath)
 	if err != nil {
@@ -934,10 +937,11 @@ func AddStatsToRoundTableBasedOnRoundNumber(
                                 TotalNumTx = ?,
                                 AveWaitOtherTxs = ?,
                                 AveWaitRegPay = ?,
-                                SyncTx = ?
+                                SyncTx = ?,
+                                ScPorTx = ?
             WHERE RoundNumber = ?`
 	_, err = mainchainDb.Exec(stmt, BCSize, regPayTx, PoRTx, StorjPayTx, CntPropTx, CntCmtTx,
-		TotalNumTx, AveWaitOtherTxs, AveWaitRegPay, SyncTx, RoundNumber)
+		TotalNumTx, AveWaitOtherTxs, AveWaitRegPay, SyncTx, SCPoRTx,  RoundNumber)
 	return err
 }
 

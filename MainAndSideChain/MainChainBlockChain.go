@@ -438,6 +438,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	numberOfServAgrProposeTx := 0
 	numberOfServAgrCommitTx := 0
 	numberOfSyncTx := 0
+	SCPoRTx := 0
 
 	takenTime = time.Now()
 	fqRows, err := blockchain.MainChainGetFirstQueue()
@@ -499,7 +500,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 			case "TxSync":
 				log.Lvl4("a sync tx added to block number", bz.MCRoundNumber, " from the queue")
 				numberOfSyncTx++
-				numberOfPoRTx = numberOfPoRTx + out.ServAgrId
+				SCPoRTx = SCPoRTx + out.ServAgrId
 			default:
 				log.Lvl1("Panic Raised:\n\n")
 				panic("the type of transaction in the queue is un-defined")
@@ -547,7 +548,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	BlockSize := accumulatedTxSize + allocatedBlockSizeForRegPayTx + BlockSizeMinusTransactions
 	err = blockchain.AddStatsToRoundTableBasedOnRoundNumber(BlockSize, numberOfRegPayTx, numberOfPoRTx, numberOfStoragePayTx, numberOfServAgrProposeTx, numberOfServAgrCommitTx,
 		TotalNumTxsInBothQueue, avg1stWaitQueue,
-		avg2ndWaitQueue, numberOfSyncTx, int(bz.MCRoundNumber.Load()))
+		avg2ndWaitQueue, numberOfSyncTx, SCPoRTx, int(bz.MCRoundNumber.Load()))
 	log.Lvl2("Final result MC: \n Block size allocation:\n", allocatedBlockSizeForRegPayTx,
 		" for regular payment txs,\n and ", accumulatedTxSize, " for other types of txs")
 	if err != nil {
