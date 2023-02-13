@@ -6,6 +6,9 @@ import (
 
 	"flag"
 
+	"net/http"
+	_ "net/http/pprof"
+
 	"github.com/BurntSushi/toml"
 	"github.com/chainBoostScale/ChainBoost/onet"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
@@ -90,6 +93,9 @@ func (e *simulation) Run(config *onet.SimulationConfig) error {
 }
 
 func main() {
+	go func() {
+		log.LLvl1(http.ListenAndServe("localhost:6060", nil))
+	}()
 	flag.Parse()
 	simul.Start("localhost", "ChainBoost.toml")
 }

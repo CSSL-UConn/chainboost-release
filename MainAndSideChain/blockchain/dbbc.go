@@ -42,7 +42,7 @@ type SideChainFirstQueueEntry struct {
 	Time                time.Time
 	IssuedScRoundNumber int
 	ServAgrId           int
-	MCRoundNbr          int
+	Epoch               int
 }
 
 type SideChainRoundInfo struct {
@@ -146,10 +146,11 @@ func InitalizeMainChainDbTables() error {
             "TotalNumTx" integer,
             "AveWaitOtherTxs" REAL,
             "AveWaitRegPay" REAL,
+			"ConfirmationTime" REAL,
             "RegSpaceFull" integer,
             "BlockSpaceFull" integer,
             "SyncTx" integer,
-            "ScPorTx" integer
+            "ScPorTx" integer DEFAULT(0)
         );
     `)
 
@@ -201,7 +202,7 @@ func InitalizeSideChainDbTables() error {
             "Time" text,
             "IssuedScRoundNumber" integer,
             "ServAgrId" integer,
-            "MCRoundNbr" integer
+            "Epoch" integer
         );
     `)
 
@@ -497,10 +498,10 @@ func BulkInsertIntoSideChainFirstQueue(rows []SideChainFirstQueueEntry) error {
 		valueArgs = append(valueArgs, row.Time)
 		valueArgs = append(valueArgs, row.IssuedScRoundNumber)
 		valueArgs = append(valueArgs, row.ServAgrId)
-		valueArgs = append(valueArgs, row.MCRoundNbr)
+		valueArgs = append(valueArgs, row.Epoch)
 	}
 	//fmt.Printf("len args: %d, len valueArgs: %d", len(rows), len(valueArgs))
-	stmt := fmt.Sprintf(`INSERT INTO FirstQueue(Name, Size, Time, IssuedScRoundNumber, ServAgrId, MCRoundNbr)
+	stmt := fmt.Sprintf(`INSERT INTO FirstQueue(Name, Size, Time, IssuedScRoundNumber, ServAgrId, Epoch)
                                  VALUES %s`, strings.Join(valueStrings, ","))
 	_, err = sidechainDb.Exec(stmt, valueArgs...)
 	return err
@@ -920,8 +921,9 @@ func AddStatsToRoundTableBasedOnRoundNumber(
 	AveWaitRegPay float64,
 	SyncTx int,
 	SCPoRTx int,
+	ConfirmationTime float64,
 	RoundNumber int,
-	) error {
+) error {
 
 	mainchainDb, err := sql.Open("sqlite", mainchainpath)
 	if err != nil {
@@ -938,10 +940,11 @@ func AddStatsToRoundTableBasedOnRoundNumber(
                                 AveWaitOtherTxs = ?,
                                 AveWaitRegPay = ?,
                                 SyncTx = ?,
-                                ScPorTx = ?
+                                ScPorTx = ?,
+								ConfirmationTime = ?
             WHERE RoundNumber = ?`
 	_, err = mainchainDb.Exec(stmt, BCSize, regPayTx, PoRTx, StorjPayTx, CntPropTx, CntCmtTx,
-		TotalNumTx, AveWaitOtherTxs, AveWaitRegPay, SyncTx, SCPoRTx,  RoundNumber)
+		TotalNumTx, AveWaitOtherTxs, AveWaitRegPay, SyncTx, SCPoRTx, ConfirmationTime, RoundNumber)
 	return err
 }
 
@@ -1032,11 +1035,11 @@ func SideChainPopFromFirstQueue() (*SideChainFirstQueueEntry, error, bool) {
                                         Time,
                                         IssuedScRoundNumber,
                                         ServAgrId,
-                                        MCRoundNbr
+                                        Epoch
                                  FROM FirstQueue Where rowid in (Select MIN(rowid) FROM FirstQueue)`)
 	var returnValue SideChainFirstQueueEntry
 	var timeStr string
-	err = row.Scan(&returnValue.Name, &returnValue.Size, &timeStr, &returnValue.IssuedScRoundNumber, &returnValue.ServAgrId, &returnValue.MCRoundNbr)
+	err = row.Scan(&returnValue.Name, &returnValue.Size, &timeStr, &returnValue.IssuedScRoundNumber, &returnValue.ServAgrId, &returnValue.Epoch)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil, true
@@ -1063,13 +1066,13 @@ func SideChainGetFirstQueue() ([]SideChainFirstQueueEntry, error) {
                                         Time,
                                         IssuedScRoundNumber,
                                         ServAgrId,
-                                        MCRoundNbr FROM FirstQueue`)
+                                        Epoch FROM FirstQueue`)
 	var timeStr string
 	var retval []SideChainFirstQueueEntry = make([]SideChainFirstQueueEntry, 0)
 
 	for rows.Next() {
 		var entry SideChainFirstQueueEntry
-		err = rows.Scan(&entry.RowId, &entry.Name, &entry.Size, &timeStr, &entry.IssuedScRoundNumber, &entry.ServAgrId, &entry.MCRoundNbr)
+		err = rows.Scan(&entry.RowId, &entry.Name, &entry.Size, &timeStr, &entry.IssuedScRoundNumber, &entry.ServAgrId, &entry.Epoch)
 		if err != nil {
 			return nil, err
 		}

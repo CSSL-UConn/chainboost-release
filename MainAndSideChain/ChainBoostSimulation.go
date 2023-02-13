@@ -70,7 +70,7 @@ type MCLeader struct {
 	MCPLock   sync.Mutex
 }
 
-//  ChainBoost is the main struct that has required parameters for running both protocols ------------
+// ChainBoost is the main struct that has required parameters for running both protocols ------------
 type ChainBoost struct {
 	// what if we could have two types of node structures: root node and simple nodes
 	// then the simple nodes would be much lighter.
@@ -105,12 +105,17 @@ type ChainBoost struct {
 	// to let the  first leader run main chain protocol and ignore the rest
 	MCLeader *MCLeader
 	// for root node to wait for a specific number of side chain rounds before proceeding to next main chain's round
-	wgSCRound sync.WaitGroup
+	//wgSCRound sync.WaitGroup
 	// for root node to wait for a specific number of main chain rounds before proceeding to next side chain's round
-	wgMCRound sync.WaitGroup
+	//wgMCRound sync.WaitGroup
+
+	wgSyncScRound sync.WaitGroup
+	wgSyncMcRound sync.WaitGroup
 	// for root node to wait for all nodes join the simulation before starting the ptotocols
 	CalledWG sync.WaitGroup
 	JoinedWG sync.WaitGroup
+
+	MCRoundSyncWg sync.WaitGroup
 	// channel that all nodes can use to announce root node they have joined the simulation
 	JoinedWGChan chan JoinedWGChan
 	// channel to notify leader elected
@@ -176,9 +181,12 @@ type ChainBoost struct {
 /* ----------------------------------- FUNCTIONS -------------------------------------------------
 ------------------------------------------------------------------------------------------------  */
 
-/* ----------------------------------------------------------------------
-	//Start: starts the protocol by sending hello msg to all nodes
------------------------------------------------------------------------- */
+/*
+	 ----------------------------------------------------------------------
+		//Start: starts the protocol by sending hello msg to all nodes
+
+------------------------------------------------------------------------
+*/
 func (bz *ChainBoost) Start() error {
 	bz.BCLock.Lock()
 	log.Lvl1("Updating the mainchainbc file with created nodes' information")
@@ -201,9 +209,12 @@ func (bz *ChainBoost) Start() error {
 	return nil
 }
 
-/* ----------------------------------------------------------------------
-			 Dispatch listen on the different channels in main chain protocol
------------------------------------------------------------------------- */
+/*
+	 ----------------------------------------------------------------------
+				 Dispatch listen on the different channels in main chain protocol
+
+------------------------------------------------------------------------
+*/
 func (bz *ChainBoost) Dispatch() error {
 
 	// todo: some where in byzcoin the running variable was set to false. look for it later!
@@ -368,11 +379,12 @@ func (bz *ChainBoost) helloChainBoost() {
 			//--------------------------------------------------
 			// each epoch this number of sc rounds should be passed
 			log.Lvl1("Raha Debug: wgSCRound.Add(", bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration), ")")
-			bz.wgSCRound.Add(bz.MCRoundPerEpoch * (bz.MCRoundDuration / bz.SCRoundDuration))
+			//bz.wgSCRound.Add(bz.MCRoundPerEpoch * (bz.MCRoundDuration / bz.SCRoundDuration))
 			//--------------------------------------------------
 			// each epoch this number of sc rounds should be passed
 			log.Lvl1("Raha Debug: wgMCRound.Add(", bz.MCRoundPerEpoch, ")")
-			bz.wgMCRound.Add(bz.MCRoundPerEpoch)
+			//bz.wgMCRound.Add(bz.MCRoundPerEpoch + 1)
+			bz.wgSyncMcRound.Add(1)
 			//--------------------------------------------------
 			go bz.StartMainChainProtocol()
 			go bz.StartSideChainProtocol()
@@ -386,11 +398,14 @@ func (bz *ChainBoost) helloChainBoost() {
 
 // -------------------------------------- timeouts -------------------------------------- //
 
-/* ------------------------------------------------------------------------
+/*
+	------------------------------------------------------------------------
+
 this function will be called just by ROOT NODE when:
 - at the end of a round duration (when no "I am a leader message is recieved): startTimer starts the timer to detect the rounds that dont have any leader elected (if any)
 and publish an empty block in those rounds
------------------------------------------------------------------------- */
+------------------------------------------------------------------------
+*/
 func (bz *ChainBoost) startTimer(MCRoundNumber int) {
 	select {
 	case <-time.After(time.Duration(bz.MCRoundDuration) * time.Second):

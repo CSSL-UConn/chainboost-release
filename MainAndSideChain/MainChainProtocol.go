@@ -49,12 +49,12 @@ func (bz *ChainBoost) StartMainChainProtocol() {
 	//----
 	if bz.SimState == 2 {
 		log.Lvl1("Raha Debug: wgMCRound.Done")
-		bz.wgMCRound.Done()
+		//bz.wgMCRound.Done()
 	}
-	if bz.SimState == 2 && bz.MCRoundNumber.Load()%int64(bz.MCRoundPerEpoch) == 0 {
+	if bz.SimState == 2 && bz.MCRoundNumber.Load() != 1 && bz.MCRoundNumber.Load()-1%int64(bz.MCRoundPerEpoch) == 0 {
 		eachFunctionTakenTime := time.Now()
 		log.Lvl1("Raha Debug: wgSCRound.Wait")
-		bz.wgSCRound.Wait()
+		//bz.wgSCRound.Wait()
 		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: bz.wgSCRound.Wait() took:", time.Since(eachFunctionTakenTime).String())
 		log.Lvl1("Raha Debug: wgSCRound.Wait: PASSED")
 		// this equation result has to be int!
@@ -64,9 +64,11 @@ func (bz *ChainBoost) StartMainChainProtocol() {
 		}
 		// each epoch this number of sc rounds should be passed
 		log.Lvl1("Raha Debug: wgSCRound.Add(", bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration), ")")
-		bz.wgSCRound.Add(bz.MCRoundPerEpoch * (bz.MCRoundDuration / bz.SCRoundDuration))
+		//bz.wgSCRound.Add(bz.MCRoundPerEpoch * (bz.MCRoundDuration / bz.SCRoundDuration))
 	}
-
+	if bz.SimState == 2 {
+		bz.wgSyncScRound.Add(bz.MCRoundDuration / bz.SCRoundDuration)
+	}
 	bz.BCLock.Lock()
 	// ---
 	bz.updateBCPowerRound(bz.TreeNode().Name(), true)
@@ -91,15 +93,15 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 		log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: start of a round without a leader")
 		if bz.SimState == 2 {
 			log.Lvl1("Raha Debug: wgMCRound.Done")
-			bz.wgMCRound.Done()
+			//bz.wgMCRound.Done()
 		}
 		// -----------------------------------------------------
 		// wait for MCDuration/SCduration number of go routines
 		// to be Done (Done is triggered after finishing SideChainRootPostNewRound)
-		if bz.SimState == 2 && bz.MCRoundNumber.Load()%int64(bz.MCRoundPerEpoch) == 0 {
+		if bz.SimState == 2 && bz.MCRoundNumber.Load() != 1 && bz.MCRoundNumber.Load()-1%int64(bz.MCRoundPerEpoch) == 0 {
 			eachFunctionTakenTime = time.Now()
 			log.Lvl1("Raha Debug: wgSCRound.Wait")
-			bz.wgSCRound.Wait()
+			//bz.wgSCRound.Wait()
 			log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: bz.wgSCRound.Wait() took:", time.Since(eachFunctionTakenTime).String())
 			log.Lvl1("Raha Debug: wgSCRound.Wait: PASSED")
 			// this equation result has to be int!
@@ -109,7 +111,11 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 			}
 			// each epoch this number of sc rounds should be passed
 			log.Lvl1("Raha Debug: wgSCRound.Add(", bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration), ")")
-			bz.wgSCRound.Add(bz.MCRoundPerEpoch * (bz.MCRoundDuration / bz.SCRoundDuration))
+			//bz.wgSCRound.Add(bz.MCRoundPerEpoch * (bz.MCRoundDuration / bz.SCRoundDuration))
+		}
+		if bz.SimState == 2 {
+			bz.wgSyncScRound.Wait()
+			bz.wgSyncScRound.Add(bz.MCRoundDuration / bz.SCRoundDuration)
 		}
 		// -----------------------------------------------------
 		bz.BCLock.Lock()
@@ -148,15 +154,15 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 		// -----------------------------------------------
 		if bz.SimState == 2 {
 			log.Lvl1("Raha Debug: wgMCRound.Done")
-			bz.wgMCRound.Done()
+			//bz.wgMCRound.Done()
 		}
 		// -----------------------------------------------------
 		// wait for MCDuration/SCduration number of go routines
 		// to be Done (Done is triggered after finishing SideChainRootPostNewRound)
-		if bz.SimState == 2 && bz.MCRoundNumber.Load()%int64(bz.MCRoundPerEpoch) == 0 {
+		if bz.SimState == 2 && bz.MCRoundNumber.Load() != 1 && bz.MCRoundNumber.Load()-1%int64(bz.MCRoundPerEpoch) == 0 {
 			eachFunctionTakenTime = time.Now()
 			log.Lvl1("Raha Debug: wgSCRound.Wait")
-			bz.wgSCRound.Wait()
+			//bz.wgSCRound.Wait()
 			log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: bz.wgSCRound.Wait() took:", time.Since(eachFunctionTakenTime).String())
 			log.Lvl1("Raha Debug: wgSCRound.Wait: PASSED")
 			// this equation result has to be int!
@@ -166,7 +172,11 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 			}
 			// each epoch this number of sc rounds should be passed
 			log.Lvl1("Raha Debug: wgSCRound.Add(", bz.MCRoundPerEpoch*(bz.MCRoundDuration/bz.SCRoundDuration), ")")
-			bz.wgSCRound.Add(bz.MCRoundPerEpoch * (bz.MCRoundDuration / bz.SCRoundDuration))
+			//bz.wgSCRound.Add(bz.MCRoundPerEpoch * (bz.MCRoundDuration / bz.SCRoundDuration))
+		}
+		if bz.SimState == 2 {
+			bz.wgSyncScRound.Wait()
+			bz.wgSyncScRound.Add(bz.MCRoundDuration / bz.SCRoundDuration)
 		}
 		// -----------------------------------------------
 		// -----------------------------------------------
@@ -206,6 +216,7 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 	} else {
 		log.Lvl5("DEBUG: None of the Conditions is true:", msg.Name(), " msg.LeaderTreeNodeID: ", msg.LeaderTreeNodeID, "bz.TreeNode().Id: ", bz.TreeNode().ID, "bz.MCRoundNumber: ", bz.MCRoundNumber, "bz.MCLeader.HasLeader: ", bz.MCLeader.HasLeader, "msg.MCRoundNumber: ", msg.MCRoundNumber)
 	}
+	bz.wgSyncMcRound.Done()
 	log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: the whole function took:", time.Since(RootPreNewRoundTakenTime).String())
 }
 func (bz *ChainBoost) MainChainCheckLeadership(msg MainChainNewRoundChan) error {

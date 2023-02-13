@@ -1,17 +1,18 @@
 package MainAndSideChain
 
 import (
-	"math"
 	"time"
 
 	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/blockchain"
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 )
 
-/* ----------------------------------------------------------------------
-	updateSideChainBC:  when a side chain leader submit a meta block, the side chain blockchain is
-	updated by the root node to reflelct an added meta-block
- ----------------------------------------------------------------------*/
+/*
+	 ----------------------------------------------------------------------
+		updateSideChainBC:  when a side chain leader submit a meta block, the side chain blockchain is
+		updated by the root node to reflelct an added meta-block
+	 ----------------------------------------------------------------------
+*/
 func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 	//var epochNumber = int(math.Floor(float64(bz.MCRoundNumber) / float64(bz.MCRoundPerEpoch)))
 	var err error
@@ -93,9 +94,12 @@ func (bz *ChainBoost) updateSideChainBCRound(LeaderName string, blocksize int) {
 
 // }
 
-/* ----------------------------------------------------------------------
-    updateBC: this is a connection between first layer of blockchain - ROOT NODE - on the second layer - xlsx file -
------------------------------------------------------------------------- */
+/*
+	----------------------------------------------------------------------
+	   updateBC: this is a connection between first layer of blockchain - ROOT NODE - on the second layer - xlsx file -
+
+------------------------------------------------------------------------
+*/
 func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 	var err error
 	takenTime := time.Now()
@@ -148,8 +152,8 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 				log.LLvl1("Panic Raised:\n\n")
 				panic("the type of transaction in the queue is un-defined")
 			}
-
-			bz.SideChainQueueWait = bz.SideChainQueueWait + int(math.Abs(float64(bz.SCRoundNumber.Load()-int64(row.IssuedScRoundNumber)))) + bz.MCRoundDuration/bz.SCRoundDuration*(int(bz.MCRoundNumber.Load())-row.MCRoundNbr)
+			currentEpoch := int(bz.MCRoundNumber.Load()-2) / bz.SCRoundDuration
+			bz.SideChainQueueWait = bz.SideChainQueueWait + int(bz.SCRoundNumber.Load()-int64(row.IssuedScRoundNumber)) + (currentEpoch-row.Epoch)*bz.MCRoundDuration
 			lastRowId = row.RowId
 
 			bz.SummPoRTxs[row.ServAgrId] = bz.SummPoRTxs[row.ServAgrId] + 1

@@ -12,10 +12,13 @@ import (
 	"github.com/chainBoostScale/ChainBoost/onet/log"
 )
 
-/* ----------------------------------------------------------------------
-	finalMainChainBCInitialization initialize the mainchainbc file based on the config params defined in the config file
-	(.toml file of the protocol) the info we hadn't before and we have now is nodes' info that this function add to the mainchainbc file
------------------------------------------------------------------------- */
+/*
+	 ----------------------------------------------------------------------
+		finalMainChainBCInitialization initialize the mainchainbc file based on the config params defined in the config file
+		(.toml file of the protocol) the info we hadn't before and we have now is nodes' info that this function add to the mainchainbc file
+
+------------------------------------------------------------------------
+*/
 func (bz *ChainBoost) finalMainChainBCInitialization() {
 	var NodeInfoRow []string
 	for _, a := range bz.Roster().List {
@@ -65,11 +68,14 @@ func (bz *ChainBoost) finalMainChainBCInitialization() {
 	}
 }
 
-/* ----------------------------------------------------------------------
+/*
+	----------------------------------------------------------------------
+
 each round THE ROOT NODE send a msg to all nodes,
 let other nodes know that the new round has started and the information they need
 from blockchain to check if they are next round's leader
------------------------------------------------------------------------- */
+------------------------------------------------------------------------
+*/
 func (bz *ChainBoost) readBCAndSendtoOthers() {
 	if bz.MCRoundNumber.Load() == int64(bz.SimulationRounds) {
 		log.LLvl1("ChainBoost simulation has passed the number of simulation rounds:", bz.SimulationRounds, "\n returning back to RunSimul")
@@ -124,12 +130,14 @@ func (bz *ChainBoost) readBCPowersAndSeed() (minerspowers map[string]int, seed s
 	return minerspowers, seed
 }
 
-/* ----------------------------------------------------------------------
-	updateBC: by leader
-	each round, adding one row in power table based on the information in market matching sheet,
-	assuming that servers are honest and have honestly publish por for their actice (not expired) ServAgrs,
-	for each storage server and each of their active ServAgr, add the stored file size to their current power
- ----------------------------------------------------------------------*/
+/*
+	 ----------------------------------------------------------------------
+		updateBC: by leader
+		each round, adding one row in power table based on the information in market matching sheet,
+		assuming that servers are honest and have honestly publish por for their actice (not expired) ServAgrs,
+		for each storage server and each of their active ServAgr, add the stored file size to their current power
+	 ----------------------------------------------------------------------
+*/
 func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 	var seed string
 	var err error
@@ -192,9 +200,12 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 	}
 }
 
-/* ----------------------------------------------------------------------
-    updateBC: this is a connection between first layer of blockchain - ROOT NODE - on the second layer - xlsx file -
------------------------------------------------------------------------- */
+/*
+	----------------------------------------------------------------------
+	   updateBC: this is a connection between first layer of blockchain - ROOT NODE - on the second layer - xlsx file -
+
+------------------------------------------------------------------------
+*/
 func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 	takenTime := time.Now()
 	var err error
@@ -298,7 +309,15 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 			// -------------------------------------------------------------------------------
 			// --- check for eligible contracts and add a por tx row on top of the stream ----
 			// ServAgr is not expired => Add TxPor
-			tx := blockchain.SideChainFirstQueueEntry{Name: "TxPor", Size: int(PorTxSize), Time: time.Now(), IssuedScRoundNumber: int(bz.SCRoundNumber.Load()), ServAgrId: i + 1, MCRoundNbr: int(bz.MCRoundNumber.Load())}
+			epoch := -1
+			if bz.MCRoundNumber.Load() != 1 {
+				epoch = int(bz.MCRoundNumber.Load()-2) / bz.SCRoundDuration
+			}
+			issuedRoundNumber := (int(bz.SCRoundNumber.Load()-1) % bz.MCRoundDuration)
+			if issuedRoundNumber == 0 {
+				issuedRoundNumber = bz.MCRoundDuration
+			}
+			tx := blockchain.SideChainFirstQueueEntry{Name: "TxPor", Size: int(PorTxSize), Time: time.Now(), IssuedScRoundNumber: issuedRoundNumber, ServAgrId: i + 1, Epoch: epoch}
 			scFirstQueueTxs = append(scFirstQueueTxs, tx)
 			numOfPoRTxsSC++
 			// -------------------------------------------------------------------------------
@@ -367,9 +386,12 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 	log.Lvl1(numOfPoRTxsSC, "TxPor added to queue in sc round number: ", bz.SCRoundNumber)
 }
 
-/* ----------------------------------------------------------------------
-    updateBC: this is a connection between first layer of blockchain - ROOT NODE - and the second layer - xlsx file -
------------------------------------------------------------------------- */
+/*
+	----------------------------------------------------------------------
+	   updateBC: this is a connection between first layer of blockchain - ROOT NODE - and the second layer - xlsx file -
+
+------------------------------------------------------------------------
+*/
 func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	var err error
 	// --- reset
@@ -545,10 +567,12 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		avg2ndWaitQueue = float64(bz.SecondQueueWait) / float64(numberOfRegPayTx)
 	}
 
+	ConfirmationTime := float64(bz.FirstQueueWait+bz.SecondQueueWait) / float64(TotalNumTxsInBothQueue)
+
 	BlockSize := accumulatedTxSize + allocatedBlockSizeForRegPayTx + BlockSizeMinusTransactions
 	err = blockchain.AddStatsToRoundTableBasedOnRoundNumber(BlockSize, numberOfRegPayTx, numberOfPoRTx, numberOfStoragePayTx, numberOfServAgrProposeTx, numberOfServAgrCommitTx,
 		TotalNumTxsInBothQueue, avg1stWaitQueue,
-		avg2ndWaitQueue, numberOfSyncTx, SCPoRTx, int(bz.MCRoundNumber.Load()))
+		avg2ndWaitQueue, numberOfSyncTx, SCPoRTx, ConfirmationTime, int(bz.MCRoundNumber.Load()))
 	log.Lvl2("Final result MC: \n Block size allocation:\n", allocatedBlockSizeForRegPayTx,
 		" for regular payment txs,\n and ", accumulatedTxSize, " for other types of txs")
 	if err != nil {

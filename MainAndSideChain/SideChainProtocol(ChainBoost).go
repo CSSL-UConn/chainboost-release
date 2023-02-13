@@ -38,9 +38,12 @@ type LtRSideChainNewRoundChan struct {
 /* ----------------------------------- FUNCTIONS -------------------------------------------------
 ------------------------------------------------------------------------------------------------  */
 
-/* ----------------------------------------------------------------------
- DispatchProtocol listen on the different channels in side chain protocol
------------------------------------------------------------------------- */
+/*
+	 ----------------------------------------------------------------------
+		DispatchProtocol listen on the different channels in side chain protocol
+
+------------------------------------------------------------------------
+*/
 func (bz *ChainBoost) DispatchProtocol() error {
 
 	running := true
@@ -83,7 +86,7 @@ func (bz *ChainBoost) DispatchProtocol() error {
 	return err
 }
 
-//SideChainLeaderPreNewRound is run by the side chain's leader
+// SideChainLeaderPreNewRound is run by the side chain's leader
 func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) error {
 	var err error
 	bz.SCRoundNumber.Store(int64(msg.SCRoundNumber))
@@ -167,7 +170,6 @@ func (bz *ChainBoost) SideChainLeaderPreNewRound(msg RtLSideChainNewRoundChan) e
 	//return xerrors.New("Problem in cosi protocol run: should not get here")
 }
 
-//
 func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) error {
 	var err error
 	bz.SCRoundNumber.Store(int64(msg.SCRoundNumber))
@@ -212,14 +214,15 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 		// -----------------------------------------------
 		// -----------------------------------------------
 		log.Lvl1("Raha Debug: wgSCRound.Done")
-		bz.wgSCRound.Done()
+		//bz.wgSCRound.Done()
+		bz.wgSyncScRound.Done()
 		// --------------------------------------------------------------------
 		log.Lvl1("Raha Debug: wgMCRound.Wait")
-		bz.wgMCRound.Wait()
+		//bz.wgMCRound.Wait()
 		log.Lvl1("Raha Debug: wgMCRound.Wait: PASSED")
 		// each epoch this number of mc rounds should be passed
 		log.Lvl1("Raha Debug: wgMCRound.Add(", bz.MCRoundPerEpoch, ")")
-		bz.wgMCRound.Add(bz.MCRoundPerEpoch)
+		//bz.wgMCRound.Add(bz.MCRoundPerEpoch)
 		// -----------------------------------------------
 		// -----------------------------------------------
 
@@ -252,8 +255,10 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 		// increase side chain round number
 		bz.SCRoundNumber.Inc()
 		log.Lvl1("Raha Debug: wgSCRound.Done")
-		bz.wgSCRound.Done()
+		//bz.wgSCRound.Done()
+		bz.wgSyncScRound.Done()
 	}
+
 	// --------------------------------------------------------------------
 	//triggering next side chain round leader to run next round of blscosi
 	// --------------------------------------------------------------------
@@ -265,6 +270,10 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 	if err != nil {
 		log.LLvl1(bz.Name(), "can't send new side chain round msg to", bz.Tree().Search(bz.NextSideChainLeader).Name())
 		return xerrors.New("can't send new side chain round msg to next leader" + err.Error())
+	}
+	if int(bz.SCRoundNumber.Load())%(bz.MCRoundDuration/bz.SCRoundDuration) == 0 {
+		bz.wgSyncMcRound.Wait()
+		bz.wgSyncMcRound.Add(1)
 	}
 	return nil
 }
@@ -323,12 +332,15 @@ func (bz *ChainBoost) StartSideChainProtocol() {
 	}
 }
 
-/* -----------------------------------------------
+/*
+	-----------------------------------------------
+
 dynamically change the side chain's committee with last main chain's leader
 the committee nodes is shifted by one and the new leader is added to be used for next epoch's side chain's committee
 Note that: for now we are considering the last w distinct leaders in the committee which means
 if a leader is selected multiple times during an epoch, he will not be added multiple times,
------------------------------------------------ */
+-----------------------------------------------
+*/
 func (bz *ChainBoost) UpdateSideChainCommittee(msg MainChainNewLeaderChan) {
 	t := 0
 	for _, a := range bz.CommitteeNodesTreeNodeID {
