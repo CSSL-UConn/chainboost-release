@@ -216,7 +216,9 @@ func (bz *ChainBoost) RootPreNewRound(msg MainChainNewLeaderChan) {
 	} else {
 		log.Lvl5("DEBUG: None of the Conditions is true:", msg.Name(), " msg.LeaderTreeNodeID: ", msg.LeaderTreeNodeID, "bz.TreeNode().Id: ", bz.TreeNode().ID, "bz.MCRoundNumber: ", bz.MCRoundNumber, "bz.MCLeader.HasLeader: ", bz.MCLeader.HasLeader, "msg.MCRoundNumber: ", msg.MCRoundNumber)
 	}
-	bz.wgSyncMcRound.Done()
+	if bz.SimState == 2 {
+		bz.wgSyncMcRound.Done()
+	}
 	log.Lvl1("RootPreNewRound in mcroundnumber ", bz.MCRoundNumber, " time report: the whole function took:", time.Since(RootPreNewRoundTakenTime).String())
 }
 func (bz *ChainBoost) MainChainCheckLeadership(msg MainChainNewRoundChan) error {

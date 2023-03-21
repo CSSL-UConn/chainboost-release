@@ -102,6 +102,7 @@ type Csslab struct {
 	SCRoundDuration          int
 	CommitteeWindow          int
 	MCRoundPerEpoch          int
+	SCRoundPerEpoch          int
 	SimState                 int
 	StoragePaymentEpoch      int
 	PayPercentOfTransactions float64

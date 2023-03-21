@@ -3,6 +3,7 @@
 package MainAndSideChain
 
 import (
+	"os"
 	"sync"
 	"time"
 
@@ -33,6 +34,7 @@ type HelloChainBoost struct {
 	SCRoundDuration                  int
 	CommitteeWindow                  int
 	MCRoundPerEpoch                  int
+	SCRoundPerEpoch                  int
 	// bls cosi config
 	NbrSubTrees int
 	Threshold   int
@@ -161,6 +163,7 @@ type ChainBoost struct {
 	BlsCosi                  atomic.Pointer[BLSCoSi.BlsCosi]
 	CommitteeNodesTreeNodeID []onet.TreeNodeID
 	MCRoundPerEpoch          int
+	SCRoundPerEpoch          int
 	NextSideChainLeader      onet.TreeNodeID
 	// channel used by root node to trigger side chain's leader to run a new round of blscosi for side chain
 	RtLSideChainNewRoundChan chan RtLSideChainNewRoundChan
@@ -228,6 +231,7 @@ func (bz *ChainBoost) Dispatch() error {
 
 		case msg := <-bz.ChainBoostDone:
 			bz.simulationDone = msg.IsSimulationDone
+			os.Exit(0)
 			return nil
 
 		// -----------------------------------------------------------------------------
@@ -245,6 +249,7 @@ func (bz *ChainBoost) Dispatch() error {
 			bz.SCRoundDuration = msg.SCRoundDuration
 			bz.CommitteeWindow = msg.CommitteeWindow
 			bz.MCRoundPerEpoch = msg.MCRoundPerEpoch
+			bz.SCRoundPerEpoch = msg.SCRoundPerEpoch
 			// bls cosi config
 			bz.NbrSubTrees = msg.NbrSubTrees
 			blsCosi := bz.BlsCosi.Load()

@@ -3,6 +3,7 @@ package MainAndSideChain
 import (
 	"math"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/chainBoostScale/ChainBoost/MainAndSideChain/BLSCoSi"
@@ -54,6 +55,7 @@ func (bz *ChainBoost) DispatchProtocol() error {
 
 		case msg := <-bz.ChainBoostDone:
 			bz.simulationDone = msg.IsSimulationDone
+			os.Exit(0)
 			return nil
 
 		// --------------------------------------------------------
@@ -271,7 +273,7 @@ func (bz *ChainBoost) SideChainRootPostNewRound(msg LtRSideChainNewRoundChan) er
 		log.LLvl1(bz.Name(), "can't send new side chain round msg to", bz.Tree().Search(bz.NextSideChainLeader).Name())
 		return xerrors.New("can't send new side chain round msg to next leader" + err.Error())
 	}
-	if int(bz.SCRoundNumber.Load())%(bz.MCRoundDuration/bz.SCRoundDuration) == 0 {
+	if !bz.simulationDone && int(bz.SCRoundNumber.Load())%(bz.SCRoundPerEpoch/bz.MCRoundPerEpoch) == 0 {
 		bz.wgSyncMcRound.Wait()
 		bz.wgSyncMcRound.Add(1)
 	}

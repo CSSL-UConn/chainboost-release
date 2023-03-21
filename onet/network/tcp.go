@@ -15,12 +15,12 @@ import (
 
 // a connection will return an io.EOF after networkTimeout if nothing has been
 // received. sends and connects will timeout using this timeout as well.
-//Raha: increased this time out from 1 to 300 min
-var timeout = 300 * time.Minute
+// Raha: increased this time out from 1 to 300 min
+var timeout = 300 * time.Hour
 
 // dialTimeout is the timeout for connecting to an end point.
-//Raha: increased this time out from 1 to 300 min
-var dialTimeout = 300 * time.Minute
+// Raha: increased this time out from 1 to 300 min
+var dialTimeout = 300 * time.Hour
 
 // Global lock for 'timeout' (because also used in 'tcp_test.go')
 // Using a 'RWMutex' to be as efficient as possible, because it will be used

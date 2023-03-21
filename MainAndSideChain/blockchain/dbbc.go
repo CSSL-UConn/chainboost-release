@@ -74,6 +74,12 @@ func GetSideChainAbsPath() string {
 var mainchainpath string = GetMainChainAbsPath()
 var sidechainpath string = GetSideChainAbsPath()
 
+//var mcMutex sync.Mutex
+//var scMutex sync.Mutex
+
+var mainchainDb *sql.DB
+var sidechainDb *sql.DB
+
 func deleteDbIfExists(filename string) {
 	if _, err := os.Stat(filename); err == nil {
 		os.Remove(filename)
@@ -82,11 +88,10 @@ func deleteDbIfExists(filename string) {
 
 func InitalizeMainChainDbTables() error {
 	deleteDbIfExists(mainchainpath)
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 
 	_, err = mainchainDb.Query(`
         CREATE TABLE MarketMatching (
@@ -147,6 +152,7 @@ func InitalizeMainChainDbTables() error {
             "AveWaitOtherTxs" REAL,
             "AveWaitRegPay" REAL,
 			"ConfirmationTime" REAL,
+			"NonRegSpaceFull" integer DEFAULT(0),
             "RegSpaceFull" integer,
             "BlockSpaceFull" integer,
             "SyncTx" integer,
@@ -184,16 +190,31 @@ func InitalizeMainChainDbTables() error {
 		return err
 	}
 
+	_, err = mainchainDb.Query(`
+	CREATE TABLE SyncTxQueue (
+		"Name" text,
+		"Size" integer,
+		"Time" text,
+		"IssuedMcRoundNumber" integer,
+		"ServAgrId" integer
+	);
+
+`)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func InitalizeSideChainDbTables() error {
 	deleteDbIfExists(sidechainpath)
-	sidechainDb, err := sql.Open("sqlite", sidechainpath)
-	if err != nil {
-		return err
+
+	var err error
+	if sidechainDb == nil {
+		sidechainDb, err = sql.Open("sqlite", sidechainpath)
 	}
-	defer sidechainDb.Close()
 
 	_, err = sidechainDb.Query(`
         CREATE TABLE FirstQueue (
@@ -221,7 +242,8 @@ func InitalizeSideChainDbTables() error {
             "TotalNumTx" integer,
             "BlockSpaceFull" integer,
             "TimeTaken" integer,
-            "McRound" integer
+            "McRound" integer,
+			"QueueFill" integer
         );
     `)
 
@@ -253,11 +275,12 @@ func InsertIntoMainChainMarketMatchingTable(serverInfo string,
 	serverAgrId int,
 	published bool,
 	TXIssued bool) error {
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 
 	_, err = mainchainDb.Exec(`INSERT INTO MarketMatching(ServerInfo, FileSize, ServAgrDuration,
                                 StartedMcRoundNumber, ServAgrId, Published, TXIssued)
@@ -268,24 +291,40 @@ func InsertIntoMainChainMarketMatchingTable(serverInfo string,
 }
 
 func InsertIntoMainChainFirstQueue(name string, size uint32, timestamp time.Time, issuedMcRoundNumber int, serverAgrId int) error {
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 
 	_, err = mainchainDb.Exec(`INSERT INTO FirstQueue(Name, Size, Time, IssuedMcRoundNumber, ServAgrId)
                                  VALUES (?, ?, ?, ?, ?)`, name, size, timestamp.Format(time.RFC3339), issuedMcRoundNumber, serverAgrId)
 	return err
 }
 
+func InsertIntoMainChainSyncTxQueue(name string, size uint32, timestamp time.Time, issuedMcRoundNumber int, serverAgrId int) error {
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
+	}
+
+	_, err = mainchainDb.Exec(`INSERT INTO SyncTxQueue(Name, Size, Time, IssuedMcRoundNumber, ServAgrId)
+                                 VALUES (?, ?, ?, ?, ?)`, name, size, timestamp.Format(time.RFC3339), issuedMcRoundNumber, serverAgrId)
+	return err
+}
+
 func BulkInsertIntoMainChainFirstQueue(rows []MainChainFirstQueueEntry) error {
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
 	if len(rows) == 0 {
 		return nil
 	}
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
 	valueStrings := make([]string, 0, len(rows))
 	valueArgs := make([]interface{}, 0, len(rows)*5)
@@ -304,11 +343,12 @@ func BulkInsertIntoMainChainFirstQueue(rows []MainChainFirstQueueEntry) error {
 }
 
 func InsertIntoMainChainSecondQueue(size uint32, timestamp time.Time, issuedMcRoundNumber int) error {
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 
 	_, err = mainchainDb.Exec(`INSERT INTO SecondQueue(Time, Size, IssuedMcRoundNumber)
                                  VALUES (?, ?, ?)`, timestamp.Format(time.RFC3339), size, issuedMcRoundNumber)
@@ -316,12 +356,14 @@ func InsertIntoMainChainSecondQueue(size uint32, timestamp time.Time, issuedMcRo
 }
 
 func BulkInsertIntoMainChainSecondQueue(rows []MainChainSecondQueueEntry) error {
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
 	if len(rows) == 0 {
 		return nil
 	}
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
 	valueStrings := make([]string, 0, len(rows))
 	valueArgs := make([]interface{}, 0, len(rows)*3)
@@ -353,11 +395,12 @@ func InsertIntoMainChainRoundTable(roundNbr int,
 	regSpaceFull bool,
 	blockSpaceFull bool,
 	SyncTx bool) error {
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 	_, err = mainchainDb.Exec(
 		`INSERT INTO RoundTable(
                                 RoundNumber,
@@ -395,11 +438,12 @@ func InsertIntoMainChainOverallEvaluationTable(roundNbr int,
 	OverallAveWaitOtherTx float64,
 	OverallAveWaitRegPay float64,
 	OverallBlockSpaceFull int) error {
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 	_, err = mainchainDb.Exec(
 		`INSERT INTO OverallEvaluation(
                                 RoundNbr,
@@ -427,24 +471,24 @@ func InitialInsertValuesIntoMarketMatchingTable(Filesize int,
 	ServAgrId int,
 	Published bool,
 	TxIssued bool) error {
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
 	var err error
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 	sqlStmt := "INSERT INTO MarketMatching (FileSize, ServAgrDuration, StartedMcRoundNumber, ServAgrId, Published, TxIssued) VALUES (?, ?, ?, ?, ?, ?)"
 	_, err = mainchainDb.Exec(sqlStmt, Filesize, ServAgrDuration, StartedMcRoundNumber, ServAgrId, Published, TxIssued)
 	return err
 }
 
 func AddMoreFieldsIntoTableInMainChain(table string, column string, values ...interface{}) error {
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
 	var err error
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 	for i, value := range values {
 		sqlStmt := fmt.Sprintf("UPDATE %s SET %s = ? where rowid = ?", table, column)
 		_, err = mainchainDb.Exec(sqlStmt, value, i+1) // SQL starts from 1
@@ -456,13 +500,13 @@ func AddMoreFieldsIntoTableInMainChain(table string, column string, values ...in
 }
 
 func InitialInsertValuesIntoMainChainPowerTable(values ...interface{}) error {
-	var err error
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
 	var placeholders []string
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 	for _, _ = range values {
 		placeholders = append(placeholders, "(?)")
 	}
@@ -472,12 +516,12 @@ func InitialInsertValuesIntoMainChainPowerTable(values ...interface{}) error {
 }
 
 func InsertIntoSideChainFirstQueue(name string, size uint32, timestamp time.Time, issuedScRoundNumber int, serverAgrId int, MCRoundNbr int) error {
+	//scMutex.Lock()
+	//defer scMutex.Unlock()
 	var err error
-	sidechainDb, err := sql.Open("sqlite", sidechainpath)
-	if err != nil {
-		return err
+	if sidechainDb == nil {
+		sidechainDb, err = sql.Open("sqlite", sidechainpath)
 	}
-	defer sidechainDb.Close()
 	_, err = sidechainDb.Exec(`INSERT INTO FirstQueue(Name, Size, Time, IssuedScRoundNumber, ServAgrId, MCRoundNbr)
                                  VALUES (?, ?, ?, ?, ?, ?)`, name, size, timestamp.Format(time.RFC3339), issuedScRoundNumber, serverAgrId, MCRoundNbr)
 	return err
@@ -485,6 +529,8 @@ func InsertIntoSideChainFirstQueue(name string, size uint32, timestamp time.Time
 }
 
 func BulkInsertIntoSideChainFirstQueue(rows []SideChainFirstQueueEntry) error {
+	//scMutex.Lock()
+	//defer scMutex.Unlock()
 	sidechainDb, err := sql.Open("sqlite", sidechainpath)
 	if err != nil {
 		return err
@@ -517,12 +563,12 @@ func InsertIntoSideChainRoundTable(roundNbr int,
 	BlockSpaceFull int,
 	TimeTaken int,
 	McRound int) error {
+	//scMutex.Lock()
+	//defer scMutex.Unlock()
 	var err error
-	sidechainDb, err := sql.Open("sqlite", sidechainpath)
-	if err != nil {
-		return err
+	if sidechainDb == nil {
+		sidechainDb, err = sql.Open("sqlite", sidechainpath)
 	}
-	defer sidechainDb.Close()
 	_, err = sidechainDb.Exec(`INSERT INTO RoundTable(
                                         RoundNumber,
                                         BCSize,
@@ -547,12 +593,11 @@ func InsertIntoSideChainOverallEvaluation(roundNbr int,
 	OverallPorTxNbr float64,
 	OverallAveWait float64,
 	OverallBlockSpaceFull int) error {
+	//scMutex.Lock()
 	var err error
-	sidechainDb, err := sql.Open("sqlite", sidechainpath)
-	if err != nil {
-		return err
+	if sidechainDb == nil {
+		sidechainDb, err = sql.Open("sqlite", sidechainpath)
 	}
-	defer sidechainDb.Close()
 
 	stmt := `INSERT INTO OverallEvaluation(
                                         RoundNbr,
@@ -572,14 +617,12 @@ func InsertIntoSideChainOverallEvaluation(roundNbr int,
 
 func GetStatsMainChainImpl(stmt string) (float64, error) {
 	var err error
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return 0, err
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 	row := mainchainDb.QueryRow(stmt)
 	var stat float64
-	if err := row.Scan(&stat); err != nil {
+	if err = row.Scan(&stat); err != nil {
 		return 0, err
 	}
 	return stat, nil
@@ -588,15 +631,13 @@ func GetStatsMainChainImpl(stmt string) (float64, error) {
 
 func GetStatsSideChainImpl(stmt string) (float64, error) {
 	var err error
-	sidechainDb, err := sql.Open("sqlite", sidechainpath)
-	if err != nil {
-		return 0, err
+	if sidechainDb == nil {
+		sidechainDb, err = sql.Open("sqlite", sidechainpath)
 	}
-	defer sidechainDb.Close()
 	row := sidechainDb.QueryRow(stmt)
 
 	var stat float64
-	if err := row.Scan(&stat); err != nil {
+	if err = row.Scan(&stat); err != nil {
 		return 0, err
 	}
 	return stat, nil
@@ -648,30 +689,31 @@ func GetSumSideChainCond(table string, column string, condition string) (float64
 }
 
 func MainChainGetLastRoundSeed() (string, error) {
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
 	stmt := "SELECT Seed from RoundTable WHERE RoundNumber =(SELECT max(RoundNumber) FROM RoundTable)"
 	var err error
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return "", err
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 	row := mainchainDb.QueryRow(stmt)
 
 	var stat string
-	if err := row.Scan(&stat); err != nil {
+	if err = row.Scan(&stat); err != nil {
 		return "", err
 	}
 	return stat, nil
 }
 
 func MainChainGetPowerTable() (map[string]int, error) {
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
 	minerspowers := make(map[string]int)
 	stmt := "SELECT hosts, Power From PowerTable"
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return nil, err
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 	rows, err := mainchainDb.Query(stmt)
 	if err != nil {
 		return nil, err
@@ -696,13 +738,13 @@ func MainChainGetMarketMatchingRows() ([]MarketMatchingRows, error) {
                     Published,
                     TxIssued
             FROM MarketMatching`
-
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
 	var output []MarketMatchingRows
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return nil, err
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 	rows, err := mainchainDb.Query(stmt)
 	if err != nil {
 		return nil, err
@@ -724,12 +766,13 @@ func MainChainGetMarketMatchingRows() ([]MarketMatchingRows, error) {
 }
 
 func MainChainUpdatePowerTable(powermap map[string]int) error {
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	//	mcMutex.Lock()
+	//	defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
 
-	defer mainchainDb.Close()
 	_, err = mainchainDb.Exec("DELETE FROM PowerTable")
 	if err != nil {
 		return err
@@ -748,11 +791,13 @@ func MainChainUpdatePowerTable(powermap map[string]int) error {
 }
 
 func MainChainSetTxIssued(rowId int, value bool) error {
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
+
 	_, err = mainchainDb.Exec("UPDATE MarketMatching Set TxIssued=? Where rowid = ?", value, rowId)
 	if err != nil {
 		return err
@@ -761,11 +806,12 @@ func MainChainSetTxIssued(rowId int, value bool) error {
 }
 
 func MainChainSetPublished(rowId int, value bool) error {
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 	_, err = mainchainDb.Exec("UPDATE MarketMatching Set Published=? Where rowid = ?", value, rowId)
 	if err != nil {
 		return err
@@ -774,11 +820,12 @@ func MainChainSetPublished(rowId int, value bool) error {
 }
 
 func MainChainSetPublishedAndStartRoundOnServAgrId(ServAgrId int, published bool, StartedMcRoundNumber int) error {
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 	_, err = mainchainDb.Exec("UPDATE MarketMatching Set Published=?, StartedMcRoundNumber=? Where ServAgrId = ?", published, StartedMcRoundNumber, ServAgrId)
 	if err != nil {
 		return err
@@ -787,11 +834,13 @@ func MainChainSetPublishedAndStartRoundOnServAgrId(ServAgrId int, published bool
 }
 
 func MainChainPopFromSecondQueue() (*MainChainSecondQueueEntry, error, bool) {
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return nil, err, false
+
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 	row := mainchainDb.QueryRow("SELECT Size, Time, IssuedMcRoundNumber FROM SecondQueue Where rowid in (Select MIN(rowid) FROM SecondQueue)")
 	var timeStr string
 	var returnValue MainChainSecondQueueEntry
@@ -811,12 +860,13 @@ func MainChainPopFromSecondQueue() (*MainChainSecondQueueEntry, error, bool) {
 }
 
 func MainChainGetSecondQueue() ([]MainChainSecondQueueEntry, error) {
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return nil, err
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
-	rows, err := mainchainDb.Query("SELECT rowid, Size, Time, IssuedMcRoundNumber FROM SecondQueue")
+	rows, err := mainchainDb.Query("SELECT rowid, Size, Time, IssuedMcRoundNumber FROM SecondQueue Limit 5000")
 	var timeStr string
 	var retval []MainChainSecondQueueEntry = make([]MainChainSecondQueueEntry, 0)
 
@@ -833,21 +883,23 @@ func MainChainGetSecondQueue() ([]MainChainSecondQueueEntry, error) {
 }
 
 func MainChainDeleteFromSecondQueue(threshold int) error {
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 	_, err = mainchainDb.Exec("DELETE FROM SecondQueue WHERE rowid <= ?", threshold)
 	return err
 }
 
 func MainChainPopFromFirstQueue() (*MainChainFirstQueueEntry, error, bool) {
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return nil, err, false
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 	row := mainchainDb.QueryRow("SELECT Size, Time, IssuedMcRoundNumber, Name, ServAgrId  FROM FirstQueue Where rowid in (Select MIN(rowid) FROM FirstQueue)")
 	var returnValue MainChainFirstQueueEntry
 	var timeStr string
@@ -866,13 +918,39 @@ func MainChainPopFromFirstQueue() (*MainChainFirstQueueEntry, error, bool) {
 	return &returnValue, nil, false
 }
 
-func MainChainGetFirstQueue() ([]MainChainFirstQueueEntry, error) {
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return nil, err
+func MainChainPopFromSyncTxQueue() (*MainChainFirstQueueEntry, error, bool) {
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
-	rows, err := mainchainDb.Query("SELECT rowid, Size, Time, IssuedMcRoundNumber, Name, ServAgrId  FROM FirstQueue")
+	row := mainchainDb.QueryRow("SELECT Size, Time, IssuedMcRoundNumber, Name, ServAgrId  FROM SyncTxQueue LIMIT 1")
+	var returnValue MainChainFirstQueueEntry
+	var timeStr string
+	err = row.Scan(&returnValue.Size, &timeStr, &returnValue.RoundIssued, &returnValue.Name, &returnValue.ServAgrId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil, true
+		}
+		return nil, err, false
+	}
+	returnValue.Time, err = time.Parse(time.RFC3339, timeStr)
+	_, err = mainchainDb.Exec("DELETE FROM SyncTxQueue WHERE rowid in (Select MIN(rowid) FROM SyncTxQueue)")
+	if err != nil {
+		return nil, err, false
+	}
+	return &returnValue, nil, false
+}
+
+func MainChainGetFirstQueue() ([]MainChainFirstQueueEntry, error) {
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
+	}
+	rows, err := mainchainDb.Query("SELECT rowid, Size, Time, IssuedMcRoundNumber, Name, ServAgrId  FROM FirstQueue Limit 5000")
 	var timeStr string
 	var retval []MainChainFirstQueueEntry = make([]MainChainFirstQueueEntry, 0)
 
@@ -889,21 +967,26 @@ func MainChainGetFirstQueue() ([]MainChainFirstQueueEntry, error) {
 }
 
 func MainChainDeleteFromFirstQueue(threshold int) error {
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
+	}
 	if err != nil {
 		return err
 	}
-	defer mainchainDb.Close()
 	_, err = mainchainDb.Exec("DELETE FROM FirstQueue WHERE rowid <= ?", threshold)
 	return err
 }
 
 func AddToRoundTableBasedOnRoundNumber(column string, data interface{}, roundNumber int) error {
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 	stmt := fmt.Sprintf("UPDATE RoundTable SET %s = ? where RoundNumber = ?", column)
 	_, err = mainchainDb.Exec(stmt, data, roundNumber)
 	return err
@@ -924,12 +1007,12 @@ func AddStatsToRoundTableBasedOnRoundNumber(
 	ConfirmationTime float64,
 	RoundNumber int,
 ) error {
-
-	mainchainDb, err := sql.Open("sqlite", mainchainpath)
-	if err != nil {
-		return err
+	//mcMutex.Lock()
+	//defer mcMutex.Unlock()
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
 	}
-	defer mainchainDb.Close()
 	stmt := `UPDATE RoundTable Set BCSize = ?,
                                 RegPayTx = ?,
                                 PoRTx = ?,
@@ -949,12 +1032,11 @@ func AddStatsToRoundTableBasedOnRoundNumber(
 }
 
 func SideChainRoundTableGetLastRow() (int, *SideChainRoundInfo, error) {
+	//scMutex.Lock()
 	var err error
-	sidechainDb, err := sql.Open("sqlite", sidechainpath)
-	if err != nil {
-		return 0, nil, err
+	if sidechainDb == nil {
+		sidechainDb, err = sql.Open("sqlite", sidechainpath)
 	}
-	defer sidechainDb.Close()
 	stmt := "SELECT IFNULL(MAX(rowId),0) FROM RoundTable"
 	row := sidechainDb.QueryRow(stmt)
 	var lastRow int
@@ -1001,12 +1083,12 @@ func UpdateRowSideChainRoundTable(roundNbr int,
 	TimeTaken int,
 	McRound int,
 	rowid int) error {
+	//scMutex.Lock()
+	//defer scMutex.Unlock()
 	var err error
-	sidechainDb, err := sql.Open("sqlite", sidechainpath)
-	if err != nil {
-		return err
+	if sidechainDb == nil {
+		sidechainDb, err = sql.Open("sqlite", sidechainpath)
 	}
-	defer sidechainDb.Close()
 	_, err = sidechainDb.Exec(`Update RoundTable SET
                                         RoundNumber = ?
                                         BCSize = ?,
@@ -1025,11 +1107,12 @@ func UpdateRowSideChainRoundTable(roundNbr int,
 }
 
 func SideChainPopFromFirstQueue() (*SideChainFirstQueueEntry, error, bool) {
-	sidechainDb, err := sql.Open("sqlite", sidechainpath)
-	if err != nil {
-		return nil, err, false
+	//scMutex.Lock()
+	//defer scMutex.Unlock()
+	var err error
+	if sidechainDb == nil {
+		sidechainDb, err = sql.Open("sqlite", sidechainpath)
 	}
-	defer sidechainDb.Close()
 	row := sidechainDb.QueryRow(`SELECT Name,
                                         Size,
                                         Time,
@@ -1055,18 +1138,19 @@ func SideChainPopFromFirstQueue() (*SideChainFirstQueueEntry, error, bool) {
 }
 
 func SideChainGetFirstQueue() ([]SideChainFirstQueueEntry, error) {
-	sidechainDb, err := sql.Open("sqlite", sidechainpath)
-	if err != nil {
-		return nil, err
+	//scMutex.Lock()
+	//defer scMutex.Unlock()
+	var err error
+	if sidechainDb == nil {
+		sidechainDb, err = sql.Open("sqlite", sidechainpath)
 	}
-	defer sidechainDb.Close()
 	rows, err := sidechainDb.Query(`SELECT rowid,
                                         Name,
                                         Size,
                                         Time,
                                         IssuedScRoundNumber,
                                         ServAgrId,
-                                        Epoch FROM FirstQueue`)
+                                        Epoch FROM FirstQueue Limit 5000`)
 	var timeStr string
 	var retval []SideChainFirstQueueEntry = make([]SideChainFirstQueueEntry, 0)
 
@@ -1083,33 +1167,103 @@ func SideChainGetFirstQueue() ([]SideChainFirstQueueEntry, error) {
 }
 
 func SideChainDeleteFromFirstQueue(threshold int) error {
-	sidechainDb, err := sql.Open("sqlite", sidechainpath)
-	if err != nil {
-		return err
+	//	scMutex.Lock()
+	//	defer scMutex.Unlock()
+	var err error
+	if sidechainDb == nil {
+		sidechainDb, err = sql.Open("sqlite", sidechainpath)
 	}
-	defer sidechainDb.Close()
 	_, err = sidechainDb.Exec("DELETE FROM FirstQueue WHERE rowid <= ?", threshold)
 	return err
 }
 
 func SideChainRoundTableSetBlockSpaceIsFull(roundnbr int) error {
+	//scMutex.Lock()
+	//	defer scMutex.Unlock()
 	stmt := "Update RoundTable SET BlockSpaceFull=True Where RoundNumber = ?"
-	sidechainDb, err := sql.Open("sqlite", sidechainpath)
-	if err != nil {
-		return err
+	var err error
+	if sidechainDb == nil {
+		sidechainDb, err = sql.Open("sqlite", sidechainpath)
 	}
-	defer sidechainDb.Close()
 	_, err = sidechainDb.Exec(stmt, roundnbr)
 	return err
 }
 
-func SideChainRoundTableSetFinalRoundInfo(blocksize int, PorTx int, avewait float64, roundnbr int) error {
-	stmt := "Update RoundTable SET BCSize=?, PorTx=?, AveWait=?  Where RowId = (Select Max(RowId) From RoundTable Where RoundNumber = ?)"
-	sidechainDb, err := sql.Open("sqlite", sidechainpath)
-	if err != nil {
-		return err
+func SideChainRoundTableSetFinalRoundInfo(blocksize int, PorTx int, avewait float64, roundnbr int, queueFill int) error {
+	//	scMutex.Lock()
+	//	defer scMutex.Unlock()
+	stmt := "Update RoundTable SET BCSize=?, PorTx=?, AveWait=? , QueueFill=? Where RowId = (Select Max(RowId) From RoundTable Where RoundNumber = ?)"
+	var err error
+	if sidechainDb == nil {
+		sidechainDb, err = sql.Open("sqlite", sidechainpath)
 	}
-	defer sidechainDb.Close()
-	_, err = sidechainDb.Exec(stmt, blocksize, PorTx, avewait, roundnbr)
+	_, err = sidechainDb.Exec(stmt, blocksize, PorTx, avewait, queueFill, roundnbr)
 	return err
+}
+
+func MainChainEndPosition(maxRoundNbr int) {
+	stmt := "Select BCSize, RoundNumber From RoundTable Where RowId = (Select Max(RowId) From RoundTable)"
+	var err error
+	if mainchainDb == nil {
+		mainchainDb, err = sql.Open("sqlite", mainchainpath)
+	}
+	rows, err := mainchainDb.Query(stmt)
+	if err != nil {
+		panic(err)
+	}
+	for rows.Next() {
+		var RoundNumber, BCSize int
+		_ = rows.Scan(&BCSize, &RoundNumber)
+		if RoundNumber == maxRoundNbr+1 && BCSize == 0 {
+			mainchainDb.Exec("DELETE FROM RoundTable Where RowId = (Select Max(RowId) From RoundTable)")
+		}
+	}
+}
+
+func SideChainEndPosition() int {
+	stmt := "Select BCSize, RoundNumber From RoundTable Where RowId = (Select Max(RowId) From RoundTable)"
+	var err error
+	if sidechainDb == nil {
+		sidechainDb, err = sql.Open("sqlite", sidechainpath)
+	}
+	rows, err := sidechainDb.Query(stmt)
+	if err != nil {
+		panic(err)
+	}
+	var RoundNumber, BCSize int
+	for rows.Next() {
+		_ = rows.Scan(&BCSize, &RoundNumber)
+	}
+	if RoundNumber == 1 && BCSize == 0 {
+		res, err := sidechainDb.Exec("DELETE FROM RoundTable Where RowId = (Select Max(RowId) From RoundTable)")
+		if err != nil {
+			panic(res)
+			panic(err)
+		}
+		return RoundNumber - 1
+	}
+	return RoundNumber
+}
+
+func SideChainGetLastRowSigLen() int {
+	stmt := "Select BCSize, PoRTx From RoundTable Where RowId = (Select Max(RowId) From RoundTable Where RoundNumber = ?)"
+	var err error
+	if sidechainDb == nil {
+		sidechainDb, err = sql.Open("sqlite", sidechainpath)
+	}
+
+	rows, err := sidechainDb.Query(stmt, 29)
+	if err != nil {
+		panic(err)
+	}
+	var PorTx, BCSize, TxSize int
+	for rows.Next() {
+		_ = rows.Scan(&BCSize, &PorTx)
+	}
+	stmt = "Select Size From FirstQueue Limit 1"
+	rows, err = sidechainDb.Query(stmt)
+	for rows.Next() {
+		_ = rows.Scan(&TxSize)
+	}
+	return BCSize - PorTx*TxSize
 }

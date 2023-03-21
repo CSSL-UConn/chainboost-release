@@ -152,7 +152,7 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 				log.LLvl1("Panic Raised:\n\n")
 				panic("the type of transaction in the queue is un-defined")
 			}
-			currentEpoch := int(bz.MCRoundNumber.Load()-2) / bz.SCRoundDuration
+			currentEpoch := int(bz.MCRoundNumber.Load()-2) / bz.MCRoundPerEpoch
 			bz.SideChainQueueWait = bz.SideChainQueueWait + int(bz.SCRoundNumber.Load()-int64(row.IssuedScRoundNumber)) + (currentEpoch-row.Epoch)*bz.MCRoundDuration
 			lastRowId = row.RowId
 
@@ -178,7 +178,8 @@ func (bz *ChainBoost) updateSideChainBCTransactionQueueTake() int {
 	err = blockchain.SideChainRoundTableSetFinalRoundInfo(accumulatedTxSize+MetaBlockSizeMinusTransactions,
 		numberOfPoRTx,
 		avgWait,
-		int(bz.SCRoundNumber.Load()))
+		int(bz.SCRoundNumber.Load()),
+		len(rows)-numberOfPoRTx)
 	if err != nil {
 		panic(err)
 	}

@@ -181,6 +181,7 @@ func Simulate(configurations []Config,
 			ChainBoostProtocol.SCRoundDuration = configuration.SCRoundDuration
 			ChainBoostProtocol.CommitteeWindow = configuration.CommitteeWindow
 			ChainBoostProtocol.MCRoundPerEpoch = configuration.MCRoundPerEpoch
+			ChainBoostProtocol.SCRoundPerEpoch = configuration.SCRoundPerEpoch
 			ChainBoostProtocol.SimState = configuration.SimState
 			ChainBoostProtocol.StoragePaymentEpoch = configuration.StoragePaymentEpoch
 			ChainBoostProtocol.PayPercentOfTransactions = configuration.PayPercentOfTransactions
@@ -241,17 +242,18 @@ func Simulate(configurations []Config,
 			px := <-ChainBoostProtocol.DoneRootNode
 			log.LLvl1(rootSC.Server.ServerIdentity.Address, ": Final result is", px)
 			time.Sleep(time.Second * 10) // wait for thread to finish writing to the db
-			mcFilename := fmt.Sprintf(abspath+"/mainchain_%d.db", run)
+			break
+			/*mcFilename := fmt.Sprintf(abspath+"/mainchain_%d.db", run)
 			scFilename := fmt.Sprintf(abspath+"/sidechain_%d.db", run)
 			os.Rename(abspath+"/mainchain.db", mcFilename)
-			os.Rename(abspath+"/sidechain.db", scFilename)
+			os.Rename(abspath+"/sidechain.db", scFilename)*/
 		}
 
 		// what is this for?
-		err = ioutil.WriteFile(abspath+"/sidechain.db", inputSideChain, 0644)
+		/*err = ioutil.WriteFile(abspath+"/sidechain.db", inputSideChain, 0644)
 		if err != nil {
 			log.Fatal(err)
-		}
+		}*/
 
 		// --------------------------------------------------------------
 		log.LLvl1(rootSC.Server.ServerIdentity.Address, ": close all other nodes!")
@@ -284,6 +286,7 @@ func Simulate(configurations []Config,
 
 	log.LLvl1(serverAddress, scs[0].Server.ServerIdentity, "is waiting for all servers to close")
 	wgServer.Wait()
+	os.Exit(0)
 	log.LLvl1(serverAddress, "has all servers closed")
 
 	// Give a chance to the simulation to stop the servers and clean up but returns the simulation error anyway.
@@ -408,6 +411,7 @@ func sendMsgToJoinChainBoostProtocol(i int, ChainBoostProtocol *MainAndSideChain
 					CommitteeWindow:     ChainBoostProtocol.CommitteeWindow,
 					SCRoundDuration:     ChainBoostProtocol.SCRoundDuration,
 					MCRoundPerEpoch:     ChainBoostProtocol.MCRoundPerEpoch,
+					SCRoundPerEpoch:     ChainBoostProtocol.SCRoundPerEpoch,
 					SimState:            ChainBoostProtocol.SimState,
 					StoragePaymentEpoch: ChainBoostProtocol.StoragePaymentEpoch,
 				})

@@ -78,6 +78,7 @@ from blockchain to check if they are next round's leader
 */
 func (bz *ChainBoost) readBCAndSendtoOthers() {
 	if bz.MCRoundNumber.Load() == int64(bz.SimulationRounds) {
+		bz.MCRoundNumber.Inc()
 		log.LLvl1("ChainBoost simulation has passed the number of simulation rounds:", bz.SimulationRounds, "\n returning back to RunSimul")
 		bz.DoneRootNode <- true
 		return
@@ -142,7 +143,7 @@ func (bz *ChainBoost) updateBCPowerRound(LeaderName string, leader bool) {
 	var seed string
 	var err error
 	takenTime := time.Now()
-
+	seed, err = blockchain.MainChainGetLastRoundSeed()
 	nextRoundNumber := int(bz.MCRoundNumber.Load() + 1)
 	data := fmt.Sprintf("%v", seed)
 	sha := sha256.New()
@@ -311,11 +312,11 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueCollect() {
 			// ServAgr is not expired => Add TxPor
 			epoch := -1
 			if bz.MCRoundNumber.Load() != 1 {
-				epoch = int(bz.MCRoundNumber.Load()-2) / bz.SCRoundDuration
+				epoch = int(bz.MCRoundNumber.Load()-2) / bz.MCRoundPerEpoch
 			}
-			issuedRoundNumber := (int(bz.SCRoundNumber.Load()-1) % bz.MCRoundDuration)
+			issuedRoundNumber := (int(bz.SCRoundNumber.Load()-1) % bz.SCRoundPerEpoch)
 			if issuedRoundNumber == 0 {
-				issuedRoundNumber = bz.MCRoundDuration
+				issuedRoundNumber = bz.SCRoundPerEpoch
 			}
 			tx := blockchain.SideChainFirstQueueEntry{Name: "TxPor", Size: int(PorTxSize), Time: time.Now(), IssuedScRoundNumber: issuedRoundNumber, ServAgrId: i + 1, Epoch: epoch}
 			scFirstQueueTxs = append(scFirstQueueTxs, tx)
@@ -462,6 +463,18 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 	numberOfSyncTx := 0
 	SCPoRTx := 0
 
+	tx, err, truth := blockchain.MainChainPopFromSyncTxQueue()
+	if err != nil {
+		panic(err)
+	}
+	if !truth {
+		log.LLvl1("Sync Transaction Found, MCRound: ", bz.MCRoundNumber.Load())
+		accumulatedTxSize = accumulatedTxSize + int(tx.Size)
+		numberOfSyncTx++
+		SCPoRTx = SCPoRTx + tx.ServAgrId
+	} else {
+		log.LLvl1("Sync Transaction Not Found, MCRound: ", bz.MCRoundNumber.Load())
+	}
 	takenTime = time.Now()
 	fqRows, err := blockchain.MainChainGetFirstQueue()
 	if err != nil {
@@ -555,7 +568,7 @@ func (bz *ChainBoost) updateMainChainBCTransactionQueueTake() {
 		"\n number of published regular payment transactions is", numberOfRegPayTx,
 	)
 
-	TotalNumTxsInBothQueue := numberOfPoRTx + numberOfStoragePayTx + numberOfServAgrProposeTx + numberOfServAgrCommitTx + numberOfRegPayTx
+	TotalNumTxsInBothQueue := numberOfPoRTx + numberOfStoragePayTx + numberOfServAgrProposeTx + numberOfServAgrCommitTx + numberOfRegPayTx + numberOfSyncTx
 	TotalNumTxsInFirstQueue := numberOfPoRTx + numberOfStoragePayTx + numberOfServAgrProposeTx + numberOfServAgrCommitTx
 
 	var avg1stWaitQueue, avg2ndWaitQueue float64 = 0, 0
@@ -674,7 +687,7 @@ func (bz *ChainBoost) syncMainChainBCTransactionQueueCollect() (blocksize int) {
 	// for now sync transaction and summary transaction are the same, we should change it when  they differ
 	SyncTxSize := SummTxsSizeInSummBlock
 
-	err := blockchain.InsertIntoMainChainFirstQueue("TxSync", uint32(SyncTxSize), time.Now(), int(bz.MCRoundNumber.Load()), totalPoR)
+	err := blockchain.InsertIntoMainChainSyncTxQueue("TxSync", uint32(SyncTxSize), time.Now(), int(bz.MCRoundNumber.Load()), totalPoR)
 
 	if err != nil {
 		panic(err)
