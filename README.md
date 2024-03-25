@@ -15,20 +15,32 @@ We used [Kyber](https://github.com/dedis/kyber) for advanced cryptographic primi
 note: running on an OS other than IOS needs a change in c extention config code
 
 - Install Go
-- Clone or Downloade the ChainBoost's source code from Git <https://github.com/chainBoostScale/ChainBoost>
+- Clone or Download the ChainBoost's source code from Git <https://github.com/chainBoostScale/ChainBoost>
 - Open a terminal in the directory where the folder ChainBoost is located
 - run the following command: 
-```
-/usr/local/go/bin/go test -timeout 30000s -run ^TestSimulation$ github.com/chainBoostScale/ChainBoost/simulation/manage/simulation
-```
+### On Building using Makefiles
 
-- this will call the TestSimulation function in the file: ([simul_test.go](https://github.com/chainBoostScale/ChainBoost/blob/master/simulation/manage/simulation/simul_test.go))
+this repo contains three Makefiles, one on the root of the repo, one in `simulation/manage/simulation/Makefile` and one in `simulation/platform/csslab_users/Makefile`
+
+The Makefile in the root of the repo builds all the binaries (simul and users) and puts them in the build folder,
+it allows the following commands:
+
+* `make build` : builds the binaries
+* `make deploy USER=<user>` : builds the binaries and deploys them to gateway using rsync over SSH
+* `make clean`: cleans up all the binaries that were built.
+
+The in-folder Makefiles are helper Makefiles for the one in the root of the repo, and are used to build their respective binaries
+
+### On Running the exeperiment using the orchestrator:
+
+The orchestrator is a production ready way to orchestrate different instances of the simulation executable. in order to run the experiment:
+1) edit `ssh.toml` to match your expected files to be uploaded to the VMs and the ones you want to retrieve after the experiments are over.
+2) run `./orchestrator ssh.toml`
+
+Note: The logs of every simul instance are written under the folder `<vm-ip-address>/stdout.txt` , it contains stdout and stderr outputs
 
 
-raha@R-MacBook-Pro ChainBoost % /usr/local/go/bin/go test -timeout 300000s -run ^TestSimulation$ github.com/chainBoostScale/ChainBoost/simulation/manage/simulation
-
-
-- the stored blockchain in Excel file "mainchainbc.xlsx"  can be found under the `build` directory that is going to be created after simulation run[^3]
+- the stored blockchain in Excel file "mainchainbc.db"  can be found under the `build` directory that is going to be created after simulation run[^3]
 - in the case of debugging the following code in ([simul_test.go](https://github.com/chainBstSc/ChainBoost/blob/master/simulation/manage/simulation/simul_test.go)) indicates the debug logging level, with 0 being the least logging and 5 being the most (every tiny detail is logged in this level)
 ```
 log.SetDebugVisible(1)
@@ -63,26 +75,6 @@ The following packages provide core functionality to `ChainBoost`:
 <!--FootNote-->
 
 
-## On Building using Makefiles
-
-this repo contains three Makefiles, one on the root of the repo, one in `simulation/manage/simulation/Makefile` and one in `simulation/platform/csslab_users/Makefile`
-
-The Makefile in the root of the repo builds all the binaries (simul and users) and puts them in the build folder,
-it allows the following commands:
-
-* `make build` : builds the binaries
-* `make deploy USER=<user>` : builds the binaries and deploys them to gateway using rsync over SSH
-* `make clean`: cleans up all the binaries that were built.
-
-The in-folder Makefiles are helper Makefiles for the one in the root of the repo, and are used to build their respective binaries
-
-## On Running the exeperiment using the orchestrator:
-
-The orchestrator is a production ready way to orchestrate different instances of the simulation executable. in order to run the experiment:
-1) edit `ssh.toml` to match your expected files to be uploaded to the VMs and the ones you want to retrieve after the experiments are over.
-2) run `./orchestrator ssh.toml`
-
-Note: The logs of every simul instance are written under the folder `<vm-ip-address>/stdout.txt` , it contains stdout and stderr outputs
 
 # Time Out
 Timeouts are parsed according to Go's time.Duration: A duration string
